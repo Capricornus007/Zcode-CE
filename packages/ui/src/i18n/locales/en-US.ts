@@ -1119,6 +1119,16 @@ const enUS: Record<string, string> = {
   "codeBlock.mermaid.ariaLabel": "Mermaid diagram",
   "codeBlock.wrapLines": "Wrap lines",
   "codeBlock.copyCode": "Copy code",
+  "codeBlock.sendToTerminal": "Send to terminal (won't run until you press Enter there)",
+  "codeBlock.sendToTerminalElevated":
+    "Send to terminal (needs administrator privileges; won't run until you press Enter there)",
+  "codeBlock.sendToTerminalDelivered":
+    "Sent to the terminal. Review it there and press Enter to run.",
+  "codeBlock.sendToTerminalNeedsBracketedPaste":
+    "This multi-line command can't be pasted safely in one go here. Send it line by line or copy it manually.",
+  "codeBlock.sendToTerminalUnavailable":
+    "No integrated terminal is available. Open a terminal first.",
+  "codeBlock.sendToTerminalOpenFailed": "Could not open a terminal. Please try again.",
   "codeBlock.mermaid.empty": "Mermaid source is empty.",
   "codeBlock.mermaid.error": "Mermaid diagram render failed",
   "codeBlock.mermaid.openPreview": "Open preview",
@@ -1260,6 +1270,8 @@ const enUS: Record<string, string> = {
   "update.toast.downloading": "Downloading new version v{version}",
   "update.toast.alreadyDownloading": "Downloading new version ({progress}%)",
   "update.toast.ready": "v{version} downloaded, restart to install",
+  "update.toast.unsupportedPlatform":
+    "Auto-update isn't available on macOS: download the unsigned installer from GitHub Releases (allow Gatekeeper on first launch).",
   "update.toast.devSkipped": "Updates are disabled in dev builds",
   "update.toast.error": "Update check failed: {error}",
   "forceUpdate.title": "Update ZCode to continue",
@@ -1341,6 +1353,21 @@ const enUS: Record<string, string> = {
     "Project removed, but {count} Windows reserved-name file(s) were detected and may affect later folder deletion or renaming: {path}",
   "workspaceSidebar.reconnect": "Reconnect",
   "workspaceSidebar.connecting": "Connecting",
+  "workspaceRuntime.starting.title": "Starting workspace…",
+  "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
+  "workspaceRuntime.failed.reasonUnavailable":
+    "No specific reason was reported. Retry once; check logs if it keeps failing.",
+  "workspaceRuntime.failed.retry": "Retry",
+  "workspaceRuntime.notStarted.title":
+    "Not started (opening starts it; other workspaces are unaffected)",
+  "workspaceRuntime.notStarted.persistedSessions":
+    "{count} sessions on record, last active {activity} ago",
+  "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
+  "workspaceRuntime.notStarted.open": "Open and start",
+  "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",
+  "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
+  "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
+  "workspaceSidebar.registry.retry": "Reload",
   "workspaceSidebar.notConnected": "Not connected",
   "workspaceSidebar.empty": "No workspaces yet. Open a workspace to get started.",
   "workspaceSidebar.unavailableLocalDirectory":
@@ -1348,6 +1375,170 @@ const enUS: Record<string, string> = {
   "workspaceSidebar.showSidebar": "Toggle sidebar",
   "workspaceSidebar.hideSidebar": "Toggle sidebar",
   "workspaceSidebar.toggleSidebar": "Toggle sidebar",
+  // Remote control (ce.3 · slice 1 entry / slice 3 panel). Copy follows spec §3.6.1: short phrases.
+  // Wording red line: this opens a browser-reachable workbench on this machine; it is NOT
+  // "control the desktop app / take over the desktop session" — remote SSH/Docker targets the
+  // desktop already has are not shared with the browser, so the UI must not promise them.
+  "remotePanel.entry.title": "Remote control",
+  "remotePanel.entry.status.off": "Off",
+  "remotePanel.entry.status.running": "Running",
+  // Restored in ce.4: once the connection plane landed, waiting finally has a producer —
+  // "service is running AND zero connected devices" (GET …/connections returns an empty array).
+  // Same meaning as upstream webRemoteControl.statusDetail.idle; wording is our own.
+  "remotePanel.entry.status.waiting": "Waiting for connection",
+  "remotePanel.title": "Remote control",
+  "remotePanel.subtitle": "Scan or open the link to use the workbench on this machine",
+  // Tabs (task-93): two different remote paths, side by side rather than merged.
+  // Naming red line: never call our path "self-hosted" in the UI — that is an implementation
+  // detail, not a user capability. The umbrella name stays "Remote control"; the two paths are
+  // "Web control" (a browser drives the workbench on this machine) and "Chat bot" (you talk to a
+  // bot inside a chat app). Keep clear of the sidebar's existing "Remote connection"
+  // (`remote.trigger`, i.e. connect out) — that one points the opposite way.
+  // "Chat bot" is chosen because it is literally the official English wording
+  // (`webRemoteControl.description` says "through chat bots") and shares no words with
+  // "Remote connection". The description names WeChat / Feishu / Telegram to disambiguate.
+  "remotePanel.tab.web": "Web control",
+  "remotePanel.tab.imBot": "Chat bot",
+  "remotePanel.imBot.description":
+    "Talk to a bot in WeChat, Feishu or Telegram and let it drive this workspace.",
+  "remotePanel.imBot.badge.disabled": "Not enabled",
+  "remotePanel.imBot.badge.enabling": "Enabling",
+  "remotePanel.imBot.badge.enabled": "Enabled",
+  "remotePanel.imBot.action.enable": "Enable",
+  // fix.2: the "server-side capability is not wired in yet" notice was removed together with its
+  // only producer — a missing channel now hides the whole tab (canRenderRemoteControlImBotTab in
+  // remoteControlPanelModel.ts), so the key would be unreachable. Keeping it would suggest a path
+  // that no longer exists.
+  "remotePanel.imBot.state.enabling": "Enabling…",
+  "remotePanel.imBot.state.requested":
+    "Enable requested, waiting for the server side; the bot sends and receives nothing until then.",
+  "remotePanel.imBot.state.enabled":
+    "Enabled: message the bot in your chat app to drive this workspace.",
+  "remotePanel.imBot.reminder.title": "Before you enable",
+  "remotePanel.imBot.reminder.account":
+    "An external account is required: the bot identity and credentials for WeChat, Feishu and Telegram are issued by those platforms, not by ZCode.",
+  "remotePanel.imBot.reminder.thirdParty":
+    "Messages and files go through the third-party platform's servers: what you send the bot and what it replies are not confined to this machine.",
+  "remotePanel.imBot.reminder.platformRecords":
+    "Those platform-side records are outside this machine's control; deleting local data does not delete them.",
+  // When it takes effect (spec §10 P4: a newly added channel needs a restart; acceptable, but
+  // must not be silent). Not phrased as "the config has not taken effect" — the user needs to
+  // know what to do now.
+  "remotePanel.imBot.restartNotice":
+    "After you add or enable a channel, inbound callbacks only work once the service is restarted; deleting a channel takes effect immediately.",
+  "remotePanel.imBot.confirm.title": "Enable the chat bot?",
+  "remotePanel.imBot.confirm.body":
+    "Once enabled, the bot sends messages and files to a third-party chat platform. Confirm these three points before continuing:",
+  "remotePanel.imBot.confirm.continue": "Enable anyway",
+  "remotePanel.badge.stopped": "Off",
+  "remotePanel.badge.stale": "Stopped",
+  "remotePanel.badge.starting": "Starting",
+  "remotePanel.badge.running": "Running",
+  "remotePanel.badge.stopping": "Stopping",
+  "remotePanel.badge.untrusted": "Not adopted",
+  "remotePanel.badge.failed": "Failed to start",
+  "remotePanel.advice.stopped":
+    "Turn it on and other devices can reach this machine's workbench in a browser.",
+  "remotePanel.advice.stale": "The previous service is gone. You can turn it on again.",
+  "remotePanel.advice.stale.pidDead":
+    "The previous service process exited. You can turn it on again.",
+  "remotePanel.advice.stale.portClosed": "The previous service is gone. You can turn it on again.",
+  "remotePanel.advice.stale.probeTimeout":
+    "Something is on that port but not responding. Turn it on again, or check the port first.",
+  "remotePanel.advice.starting": "Starting…",
+  "remotePanel.advice.stopping": "Stopping…",
+  "remotePanel.advice.running": "Open the link in a browser to use this machine's workbench.",
+  "remotePanel.advice.running.adopted":
+    "A workbench is already running on this machine; showing it here.",
+  "remotePanel.advice.untrusted":
+    "Another service owns that port, so it was not adopted. Try another port.",
+  "remotePanel.advice.failed": "Failed to start. Retry, or check the logs.",
+  "remotePanel.advice.failed.portTaken": "That port is already in use. Try another port.",
+  "remotePanel.advice.failed.spawnFailed":
+    "The service process could not start. Check the logs and retry.",
+  "remotePanel.advice.failed.probeTimeout":
+    "The service was not ready in time. Retry, or check the logs.",
+  "remotePanel.advice.failed.tokenUnreadable":
+    "The token file could not be read. Check its permissions and retry.",
+  // Wording fix after this batch's server hardening: do NOT offer "this machine only" as the
+  // no-token fallback — with trusted-proxy/registered-host signals present, loopback binding is
+  // refused too (packages/server/src/exposureGate.ts), so that would promise a way out that
+  // does not exist.
+  "remotePanel.advice.failed.nonLoopbackWithoutToken":
+    "Without a usable token it cannot listen beyond this machine. Restore the token file, or find out why it is empty.",
+  "remotePanel.action.none": "Unavailable",
+  "remotePanel.action.start": "Turn on",
+  "remotePanel.action.stop": "Stop",
+  "remotePanel.action.retry": "Retry",
+  "remotePanel.action.retryOtherPort": "Retry on another port",
+  "remotePanel.action.copyLink": "Copy link",
+  "remotePanel.action.copied": "Copied",
+  "remotePanel.action.copyFailed": "Copy failed",
+  // ce.4 connection plane: the token-rotation entry appears on the DESKTOP panel only
+  // (spec §6.5 decision ④). The UI gates it on "does the host provide the action" —
+  // absent means NOT rendered (not rendered as a disabled button).
+  "remotePanel.action.rotateToken": "Rotate token",
+  "remotePanel.action.rotatingToken": "Rotating…",
+  // Listen scope (spec §3.3): defaults to the local network, with a one-click switch back to loopback.
+  "remotePanel.listen.label": "Listen on",
+  "remotePanel.listen.loopback": "This machine only",
+  "remotePanel.listen.lan": "Local network",
+  "remotePanel.listen.portAuto": "Pick a free port",
+  "remotePanel.listen.customPort": "Custom port",
+  "remotePanel.listen.portLabel": "Port",
+  "remotePanel.listen.portPlaceholder": "Empty = pick a free port",
+  "remotePanel.listen.portInvalid":
+    "The port must be an integer from 1 to 65535; leave it empty to pick a free port.",
+  // Connected devices (spec §3.3 / §6.4). Empty and unreadable are two different facts:
+  // an empty array means nobody is connected; unreadable (null) means unknown, so we claim nothing.
+  "remotePanel.devices.title": "Connected devices",
+  "remotePanel.devices.empty": "No devices yet",
+  "remotePanel.devices.unknown": "Connected devices are not readable right now.",
+  "remotePanel.devices.revokeOne": "Disconnect",
+  "remotePanel.devices.revokeAll": "Disconnect all",
+  "remotePanel.devices.column.address": "Address",
+  "remotePanel.devices.column.role": "Role",
+  "remotePanel.devices.column.connectedAt": "Connected at",
+  "remotePanel.devices.column.userAgent": "Client",
+  "remotePanel.devices.role.terminalClient": "Browser",
+  "remotePanel.devices.role.trustedHost": "Trusted host",
+  "remotePanel.connection.title": "How to connect",
+  "remotePanel.connection.audience": "Phones and computers",
+  "remotePanel.connection.linkPending": "Preparing the link…",
+  "remotePanel.qr.alt": "Remote control QR code",
+  "remotePanel.qr.fallback": "Can't scan? Use the link",
+  "remotePanel.safety.title": "Safety",
+  "remotePanel.safety.lanExposure":
+    "Listening on the local network: anyone on the same network can try to connect. The token is the only barrier.",
+  "remotePanel.safety.tokenIsTheOnlyBarrier":
+    "The token is agent-level access: it can run commands and read or write files on this machine.",
+  "remotePanel.safety.linkIsCredential":
+    "The link and QR code are credentials themselves. Do not share them publicly or send screenshots.",
+  "remotePanel.safety.plainHttp":
+    "Plain http is for trusted local networks only; put TLS or a tunnel in front for anything wider.",
+  "remotePanel.confirm.startLan.title": "Listen on the local network?",
+  "remotePanel.confirm.startLan.body":
+    "Once on, anyone on the same network can try to connect to the workbench on this machine.\nThe token is the only barrier: whoever has it can run commands and read or write files on this machine.",
+  "remotePanel.confirm.startLan.continue": "Continue",
+  // Second confirmation for ce.4 write actions (spec §6.3).
+  "remotePanel.confirm.stop.title": "Stop the service?",
+  "remotePanel.confirm.stop.body":
+    "Every connected device will be disconnected and must scan or open the link again.",
+  "remotePanel.confirm.rotateToken.title": "Rotate the token?",
+  "remotePanel.confirm.rotateToken.body":
+    "Old links and QR codes stop working immediately, and everyone must reconnect.",
+  "remotePanel.confirm.revokeOne.title": "Disconnect this device?",
+  "remotePanel.confirm.revokeOne.body":
+    "That device is disconnected and must scan or open the link again.",
+  "remotePanel.confirm.revokeAll.title": "Disconnect all devices?",
+  "remotePanel.confirm.revokeAll.body":
+    "Every connected device will be disconnected and must scan or open the link again.",
+  // Always-on danger notice (spec §3.5; cannot be dismissed).
+  "remotePanel.danger.credentials": "Links and QR codes are credentials — do not share them.",
+  "remotePanel.danger.sharedToken":
+    "The token is a shared secret; rotating it reconnects everyone.",
+  "remotePanel.danger.noTls":
+    "Plain http is for trusted local networks only; use a TLS reverse proxy or tunnel across networks.",
   "workspaceSidebar.resizeSidebar": "Resize sidebar",
   "workspaceSidebar.toggleArchivedTasks": "Archived",
   "workspaceSidebar.showFileTree": "Show files",
@@ -2401,6 +2592,9 @@ const enUS: Record<string, string> = {
   "settings.mcp.form.type.sse": "SSE (Server-Sent Events)",
   "settings.mcp.form.command": "Command",
   "settings.mcp.form.args": "Arguments (space separated)",
+  "settings.mcp.form.disabledTools": "Disabled tools (optional)",
+  "settings.mcp.form.disabledToolsHint":
+    "One tool name per line, spelled as the MCP server reports it (e.g. get_issue). A disabled tool is hidden from the model, and calling it directly fails. Leave empty to enable everything.",
   "settings.mcp.form.add": "Add",
   "settings.mcpServers.import.open": "Import MCP servers from external agents",
   "settings.mcpServers.import.title": "Import external agent MCP servers",
@@ -3124,7 +3318,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.modelCatalog.partialFailure": "Some models could not be added",
   "settings.modelProvider.hiddenModels.title": "Hidden models ({count})",
   "settings.modelProvider.hiddenModels.description":
-    "These built-in models were deleted. Built-in models come from the app's bundled configuration, so deleting them hides them; restoring brings them back to the list and the model picker.",
+    "These built-in models were deleted; restoring brings them back to the list and the model picker.",
   "settings.modelProvider.hiddenModels.restore": "Restore",
   "settings.modelProvider.modelId": "Model ID",
   "settings.modelProvider.modelDisplayName": "Display name",
@@ -4328,6 +4522,7 @@ const enUS: Record<string, string> = {
   "chat.message.copy": "Copy",
   "chat.message.copy.copied": "Copied",
   "chat.message.copy.requiresFull": "Load full message before copying",
+  "chat.message.copy.fullResponse": "Copy full response",
   "chat.message.like": "Like",
   "chat.message.liked": "Liked",
   "chat.message.dislike": "Dislike",
@@ -4431,6 +4626,8 @@ const enUS: Record<string, string> = {
   "chat.contextUsageDescription":
     "Prompt text, tool calls, and responses all share this context window.",
   "chat.contextUsage.cacheHitRate": "Average cache hit rate",
+  // Trigger label when only a claimable plan exists (no balance / Coding Plan sections).
+  "chat.contextUsage.claimTitle": "Claimable quota",
   "chat.contextUsage.breakdown": "Context sources",
   "chat.contextUsage.breakdown.messages": "Messages",
   "chat.contextUsage.breakdown.systemPrompt": "System prompt",
@@ -6551,6 +6748,17 @@ const enUS: Record<string, string> = {
   "cuaPermission.ready.sessionValidationHint":
     "ZCode will verify the Computer Use tools against the exact session when your first session starts.",
   "settings.computerUse.title": "Computer Use",
+  "settings.remoteAssets.title": "Remote assets",
+  "settings.remoteAssets.cdnBaseUrl": "Custom remote asset CDN URL",
+  "settings.remoteAssets.cdnBaseUrlDescription":
+    "Where remote workspaces download their runtime assets from. Use an http/https URL that points at the publish root — do not include a version (for example https://your-host/assets). Leave empty to use the default. This only affects remote connections started from the desktop app, and only connections created after the change. The runtime environment variable ZCODE_REMOTE_ASSET_CDN_BASE_URL takes precedence over this setting.",
+  "settings.remoteAssets.savedHint": "Saved. New remote connections will use this URL.",
+  "settings.remoteAssets.error.protocol": "The URL must start with http:// or https://.",
+  "settings.remoteAssets.error.invalid": "That is not a valid URL.",
+  "settings.remoteAssets.error.tooLong": "The URL is too long — check for pasted extra content.",
+  "settings.remoteAssets.error.queryOrFragment":
+    "The URL must not contain a ? query or # fragment — enter only the publish root, e.g. https://your-host/assets.",
+  "settings.remoteAssets.error.saveFailed": "Could not save. Please try again.",
   "settings.computerUse.toggleLabel": "Enable Computer Use",
   "settings.computerUse.toggleDescription":
     "Turning this on enables Computer Use — its MCP server and skills.",
@@ -6575,7 +6783,7 @@ const enUS: Record<string, string> = {
   "settings.computerUse.pluginState.unavailableTitle":
     "The Computer Use plugin is unavailable in this build",
   "settings.computerUse.pluginState.unavailableDescription":
-    "This build's plugin list has no computer-use@zcode-plugins-official entry, so the switch is unavailable. Report it through the feedback entry, or bundle that plugin in a custom build.",
+    "This build does not bundle the plugin. Report it through the feedback entry, or bundle it in a custom build.",
   "settings.computerUse.pluginState.enableFailedTitle": "Could not enable Computer Use",
   "settings.computerUse.pluginState.enableFailedFallback":
     "Unknown error. Restart ZCode and try again.",
@@ -6655,6 +6863,10 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.manualClaim.loadFailed":
     "Could not load claimable plans right now. Try again later.",
   "settings.modelProvider.manualClaim.success": "Claimed. The entitlement is now active.",
+  "settings.modelProvider.manualClaim.ticket.validUntil": "Valid until",
+  "settings.modelProvider.manualClaim.ticket.replay": "Replay",
+  "settings.modelProvider.manualClaim.ticket.dismiss": "Got it",
+  "settings.modelProvider.manualClaim.ticket.effectiveAt": "{name} becomes available on {time}",
   "settings.modelProvider.manualClaim.captcha.title": "Complete security check",
   "settings.modelProvider.manualClaim.captcha.description":
     "Claiming requires a one-time security check. It runs in a sandboxed browser view and stays on this machine.",
@@ -6679,6 +6891,322 @@ const enUS: Record<string, string> = {
   manual_claim_failure_http_error: "The service is temporarily unavailable. Try again later.",
   manual_claim_failure_network: "Network error. Check your connection and retry.",
   manual_claim_failure_unknown: "Claim failed. Try again later.",
+  // ---- Bot management UI (BotsDialog) — ported from upstream v3.14.3 (Apache-2.0, see third-party/copied-components.json) ----
+  "bots.runtime.deliveryFailed": "Bot reply delivery failed",
+  "bots.runtime.deliveryFailedDescription":
+    "The message could not be delivered. Share the details below for troubleshooting. This notice clears after the next successful send.",
+  "bots.title": "Bots",
+  "bots.description": "Connect external chats and webhooks to ZCode bots.",
+  "bots.listTitle": "Bots",
+  "bots.addBot": "New bot",
+  "bots.addBinding": "Add binding",
+  "bots.setup.chooseBot": "Choose bot",
+  "bots.setup.createBot": "Create bot",
+  "bots.setup.createAndTest": "Test and continue",
+  "bots.setup.bindBot": "Bind bot",
+  "bots.setup.setBot": "Set bot",
+  "bots.setup.next": "Next",
+  "bots.setup.finish": "Finish",
+  "bots.setup.bindDescription":
+    "Create a bind code, then send the bind command in the bot private chat.",
+  "bots.setup.bindCodeCreating": "Creating bind code...",
+  "bots.setup.bindExpiresIn": "Bind code expires in {time}",
+  "bots.setup.bindRegenerating": "Bind code expired. Creating a new one...",
+  "bots.setup.refreshBindCode": "Refresh code",
+  "bots.setup.bound": "{count} user(s) bound. Continue to configure this bot.",
+  "bots.setup.bindAdvanceIn": "Continuing in {seconds}s.",
+  "bots.setup.allowedWorkspaces": "Allowed workspaces",
+  "bots.setup.allowedAll": "Allow all workspaces (*)",
+  "bots.setup.allowedSelected": "Allow selected workspaces only",
+  "bots.setup.allowedAllShort": "All",
+  "bots.setup.allowedSelectedShort": "Selected",
+  "bots.setup.allowedAllDescription": "This bot can use every configured workspace.",
+  "bots.setupDescription.chooseBot": "Choose the third-party chat bot to connect.",
+  "bots.setupDescription.createBot":
+    "Enter bot or webhook credentials. The next step tests connectivity first.",
+  "bots.setupDescription.bindBot":
+    "Create a bind code and bind the account in the bot private chat.",
+  "bots.setupDescription.setBot":
+    "Set the default context, allowed workspaces, and third-party reply detail.",
+  "bots.setup.guide.createTitle": "Preparation guide",
+  "bots.setup.guide.bindTitle": "Binding guide",
+  "bots.setup.guide.createNote":
+    "Prepare the third-party side first, then come back and click Test and continue.",
+  "bots.setup.callbackUrlTitle": "Callback URL",
+  "bots.setup.callbackUrlDescription.webhook":
+    "Your external system should send inbound message callbacks to this address. Asynchronous outbound replies still use the Webhook URL entered on the left.",
+  "bots.setup.callbackUrlDescription.webhookBind":
+    "Webhook binding uses the same endpoint: send a private callback request here with text = /bind <code>.",
+  "bots.setup.guide.telegram.create.1": "Open @BotFather in Telegram and create a new bot.",
+  "bots.setup.guide.telegram.create.2":
+    "Copy the HTTP API token returned by BotFather and paste it into this form.",
+  "bots.setup.guide.telegram.create.3":
+    "It helps to open the bot's private chat now because the bind command must be sent there.",
+  "bots.setup.guide.telegram.bind.1":
+    "Return to Telegram and open the private chat with the bot you created.",
+  "bots.setup.guide.telegram.bind.2":
+    "If the chat has never started, press Start or send any message first, then send {command}.",
+  "bots.setup.guide.telegram.bind.3": "Come back here after Telegram confirms the bind succeeded.",
+  "bots.setup.guide.weixin.create.1":
+    "Start Weixin QR login, scan the QR code with Weixin, then confirm on your phone.",
+  "bots.setup.guide.weixin.create.2":
+    "ZCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
+  "bots.setup.guide.weixin.create.3":
+    "ZCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
+  "bots.setup.guide.weixin.bind.1": "Open the Weixin direct chat you want to bind.",
+  "bots.setup.guide.weixin.bind.2": "Send {command}.",
+  "bots.setup.guide.weixin.bind.3":
+    "Come back here after the bind succeeds to finish the workspace and CLI defaults.",
+  "bots.setup.guide.feishu.create.1":
+    "Create a self-built app in the Feishu/Lark developer console and enable bot capability.",
+  "bots.setup.guide.feishu.create.2":
+    "Copy the App ID and App Secret, then enable persistent connection events for `im.message.receive_v1` and card actions.",
+  "bots.setup.guide.feishu.create.3":
+    "Choose the matching Feishu or Lark domain here, then paste the credentials into the form.",
+  "bots.setup.guide.feishu.bind.1":
+    "Install the app into your tenant and open a direct chat with the bot.",
+  "bots.setup.guide.feishu.bind.2": "Send {command} in that direct chat.",
+  "bots.setup.guide.feishu.bind.3":
+    "Return here after the bind succeeds to finish the workspace and CLI defaults.",
+  "bots.setup.guide.webhook.create.1":
+    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZCode.",
+  "bots.setup.guide.webhook.create.2":
+    "Set a shared secret first; add an outbound webhook URL as well if you want asynchronous replies pushed back.",
+  "bots.setup.guide.webhook.create.3":
+    "Keep one stable userId per external user so binding and future context resolve to the same person.",
+  "bots.setup.guide.webhook.bind.1":
+    "POST a private-message callback to ZCode's `/api/bots/webhook` endpoint.",
+  "bots.setup.guide.webhook.bind.2":
+    'The payload should at least include this botId, a stable userId, `chatType: "private"`, and set text to {command}.',
+  "bots.setup.guide.webhook.bind.3":
+    "If the bot uses a secret, also send `x-zcode-bot-secret`; then return here after the bind succeeds.",
+  "bots.setup.footer.choose": "Choose a supported bot to continue.",
+  "bots.setup.footer.create": "Connectivity must pass before binding.",
+  "bots.setup.testSuccess": "Connectivity test passed",
+  "bots.setup.testFailed": "Connectivity test failed",
+  "bots.setup.footer.bind":
+    "The bind code initially allows all workspaces; the final scope is saved next.",
+  "bots.setup.footer.set": "Finish enables the bot and returns it to the added list.",
+  "bots.setup.discardTitle": "Discard this bot?",
+  "bots.setup.discardDescription":
+    "This setup flow is not finished. The temporary bot will be deleted.",
+  "bots.setup.discardConfirm": "Discard setup",
+  "bots.refresh": "Refresh bots",
+  "bots.namePlaceholder": "Bot name",
+  "bots.credentialPlaceholder": "Link bot",
+  "bots.weixinBotTokenPlaceholder": "Saved after QR login; you can also paste bot_token manually",
+  "bots.webhookSecretPlaceholder": "Webhook secret",
+  "bots.webhookUrlPlaceholder": "Outbound webhook URL",
+  "bots.feishuAppIdPlaceholder": "Feishu App ID",
+  "bots.feishuAppSecretPlaceholder": "Feishu App Secret",
+  "bots.callbackSecretPlaceholder": "Callback secret",
+  "bots.feishuRegistrationTitle": "Scan to create app",
+  "bots.feishuRegistrationDescription": "Scan to create an app and save credentials.",
+  "bots.feishuRegistrationButton": "Scan",
+  "bots.feishuRegistrationQrAlt": "Feishu app registration QR code",
+  "bots.feishuRegistrationScanHint": "Scan with Feishu/Lark and confirm app creation.",
+  "bots.feishuRegistrationScanHint.feishu": "Scan with Feishu and confirm app creation.",
+  "bots.feishuRegistrationScanHint.lark": "Scan with Lark and confirm app creation.",
+  "bots.feishuRegistrationStarted": "Feishu registration started",
+  "bots.feishuRegistrationSuccess": "Feishu app credentials filled",
+  "bots.feishuRegistrationFailed": "Failed to start Feishu registration: {error}",
+  "bots.feishuRegistrationExpired": "The QR code expired. Start again.",
+  "bots.feishuRegistration.access_denied": "Registration was denied.",
+  "bots.feishuRegistration.expired": "The QR code expired. Start again.",
+  "bots.feishuRegistration.error": "Registration failed.",
+  "bots.enabledToggle": "Enable {name}",
+  "bots.replyGranularity": "Bot reply granularity",
+  "bots.replyGranularity.description": "Message detail level.",
+  "bots.replyGranularity.assistantChanges": "Standard reply",
+  "bots.replyGranularity.assistantChanges.description":
+    "Send assistant text and file changes, without tool-call progress.",
+  "bots.replyGranularity.assistantToolcallsChanges": "Full reply",
+  "bots.replyGranularity.assistantToolcallsChanges.description":
+    "Send assistant text, tool-call progress, and file changes.",
+  "bots.replyGranularity.summaryChanges": "Summary reply",
+  "bots.replyGranularity.summaryChanges.description":
+    "Send only the final result and change summary for quieter notifications.",
+  "bots.replyGranularity.streamingCard": "Streaming card",
+  "bots.replyGranularity.streamingCard.description":
+    "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
+  "bots.add": "Add",
+  "bots.channel.telegram": "Telegram",
+  "bots.channel.weixin": "Weixin",
+  "bots.channel.feishu": "Feishu",
+  "bots.channel.lark": "Lark",
+  "bots.channel.dingding": "DingTalk",
+  "bots.channel.discord": "Discord",
+  "bots.channel.wecom": "WeCom",
+  "bots.channel.webhook": "Webhook",
+  "bots.newBot.title": "New bot",
+  "bots.newBot.chooseChannel": "Choose channel",
+  "bots.newBot.description":
+    "Choose where this bot will receive messages. After selecting a channel, configure credentials, binding, allowed workspaces, and defaults.",
+  "bots.newBot.selectProviderHint": "Choose a channel on the right to create a bot.",
+  "bots.newBot.fallbackName": "New bot",
+  "bots.newBot.comingSoon": "Coming soon",
+  "bots.newBot.providerDescription.telegram": "Create a bot, then bind by message.",
+  "bots.newBot.providerDescription.weixin": "Scan to log in; first message activates.",
+  "bots.newBot.providerDescription.feishu": "Scan to create an app, then bind by message.",
+  "bots.newBot.providerDescription.lark": "Scan to create an app, then bind by message.",
+  "bots.newBot.providerDescription.dingding": "DingTalk bot integration is planned.",
+  "bots.newBot.providerDescription.webhook":
+    "Receive callbacks from your own system and optionally push replies back.",
+  "bots.newBot.providerDescription.discord": "Discord bot integration is planned.",
+  "bots.newBot.providerDescription.wecom": "WeCom bot integration is planned.",
+  "bots.empty": "No bots configured.",
+  "bots.name": "Bot name",
+  "bots.provider": "Channel",
+  "bots.enabled": "Enabled",
+  "bots.enabled.description": "Turn this bot on or off and clear its runtime state.",
+  "bots.credential": "Credential",
+  "bots.webhookSecret": "Webhook secret",
+  "bots.webhookUrl": "Webhook URL",
+  "bots.providerSettings": "Channel settings",
+  "bots.providerSettings.telegram": "Save the BotFather token.",
+  "bots.providerSettings.weixin":
+    "Credentials are saved after scan; the first Weixin message activates the chat.",
+  "bots.providerSettings.feishu": "Scan to get app credentials.",
+  "bots.providerSettings.lark": "Scan to get app credentials.",
+  "bots.providerSettings.webhook":
+    "Webhook uses a callback secret for inbound requests and an optional outbound URL for replies.",
+  "bots.providerSettings.discord": "Discord support is not available yet.",
+  "bots.providerSettings.wecom": "WeCom support is not available yet.",
+  "bots.telegramBotToken": "Link bot",
+  "bots.weixinRegistrationTitle": "Weixin QR login",
+  "bots.weixinRegistrationDescription":
+    "Scan to log in, then send any message in Weixin to activate the chat.",
+  "bots.weixinRegistrationButton": "Scan",
+  "bots.weixinRegistrationQrAlt": "Weixin login QR code",
+  "bots.weixinRegistrationScanHint": "Scan with Weixin and confirm login.",
+  "bots.weixinRegistrationStarted": "Weixin QR login started",
+  "bots.weixinRegistrationSuccess": "Weixin bot linked. Send any message in Weixin to activate it.",
+  "bots.weixinActivationHint":
+    "Send any message to the bot in Weixin; the first message will receive a welcome and command guide.",
+  "bots.weixinRegistrationFailed": "Failed to start Weixin QR login: {error}",
+  "bots.weixinRegistration.pending": "Waiting for scan",
+  "bots.weixinRegistration.scanned": "Scanned, waiting for confirmation",
+  "bots.weixinRegistration.success": "Login succeeded",
+  "bots.weixinRegistration.expired": "The QR code expired. Start again.",
+  "bots.weixinRegistration.error": "Login failed.",
+  "bots.weixinBotToken": "Weixin bot_token",
+  "bots.feishuAppSecret": "Feishu App Secret",
+  "bots.callbackSecret": "Callback secret",
+  "bots.webhookOutboundUrl": "Outbound Webhook URL",
+  "bots.webhookAuthHeaderName": "Auth header name",
+  "bots.feishuAppId": "Feishu App ID",
+  "bots.saveSecrets": "Save secrets",
+  "bots.saveSecret": "Save",
+  "bots.removeSecret": "Remove secret",
+  "bots.removeSecretFailed": "Failed to remove secret: {error}",
+  "bots.botToken": "Link bot",
+  "bots.botTokenDescription.telegram": "Save the BotFather token.",
+  "bots.botTokenDescription.feishu": "Scan to get app credentials.",
+  "bots.botTokenDescription.lark": "Scan to get app credentials.",
+  "bots.botTokenDescription.weixin": "Credentials are saved after scan.",
+  "bots.botTokenDescription.webhook": "Used to connect this webhook bot.",
+  "bots.telegramBotFatherQrAlt": "Telegram BotFather QR code",
+  "bots.telegramBotFatherScanHint": "Scan to open BotFather, create a bot, and paste the token.",
+  "bots.openBotFather": "Open BotFather",
+  "bots.connected": "Connected",
+  "bots.notConnected": "Not connected",
+  "bots.runtime.telegramLongPollingRunning": "Telegram long polling is running.",
+  "bots.runtime.telegramLongPollingStarting": "Telegram long polling is starting.",
+  "bots.runtime.telegramLongPollingStopped": "Telegram long polling is stopped.",
+  "bots.runtime.telegramLongPollingHandledElsewhere":
+    "Telegram long polling is handled by another ZCode window.",
+  "bots.runtime.telegramTokenMissing": "Telegram bot credential is missing.",
+  "bots.runtime.telegramPollingFailedRetrying": "Telegram polling failed; retrying.",
+  "bots.runtime.feishuWebSocketStarting": "Feishu WebSocket is starting.",
+  "bots.runtime.feishuWebSocketConnecting": "Feishu WebSocket is connecting.",
+  "bots.runtime.feishuWebSocketRunning": "Feishu WebSocket is running.",
+  "bots.runtime.feishuWebSocketStopped": "Feishu WebSocket is stopped.",
+  "bots.runtime.connectionFailed": "Bot connection failed",
+  "bots.runtime.feishuConnectionFailed": "Feishu connection failed",
+  "bots.runtime.larkConnectionFailed": "Lark connection failed",
+  "bots.runtime.cannotConnectFeishu": "Unable to connect to Feishu",
+  "bots.runtime.cannotConnectLark": "Unable to connect to Lark",
+  "bots.runtime.feishuConnectionInterrupted": "Feishu connection interrupted",
+  "bots.runtime.larkConnectionInterrupted": "Lark connection interrupted",
+  "bots.runtime.boundConnectionInterrupted": "Disconnected",
+  "bots.runtime.boundConnectionInterruptedDescription":
+    "The bot is bound, but its persistent connection is interrupted.",
+  "bots.runtime.credentialsSavedConnectionFailedDescription":
+    "App credentials are saved, but the persistent connection failed.",
+  "bots.runtime.connectionBlocksBinding":
+    "The bot cannot receive messages, so binding is temporarily unavailable.",
+  "bots.runtime.feishuConnectionRecoverySuggestion":
+    "The long-connection limit may have been reached, or Feishu may be busy. Try again later; if the problem persists, bind a new bot.",
+  "bots.runtime.larkConnectionRecoverySuggestion":
+    "The long-connection limit may have been reached, or Lark may be busy. Try again later; if the problem persists, bind a new bot.",
+  "bots.runtime.errorCode": "Error code",
+  "bots.runtime.errorDetail": "Details",
+  "bots.runtime.unknownError": "Unknown connection error",
+  "bots.runtime.weixinLongPollingRunning": "Weixin long polling is running.",
+  "bots.runtime.weixinLongPollingStarting": "Weixin long polling is starting.",
+  "bots.runtime.weixinLongPollingStopped": "Weixin long polling is stopped.",
+  "bots.runtime.botDisabled": "Bot is disabled.",
+  "bots.scanQrCode": "Scan QR code",
+  "bots.authorizationQr": "Authorization QR",
+  "bots.bindCommand": "Bind command",
+  "bots.binding": "Binding",
+  "bots.allowedCommands": "Allowed commands",
+  "bots.unbound": "Not bound",
+  "bots.generateBindCode": "Generate bind code",
+  "bots.resetState": "Reset state",
+  "bots.allowedWorkspaces": "Workspace access",
+  "bots.allowedWorkspaces.all": "All",
+  "bots.allowedWorkspaces.mode.all": "All workspaces",
+  "bots.allowedWorkspaces.mode.selected": "Selected workspaces",
+  "bots.allowedWorkspaces.allDescription": "This bot can use any configured workspace.",
+  "bots.allowedWorkspaces.selectedDescription": "This bot can use {count} selected workspaces.",
+  "bots.botMeta": "{users} bound users · workspace {workspace}",
+  "bots.botSummary": "{users} users · {workspaces} workspaces · {workspace}",
+  "bots.userCount": "{count} users",
+  "bots.editDescription": "Review runtime state, default context, reply detail, and bound users.",
+  "bots.edit.basicSettings": "Basic settings",
+  "bots.edit.binding": "Bound users",
+  "bots.edit.emptyUsers":
+    "No users bound yet. Create a bind code, then send the bind command in the bot private chat.",
+  "bots.edit.userWorkspaces": "{count} workspace(s) allowed",
+  "bots.test": "Test",
+  "bots.bind": "Bind",
+  "bots.unbind": "Unbind",
+  "bots.delete": "Delete bot",
+  "bots.delete.description": "Remove this bot.",
+  "bots.deleteConfirmTitle": 'Delete bot "{name}"?',
+  "bots.deleteConfirmDescription":
+    "This removes the bot configuration, credentials, and binding state. This cannot be undone.",
+  "bots.bindCode": "Binding code",
+  "bots.bindHint": "Send {command} in a private bot chat.",
+  "bots.bindCodeExpires": "Bind code expires in {time}",
+  "bots.bindCodeExpired": "Bind code expired. Generate a new code.",
+  "bots.bindSuccess": "Bound successfully",
+  "bots.copyBindCommand": "Copy bind command",
+  "bots.bindCommandGuide":
+    "Copy the bind command below, then send it to the bot in a private chat.",
+  "bots.bindCommandStep.copy": "Copy the bind command",
+  "bots.bindCommandStep.openChat": "Open the private chat with the bot",
+  "bots.bindCommandStep.send": "Paste and send it to bind the current workspace",
+  "bots.bindCommandCopied":
+    "Bind command copied. Open the private bot chat, then paste and send it.",
+  "bots.bindCommandCopyFailed": "Failed to copy bind command: {error}",
+  "bots.loadFailed": "Failed to load bots: {error}",
+  "bots.saveSuccess": "Bot saved",
+  "bots.saveFailed": "Failed to save bot: {error}",
+  "bots.testFailed": "Bot test failed: {error}",
+  "bots.bindCodeCreated": "Binding code created",
+  "bots.bindCodeFailed": "Failed to create binding code: {error}",
+  "bots.unbindSuccess": "Bot unbound",
+  "bots.unbindFailed": "Failed to unbind bot: {error}",
+  "bots.deleteFailed": "Failed to delete bot: {error}",
+  "intranetProbe.consent.title": "Confirm intranet probe targets",
+  "intranetProbe.consent.description":
+    "The following targets will be probed with a TCP connection:\n{targets}",
+  "intranetProbe.consent.confirm": "Confirm probe",
+  "intranetProbe.error.consentDeclined": "Intranet probe canceled: targets were not confirmed.",
+  "intranetProbe.error.consentQueryFailed": "Failed to query intranet probe consent state.",
+  "intranetProbe.error.consentRecordFailed": "Failed to record intranet probe consent.",
 };
 
 export default enUS;

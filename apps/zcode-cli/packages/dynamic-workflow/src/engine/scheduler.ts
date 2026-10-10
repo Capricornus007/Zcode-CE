@@ -11,8 +11,22 @@
 
 import { inputHash } from "./hash.js";
 import { importedAskRecord, type ImportedActorState } from "./imported-cache.js";
-import { defer, type Actor, type AskNode, type Deferred, type SchedulerHost } from "./scheduler-types.js";
-import { handleSubmitAttempted, handleTurnEnded, type SubmitSeam } from "./scheduler-submit.js";
+import {
+  defer,
+  hashMismatch,
+  headOfInstructions,
+  describeCause,
+  type Actor,
+  type AskNode,
+  type Deferred,
+  type SchedulerHost,
+} from "./scheduler-types.js";
+import {
+  handleSubmitAttempted,
+  handleTurnEnded,
+  persistNodeSettlement,
+  type SubmitSeam,
+} from "./scheduler-submit.js";
 import type {
   ActorId,
   ActorRef,
@@ -25,13 +39,9 @@ import type {
   PersonaSpec,
   SessionRef,
 } from "./types.js";
-import {
-  INSTRUCTIONS_HEAD_MAX_CHARS,
-  NUDGE_ATTEMPTS,
-  refToString,
-  REPAIR_ATTEMPTS,
-  WorkflowError,
-} from "./types.js";
+import { NUDGE_ATTEMPTS, refToString, REPAIR_ATTEMPTS, WorkflowError } from "./types.js";
+
+export { hashMismatch } from "./scheduler-types.js";
 
 export type { SchedulerHost } from "./scheduler-types.js";
 
@@ -74,7 +84,9 @@ export class AskScheduler {
   ): Actor {
     const recordedCount = this.journal
       .listNodes(this.host.runId)
-      .filter((n) => n.kind === "ask" && n.actorSiteId === ref.siteId && n.actorOrdinal === ref.ordinal).length;
+      .filter(
+        (n) => n.kind === "ask" && n.actorSiteId === ref.siteId && n.actorOrdinal === ref.ordinal,
+      ).length;
     const actor: Actor = {
       ref,
       id,
@@ -100,7 +112,12 @@ export class AskScheduler {
   }
 
   /** 受理一次 ask：完结命中短路（走 hold 规则），running 命中或未命中则 live 派发。 */
-  admitAsk(siteId: string, actorId: ActorId, instructions: string, spec: AskSpec): Promise<unknown> {
+  admitAsk(
+    siteId: string,
+    actorId: ActorId,
+    instructions: string,
+    spec: AskSpec,
+  ): Promise<unknown> {
     const actor = this.actors.get(actorId)!;
     const ordinal = this.host.nextOrdinal(siteId);
     const instance: InstanceRef = { siteId, ordinal };
@@ -119,13 +136,21 @@ export class AskScheduler {
       if (recorded.status === "running") {
         // 崩溃于执行中：按记录的 actorSeq 位置重新 live 派发（hold 规则保证其准入次序）。
         actor.pendingRecorded.set(seq, () => {
-          actor.imported?.reconcileRecorded(seq, recorded.inputHash, this.host.wasLiveBeforeResume(instance));
+          actor.imported?.reconcileRecorded(
+            seq,
+            recorded.inputHash,
+            this.host.wasLiveBeforeResume(instance),
+          );
           this.admitLive(instance, actor, seq, instructions, hash, spec, deferred);
         });
       } else {
         // completed / failed：短路结算，无 driver 调用。
         actor.pendingRecorded.set(seq, () => {
-          actor.imported?.reconcileRecorded(seq, recorded.inputHash, this.host.wasLiveBeforeResume(instance));
+          actor.imported?.reconcileRecorded(
+            seq,
+            recorded.inputHash,
+            this.host.wasLiveBeforeResume(instance),
+          );
           this.releaseCachedAsk(instance, recorded, deferred);
         });
       }
@@ -312,13 +337,37 @@ export class AskScheduler {
     this.pumpActor(actor);
   }
 
-  private releaseCachedAsk(instance: InstanceRef, recorded: NodeRecord, deferred: Deferred<unknown>): void {
+  /**
+   * 命中记录的 ask：按 journal 记下的**首生结算次序**释放（见 replay-order.ts）。
+   * hold 规则定的是同一个 actor 内的准入次序；跨 actor 的完成次序——扇出分支在 await 之后的
+   * 每一次 journal 调用都按它编号——只有这一道闸能复现，否则确定性脚本在 resume 后也会因
+   * 重放完成顺序不同而 InputHashMismatch。
+   */
+  private releaseCachedAsk(
+    instance: InstanceRef,
+    recorded: NodeRecord,
+    deferred: Deferred<unknown>,
+  ): void {
+    this.host.holdForReplay(instance, () => this.settleCachedAsk(instance, recorded, deferred));
+  }
+
+  private settleCachedAsk(
+    instance: InstanceRef,
+    recorded: NodeRecord,
+    deferred: Deferred<unknown>,
+  ): void {
     if (recorded.status === "completed") {
       this.host.record({ type: "node-settled", instance, outcome: "ok", cached: true });
       deferred.resolve(recorded.result);
     } else {
       // 已记录的失败也要短路复现：脚本可能已 try/catch 过它并据此分支，replay 必须重放同一 rejection。
-      this.host.record({ type: "node-settled", instance, outcome: "failed", cached: true, error: recorded.error });
+      this.host.record({
+        type: "node-settled",
+        instance,
+        outcome: "failed",
+        cached: true,
+        error: recorded.error,
+      });
       deferred.reject(WorkflowError.fromJSON(recorded.error!));
     }
   }
@@ -376,27 +425,29 @@ export class AskScheduler {
     // 种子只有到分歧点才知道（运行期发现），所以必须在这里、由引擎侧交给 driver——引擎持有
     // 导入态，driver 持有会话 store，这个签名是两者的最小汇合点。
     const seed = actor.imported?.seed();
-    const promise = this.host.driver.createActorSession(actor.ref, actor.persona, seed).then((session) => {
-      actor.session = session;
-      // resolvedModel 由宿主侧的 runtime 工厂在 createActorSession **内部**写下（它才知道
-      // "lite" 落到哪个模型）。putActor 是整条记录的替换，所以这条写入必须把刚写下的值读回来
-      // 带过去，否则这里就会把它抹掉——档位解析的审计与 resume 依据随之丢失。
-      const resolvedModel = this.journal.getActor(
-        this.host.runId,
-        actor.ref.siteId,
-        actor.ref.ordinal,
-      )?.resolvedModel;
-      this.journal.putActor({
-        runId: this.host.runId,
-        siteId: actor.ref.siteId,
-        ordinal: actor.ref.ordinal,
-        name: actor.name,
-        persona: actor.persona,
-        sessionId: session.id,
-        resolvedModel,
+    const promise = this.host.driver
+      .createActorSession(actor.ref, actor.persona, seed)
+      .then((session) => {
+        actor.session = session;
+        // resolvedModel 由宿主侧的 runtime 工厂在 createActorSession **内部**写下（它才知道
+        // "lite" 落到哪个模型）。putActor 是整条记录的替换，所以这条写入必须把刚写下的值读回来
+        // 带过去，否则这里就会把它抹掉——档位解析的审计与 resume 依据随之丢失。
+        const resolvedModel = this.journal.getActor(
+          this.host.runId,
+          actor.ref.siteId,
+          actor.ref.ordinal,
+        )?.resolvedModel;
+        this.journal.putActor({
+          runId: this.host.runId,
+          siteId: actor.ref.siteId,
+          ordinal: actor.ref.ordinal,
+          name: actor.name,
+          persona: actor.persona,
+          sessionId: session.id,
+          resolvedModel,
+        });
+        return session;
       });
-      return session;
-    });
     actor.sessionPromise = promise;
     return promise;
   }
@@ -406,10 +457,16 @@ export class AskScheduler {
   private settleOk(node: AskNode, artifact: unknown): void {
     if (node.settled) return;
     node.settled = true;
-    this.journal.putNode(this.nodeRecordFor(node, { status: "completed", result: artifact }));
-    this.host.record({ type: "node-settled", instance: node.instance, outcome: "ok" });
-    this.finishLiveNode(node);
-    node.deferred.resolve(artifact);
+    const failure = persistNodeSettlement(this.submitSeam, node, {
+      status: "completed",
+      result: artifact,
+    });
+    // 写不进去：判 ask 失败（脚本可 catch、run 可终止）。
+    if (failure !== undefined) this.settleFailed(node, failure);
+    else {
+      this.finishLiveNode(node);
+      node.deferred.resolve(artifact);
+    }
   }
 
   private settleFailed(node: AskNode, error: WorkflowError): void {
@@ -417,11 +474,21 @@ export class AskScheduler {
     node.settled = true;
     // 结算失败必须落 journal（覆盖准入时的 running）：失败是"完结"，且脚本可能已观察到该 rejection
     // 并据此分支，replay 必须复现它——journal 化失败是重放正确性的硬性要求，而非可选。
-    this.journal.putNode(this.nodeRecordFor(node, { status: "failed", error: error.toJSON() }));
-    this.host.record({ type: "node-settled", instance: node.instance, outcome: "failed", error: error.toJSON() });
+    const failure = persistNodeSettlement(this.submitSeam, node, {
+      status: "failed",
+      error: error.toJSON(),
+    }, error);
+    if (failure === undefined) {
+      this.finishLiveNode(node);
+      // 节点失败只 reject 该 ask，不失败整个 run（脚本可 try/catch）。
+      node.deferred.reject(error);
+      return;
+    }
+    // failed 行也写不进（同一个坏库）：journal 已不可能为这个节点记账，但 deferred
+    // 兑现与队列推进是引擎对脚本的硬契约：不落 journal 地结掉它。
+    node.settled = false;
     this.finishLiveNode(node);
-    // 节点失败只 reject 该 ask，不失败整个 run（脚本可 try/catch）。
-    node.deferred.reject(error);
+    node.deferred.reject(failure);
   }
 
   private finishLiveNode(node: AskNode): void {
@@ -432,57 +499,4 @@ export class AskScheduler {
     }
     this.pumpAll();
   }
-
-  private nodeRecordFor(
-    node: AskNode,
-    outcome: { status: "completed"; result: unknown } | { status: "failed"; error: NodeRecord["error"] },
-  ): NodeRecord {
-    const record: NodeRecord = {
-      runId: this.host.runId,
-      siteId: node.instance.siteId,
-      ordinal: node.instance.ordinal,
-      kind: "ask",
-      actorSiteId: node.actor.ref.siteId,
-      actorOrdinal: node.actor.ref.ordinal,
-      actorSeq: node.actorSeq,
-      inputHash: node.hash,
-      status: outcome.status,
-    };
-    if (outcome.status === "completed") record.result = outcome.result;
-    else record.error = outcome.error;
-    if (node.lastStats !== undefined) record.stats = node.lastStats;
-    return record;
-  }
-}
-
-/** replay 命中但 inputHash 不一致——纯度契约被破坏，run 大声失败。 */
-export function hashMismatch(instance: InstanceRef, expected: string, got: string): WorkflowError {
-  return new WorkflowError(
-    "InputHashMismatch",
-    `Replay hit at ${refToString(instance)} but inputHash differs (expected ${expected}, got ` +
-      `${got}): the script is not deterministic, so the journal cannot be replayed.`,
-    // 结构化 mismatch 与 ScriptHashMismatch 对齐：两个哈希不一致错误共用同一个字段，
-    // 读端不必再从 message 文本里抠哈希。
-    { mismatch: { expected, got } },
-  );
-}
-
-/** cause → 一行有界文本（Error 取 message，其余 String()；空则给占位）。 */
-function describeCause(cause: unknown): string {
-  const text = cause instanceof Error ? cause.message : String(cause);
-  const trimmed = text.trim();
-  if (trimmed.length === 0) return "unknown error";
-  return trimmed.length > 300 ? `${trimmed.slice(0, 300)}…` : trimmed;
-}
-
-/**
- * 作者指令的开头（{@link INSTRUCTIONS_HEAD_MAX_CHARS} 个字符，去两端空白，**不加省略号**）。
- * 空指令返回 undefined：缺席的键比一个空串诚实——读面据此退回「不知道它被交代了什么」。
- */
-function headOfInstructions(instructions: string): string | undefined {
-  const trimmed = instructions.trim();
-  if (trimmed.length === 0) return undefined;
-  return trimmed.length <= INSTRUCTIONS_HEAD_MAX_CHARS
-    ? trimmed
-    : trimmed.slice(0, INSTRUCTIONS_HEAD_MAX_CHARS);
 }

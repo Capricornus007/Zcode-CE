@@ -4,12 +4,15 @@
 #   - push tag `v*`（如 v3.14.1-ce.1）→ 构建 + 发布到 GitHub Release
 #   - workflow_dispatch               → 构建 + 上传 artifact（默认不新建 Release，见下）
 #
-# 为什么必须走 CI：Windows 安装包（nsis）无法在 Linux 上交叉打包，必须由 windows-latest 产出。
+# 为什么必须走 CI：Windows 安装包（nsis）无法在 Linux 上交叉打包，必须由 windows-latest 产出；
+# macOS 安装包（dmg/zip）的打包与 ad-hoc 签名只能在 mac runner 上完成
+# （x64 用 macos-13、arm64 用 macos-14；未签名 arm64 二进制在 Apple Silicon 上无法启动，
+# 故两个架构都在 mac runner 上 ad-hoc 签名，不做公证）。
 #
 # 说明文档：docs/operations/ci.md、docs/operations/release.md
 # 本文件已在真实 GitHub runner 上验证并持续运行（CI / Release 两个 workflow 均为 active）。
 # 注意：不要在此处写死运行次数或版本号 —— 这类值会漂移；需要引用时用 `gh run list` 现取。
-# 首次验证记录与已知问题：.reverse/21-release/R3b-ci.md
+# 首次验证记录与已知问题：.reverse/archive/21-release/R3b-ci.md
 
 name: Release
 
@@ -82,13 +85,15 @@ jobs:
     needs: verify
     runs-on: ${{ matrix.os }}
     strategy:
-      # 一个平台失败不应阻止另一个平台产出（Windows 包只能在这里产出，尤其不能被 Linux 失败连坐）。
+      # 一个平台失败不应阻止另一个平台产出（Windows 与 macOS 包只能在这里产出，
+      # 尤其不能被其它平台失败连坐）。
       fail-fast: false
       # ⚠️ 必须串行：本流水线依赖 electron-builder 的 GitHub publisher 上传产物，
-      # 而它在两个平台并行时会各自尝试创建同一个 tag 的 Release。electron-publish 的
+      # 而它在多个矩阵项并行时会各自尝试创建同一个 tag 的 Release。electron-publish 的
       # getOrCreateRelease() 是「先列 Release 再 POST 创建」，创建失败没有重试
       # （只有资产上传失败才重试），并发创建会以 422 already_exists 直接让整个构建失败。
-      # 代价是总时长约为两平台之和（约 40 分钟）而非取最大值；发布频率低，换取可靠性。
+      # 代价是总时长约为所有矩阵项之和（linux / windows / macos-x64 / macos-arm64）
+      # 而非取最大值；发布频率低，换取可靠性。
       max-parallel: 1
       matrix:
         include:
@@ -100,6 +105,16 @@ jobs:
             platform: win
             arch: x64
             artifact: windows
+          # macos-13 runner 是 Intel（x64），macos-14 起 runner 是 Apple Silicon（arm64）；
+          # 在原生架构 runner 上构建避免跨架构编译原生模块（node-pty 等）。
+          - os: macos-13
+            platform: mac
+            arch: x64
+            artifact: macos-x64
+          - os: macos-14
+            platform: mac
+            arch: arm64
+            artifact: macos-arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -149,6 +164,16 @@ jobs:
           # 本地构建不受影响（本地仍走国内源更快）。
           ELECTRON_MIRROR: "https://github.com/electron/electron/releases/download/"
           ELECTRON_BUILDER_BINARIES_MIRROR: "https://github.com/electron-userland/electron-builder-binaries/releases/download/"
+          # 远程运行时资产的**构建期默认基址**（packages/desktop/tsup.config.ts 的 __ZCODE_CDN_BASE_URL__ define）。
+          # 语义：值就是**发布根**（含 <版本>/ 与 components/ 的那一层），remoteCdn.ts 按字面值使用；
+          # 源码里的常量默认值不动（仍是官方 CDN），所以自建者不设变量时行为不变。
+          #
+          # 仓库变量 `ZCODE_CDN_BASE_URL` 设为社区 CDN 发布根（如 https://cdn.eidolonmachine.xyz）后，
+          # **本仓库发布的安装包默认指向社区 CDN、开箱可用**；未设置时退回官方默认（CE 版本在上面取不到资源，
+          # 表现为连接失败，需要用户自己指向发布根）。
+          # 2026-09-23 修正：此前构建期旋钮会被当父目录并追加 /zcode/electron/releases/<版本>，与"发布根"契约矛盾；
+          # 已按契约修正代码并加契约测试（packages/desktop/test/remoteCdnBaseUrl.test.ts）。
+          ZCODE_CDN_BASE_URL: ${{ vars.ZCODE_CDN_BASE_URL }}
         run: pnpm bundle:desktop --os ${{ matrix.platform }} --arch ${{ matrix.arch }}
       # .blockmap 必须一起留存，否则 electron-updater 的差分下载会退化为全量包。
       - name: Upload installers
@@ -163,6 +188,8 @@ jobs:
             packages/desktop/dist/*.rpm
             packages/desktop/dist/*.pkg.tar.zst
             packages/desktop/dist/*.exe
+            packages/desktop/dist/*.dmg
+            packages/desktop/dist/*.zip
             packages/desktop/dist/*.yml
             packages/desktop/dist/*.blockmap
 
@@ -195,3 +222,353 @@ jobs:
             --repo "${{ github.repository }}" \
             --notes-file release-notes.md \
             --title "ZCode-CE ${{ github.ref_name }}"
+
+  # 远程运行时资产（SSH / WSL / Docker 远程工作区的部署载荷）。
+  #
+  # 为什么单独一个 job：这份资产**不随安装包分发**（见 docs/development/remote-workspace.md），
+  # 需要独立产出与托管；把它挂在 build job 里会让打包矩阵多背一段与本平台无关的构建。
+  #
+  # 为什么 needs 只写 verify 不写 build：资产链与安装包链互不依赖，并行跑能让
+  # 「资产能不能产出」更早暴露（build 要 20 分钟，这条约 5 分钟）。
+  # 本 job 上传的是 workflow artifact（可直接拿去静态托管），**不向任何外部主机发布**，
+  # 因此不需要额外 secrets、也不会在 PR 上运行（本 workflow 只由 tag / 手动触发）。
+  remote-assets:
+    name: prepare remote runtime assets
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare remote assets
+        env:
+          # 脚本默认走 cdn.npmmirror.com（国内开发最优）。GitHub 托管 runner 在境外，
+          # 显式改用 Node 官方发行源更稳；需要时可用 ZCODE_NODE_DIST_MIRROR 覆盖回镜像。
+          ZCODE_NODE_DIST_MIRROR: https://nodejs.org/dist
+        run: pnpm prepare:remote-assets
+
+      # 装配成「客户端真正会请求」的布局（<root>/<版本>/manifest-*.json + <root>/components/...），
+      # 并自检：manifest.appVersion 一致、每个 artifactPath 可取、每个制品 sha256 与 manifest 相同。
+      - name: Assemble publishable layout
+        run: node scripts/assemble-remote-assets.mjs
+
+      # 端到端自检：本地起静态服务当"CDN"，用真实 connectRemote 走一遍
+      # 拉 manifest → 下载组件 + sha256 → 上传"远端" → 起 zcode-server → 握手。
+      - name: End-to-end verify assembled assets
+        run: pnpm exec tsx scripts/verify-remote-assets.mjs
+
+      - name: Upload publishable assets
+        uses: actions/upload-artifact@v6
+        with:
+          name: remote-assets
+          # 只上传装配后的发布根（manifest + components），mock-cdn 的中间产物不上传。
+          path: .tmp/remote-assets-publish/**
+          if-no-files-found: error
+          retention-days: 30
+  # 远程运行时资产 → 对象桶（**手动触发**，与发版解耦）。
+  #
+  # 为什么手动为主：桶写操作依赖 Cloudflare 凭据，把它绑进 tag 发版等于让"发版"依赖外部账户状态；
+  # 用户明确要求"上传失败不阻塞发版"，所以本 job 只在 workflow_dispatch 时运行 ——
+  # tag 发布会完全跳过它，不存在把 Release 卡住的路径。
+  # 更快的方式（不跑构建矩阵）：本地 `pnpm prepare:remote-assets` → 装配 → 直接跑上传脚本（用本机 wrangler OAuth）。
+  #
+  # 凭据只从 secrets 取，**不落仓库、不打印**；wrangler 用 API token 认证（CLOUDFLARE_API_TOKEN +
+  # CLOUDFLARE_ACCOUNT_ID），不需要 S3 兼容密钥，也不为此新增仓库依赖（wrangler 在 CI 里临时全局安装）。
+  upload-remote-assets:
+    name: upload remote assets to bucket
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ZCODE_R2_BUCKET: ${{ secrets.ZCODE_R2_BUCKET }}
+      # 发布根（公开域名，走仓库变量而不是 secret）。
+      ZCODE_PUBLIC_BASE_URL: ${{ vars.ZCODE_CDN_BASE_URL }}
+      # wrangler 的匿名使用统计在 CI 里没有意义，关掉。
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+
+      # 先自检输入，避免 wrangler 报出难懂的鉴权错误。只打印缺失项的**名称**，不打印任何值。
+      - name: Check upload inputs
+        run: |
+          missing=""
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || missing="$missing CLOUDFLARE_API_TOKEN(secret)"
+          [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID(secret)"
+          [ -n "$ZCODE_R2_BUCKET" ] || missing="$missing ZCODE_R2_BUCKET(secret)"
+          [ -n "$ZCODE_PUBLIC_BASE_URL" ] || missing="$missing ZCODE_CDN_BASE_URL(variable)"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少输入:$missing（设置方法与 token 权限范围见 docs/operations/remote-assets-cdn.md 的「CI 自动发布」）"
+            exit 1
+          fi
+          echo "输入齐备（值不打印）：2 个 Cloudflare secret + 1 个桶名 secret + 1 个发布根变量"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare remote assets
+        env:
+          ZCODE_NODE_DIST_MIRROR: https://nodejs.org/dist
+        run: pnpm prepare:remote-assets
+
+      - name: Assemble publishable layout
+        run: node scripts/assemble-remote-assets.mjs
+
+      # 运行时安装，不进仓库依赖树（任务明确不为此新增依赖）。
+      - name: Install wrangler
+        run: npm install --global wrangler@4
+
+      # 脚本内部：内容寻址对象已存在即跳过；每个对象上传后逐个 HEAD 自检（对发布根）。
+      - name: Upload to bucket
+        run: node scripts/upload-remote-assets-r2.mjs --root .tmp/remote-assets-publish --public-base-url "$ZCODE_PUBLIC_BASE_URL"
+  # 无头服务器发行包（tarball）：构建 + 冒烟 + 挂 Release / 上传 artifact / 发布 npm。
+  #
+  # 不再用 job 级 continue-on-error（2026-09-25 订正）。
+  # 原先的理由是"这个包与安装包互相独立，registry/打包出问题不该让发版失败"，但实测暴露了两个问题：
+  #   1. 它把**发布失败**也一起吞了 —— CI 全绿，而 npm 上根本没有这个包（registry 实测 404）；
+  #   2. 排查时看到的是"job success"，必须翻到日志末尾才发现 npm error。
+  # 本版起 npm 包是本流水线的**交付终点之一**：发不出去就必须红，不能伪装成成功。
+  # 唯一保留的软降级是「基址未配置就跳过」（那是"这次不发布"的有意选择，会打印 notice），
+  # 见下方 Build headless server package 的 if 条件与 docs/operations/headless-server.md §7.1。
+  headless-server-package:
+    name: headless server package
+    # 必须等 build：Release 本身由 build 里的 electron-builder 创建（见上方 build job 的
+    # 串行注释）。本 job 末尾要把无头发行包挂到该 Release 上，若与 build 并行执行，
+    # gh release upload 会抢在 Release 创建之前跑，报 "release not found" 而整个 job 变红。
+    # 实测于 v3.14.3-ce.3.fix.1：build linux / build windows / release-notes 全绿，
+    # 只有本 job 因这一竞态失败。
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      # registry-url 是 npm 认证的前提：actions/setup-node 只有拿到它才会写 .npmrc，
+      # 而 NODE_AUTH_TOKEN 是**写进那个 .npmrc** 的。缺了它，npm publish 直接 ENEEDAUTH
+      # （实测：包已打好、shasum 已算出，但认证阶段就退出 —— registry 上根本没有这个包）。
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 认证前置检查：在构建/打包之前就把"令牌不可用"暴露出来。
+      # 否则失败会推迟到最后的 npm publish，报一句 ENEEDAUTH，而那时：
+      #   · 包已经打好（几百 MB、上万文件），白跑；
+      #   · 错误信息不含"是哪个 secret 的问题"，排查要翻日志。
+      # 条件必须与**发布路径**一致，不能写成"基址已配置"：
+      #   · Stage npm package 的条件是 startsWith(github.ref, 'refs/tags/')（它有
+      #     --allow-placeholder-base-url 兜底，基址没配也照样能打出一份包）；
+      #   · 于是"tag 推送 + 基址未配置"时，若这里用 vars 判断就会被跳过，而 Stage/Publish 仍执行
+      #     ⇒ 认证检查被绕过，又回到"发不出去却报成功"。
+      # 用同一个条件（tag）才不会错配；非 tag 的试跑本就不会发布。
+      - name: Preflight npm auth
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN 未配置或为空 —— 无法发布 npm 包"
+            exit 1
+          fi
+          # whoami 会真正打到 registry：令牌无效/过期/无发布权限都会在这里失败。
+          npm whoami || {
+            echo "::error::NPM_TOKEN 无效（npm whoami 失败）—— 请确认它是 granular access token 且勾选了 publish 权限"
+            exit 1
+          }
+
+      # --base-url 决定 install.sh 去哪里取依赖；未配置时**跳过而不是失败**：
+      # 既避免「配置缺失」染红发版流程，也避免把占位域名写进用户拿到的 install.sh。
+      - name: Build headless server package
+        id: build_package
+        env:
+          ZCODE_DIST_BASE_URL: ${{ vars.ZCODE_DIST_BASE_URL }}
+        run: |
+          if [ -z "$ZCODE_DIST_BASE_URL" ]; then
+            echo "::warning::仓库变量 ZCODE_DIST_BASE_URL 未设置，跳过无头服务器发行包构建（见 docs/operations/headless-server.md §2/§6）"
+            exit 0
+          fi
+          node scripts/build-zcode.mjs --base-url "$ZCODE_DIST_BASE_URL"
+          echo "packaged=true" >> "$GITHUB_OUTPUT"
+          # 把**本次构建产出的精确路径**输出给后续步骤。
+          # 为什么不在后续步骤里用 dist/zcode/releases/*.tar.gz 这类 glob：releases/ 下是
+          # releases/<版本>/<文件> 两层，少写一层会匹配不到（shell 把字面量原样传给 tar ⇒ status 2）；
+          # 而补成 releases/*/*.tar.gz 又会匹配到**历史版本**（本地/CI 缓存里可能并存 ce.2 与 ce.3）
+          # ⇒ smoke 只读 argv[2] ⇒ 只测第一个，且 glob 按字典序 ⇒ 可能"测旧版、发新版"。
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "tarball=dist/zcode/releases/$VERSION/zcode-$VERSION.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "sha256=dist/zcode/releases/$VERSION/sha256.txt" >> "$GITHUB_OUTPUT"
+
+      # 打到最终消费点：smoke 在隔离目录里解包并真跑 TUI 与 --web 面板。
+      # 用 build 步骤输出的**精确路径**，不要用 glob（理由见 build 步骤里的注释）。
+      - name: Smoke test unpacked package
+        if: steps.build_package.outputs.packaged == 'true'
+        run: node scripts/zcode-distribution-smoke.mjs "${{ steps.build_package.outputs.tarball }}"
+
+      - name: Upload package artifact
+        if: steps.build_package.outputs.packaged == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: zcode-headless-server
+          # 同上：用精确路径。`path:` 不是 shell，但支持 ${{ }} 表达式。
+          path: |
+            ${{ steps.build_package.outputs.tarball }}
+            ${{ steps.build_package.outputs.sha256 }}
+          if-no-files-found: warn
+          retention-days: 30
+
+      # tag 发版时顺带挂到 Release（与安装包并列）。失败只 warn：这个包不该影响 Release 本身。
+      # 同样不再吞失败：挂不上 Release 说明用户拿不到这个包，必须红。
+      - name: Attach package to release
+        if: steps.build_package.outputs.packaged == 'true' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            "${{ steps.build_package.outputs.tarball }}" "${{ steps.build_package.outputs.sha256 }}" \
+            --clobber --repo "${{ github.repository }}"
+
+      # npm 发布（zcode-ce）。
+      #
+      # 与上面几步的**关键区别：npm 发布不依赖 ZCODE_DIST_BASE_URL**。
+      # 该变量只影响 install.sh 里印哪个地址（build-zcode.mjs 的唯一消费点），而 npm 包的
+      # files 是 ["bin","server","agent","web","!**/*.map"]（不含 install.sh）
+      # ⇒ 包体内容与基址完全无关（实测：同一份构建产物换两个基址，解包后整棵树逐字节相同，
+      # stage 出的 npm 目录也逐字节相同）。所以这里**不能**复用 build_package 的 packaged 输出：
+      # 仓库变量没配时那一步会 exit 0 跳过，npm 发布会被连带跳过 —— 而它本来不需要那个变量。
+      #
+      # 因此本步自带"缺分发包就自己构建"的兜底：优先复用上面 smoke 过的那份（那是首选，
+      # 发出去的必须是刚验证过的那份）；没有时用 --allow-placeholder-base-url 现构建一份，
+      # 占位基址只写进 install.sh 与 latest.json，不进 npm 包（验证见
+      # scripts/test/installScriptBaseUrl.test.mjs 与 docs/operations/headless-server.md §7.1）。
+      #
+      # 为什么只在 tag 触发：预发布版本号（3.14.3-ce.N）不适合从任意分支发布。
+      - name: Stage npm package
+        id: stage_npm
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # 包根不是 dist/zcode/（那是发布站点根：install.sh + latest.json + releases/*.tar.gz），
+          # 且 build-zcode 打完 tar 就删掉 .work/ ⇒ 必须先解包。
+          # 详见 docs/operations/headless-server.md §7.1。
+          # 按版本号精确选包，不要 ls | head -1：那取的是字典序第一个，
+          # 而 3.14.3-ce.2 排在 3.14.3-ce.3 之前 —— 会把上一个版本发上 registry。
+          VERSION=$(node -p "require('./package.json').version")
+          TARBALL="dist/zcode/releases/$VERSION/zcode-$VERSION.tar.gz"
+          if [ ! -f "$TARBALL" ]; then
+            echo "::notice::没有可复用的 $VERSION 分发包（ZCODE_DIST_BASE_URL 未配置时构建步骤会跳过），为 npm 发布单独构建一份"
+            node scripts/build-zcode.mjs --allow-placeholder-base-url
+          fi
+          if [ ! -f "$TARBALL" ]; then
+            echo "::error::构建后仍找不到 $TARBALL"
+            exit 1
+          fi
+          echo "使用分发包：$TARBALL"
+          # 兜底构建出来的那份没经过上面的 smoke，这里补一次：发出去的包必须是跑得起来的。
+          node scripts/zcode-distribution-smoke.mjs "$TARBALL"
+          node scripts/stage-npm-package.mjs "$TARBALL"
+          echo "staged=true" >> "$GITHUB_OUTPUT"
+
+      # 失败必须让流水线变红：发布是本流水线的交付终点，吞掉失败等于把
+      # "没发出去"伪装成"发成功"（曾经用 continue-on-error: true，CI 显示绿色而
+      # npm 上根本没有这个包 —— registry 实测 404）。
+      - name: Publish to npm
+        if: steps.stage_npm.outputs.staged == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd dist/npm-stage
+          # 预发布版本必须带 --tag，否则 npm 直接报错退出（见 §7.1）。
+          npm publish --access public --tag next
+          echo "::notice::published zcode-ce@$(node -p "require('./package.json').version")"
+
+      # 发布后验证（打到最终消费点）：registry 上能查到，且干净容器里能真跑起来。
+      # 同样不能吞失败：这条是"打到最终消费点"的验证（registry 能查到 + 干净环境能起服务）。
+      # 曾经它 continue-on-error，于是包根本没发出去时这一步也显示成功。
+      # 发布后验证（打到最终消费点）：registry 上能查到，且干净环境里能真跑起来。
+      #
+      # 时间预算为什么是 300s（2026-09-25 订正：原为 60s，实测不够，v3.14.3-ce.3 因此校验失败）：
+      # 这一步的 npx 要**先下载再解包**，而本包是 66 MB / 11864 个文件（含 44 个 bundleDependencies）。
+      # 解包上万个小文件在 CI runner 上是分钟级操作，之后 --web 服务自身还要启动。
+      # 原来的 60s 只够下载（实测 npm pack 约 4s）却不够解包 + 启动，于是**包明明发出去了，校验却红**。
+      # 这不是"放宽标准"：失败判据（拿不到 200 就退出 1）没有变，只是不再用不够的时间去误判。
+      - name: Verify npm package
+        if: steps.stage_npm.outputs.staged == 'true'
+        run: |
+          VERSION=$(node -p "require('./dist/npm-stage/package.json').version")
+          # 这一条只查 registry 元数据，很快，单独放在最前面：包没发出去就立刻失败。
+          #
+          # 为什么必须等传播（2026-09-26 订正，v3.14.3-ce.3.fix.2 实测）：
+          # npm publish 返回成功**不等于**该版本已可查询 —— 它的日志会打印
+          # 「Your package is being processed and may take a few minutes to become available.」。
+          # 实测：publish 于 20:00:45 UTC 报成功，registry 直到 20:14:05 UTC 才可查（约 13 分 20 秒）。
+          # 而本步骤在 publish 后 1 秒执行 ⇒ 必然 404 ⇒ 流水线红，**但包其实发成功了**。
+          # 这与 continue-on-error 的「误报成功」是同一类问题的反面：**交付终点误报失败**。
+          #
+          # 判据不变（拿不到元数据仍然失败，且失败信息明确区分「未发布」与「起不来」），
+          # 只是给传播留出预算：最多轮询 20 分钟。
+          npm_ready=false
+          for attempt in $(seq 1 60); do
+            if npm view "zcode-ce@$VERSION" dist.shasum > /tmp/npm-shasum.txt 2>/dev/null; then
+              echo "::notice::npm 元数据就绪（第 $attempt 次查询，约 $(( (attempt - 1) * 20 ))s）"
+              cat /tmp/npm-shasum.txt
+              npm_ready=true
+              break
+            fi
+            sleep 20
+          done
+          if [ "$npm_ready" != "true" ]; then
+            echo "::error::npm 元数据在 20 分钟内仍不可查 —— 包未真正发布（尽管 publish 报了成功）"
+            exit 1
+          fi
+          cd /tmp
+          # 先只做"下载 + 解包"，把它与"起服务"分开计时 —— 两者都慢时，
+          # 合成一个 300s 预算会看不出是卡在哪一段。
+          echo "::notice::开始下载并解包 zcode-ce@$VERSION（66 MB / 11864 文件）"
+          START=$(date +%s)
+          npx -y "zcode-ce@$VERSION" --version > /tmp/npx-version.txt 2>&1 || true
+          echo "::notice::下载解包耗时 $(($(date +%s) - START))s；输出：$(head -c 200 /tmp/npx-version.txt)"
+          npx -y "zcode-ce@$VERSION" --web --no-open --port 3030 &
+          NPX_PID=$!
+          for i in $(seq 1 150); do
+            if curl -sI http://127.0.0.1:3030/ | head -1 | grep -q 200; then
+              echo "::notice::npx zcode-ce@$VERSION 起服务并返回 200（起服务耗时 $((i * 2))s）"
+              kill "$NPX_PID" 2>/dev/null || true
+              exit 0
+            fi
+            sleep 2
+          done
+          kill "$NPX_PID" 2>/dev/null || true
+          echo "::error::npx 起服务未在 300s 内返回 200（包已发布但起不来）"
+          exit 1

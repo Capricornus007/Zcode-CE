@@ -10,11 +10,12 @@ ZCode-CE 基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0�
 
 ## 改动概览
 
-相对上游基线 `872ad96`（`feat: open source`），本仓库共 46 个提交、385 个文件变更
-（+18124 / −27414 行）。改动按主题分为六类。
+相对上游基线 `872ad96`（`feat: open source`），本仓库已累积 194 个提交、826 个文件变更
+（+99364 / −28229 行，2026-09-25 快照）。下面六类里的**提交哈希与文件清单是各自的落地时刻**，
+行数分布表则是 2026-09-22 的旧快照，只用于看相对量级。改动按主题分为六类。
 
 > 计数核对方式：`git rev-list --count 872ad96..HEAD` 与 `git diff --shortstat 872ad96 HEAD`。
-> 这两个数字随每次提交增长，引用前请重新执行。
+> 这两个数字随每次提交增长，引用前请重新执行 —— 本节其余数字同理。
 
 ### 1. 移除遥测与监控（178 文件，+839 / −21505）
 
@@ -97,21 +98,26 @@ ZCode-CE 基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0�
   不再依赖官方 manifest 服务
 - **国内加速**：新增 `AppSettings.githubMirrorPrefix`（默认空 = 关闭）
 - **强更门**：社区版不执行远端强制升级检查
-- **CI**：`.github/workflows/ci.yml`（日常校验）与 `release.yml`（发布打包）
+- **CI**：`.github/workflows/ci.yml`（日常校验 **+ 一步最小构建**：`node scripts/build-desktop-agent-cli.mjs`，用于抓构建期模块解析/打包产物生成失败 —— 这类问题在 typecheck/test 里完全不可见）与 `release.yml`（发布打包，另含 tag-only 的 `remote-assets` job）
 
 详见 [发布流程](../operations/release.md) 与 [持续集成](../operations/ci.md)。
 
-### 改动分布
+### 改动分布（2026-09-25 快照）
 
 | 目录                      | 文件数 |
 | ------------------------- | ------ |
-| `packages/desktop`        | 121    |
-| `packages/ui`             | 100    |
-| `apps/zcode-cli/packages` | 47     |
-| `packages/services`       | 26     |
-| `packages/shared`         | 20     |
-| `docs`                    | 17     |
-| `packages/zcode-cua`      | 10     |
+| `apps/zcode-cli/packages` | 220    |
+| `packages/ui`             | 176    |
+| `packages/desktop`        | 148    |
+| `packages/services`       | 87     |
+| `packages/shared`         | 38     |
+| `docs`                    | 30     |
+| `packages/server`         | 29     |
+| `third-party`             | 22     |
+| `packages/zcode-cua`      | 11     |
+
+> 只列前九项，复算方式：`git diff --numstat 872ad96 HEAD | awk '{print $3}'` 后按目录前缀归并。
+> 这张表随每次提交增长，引用前请重新执行。
 
 ## 同步上游
 
@@ -129,30 +135,66 @@ git merge upstream/main
 
 ## 已知的技术债
 
-| #   | 项                                                                              | 严重度 | 状态                                                         |
-| --- | ------------------------------------------------------------------------------- | ------ | ------------------------------------------------------------ |
-| 1   | `tsconfig.main.json` 的 `rootDir` 越界（`tsc -b` 会把编译产物写进 `src/`）      | 高     | ✅ 已修（`18948a9` 补 `noEmit`）                             |
-| 2   | `pnpm typecheck` 的工程列表不含 desktop main/renderer                           | 中     | ✅ 已修（`8549509` 纳入 main/renderer/scheduler）            |
-| 3   | desktop main/renderer 存在既有类型错误                                          | 中     | ✅ 已修（`ce03e36` main 77→0、`5cbe4cd` renderer/scheduler） |
-| 4   | `packages/ui` 的 `@/*` 别名导致测试必须从包目录内执行                           | 低     | ⬜ 仍存在                                                    |
-| 5   | `THIRD-PARTY-NOTICES.md` 的 30 项材料待补齐（`licenses:check --strict` 不通过） | 中     | ⬜ 仍存在                                                    |
+| #   | 项                                                                          | 严重度 | 状态                                                            |
+| --- | --------------------------------------------------------------------------- | ------ | --------------------------------------------------------------- |
+| 1   | `tsconfig.main.json` 的 `rootDir` 越界（`tsc -b` 会把编译产物写进 `src/`）  | 高     | ✅ 已修（`18948a9` 补 `noEmit`）                                |
+| 2   | `pnpm typecheck` 的工程列表不含 desktop main/renderer                       | 中     | ✅ 已修（`8549509` 纳入 main/renderer/scheduler）               |
+| 3   | desktop main/renderer 存在既有类型错误                                      | 中     | ✅ 已修（`ce03e36` main 77→0、`5cbe4cd` renderer/scheduler）    |
+| 4   | `packages/ui` 的 `@/*` 别名导致测试必须从包目录内执行                       | 低     | ⬜ 仍存在                                                       |
+| 5   | `THIRD-PARTY-NOTICES.md` 仍有材料待补齐（`licenses:check --strict` 不通过） | 中     | ⬜ 仍存在（**条数以 `third-party/inventory.json` 为准**，见下） |
 
 技术债 #1 的历史规避方式（**已由 `noEmit` 修掉**，保留作为背景）：不要对
 `packages/desktop` 使用 `tsc -b`，改用 `tsc -p <cfg> --noEmit` 或
 `scripts/desktop-typecheck-baseline.sh`。
 
-技术债 #3 的当前基线（`bash scripts/desktop-typecheck-baseline.sh head`，2026-09-22 实测）：
-**main 1 项、renderer 90 项**——剩下的错误集中在 `packages/services` 的
-`TS2591`（缺 `@types/node` 上下文）等第三方源码，不是 desktop 自身代码。
-改动 desktop 后跑 `... diff` 只报**新增**错误。
+技术债 #3 已修完，**这里不抄数字**（同 #5 的理由：写死必然过期）。取当前值：
+
+```bash
+bash scripts/desktop-typecheck-baseline.sh current   # 结果写在 .reverse/16-typecheck-baseline/current.*.txt
+bash scripts/desktop-typecheck-baseline.sh diff      # 只报相对 HEAD 的新增（改动 desktop 后跑这条）
+```
+
+**2026-09-27 复核**：`tsc -p packages/desktop/tsconfig.main.json --noEmit` 与
+`tsc -p packages/desktop/tsconfig.renderer.json --noEmit` **均 exit 0、0 个 error TS**。
+（复核方式：先确认 tsc 真的在检查这些文件 —— 往 `src/main/` 与 `src/renderer/src/` 各放一个
+故意的类型错误，两边都如期报 `TS2322`，再删掉。）
+⚠️ **当前状态**：main 与 renderer 的类型错误均已清零（`ce03e36` main 77→0、`5cbe4cd` renderer 114→0）。
+`.reverse/16-typecheck-baseline/current.*.counts` 中若见 09-22 的旧值，那是**修复前**的快照
+（已于 2026-10-03 归档到 `.reverse/archive/16-typecheck-baseline/`）——**别拿它当当前值**；
+脚本下次运行会在 `.reverse/16-typecheck-baseline/` 重新生成。
 
 技术债 #5 的两级判定：
 
 ```bash
-node scripts/licenses.mjs check           # 基础检查，当前通过
-node scripts/licenses.mjs check --strict  # 发布前必须通过，当前**不通过**
+node scripts/licenses.mjs check           # 基础检查（新鲜度 + 材料档位）
+node scripts/licenses.mjs check --strict  # 发布前必须通过
 ```
 
-基础检查通过**不等于**合规完成 —— `--strict` 列出 30 项待补齐材料
-（`@trycua/cua-driver-*`、`@ubjs/*` 的版本级许可材料，以及 Skia / QuickJS-NG
-等原生组件的构建来源）。清单见 `third-party/README.md`。
+⚠️ **基础检查今天就是红的**（2026-09-27 实测，exit 1）：
+
+```text
+Error: Third-party input changed: package.json. Run node scripts/licenses.mjs notices
+```
+
+根因是 `8b3e459`（fix.1）与 `6d754dc`（fix.2）两次只改 `package.json` 的 `version` 一行，
+而没有同批重生成 notices（`third-party/inventory.json` 最后一次重生成是 `fa7c2a6`）。
+⇒ 别把「基础检查通过」当默认前提，先跑一遍；重生成见 `docs/operations/release.md` §「发布一个版本」第 1 步。
+
+**这个门禁没有 CI 兜底**（`licenses:check` 不在 `ci.yml`、也不在 `release.yml`，理由见 `docs/operations/release.md` 的本地预检一节）——
+它红了不会有流水线报出来，只有人手动跑才会发现。
+
+基础检查通过**不等于**合规完成 —— `--strict` 还会列出待补齐材料
+（如 `@trycua/cua-driver-*`、`@ubjs/*` 的版本级许可材料，以及 Skia / QuickJS-NG
+等原生组件的构建来源）。
+
+**条数不写在这里**（它会随依赖变化而漂移，写死必然过期）。取当前值：
+
+```bash
+# 阻断项条数（"待补齐材料"就是这一项）
+node -p "require('./third-party/inventory.json').reviewRequired.length"
+
+# 已按两档口径书面声明、不再阻断的条数
+node -p "require('./third-party/inventory.json').documentedLimitations.length"
+```
+
+字段含义与判定档位见 `third-party/README.md`（它同样规定"确切数字以 `inventory.json` 为准，不要在本文件里抄写数字"）。

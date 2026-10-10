@@ -3,26 +3,46 @@
  *
  * ## 产品规则
  *
- * - 只在**服务端返回了可领取套餐**时渲染（`plans.length > 0`）；无活动时完全不出现，
+ * - 只在服务端返回了可领取套餐时渲染（`plans.length > 0`）；无活动时完全不出现，
  *   不占位、不显示空态 —— 「当前没有可领的活动」不是用户需要处理的信息。
+ *   这条只覆盖「查完了、服务端没有活动」；它不覆盖「我们自己没查到」。
+ * - 读取可领取套餐失败时必须给失败态与重试入口：那是我们自己的错误，
+ *   不能和「服务端没有活动」长得一样（两者都不显示就等于静默降级）。
  * - 领取必须由**用户点击**触发，不做任何后台自动领取或轮询。
  * - 活动要求验证码时，点击「领取」先打开验证码对话框，求解成功后再带 `verifyParam` 提交。
  * - 领取失败按 `failureKind` 给可读文案，不透传服务端原文。
+ * - 领取成功后换成自画票券（`ManualClaimTicketCard`），信息与官方票券主体等价；
+ *   票券数据来自 claim 前的套餐快照，不读刷新后的列表。
  *
  * ## 状态所有者
  *
- * 列表/验证码配置/领取结果都在 `useManualClaimPlan`（见其注释）；本组件只负责渲染与
- * 「是否先开验证码对话框」的局部判断。
+ * 列表/验证码配置/领取结果/票券快照都在 `useManualClaimPlan`（见其注释）；本组件只负责
+ * 渲染、四态分界，以及「是否先开验证码对话框」的局部判断。
+ *
+ * ## state 注入（一个数据源，两个表示层）
+ *
+ * 本组件有两个挂载面：设置页套餐详情（自取数据）与聊天 context 面板（外部注入同一份
+ * 状态）。`state` 缺省时组件内部自行 `useManualClaimPlan()`；传入时直接使用，**不重复
+ * 拉取**（hook 内部已有模块级共享缓存兜底，见其注释）。两处渲染共用同一套四态分界与
+ * 验证码链路，不存在第二条「领取 UI」路径。
+ *
+ * ## 名称无关（name-agnostic）
+ *
+ * 卡片渲染的套餐名是 `plan.name` 的原样值（服务端运营命名，历次活动名各不相同、
+ * 可中可英）；识别领取目标只按 `planId`，默认目标只按 `priority`。
+ * 本组件不存在对展示名的匹配分支——官方改名不需要改这里。
  *
  * ## 验收场景
  *
- * 1. 无活动 → 不渲染任何内容；
- * 2. 有活动 → 展示名称、描述、权益条目与「领取」按钮；
- * 3. 活动不需要验证码（`captchaConfig.enabled === false`）→ 点击直接 claim；
- * 4. 活动需要验证码 → 先开对话框，求解成功后再 claim，求解失败则不开 claim；
- * 5. 领取成功 → 展示生效窗口；失败 → 展示对应失败文案。
+ * 1. 无活动（查完为空且无 error）→ 不渲染任何内容；
+ * 2. 读取失败 → 展示失败文案与「重试」，点重试重新拉取；
+ * 3. 有活动 → 展示名称、描述、权益条目与「领取」按钮；
+ * 4. 活动不需要验证码（`captchaConfig.enabled === false`）→ 点击直接 claim；
+ * 5. 活动需要验证码 → 先开对话框，求解成功后再 claim，求解失败则不开 claim；
+ * 6. 领取成功 → 展示自画票券（活动此时可能已从列表消失，票券仍必须有数据）；
+ *    失败 → 展示对应失败文案。
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   MANUAL_CLAIM_FAILURE_MESSAGE_KEYS,
   pickManualClaimPlan,
@@ -33,22 +53,117 @@ import {
 import { GiftIcon, Loader2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { useManualClaimPlan } from "./useManualClaimPlan.js";
+import { useManualClaimPlan, type ManualClaimPlanStateApi } from "./useManualClaimPlan.js";
+import { ManualClaimTicketCard } from "./ManualClaimTicketCard.js";
 import { ManualClaimCaptchaDialog } from "@/settings/ManualClaimCaptchaDialog.js";
 
-export function ManualClaimPlanCard({ providerId }: { providerId: string }) {
+export function ManualClaimPlanCard({
+  providerId,
+  state,
+  onCaptchaDialogOpenChange,
+}: {
+  providerId: string;
+  /**
+   * 外部注入的领取状态（由同一个 `useManualClaimPlan` 产生）。
+   *
+   * 设置页卡片不传（兼容既有形态）；context 面板传入它与门控共用一份状态，
+   * 避免面板与卡片各自维护一份「领取结果」。
+   */
+  state?: ManualClaimPlanStateApi;
+  /**
+   * 验证码对话框开合通知：context 气泡内需要据此拒绝 HoverCard 关闭
+   * （Dialog 打开会把焦点移出 HoverCard，Radix 会请求关闭并卸载弹层内容）。
+   * 设置页不传，行为不变。
+   */
+  onCaptchaDialogOpenChange?: (open: boolean) => void;
+}) {
   const { intl, locale } = useZCodeIntl();
-  const { plans, captchaConfig, loading, claiming, error, outcome, claim } = useManualClaimPlan();
+  // 注入态优先；未注入时自取。enabled:false 的内部实例不会发起请求。
+  const internalClaimState = useManualClaimPlan({ enabled: state === undefined });
+  const {
+    plans,
+    captchaConfig,
+    claimedPlan,
+    loaded,
+    claiming,
+    error,
+    outcome,
+    claim,
+    refresh,
+    resetOutcome,
+  } = state ?? internalClaimState;
   const [captchaTarget, setCaptchaTarget] = useState<ManualClaimPlanPreview | null>(null);
   // 宿主没有 <webview> 时（手机 Web / 普通 Web）无法完成验证码求解。
   // 这里提前拦住，避免把用户送进一个必然失败的对话框。
   const [captchaUnsupported, setCaptchaUnsupported] = useState(false);
 
   // 未登录/无 provider 时服务层会返回稳定失败码，不需要在这里额外判断账号状态。
-  if (loading && plans.length === 0) {
-    return null;
+  const claimedOutcome = outcome?.ok === true ? outcome : null;
+  // 与下方 JSX 的渲染条件（captchaTarget && captchaConfig）保持一致地通知宿主：
+  // 气泡宿主需在验证码对话框存活期间拒绝 HoverCard 关闭，否则弹层内容被卸载、
+  // 对话框随之消失。设置页不传回调，此处为空操作。
+  useEffect(() => {
+    onCaptchaDialogOpenChange?.(Boolean(captchaTarget && captchaConfig));
+  }, [captchaTarget, captchaConfig, onCaptchaDialogOpenChange]);
+  const view = resolveManualClaimPlanCardView({
+    plans,
+    loaded,
+    error,
+    claimed: claimedOutcome !== null,
+  });
+  // 领取已成功优先于其余三态：此刻哪怕列表刷新失败、活动已下架，票券也得照常显示 ——
+  // 把一张成功卡换成「加载失败 + 重试」是错误反馈（已经没有可重试的领取动作了）。
+  if (view === "ticket" && claimedOutcome) {
+    return (
+      <div className="space-y-2" data-testid="manual-claim-plan-card">
+        {claimedPlan ? (
+          <ManualClaimTicketCard
+            plan={claimedPlan}
+            endsAt={claimedOutcome.endsAt}
+            onDismiss={resetOutcome}
+          />
+        ) : (
+          // 快照取不到（领取前后活动已下架）：只给成功提示与关闭，
+          // 不画半张没有数据的票券，也不退回失败态。
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <ManualClaimOutcomeNotice outcome={outcome} />
+            <div className="mt-3 flex justify-end">
+              <Button type="button" size="lg" variant="outline" onClick={resetOutcome}>
+                {intl.formatMessage({ id: "settings.modelProvider.manualClaim.ticket.dismiss" })}
+              </Button>
+            </div>
+          </div>
+        )}
+        <span className="hidden" data-manual-claim-provider={providerId} />
+      </div>
+    );
   }
-  if (plans.length === 0) {
+  if (view === "load-failed") {
+    return (
+      <div className="space-y-2" data-testid="manual-claim-plan-card">
+        <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-border bg-surface p-4 max-sm:flex-col max-sm:items-stretch">
+          <p className="text-ui-sm text-destructive">
+            {intl.formatMessage({ id: "settings.modelProvider.manualClaim.loadFailed" })}
+          </p>
+          <div className="shrink-0 max-sm:[&>button]:w-full">
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              data-testid="manual-claim-plan-retry"
+              onClick={() => void refresh()}
+            >
+              {intl.formatMessage({ id: "common.retry" })}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 首屏还没查完，或查完确认没有活动：都不占位、不显示空态。
+  // 「有没有可领取的额度」由官方展示额度的地址回答，这里只是一个方便领取的入口。
+  if (view === "hidden") {
     return null;
   }
 
@@ -115,6 +230,7 @@ export function ManualClaimPlanCard({ providerId }: { providerId: string }) {
           </p>
         ) : null}
         {error ? (
+          // 走到这里只剩「列表已拿到、但领取请求本身异常」这一种：读取失败在函数开头就返回了。
           <p className="mt-2 text-ui-sm text-destructive">
             {intl.formatMessage({ id: "settings.modelProvider.manualClaim.loadFailed" })}
           </p>
@@ -176,6 +292,41 @@ export function ManualClaimOutcomeNotice({
       {intl.formatMessage({ id: key ?? "manual_claim_failure_unknown" })}
     </p>
   );
+}
+
+/**
+ * 卡片该渲染成哪一态。抽成纯函数是为了让 CI 能直接钉住四态的分界 ——
+ * 这四种状态在界面上分别是「占位失败态 + 重试」「完全不出现」「套餐卡片」「成功票券」，
+ * 判错的后果是静默或错误反馈（用户什么都看不到，或把成功说成失败），只能靠测试守住。
+ *
+ * 判据为什么用 loaded 而不是 loading：INITIAL_STATE.loading 的初值是 false，
+ * 首帧渲染时 `loading && plans.length === 0` 就不成立 —— 单看 loading 与 plans
+ * 分不出「首屏还没查」与「查完确实没有活动」。loaded 由 hook 在成功与失败时置位。
+ *
+ * 为什么失败态还要求 plans.length === 0：hook 只在读取失败时清空 plans，
+ * 而领取请求本身异常时不动 plans —— 后者应保持套餐卡片（行内给失败提示），
+ * 不能因为一次领取失败就把已经拿到的套餐与「领取」按钮从界面上撤掉。
+ */
+export function resolveManualClaimPlanCardView(state: {
+  plans: ManualClaimPlanPreview[];
+  loaded: boolean;
+  error: string | null;
+  /**
+   * 这一次领取是否已经成功。
+   *
+   * 为什么它必须排在最前：成功后 hook 会 refresh()，而活动可能已从列表消失 ——
+   * 那时 plans 为空、刷新甚至可能失败。领取成功是既成事实，界面不能因为
+   * 「列表没了」而退回不占位或失败态（那是把成功说成失败）。
+   */
+  claimed: boolean;
+}): "hidden" | "load-failed" | "plan" | "ticket" {
+  if (state.claimed) {
+    return "ticket";
+  }
+  if (state.plans.length === 0) {
+    return state.loaded && state.error ? "load-failed" : "hidden";
+  }
+  return "plan";
 }
 
 /** 供测试断言「活动需要验证码」的判据，与组件内保持一致。 */

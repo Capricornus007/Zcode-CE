@@ -1,6 +1,34 @@
 # 与官方发行版的差异
 
-> 状态：已核实 · 对照版本 ZCode 3.14.1（官方）与 ZCode-CE 3.14.1-ce.1
+> 状态：已核实 · **对照基线 ZCode 3.14.1（官方）与 ZCode-CE 3.14.1-ce.1** · **快照时刻 2026-09-22**（`b132ce2`）
+>
+> **这份文档是「某个时刻的对照」，不是「当前状态的实时视图」** —— 读之前先看这一行：
+>
+> | 项                         | 值                                                                                                             |
+> | -------------------------- | -------------------------------------------------------------------------------------------------------------- |
+> | 对照基线（逐条结论的出处） | 官方 **3.14.1** ↔ CE **3.14.1-ce.1**                                                                           |
+> | 快照时刻                   | **2026-09-22**（`b132ce2`；该提交的 `package.json` = `3.14.1-ce.1`）                                           |
+> | 之后追加的小节             | 见下方「哪些小节晚于基线」                                                                                     |
+> | 当前基线                   | 官方 `3.14.3`、CE 以根 `package.json` 的 `version` 为准（查法：`node -p "require('./package.json').version"`） |
+> | 3.14.3 的增量              | [上游同步台账](upstream-sync.md) 的 `v3.14.3` 一节（含「已跟进 / 部分跟进 / 未跟进（有意）」四档）             |
+>
+> **不要按本文推定当前状态**：本文没有覆盖官方 3.14.3 的全部差异，
+> 「本文没提」≠「上游没有」或「我们没有」。判断某条链路是否存在时以源码与实测为准。
+> **重跑整篇对照到 3.14.3 属未排期欠账**（代价 L：需逐条重核）；这类欠账的登记位置是 [欠账台账](backlog.md)。
+
+**哪些小节晚于基线**（只有下面这几节标注了追加时刻；其余小节的逐条结论出自 3.14.1 的对照，
+个别措辞在后续提交里订正过，但**没有逐条重核到 3.14.3**）：
+
+| 小节                                  | 追加时刻                                  | 备注                    |
+| ------------------------------------- | ----------------------------------------- | ----------------------- |
+| §「内置技能包 `bundled-skills`」      | 2026-09-23（`b3e64c2`，CE `3.14.3-ce.1`） | 官方 3.14.3 新增项      |
+| §「Office 三件套」                    | 2026-09-23（`665c2e6`）                   | PDF 相关同批            |
+| §「无头服务器 + 浏览器面板」          | 2026-09-24（`e4cb494`，CE `3.14.3-ce.2`） | 本仓库自研线            |
+| §「远程工作区（SSH / Docker / WSL）」 | 2026-09-23 ~ 09-24                        | 含 CDN 探测等会变的实测 |
+| §「可补齐性评估」的 PDF 行            | 2026-09-23（`665c2e6`）                   | 见下文归位说明          |
+
+> 文中带版本号的实测记录（如 §「远程工作区」的 CDN 探测、§「验证方法」里的 `/usr/lib/zcode` 路径）
+> 是**当时的快照**，重跑会得到不同结果。
 
 本文逐条回答「开源版是不是缺了一大堆功能」这个问题。所有结论都给出**可复现的验证方法**，
 读者可以自己查。文中区分三类事实：
@@ -11,71 +39,74 @@
 | **尚未实现**   | 上游开源代码里有声明，但实现是占位或缺失，我们也还没补     |
 | **双方一致**   | 官方发行版有**完全相同**的限制，不是开源版特有的缺口       |
 
-**最容易误判的是第三类。** 有多项看似「缺失」的能力其实官方发行版同样不支持——
+**最容易误判的是第三类。** 有多项看似「缺失」的能力，官方发行版同样不支持——
 把这类算成开源版的缺口会得出错误结论。
 
 ## 结论摘要
 
 ### 插件清单对照
 
-官方发行版随包分发 14 个插件，本仓库分发 10 个（其中 5 个是从官方发行包搬运的 MIT 内容，
+官方发行版随包分发 14 个插件，本仓库分发 11 个（其中 5 个是从官方发行包搬运的 MIT 内容，
 见下文「本项目已补齐的部分」；`computer-use` 有 3 个文件带本地修改，其余为逐字节原样）。
 
-| 插件                      | 官方 | 本仓库 | 说明                                                                                         |
-| ------------------------- | ---- | ------ | -------------------------------------------------------------------------------------------- |
-| `browser-use`             | ✅   | ✅     | 上游开源，本仓库同步维护                                                                     |
-| `node-repl-host`          | ✅   | ✅     | 上游开源，Browser Use 与 Computer Use 的宿主                                                 |
-| `documents` (DOCX)        | ✅   | ✅     | 官方版授权受限，本仓库为独立 MIT 实现                                                        |
-| `presentations`           | ✅   | ✅     | 同上                                                                                         |
-| `spreadsheets`            | ✅   | ✅     | 同上                                                                                         |
-| `pdf`                     | ✅   | ❌     | 官方授权仅限非商业使用                                                                       |
-| `image-search`            | ✅   | ❌     | 依赖官方服务端与账号鉴权                                                                     |
-| `android-emulator`        | ✅   | ❌     | 仅分发编译产物，无源码                                                                       |
-| `ios-simulator`           | ✅   | ❌     | 仅分发编译产物，无源码                                                                       |
-| `computer-use`            | ✅   | ✅     | 官方插件搬运（MIT），执行改用开源驱动；**本仓对其中 3 个文件有本地修改**（见下「本地修改」） |
-| `plugin-creator`          | ✅   | ✅     | 官方插件原样搬运（MIT；工作流改编自 Codex）                                                  |
-| `skill-creator`           | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                      |
-| `zcode-guide`             | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                      |
-| `restore-legacy-sessions` | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                      |
+> 计数口径与复算方式见本文「验证方法」的「核实插件清单差异」一节；数字随每次改动漂移，引用前请重新执行那里的命令。
+
+| 插件                      | 官方 | 本仓库 | 说明                                                                                               |
+| ------------------------- | ---- | ------ | -------------------------------------------------------------------------------------------------- |
+| `browser-use`             | ✅   | ✅     | 上游开源，本仓库同步维护                                                                           |
+| `node-repl-host`          | ✅   | ✅     | 上游开源，Browser Use 与 Computer Use 的宿主                                                       |
+| `documents` (DOCX)        | ✅   | ✅     | 官方版授权受限，本仓库为独立 MIT 实现                                                              |
+| `presentations`           | ✅   | ✅     | 同上                                                                                               |
+| `spreadsheets`            | ✅   | ✅     | 同上                                                                                               |
+| `pdf`                     | ✅   | ✅     | 官方版授权受限，本仓库为自研 MIT 实现（PDFKit + FontKit 载荷）；排版深度未对齐，见「可补齐性评估」 |
+| `image-search`            | ✅   | ❌     | 依赖官方服务端与账号鉴权                                                                           |
+| `android-emulator`        | ✅   | ❌     | 仅分发编译产物，无源码                                                                             |
+| `ios-simulator`           | ✅   | ❌     | 仅分发编译产物，无源码                                                                             |
+| `computer-use`            | ✅   | ✅     | 官方插件搬运（MIT），执行改用开源驱动；**本仓对其中 3 个文件有本地修改**（见下「本地修改」）       |
+| `plugin-creator`          | ✅   | ✅     | 官方插件原样搬运（MIT；工作流改编自 Codex）                                                        |
+| `skill-creator`           | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                            |
+| `zcode-guide`             | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                            |
+| `restore-legacy-sessions` | ✅   | ✅     | 官方插件原样搬运（MIT）                                                                            |
 
 > 另有一个**非插件**的内置技能包：`bundled-skills`（官方 3.14.3 新增）。它不是插件（无
 > `.zcode-plugin/plugin.json`），由运行时按 `source:"bundled"` + `scope:"system"` 的 skill root 原地发现；
 > `dynamic-workflows` 自 3.14.3 起住在这里，`/workflow` 同时变成内置命令。本仓库已照搬
 > （`apps/zcode-cli/packages/bundled-skills`），详见 `docs/development/architecture.md` 与
-> `.reverse/25-v3143/BUNDLED-SKILLS.md`。`zcode-guide` 因此同步到官方 0.3.0：只剩 6 份自诊断/配置正文。
+> 本文档的结论。`zcode-guide` 因此同步到官方 0.3.0：只剩 6 份自诊断/配置正文。
 
 ### 能力对照
 
-| 能力                | 官方                   | 本仓库                       | 说明                                        |
-| ------------------- | ---------------------- | ---------------------------- | ------------------------------------------- |
-| Computer Use 执行   | macOS / Windows Helper | macOS / Windows / Linux 驱动 | 本仓库改用 MIT 开源驱动                     |
-| Office 文档能力     | ✅                     | ✅                           | 官方版授权受限，本仓库为 MIT 实现（较精简） |
-| PDF 制作            | ✅                     | ❌                           | 见「可补齐性评估」                          |
-| 图片搜索            | ✅                     | ❌                           | 见「可补齐性评估」                          |
-| Android / iOS 开发  | ✅                     | ❌                           | 见「可补齐性评估」                          |
-| 遥测与上报          | 有                     | 已移除                       | 本仓库的主动改动                            |
-| 国内网络加速        | 无                     | 有                           | 本仓库的主动改动                            |
-| GitHub Actions 构建 | 无                     | 有                           | 本仓库的主动改动                            |
+| 能力                | 官方                   | 本仓库                       | 说明                                                                                                                                 |
+| ------------------- | ---------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Computer Use 执行   | macOS / Windows Helper | macOS / Windows / Linux 驱动 | 本仓库改用 MIT 开源驱动                                                                                                              |
+| Office 文档能力     | ✅                     | ✅                           | 官方版授权受限，本仓库为 MIT 实现（较精简）                                                                                          |
+| PDF 制作            | ✅                     | ⚠️ **部分**                  | 从零制作基础 PDF 已提供（随包 PDFKit/FontKit 载荷 + 结构校验器）；LaTeX/数学公式与官方 43 文件的排版深度仍未提供，见「可补齐性评估」 |
+| 图片搜索            | ✅                     | ❌                           | 见「可补齐性评估」                                                                                                                   |
+| Android / iOS 开发  | ✅                     | ❌                           | 见「可补齐性评估」                                                                                                                   |
+| 遥测与上报          | 有                     | 已移除                       | 本仓库的主动改动                                                                                                                     |
+| 国内网络加速        | 无                     | 有                           | 本仓库的主动改动                                                                                                                     |
+| GitHub Actions 构建 | 无                     | 有                           | 本仓库的主动改动                                                                                                                     |
+| headless 动态工作流 | 默认关闭               | 默认开启                     | 本仓库的主动差异（官方靠 `--enable-workflow` 打开）；见「其它差距」                                                                  |
 
 ## 常见「缺失」说法的逐条核实
 
 以下 12 项是容易被认为「开源版缺失」的能力，逐条核实结果如下。**其中 3 项与官方发行版
 行为完全相同**，另有 4 项需要修正。
 
-| #   | 常见说法                                     | 核实结论                                                        |
-| --- | -------------------------------------------- | --------------------------------------------------------------- |
-| 1   | Computer Use 全部执行能力                    | ✅ **真** —— 上游开源包是占位实现，本仓库已补                   |
-| 2   | CUA Helper / PiP / 权限探测                  | ⚠️ **部分真** —— Helper 与 PiP 传输层是占位；权限面板保留       |
-| 3   | CUA 官方插件资源                             | ✅ **真** —— 官方 `computer-use` 插件未随源码分发               |
-| 4   | Documents / PDF / PPTX / XLSX / 图片搜索     | ⚠️ **部分真** —— 补齐 3 项，PDF 与图片搜索仍缺                  |
-| 5   | Android / iOS 模拟器                         | ✅ **真**                                                       |
-| 6   | Plugin Creator / Skill Creator / ZCode Guide | ✅ **真**                                                       |
-| 7   | Superpowers 插件实现                         | ⚠️ **部分真** —— 上游无实现，但**官方也没随包分发**（见修正 1） |
-| 8   | Swift bridge                                 | ⚠️ **部分真** —— 上游有目录但只是占位符（见修正 2）             |
-| 9   | Custom Command 动态 Shell Expansion          | 🔁 **双方一致** —— 官方发行版同样不支持                         |
-| 10  | OAuth 自动刷新                               | ❌ **错** —— 上游有完整实现，本仓库原样保留                     |
-| 11  | Subagent Auto 权限模式                       | 🔁 **双方一致** —— 官方发行版同样未实现                         |
-| 12  | Workflow Worktree 隔离                       | 🔁 **双方一致** —— 官方发行版同样抛出未实现                     |
+| #   | 常见说法                                     | 核实结论                                                                                                          |
+| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | Computer Use 全部执行能力                    | ✅ **真** —— 上游开源包是占位实现，本仓库已补                                                                     |
+| 2   | CUA Helper / PiP / 权限探测                  | ⚠️ **部分真** —— Helper 与 PiP 传输层是占位；权限面板保留                                                         |
+| 3   | CUA 官方插件资源                             | ✅ **真** —— 官方 `computer-use` 插件未随源码分发                                                                 |
+| 4   | Documents / PDF / PPTX / XLSX / 图片搜索     | ⚠️ **部分真** —— 补齐 3 项，PDF 制作已提供基础能力（LaTeX/公式仍缺，见 [PDF 插件](pdf-plugins.md)），图片搜索仍缺 |
+| 5   | Android / iOS 模拟器                         | ✅ **真**                                                                                                         |
+| 6   | Plugin Creator / Skill Creator / ZCode Guide | ✅ **真**                                                                                                         |
+| 7   | Superpowers 插件实现                         | ⚠️ **部分真** —— 上游无实现，但**官方也没随包分发**（见修正 1）                                                   |
+| 8   | Swift bridge                                 | ⚠️ **部分真** —— 上游有目录但只是占位符（见修正 2）                                                               |
+| 9   | Custom Command 动态 Shell Expansion          | 🔁 **双方一致** —— 官方发行版同样不支持                                                                           |
+| 10  | OAuth 自动刷新                               | ❌ **错** —— 上游有完整实现，本仓库原样保留                                                                       |
+| 11  | Subagent Auto 权限模式                       | 🔁 **双方一致** —— 官方发行版同样未实现                                                                           |
+| 12  | Workflow Worktree 隔离                       | 🔁 **双方一致** —— 官方发行版同样抛出未实现                                                                       |
 
 ### 修正 1：Superpowers 插件实现（第 7 项）
 
@@ -277,7 +308,7 @@ MCP server、没有 hooks、没有编译产物，全部是技能文档（Markdow
 > 与官方的一处**已知差异**：官方另有 SEA 发行态的资产内嵌（`sea-bundled-skill-assets.mjs`
 >
 > - `~/.zcode/cli/bundled-skills/<hash>/` 物化）。本仓库的发布形态是 Electron 桌面 + AUR，
->   不走 SEA，故未实现该分支。详见 `.reverse/25-v3143/V3143-CLOSEOUT.md`。
+>   不走 SEA，故未实现该分支。
 
 ### Office 三件套：MIT 独立实现
 
@@ -360,16 +391,16 @@ Superpowers，本仓库用户没有这个入口。
 
 本仓库的官方插件声明文件
 （`apps/zcode-cli/packages/bootstrap/src/app/official-plugin-definitions.ts`）
-声明了 **14 个**插件，本仓库仍不分发其中的 `android-emulator`、`ios-simulator`、`pdf`、
-`image-search` 四个。该文件在 fix.3 之前与上游基线逐字节一致，fix.3 起为其中几个内容型插件
+声明了 **14 个**插件，本仓库仍不分发其中的 `android-emulator`、`ios-simulator`、
+`image-search` 三个（`pdf` 已由本仓库自研实现补齐，见上文「可补齐性评估」）。该文件在 fix.3 之前与上游基线逐字节一致，fix.3 起为其中几个内容型插件
 补了 `requiredSeedPaths`（见该文件内注释），因此**现在已与基线不同**。
 
 这些声明在运行时找不到对应目录，会被静默跳过（`resolveFilesystemPluginRoot` 遍历
 `rootCandidates` 全部落空后返回 `undefined`）。
 
 默认启用名单（`packages/shared/src/plugin-marketplaces.ts` 的
-`DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS`）里同样保留了没有实体的条目（`pdf` 与
-`image-search`）。但**这些条目只参与「已发现的插件是否默认启用」这一个判断**，集合的每一处
+`DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS`）里同样保留了没有实体的条目（`image-search` 一项；
+`pdf` 本仓库已有实体）。但**这些条目只参与「已发现的插件是否默认启用」这一个判断**，集合的每一处
 消费点都作用在**已发现、已加载或已落盘缓存**的候选之上：
 
 | 消费点                              | 求值对象                             |
@@ -387,6 +418,28 @@ Superpowers，本仓库用户没有这个入口。
 的校验）。那条报错的判据是市场清单，不是这张默认启用名单，两者不能混为一谈。
 
 这是本仓库需要修正的一致性问题（声明与实际分发不一致），不是官方的问题。
+
+### headless 动态工作流的默认值：与官方相反
+
+官方 v3.14.3 给 headless 加了 `--enable-workflow`，**默认关闭**动态工作流
+（其 `-p` 路径写的是 `dynamicWorkflowEnabled: options.enableWorkflow === true`）。
+本仓库 headless **默认开启** —— core 的 `dynamicWorkflowEnabled` 是「缺席即开启」，
+CLI 侧过去从不写这个字段，于是 `zcode -p "/workflow …"` 一直可用。
+
+两边都保留官方那个拼写（传了不报未知参数），但本仓库另加了真正能改变行为的反向开关：
+
+| 命令                     | 官方 headless 行为 | 本仓库 headless 行为   |
+| ------------------------ | ------------------ | ---------------------- |
+| `zcode -p "<文本>"`      | 动态工作流关闭     | 动态工作流开启         |
+| `… --enable-workflow`    | 动态工作流开启     | 动态工作流开启（幂等） |
+| `… --no-enable-workflow` | 未知参数，退出码 1 | 动态工作流关闭         |
+
+两个开关都只接受 `-p/--prompt` 或 `--target`；用在 TUI 或子命令上会报错并退出码 1
+（不静默忽略）。判据与取值在 `apps/zcode-cli/packages/cli/src/workflow-flag.ts`，
+`zcode --help` 的两行文案同时写明了这条差异。
+
+**照抄官方文档会误导**：官方的 `--enable-workflow` 说明是「默认关闭」，直接搬过来会让人
+以为不传就没有工作流 —— 在本仓库恰好相反。要关掉请用 `--no-enable-workflow`。
 
 ### 插件资源规模差异
 
@@ -418,25 +471,144 @@ Superpowers，本仓库用户没有这个入口。
 登记见 `third-party/copied-components.json` 的 `ZCode computer-use plugin shell (Z.ai)` 条目（字段名 `locallyModifiedFiles`）。
 **为什么不是 `modifiedFiles`**：声明解析器要求 `modifiedFiles` 里的每个文件**正文内**含字面量 `Modified by ZCode:`（`scripts/generate-third-party-notices.mjs:78-84`），而这 3 个文件是 MIT 材料、没有也不应加这种标记；改用自定义字段 `locallyModifiedFiles` 既保留机器可读的改动清单（进 `third-party/inventory.json`），又不动文件正文。MIT 本身不要求文件内变更声明，改动的书面说明就在本节的表格里。
 
+### 无头服务器 + 浏览器面板（本仓库自研，官方没有这条线）
+
+官方开源版**移除的是产品面、保留的是协议与传输层接缝**（准确口径见根 `AGENTS.md` 的「上游形态提示」
+与 [上游同步台账](upstream-sync.md) 的「已修正的既有结论」）：配对/扫码服务、云 relay 服务与移动壳
+这些**产品面**在上游开源版里不存在（全仓检索云 relay / 移动壳相关常量 0 命中），而
+`relay_owner`/`relay_bridge` 枚举与 `web-remote-replayable` 链路从开源基线起就在。
+本仓库走的是**自托管**路线，并已形成一条独立的可用路径：
+
+| 项         | 内容                                                                                                                                                                                                                                                                                 |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 形态       | **服务端 + 浏览器面板**：跑在（可以没有桌面环境的）一台机器上，同一局域网/私网内的浏览器操作**这台机器上的工作台**；**不接管桌面端**（不接管其已开会话，桌面端已连的远端 SSH / Docker 目标不共享给浏览器 —— 那条注册表在窗口内）。**手机窄屏可用性仍在修复中**（见 README 已知限制） |
+| 开发态启动 | `pnpm dev:web`（同时起后端与前端开发服务器）                                                                                                                                                                                                                                         |
+| 独立发行包 | `pnpm build:zcode`（`scripts/build-zcode.mjs`）：组装 server 入口 + `agent/zcode.cjs` + `web/` 静态根；运行时 `zcode --web`（可选 `--host` / `--port` / `--workspace` / `--token` 或 `--no-token`）                                                                                  |
+| 安全默认值 | 默认只监听**回环 `127.0.0.1`**；**非回环监听必须带令牌**，否则拒绝启动（`packages/server/src/http.ts`、`packages/zcode-server-cli/src/server-core/http.ts` 同一判定口径）                                                                                                            |
+| 中继与遥测 | **不经任何中继**（浏览器直连你起的服务）、**不采集遥测**                                                                                                                                                                                                                             |
+| 解包级验证 | `scripts/zcode-distribution-smoke.mjs`：解包后在隔离环境跑 `--web`，验 `/` 壳、`/api/server-info`、WebSocket、优雅退出                                                                                                                                                               |
+
+**分发状态（如实记录）**：`pnpm build:zcode` 能构建这个发行包，发布流水线里的 `headless-server-package`
+job（`.github/workflows/release.yml`）也会构建它、跑 smoke 并挂 workflow artifact；tag 发版时**顺带**挂到 Release。
+**挂载失败会让流水线变红**（2026-09-25 订正：此前该步骤用 `continue-on-error`，现已移除 —— 挂不上 Release 说明用户拿不到这个包，属交付终点失败，不得吞掉；见根 `AGENTS.md` 的派单硬规则与 `release.yml` 的注释）。
+该 job 需要仓库变量 `ZCODE_DIST_BASE_URL`，**未配置时跳过而不是失败**。
+⇒ 现状是"构建与挂载都通，但默认不启用"，而不是"代码有、用户拿不到"。
+
+**未验证**：手机与桌面**同时**连同一会话的并发语义没有测（见[网页远控](web-remote-control.md) §8）。
+Docker 作为**本机容器承载**已实测（见 [Docker 文档](../operations/headless-server-docker.md) §10）；
+Docker 作为**远程工作区承载**也已实测（见[远程工作区](remote-workspace.md) §6 第 6 条）；**WSL 仍未实测**。
+
+### 远程工作区（SSH / Docker / WSL）：代码完整，但打包版取不到远程运行时
+
+**这条链路的实现在本仓库是完整的**：UI 入口（`packages/ui/src/ChatEmptyState.tsx:450`、
+`WorkspaceSidebar.tsx:1303`、`Root.tsx:829` 挂载 SSH 对话框）、SSH 建连与鉴权
+（`packages/server/src/remote/sshAuth.ts`、`ssh-backend.ts`；纯 JS 的 `ssh2`，不依赖系统 ssh 二进制）、
+远端环境探测、部署编排（`deploy.ts`）、远端 server 启动与握手（`connect.ts:391`、`handshake.ts`）
+到远端会话集合（`packages/desktop/src/host/index.ts:1675`）都在。实测（真 sshd + 仓库代码）：
+`uname` 探测得到 `{linux, x64}`，exec / SFTP 上传 / 读文件全部可用；把远程运行时喂给部署链后，
+远端 server 能启动并完成握手（远端日志 `[zcode-server:stdio] stdio mode ready`）。
+
+**缺口只有一个：远程运行时资源没有供给点。** 部署前必须先取到当前版本的资源清单（manifest），
+它的 SHA 是「要不要重新部署」的判据。这个清单只有两个来源：
+
+1. 安装包内的本地资源目录 —— 开发态是 `packages/desktop/mock-cdn/releases/<版本>/`
+   （被 `.gitignore:14` 忽略）；**打包态没有**：`packages/desktop/electron-builder.config.js`
+   的 `extraResources`（:604-）不含任何远程资源条目，已构建产物的 `resources/` 下也搜不到；
+2. CDN —— `packages/desktop/src/main/remoteCdn.ts:4` 的默认基址是官方 CDN
+   `https://cdn-zcode.z.ai`，路径由根 `package.json` 的版本号拼成
+   `<base>/zcode/electron/releases/<版本>/manifest-<平台架构>.json`。
+
+**官方 CDN 上只有官方版本号，没有 CE 版本号。** 实测（`manifest-linux-x64.json`）：
+
+```text
+200  https://cdn-zcode.z.ai/zcode/electron/releases/3.14.0/manifest-linux-x64.json
+200  https://cdn-zcode.z.ai/zcode/electron/releases/3.14.3/manifest-linux-x64.json
+404  https://cdn-zcode.z.ai/zcode/electron/releases/3.14.1-ce.1/manifest-linux-x64.json
+404  https://cdn-zcode.z.ai/zcode/electron/releases/3.14.3-ce.1/manifest-linux-x64.json
+404  https://cdn-zcode.z.ai/zcode/electron/releases/3.14.3-ce.2/manifest-linux-x64.json
+```
+
+所以**打包版连接远程工作区必然失败**，失败点在取 manifest 这一步，**早于任何远端写操作**，报错为
+`[remote-assets] manifest not found for linux-x64: manifest-linux-x64.json`
+（`packages/server/src/remote/remoteAssetLiveIdentity.ts:246-252`）。
+
+这**不是某个版本引入的回归**：CE 从第一个发行版本号 `3.14.1-ce.1` 起就带 `-ce` 后缀，而官方
+CDN 只发布不带后缀的官方版本。唯一例外是开源快照的初始版本号 `3.14.0`（未加后缀），它对应的
+目录在 CDN 上确实存在 —— 但那是**官方制品**，本仓库代码与其是否可直接配套**未验证**。
+
+**自托管三步走（已实测）**：生成 → 装配 → 托管并指向。完整文档见[远程工作区](remote-workspace.md)。
+
+```bash
+pnpm prepare:remote-assets                                   # 生成（4 平台；只有 Node 运行时需要一次外网）
+node scripts/assemble-remote-assets.mjs --out <发布根>        # 装配 + 自检（appVersion / artifactPath / sha256）
+pnpm exec tsx scripts/verify-remote-assets.mjs --root <发布根> # 端到端自检，期望 RESULT: PASS
+ZCODE_REMOTE_ASSET_CDN_BASE_URL=<发布根> pnpm dev:desktop      # 指向它
+```
+
+三点实测记录（2026-09-23，本机 Linux x64）：
+
+1. `pnpm prepare:remote-assets` 产出 `<仓库>/packages/desktop/mock-cdn/releases/<版本>/`（四平台
+   Node 运行时 + server bundle + agents + 搜索工具）；只有 Node 运行时需要一次外网
+   （默认 `https://cdn.npmmirror.com/binaries/node`，可用 `ZCODE_NODE_DIST_MIRROR` 覆盖），本机重复运行会复用已有文件；
+2. 装配脚本把 `releases/<版本>/manifest-*.json` 与 `components/**` 拍平到**同一个发布根**
+   （`<root>/<版本>/` + `<root>/components/`），并校验 24 个制品的 sha256 与清单一致；
+3. 端到端：本地静态服务当 CDN + 真实 `connectRemote` → **8 个请求全部 200**（1 个清单 + 7 个组件）→
+   `deploy complete` → `handshake done` → 远端 `stdio mode ready`。
+
+**发布根要指向"包含 `<版本>/` 与 `components/` 的那一层"**，不要带版本号；`components/` 必须放在发布根，
+放进版本目录会让每次连接先对第一条候选 URL 白打一轮 404（实测）。
+
+**社区 CDN 已投运**：本项目自建的对象存储 + 自定义域名（`https://cdn.eidolonmachine.xyz`）已托管各版本资产，
+客户端**不经过任何中继**、资产请求也不带任何设备/账号标识（实测：一次连接共 8 个请求，请求头只有 HTTP 客户端默认项）。
+**发布安装包默认指向该社区 CDN**：发布流水线在构建期注入 `ZCODE_CDN_BASE_URL`（仓库 variable = 发布根），
+因此**我们发布的安装包开箱可用**；仓库变量未设置时退回官方默认（CE 版本在官方 CDN 取不到资源）。
+源码里的常量默认值仍是官方 CDN，自建者不设变量时行为不变。
+
+**旋钮语义（2026-09-23 修正）**：`ZCODE_CDN_BASE_URL`（构建期 define）与 `ZCODE_REMOTE_ASSET_CDN_BASE_URL`（运行期，
+含设置页的「自定义 CDN 托管地址」）的值都是**发布根**，**按字面值**使用；只有官方默认值保留它自己的
+`/zcode/electron/releases/<版本>` 前缀。修正前构建期旋钮会被当父目录并追加前缀，与"发布根"契约矛盾
+（自建发布点会 404）—— 契约测试 `packages/desktop/test/remoteCdnBaseUrl.test.ts` 已把两个分支钉住。
+用法与排障见[远程工作区](remote-workspace.md)。
+
+**Docker / WSL 与 SSH 共用同一套部署与资源代码**（`deploy.ts` / `remoteAssetCache.ts`），因此同样
+受这条缺口影响。其中 **Docker 已实测通过**（2026-09-24，真实 Docker 29.8.0 / rootless / cgroup v2，
+见[远程工作区](remote-workspace.md) §6 第 6 条）；**WSL 未实测**，此处不作结论。修复路径（自建资源发布点 / 资源随包
+分发 / 对齐官方多区域 CDN）与验收命令见 [无头服务器发行包](../operations/headless-server.md) 与 [远程资产 CDN](../operations/remote-assets-cdn.md)。
+
+**另一处差异**：官方主进程还带一条 SSH 专用资源服务器常量
+（`QE="http://studio.zcode-ai.com:12345/ssh-remote-assets"`，官方在 `env==="test"` 时直接使用
+`${QE}/${版本}`）。本仓库全仓检索 `ssh-remote-assets|studio.zcode-ai|codegeex.cn|cdn.zcode-ai`
+命中为 **0** —— 官方那两条资源供给路径（双区域 CDN 与 SSH 资源服务器）都没有被移植。
+
 ## 可补齐性评估
 
-按「可行性 × 价值」排序。
+按「可行性 × 价值」排序。**这一节记的是"还剩什么没做"，不是"当前有什么"** ——
+已落地的能力见上文「本项目已补齐的部分」，本节只列仍未提供的部分。
+
+> 已于 2026-09-23 落地、因此**不再属于"可做"**的一项：**PDF 制作**（见下「已提供基础能力」）。
+
+### 已提供基础能力（不在"可做"清单里）
+
+| 项       | 已提供                                                                                                            | 仍未对齐                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| PDF 制作 | MIT 的 PDFKit + FontKit 自包含载荷 + 零依赖结构校验器（2026-09-23，`665c2e6`）；与「能力对照」表的「⚠️ 部分」一致 | 官方 43 文件的排版深度（简报/海报/简历/LaTeX/公式链路）；详见 [PDF 插件](pdf-plugins.md) |
 
 ### 可做，价值高
 
-| 项                 | 做法                                                           | 障碍                   |
-| ------------------ | -------------------------------------------------------------- | ---------------------- |
-| 修正插件声明一致性 | 从 `official-plugin-definitions.ts` 移除未分发插件，或补齐分发 | 无，纯本地改动         |
-| Superpowers 插件   | 上游 `obra/superpowers` 为 MIT，可自行打包为 ZCode 插件        | 无许可障碍，需实现适配 |
-| 默认个人市场       | 恢复 `claude-plugins-official` 引用，给社区插件一个安装入口    | 需确认该市场内容的许可 |
-| 加深 Office 三件套 | 补充场景文档、参考手册、环境检查脚本                           | 工作量大，需逐项实现   |
+| 项                 | 做法                                                             | 障碍                                                                         |
+| ------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 修正插件声明一致性 | 从 `official-plugin-definitions.ts` 移除未分发插件，或补齐分发   | 无，纯本地改动                                                               |
+| Superpowers 插件   | 上游 `obra/superpowers` 为 MIT，可自行打包为 ZCode 插件          | 无许可障碍，需实现适配                                                       |
+| 默认个人市场       | 恢复 `claude-plugins-official` 引用，给社区插件一个安装入口      | 需确认该市场内容的许可                                                       |
+| 加深 Office 三件套 | 补充场景文档、参考手册、环境检查脚本                             | 工作量大，需逐项实现                                                         |
+| 远程工作区资源供给 | 自建资源发布点（或把远程资源随包分发），让客户端取到当前版本清单 | 无许可障碍（资源是本仓构建产物 + Node 官方二进制），需一处托管与一个发布任务 |
 
 ### 可做，价值中等
 
-| 项                        | 做法                                                 | 障碍                                               |
-| ------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
-| PDF 制作                  | 基于开源排版工具链重新实现                           | 官方版有 43 个文件，含 LaTeX/HTML 双链路，工作量大 |
-| `restore-legacy-sessions` | 迁移逻辑本身不复杂（7 个文件，含 2 个扫描/恢复脚本） | 需要旧版会话格式样本                               |
+| 项                        | 做法                                                  | 障碍                                                     |
+| ------------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| `restore-legacy-sessions` | 迁移逻辑本身不复杂（7 个文件，含 2 个扫描/恢复脚本）  | 需要旧版会话格式样本                                     |
+| PDF 排版深度              | 补齐官方 43 文件的简报/海报/简历版式与 LaTeX/公式链路 | 需外部 TeX 或自研排版引擎；见 [PDF 插件](pdf-plugins.md) |
 
 ### 做不了，或成本极高
 
@@ -454,8 +626,12 @@ Superpowers，本仓库用户没有这个入口。
 
 ## 验证方法
 
-以下命令读者可以自行执行。官方侧路径以本机安装的官方 ZCode 3.14.1 为例，**前提是你已经
-安装了官方发行版**；未安装时这些命令会失败，属正常现象。本仓库侧命令在仓库根目录执行。
+以下命令读者可以自行执行。**前提是你已经安装了官方发行版**，未安装时这些命令会失败，属正常现象。
+本仓库侧命令在仓库根目录执行。
+
+> **官方侧的版本要你自己对齐**：下面的路径（`/usr/lib/zcode/…`）是**本机安装位置**，
+> 不同发行方式/版本会不同 —— 先确认你装的是哪一版再对照本文结论。本节所有"预期结果"
+> 都是**对照基线 3.14.1 时刻**的值，官方换版后可能不再成立。
 
 ### 通用前提
 
@@ -470,15 +646,27 @@ OFFICIAL_CLI=/usr/lib/zcode/glm/zcode.cjs
 BASE=872ad96
 ```
 
+**先核对官方侧版本**（决定本节预期结果是否适用；具体路径按你的安装方式调整）：
+
+```bash
+# 常见安装位置之一：asar 解包目录或随包的 package.json
+node -p "require('/usr/lib/zcode/resources/app/package.json').version" 2>/dev/null \
+  || node -p "require('<你的官方解包目录>/package.json').version"
+```
+
+> 不要靠 `grep` asar 里的版本字符串定版 —— 实测同一份 asar 内会同时出现多个版本的字符串
+> （依赖与历史资源带进来的），计数无法区分「当前版本」与「被引用到的版本」。
+
 ### 核实插件清单差异
 
 ```bash
 # 官方插件清单（应为 14 项）
 ls "$OFFICIAL"
 
-# 本仓库插件清单（应为 10 项：按真实 plugin.json 清单计）
-find apps/zcode-cli/packages -name plugin.json -path '*.zcode-plugin*' \
-  | sed 's|/.zcode-plugin/plugin.json||' | sort
+# 本仓库插件清单（应为 11 项：按真实 plugin.json 清单计）
+# 注意要排除 cli/dist/ 下的构建产物副本，否则会多出 5 条
+find apps/zcode-cli/packages -maxdepth 3 -name plugin.json -path '*.zcode-plugin*' \
+  -not -path '*/cli/dist/*' | sed 's|/.zcode-plugin/plugin.json||' | sort
 ```
 
 注意 `apps/zcode-cli/packages/` 下还有一个 `superpowers-plugin/` 目录，但它只有一个
@@ -616,12 +804,13 @@ for (const m of src.matchAll(/\["([a-z]+)",\s*"[a-z]+",\s*"[A-Za-z]+"/g)) names.
 console.log([...new Set(names)].length);
 '
 
-# 实际分发的插件数（应为 10）
-find apps/zcode-cli/packages -name plugin.json -path '*.zcode-plugin*' | wc -l
+# 实际分发的插件数（应为 11）
+find apps/zcode-cli/packages -maxdepth 3 -name plugin.json -path '*.zcode-plugin*' \
+  -not -path '*/cli/dist/*' | wc -l
 ```
 
-预期结果：14 项声明、10 个实际分发的插件——声明里有 4 个插件在仓库中不存在
-（`android-emulator`、`ios-simulator`、`pdf`、`image-search`）。
+预期结果：14 项声明、11 个实际分发的插件——声明里有 3 个插件在仓库中不存在
+（`android-emulator`、`ios-simulator`、`image-search`）。
 
 ## 待验证项
 

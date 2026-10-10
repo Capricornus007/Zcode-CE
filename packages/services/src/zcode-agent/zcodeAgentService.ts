@@ -123,7 +123,11 @@ import {
   mergeAutomationMutationToolDenylist,
   mergeOffPeakMutationToolDenylist,
 } from "#src/zcode-agent/automationToolPolicy.js";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
+import {
+  ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
+  ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING_CODE,
+  ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE,
+} from "./zcodeAgent.js";
 import type {
   ZCodeProtocolRequestId,
   ModelSelection,
@@ -161,6 +165,8 @@ import type {
   ZCodeAgentReadSessionMessagesParams,
   ZCodeAgentReadSessionParams,
   ZCodeAgentRemovePluginMarketplaceParams,
+  ZCodeAgentSessionCaptchaCapabilityParams,
+  ZCodeAgentRespondProviderRuntimeHeadersParams,
   ZCodeAgentRespondSessionRuntimePreferencesParams,
   ZCodeAgentResumeSessionParams,
   ZCodeAgentSendPromptParams,
@@ -364,7 +370,8 @@ type SessionSendCompatField =
   | "automationId"
   | "offPeakTaskId"
   | "offPeakRunType"
-  | "toolDenylist";
+  | "toolDenylist"
+  | "botDeliveryTarget";
 
 const SESSION_CREATE_OPTIONAL_COMPAT_FIELDS = new Set<SessionCreateCompatField>([
   "persistence",
@@ -395,6 +402,9 @@ const SESSION_SEND_OPTIONAL_COMPAT_FIELDS = new Set<SessionSendCompatField>([
   "offPeakTaskId",
   "offPeakRunType",
   "toolDenylist",
+  // Bot 回推地址同属可降级字段：旧 app-server 的 session/send schema 不认时省略重试
+  // （该轮 automation 回推出 CNC 兜底接管，不阻塞消息发送本身）。
+  "botDeliveryTarget",
 ]);
 // onDynamicSessionEvent 建立上游订阅时若 getClient / sessionSubscribe 瞬时失败
 // （agent 进程刚启动、runtime 抛 "Session is not active" 竞态、transport 抖动），
@@ -723,6 +733,9 @@ function buildSessionSendParams(
     ...(params.toolDenylist !== undefined && !omittedFields.has("toolDenylist")
       ? { toolDenylist: params.toolDenylist }
       : {}),
+    ...(params.botDeliveryTarget !== undefined && !omittedFields.has("botDeliveryTarget")
+      ? { botDeliveryTarget: params.botDeliveryTarget }
+      : {}),
   };
 }
 
@@ -776,6 +789,49 @@ function providerRuntimeHeadersRequestKey(
   params: ZCodeAgentSessionTarget & { requestId: string },
 ): string {
   return `${sessionEventKey(params)}\u0000${params.requestId}`;
+}
+
+/**
+ * 渲染层允许注入的运行时请求头白名单（逐字对齐官方 host：
+ * `["X-Aliyun-Captcha-Verify-Param","X-Aliyun-Captcha-Verify-Region"]`，见
+ * asar-out/out/host/index.js @357101 与 docs/development/130-start-plan-captcha-spec.md §4.3）。
+ *
+ * 只有这两个头会被并入账号鉴权材料——渲染层不得借此注入任意请求头（spec §5 不变量 2）。
+ */
+const PROVIDER_RUNTIME_HEADER_ALLOWLIST = [
+  "X-Aliyun-Captcha-Verify-Param",
+  "X-Aliyun-Captcha-Verify-Region",
+] as const;
+
+/**
+ * 把渲染层回传的运行时头并入账号鉴权材料。
+ *
+ * 匹配规则与官方一致：大小写不敏感 + 两侧 trim；命中白名单且值 trim 后非空才写入，
+ * 且写入时统一使用白名单里的规范大小写（官方 `H[De] = Ze.trim()`）。
+ */
+function mergeProviderRuntimeHeaders(
+  requestAuth: AccountRequestAuthMaterial,
+  runtimeProviderHeaders: Record<string, string> | undefined,
+): AccountRequestAuthMaterial {
+  const headers: Record<string, string> = { ...requestAuth.headers };
+  for (const [rawName, rawValue] of Object.entries(runtimeProviderHeaders ?? {})) {
+    const canonical = PROVIDER_RUNTIME_HEADER_ALLOWLIST.find(
+      (name) => name.toLowerCase() === rawName.trim().toLowerCase(),
+    );
+    const value = rawValue.trim();
+    if (canonical && value) {
+      headers[canonical] = value;
+    }
+  }
+  const apiKey = requestAuth.apiKey;
+  // 官方语义：只有 apiKey 或 headers 至少一项存在时才有可用的 requestAuth。
+  if (!apiKey && Object.keys(headers).length === 0) {
+    return {};
+  }
+  return {
+    ...(apiKey ? { apiKey } : {}),
+    ...(Object.keys(headers).length > 0 ? { headers } : {}),
+  };
 }
 
 /**
@@ -913,7 +969,7 @@ interface CreateZCodeAgentServiceOptions extends Omit<
     >;
   };
   /**
-   * 官方 MCP 可信 Origin 校验器。**host 是身份权威边界**，因此
+   * 官方 MCP 可信 Origin 校验器。host 是身份权威边界，因此
    * targetOrigin 的校验必须在这里执行，不能只依赖 agent adapter 的 fetch wrapper——那等于让
    * 被审查方自己当审查者。desktop-attached remote 场景下 agent 跑在远端而 host 持有本地用户身份。
    *
@@ -1094,6 +1150,35 @@ export function createZCodeAgentService(
   });
   const sessionEmitters = new Map<string, Emitter<ZCodeAgentServiceEvent>>();
   /**
+   * 当前存在「会话事件订阅者」的 sessionEventKey 集合（spec §4.4 的快速失败判据）。
+   *
+   * 由 getSessionEmitter 创建 Emitter 时挂上 first/last listener 回调维护
+   * （@zcode/rpc 的 EmitterOptions.onWillAddFirstListener / onDidRemoveLastListener）。
+   *
+   * 语义边界（勿当成「有渲染层」的同义词）：它只表达「有订阅者」。CE 当前的订阅者
+   * 包含 Bot 链路（zcodeTaskServiceAdapter.onDynamicTaskEvent → botsService.watchTaskStream），
+   * 而 Bot 无法完成验证码求解。因此该判据能拦住「完全无订阅者」，但拦不住
+   * 「有订阅者却无人能应答」——后者仍依赖 CLI 侧 180s 超时。见 130 spec §4.4。
+   */
+  const sessionsWithSessionEventSubscriber = new Set<string>();
+  /**
+   * 声明「本会话具备渲染验证码能力」的订阅者计数（spec §4.4 的第二道判据）。
+   *
+   * 为什么需要它（与上面的订阅探测是两件事，不可互相替代）：
+   * - 订阅探测解决「本端根本没有 UI」（无 pane 后台会话、纯 CLI）：
+   *   无订阅者时 emitSessionEvent 会静默丢弃，请求无人应答。
+   * - 能力注册解决「有订阅者但它不能求解验证码」：CE 当前的 Bot 链路
+   *   （zcodeTaskServiceAdapter.onDynamicTaskEvent → botsService.watchTaskStream）
+   *   就是一个订阅者，但 Bot 无法渲染/求解验证码。只靠订阅探测会让它绕过判定、
+   *   仍然悬挂到 CLI 侧 180s 超时。
+   *
+   * 每个会话一个 Emitter：多个组件同时声明同一会话时（例如会话面板与弹窗各持一份），
+   * 只有最后一个退订者才移除能力；用「首个订阅者加入 / 最后一个订阅者离开」两个回调表达，
+   * 不必再手工维护计数（Emitter 自己就持有 listeners 集合）。
+   */
+  const captchaCapabilityEmitters = new Map<string, Emitter<never>>();
+  const captchaCapableSessionKeys = new Set<string>();
+  /**
    * 已经记过"首次发放官方身份头"审计日志的 (pluginId, mcpKey, workspaceKey)。
    *
    * 存在理由：成功路径不能只记 debug——生产构建的最低级别是 Info，事后无法回答
@@ -1156,18 +1241,23 @@ export function createZCodeAgentService(
   const clientDisposables = new WeakMap<ZCodeProtocolClient, IDisposable[]>();
   const pendingPermissions = new Map<string, PendingPermissionRequest>();
   const pendingUserInputs = new Map<string, PendingPermissionRequest>();
-  // 内存诊断计数器：只读各 per-session 镜像表的 size。
-  const memoryDiagnostics = registerMemoryDiagnosticsProvider("agent", () => ({
-    sessionEmitters: sessionEmitters.size,
-    seqStates: sessionEventSequenceStates.size,
-    pendingPermissions: pendingPermissions.size,
-    pendingUserInputs: pendingUserInputs.size,
-  }));
   const pendingProviderRuntimeHeaders = new Map<string, PendingProviderRuntimeHeadersRequest>();
   const pendingSessionRuntimePreferences = new Map<
     string,
     PendingSessionRuntimePreferencesRequest
   >();
+  // 内存诊断计数器：只读各 per-session 镜像表的 size。
+  // 注册点必须在各 map 声明之后：provider 闭包按引用捕获这些 const，
+  // 提前注册虽然（因 collect 晚于工厂执行）不会真的触发 TDZ，但那是靠调用时机兜住的隐式前提。
+  const memoryDiagnostics = registerMemoryDiagnosticsProvider("agent", () => ({
+    sessionEmitters: sessionEmitters.size,
+    seqStates: sessionEventSequenceStates.size,
+    pendingPermissions: pendingPermissions.size,
+    pendingUserInputs: pendingUserInputs.size,
+    // start-plan 验证码挑战的等待态：该计数非零即表示有请求已转发渲染层、正在等应答。
+    // 补这个计数不只是为了测试——它与上面两个 pending 计数同族，此前是漏记的。
+    pendingProviderRuntimeHeaders: pendingProviderRuntimeHeaders.size,
+  }));
   const activeClientsByWorkspaceKey = new Map<string, ActiveWorkspaceClient>();
   const interactionPreferenceSyncByWorkspaceKey = new Map<string, Promise<void>>();
   let latestAppRuntimePreferences: ZCodeAgentAppRuntimePreferences | undefined;
@@ -1304,6 +1394,108 @@ export function createZCodeAgentService(
       if (pendingProviderRuntimeHeaders.get(params.key) === params.pending) {
         pendingProviderRuntimeHeaders.delete(params.key);
       }
+    }
+  }
+
+  /**
+   * 渲染层对 `providerRuntimeHeaders.request` 的应答（spec §4.3，对齐官方
+   * `respondProviderRuntimeHeaders`，见 asar-out/out/host/index.js @356111）。
+   *
+   * 它是 pending map 的第三条出口（另两条：非 start-plan 的账号短路自答、
+   * 无凭据解析器的快速失败）。r4 缺陷扫描 D1 已实证：CE 缺这一条时，只收紧守卫会把
+   * start-plan 从「必然 3007」变成「必然立即失败」。
+   *
+   * 幂等：pending 已不存在（已应答/已取消/已被快速失败清掉）时安静返回，不抛错给 UI ——
+   * 弹窗重放、桌面与手机端并发应答都属正常路径。
+   */
+  async function respondProviderRuntimeHeaders(
+    params: ZCodeAgentRespondProviderRuntimeHeadersParams,
+  ): Promise<void> {
+    const key = providerRuntimeHeadersRequestKey({
+      workspacePath: params.workspace.workspacePath,
+      ...(params.workspace.workspaceIdentity
+        ? { workspaceIdentity: params.workspace.workspaceIdentity }
+        : {}),
+      sessionId: params.sessionId,
+      requestId: params.requestId,
+    });
+    const pending = pendingProviderRuntimeHeaders.get(key);
+    if (!pending) {
+      // 与官方不同：官方此处 throw。CE 选择幂等安静返回，因为 UI 侧没有「找不到请求」
+      // 的可恢复动作，抛错只会变成一条无意义的错误提示（spec §4.3「不抛错给 UI」）。
+      logger.debug(
+        undefined,
+        "ZCode provider runtime headers 应答找不到 pending 请求（幂等忽略）",
+        {
+          requestId: params.requestId,
+          sessionId: params.sessionId,
+          workspaceKey: resolveWorkspaceKey(params.workspace),
+        },
+      );
+      return;
+    }
+    if (pending.responding) {
+      logger.debug(undefined, "ZCode provider runtime headers 应答已在处理中（幂等忽略）", {
+        requestId: params.requestId,
+        sessionId: params.sessionId,
+        workspaceKey: resolveWorkspaceKey(params.workspace),
+      });
+      return;
+    }
+    pending.responding = true;
+    try {
+      if (!params.response.headersApplied) {
+        // 渲染层明确报告求解失败/用户取消：原样回传原因，让 Agent 按业务错误上报，不重试。
+        pendingProviderRuntimeHeaders.delete(key);
+        await pending.client.respond(pending.protocolRequestId, {
+          headersApplied: false,
+          ...(params.response.errorMessage ? { errorMessage: params.response.errorMessage } : {}),
+        });
+        return;
+      }
+      // 账号鉴权材料 + 渲染层验证码头 的合并点。解析失败与短路自答同口径处理。
+      const accountAuth = await resolveAccountRequestAuth(pending.request);
+      // 账号解析是异步 IO；取消/进程退出后不能把迟到材料发给已撤销的请求。
+      if (pendingProviderRuntimeHeaders.get(key) !== pending) return;
+      if (!accountAuth) {
+        throw new Error("Account request auth resolver returned no material");
+      }
+      const requestAuth = mergeProviderRuntimeHeaders(
+        accountAuth,
+        params.response.runtimeProviderHeaders,
+      );
+      const hasRequestAuth = Boolean(requestAuth.apiKey) || Boolean(requestAuth.headers);
+      pendingProviderRuntimeHeaders.delete(key);
+      await pending.client.respond(
+        pending.protocolRequestId,
+        hasRequestAuth
+          ? { headersApplied: true, requestAuth }
+          : // 与官方同文案：既没有 apiKey 也没有可用头时不能谎报 headersApplied:true。
+            { headersApplied: false, errorMessage: "Provider request auth is missing" },
+      );
+      logger.info(undefined, "ZCode provider runtime headers 已应用（渲染层应答）", {
+        modelId: pending.request.modelSelection.modelId,
+        providerId: pending.request.providerId,
+        requestId: pending.request.requestId,
+        reason: pending.request.reason,
+        sessionId: pending.request.sessionId,
+        workspaceKey: resolveWorkspaceKey(pending.request.workspace),
+      });
+    } catch (error) {
+      if (pendingProviderRuntimeHeaders.get(key) !== pending) return;
+      pendingProviderRuntimeHeaders.delete(key);
+      logger.warn(undefined, "ZCode provider runtime headers 应用失败", {
+        modelId: pending.request.modelSelection.modelId,
+        providerId: pending.request.providerId,
+        requestId: pending.request.requestId,
+        sessionId: pending.request.sessionId,
+        error: error instanceof Error ? error.message : String(error),
+        workspaceKey: resolveWorkspaceKey(pending.request.workspace),
+      });
+      await pending.client.respond(pending.protocolRequestId, {
+        headersApplied: false,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -1533,13 +1725,53 @@ export function createZCodeAgentService(
     }
   }
 
+  /** 该会话当前是否至少有一个能求解验证码的声明者。 */
+  function hasCaptchaCapableSessionSubscriber(key: string): boolean {
+    return captchaCapableSessionKeys.has(key);
+  }
+
+  /**
+   * 取得该会话的「验证码能力声明」通道。
+   *
+   * 订阅即声明、退订即撤销：能力的存在性完全由 Emitter 的 listeners 集合表达，
+   * 因此不需要独立的计数/集合去同步维护（少一处可能与实际订阅漂移的状态）。
+   * 返回的 Event 载荷为 never：该通道不承载数据。
+   */
+  function getCaptchaCapabilityEmitter(params: ZCodeAgentSessionCaptchaCapabilityParams) {
+    const key = sessionEventKey(params);
+    const existing = captchaCapabilityEmitters.get(key);
+    if (existing) {
+      return existing;
+    }
+    const created = new Emitter<never>({
+      onWillAddFirstListener: () => {
+        captchaCapableSessionKeys.add(key);
+      },
+      onDidRemoveLastListener: () => {
+        captchaCapableSessionKeys.delete(key);
+      },
+    });
+    captchaCapabilityEmitters.set(key, created);
+    return created;
+  }
+
   function getSessionEmitter(params: ZCodeAgentSessionTarget) {
     const key = sessionEventKey(params);
     const existing = sessionEmitters.get(key);
     if (existing) {
       return existing;
     }
-    const created = new Emitter<ZCodeAgentServiceEvent>();
+    const created = new Emitter<ZCodeAgentServiceEvent>({
+      // 只反映真实订阅者（emitter.event(...) 的调用），不反映「创建了 emitter」：
+      // getSessionEmitter 会被多处调用（含 workspace 级 fan-out），若按创建标记，
+      // 快速失败判定将永不触发。
+      onWillAddFirstListener: () => {
+        sessionsWithSessionEventSubscriber.add(key);
+      },
+      onDidRemoveLastListener: () => {
+        sessionsWithSessionEventSubscriber.delete(key);
+      },
+    });
     sessionEmitters.set(key, created);
     return created;
   }
@@ -2263,12 +2495,74 @@ export function createZCodeAgentService(
             workspacePath: workspace.workspacePath,
           });
           const accountAccess = parsed.data.accountAccess;
-          if (accountRequestAuthService && accountAccess) {
-            // Account API Key / Team Runtime Key / Start Plan JWT 都不需要 Renderer 交互。
-            // Host 按 Model 固定的 Account Access 自动应答，避免后台任务和无 pane 会话依赖 UI 订阅者。
+          // 守卫对齐官方 host（asar-out/out/host/index.js @316344）：
+          //   if (mr && Ze && Ze.mode !== "start-plan") { 短路自答; return }
+          // CE 此前丢掉了 `mode !== "start-plan"` 这一半，于是 start-plan 也被短路自答，
+          // 渲染层永远收不到请求 ⇒ 模型请求永远不带 X-Aliyun-Captcha-Verify-Param ⇒ 必然 3007。
+          // 见 docs/development/130-start-plan-captcha-spec.md §4.2 与 126 报告 §2.3。
+          if (accountRequestAuthService && accountAccess && accountAccess.mode !== "start-plan") {
+            // 非 start-plan 的 Account API Key / Team Runtime Key / Individual JWT
+            // 都不需要 Renderer 交互：Host 按 Model 固定的 Account Access 自动应答，
+            // 避免后台任务和无 pane 会话依赖 UI 订阅者（spec §5 不变量 1）。
             void respondAccountRequestAuthWithoutInteraction({
               key: pendingKey,
               pending,
+            });
+            return;
+          }
+          if (accountRequestAuthService && accountAccess) {
+            // start-plan：验证码只能由渲染层求解，必须转发并等待应答（spec §4.2）。
+            //
+            // 但转发前必须先确认「本端确实有人能应答」：该请求没有 host 侧超时定时器，
+            // 无订阅者时 emitSessionEvent 会静默丢弃事件，请求一直挂在 pending map 里，
+            // 直到 CLI 侧 180s 超时（spec §4.4 明令 Bot 场景不得悬挂）。
+            // 判据是真实订阅者集合，不是「emitter 是否存在」（见 sessionsWithSessionEventSubscriber）。
+            const subscriberKey = sessionEventKey({
+              ...workspace,
+              sessionId: parsed.data.sessionId,
+            });
+            // 两道判据缺一不可，它们解决的是不同问题：
+            //   ① 无订阅者        = 本端根本没有 UI（无 pane 后台会话、纯 CLI）；
+            //   ② 无能力声明      = 有订阅者但它不能求解（Bot 链路正是这种）。
+            // 只做 ① 会让 Bot 绕过判定、仍悬挂到 CLI 侧 180s（spec §4.4 要求快速失败）。
+            const unavailableReasonCode = !sessionsWithSessionEventSubscriber.has(subscriberKey)
+              ? ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE
+              : !hasCaptchaCapableSessionSubscriber(subscriberKey)
+                ? ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING_CODE
+                : null;
+            if (unavailableReasonCode) {
+              pendingProviderRuntimeHeaders.delete(pendingKey);
+              void pending.client.respond(pending.protocolRequestId, {
+                headersApplied: false,
+                // 稳定码 + 可读原因：码用于分支判定，文案用于人看。
+                // 协议响应 schema（shared，两分支均 .strict()）只有 errorMessage 一个承载位，
+                // 因此码以固定前缀内嵌；协议若日后加 reasonCode 字段应改为结构化承载。
+                errorMessage:
+                  `${unavailableReasonCode}: ` +
+                  "this client cannot solve the start-plan captcha challenge " +
+                  (unavailableReasonCode === ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE
+                    ? "(no session event subscriber available to render it)"
+                    : "(no subscriber declared captcha rendering capability)"),
+              });
+              // 可恢复异常：本端缺能力，不是崩溃。带全上下文便于线上定位。
+              logger.warn(
+                request.trace?.traceId,
+                "start-plan 验证码头请求无法在本端完成，快速失败",
+                {
+                  providerId: parsed.data.providerId,
+                  modelId: parsed.data.modelSelection.modelId,
+                  sessionId: parsed.data.sessionId,
+                  requestId: parsed.data.requestId,
+                  workspaceKey: resolveWorkspaceKey(workspace),
+                  reasonCode: unavailableReasonCode,
+                },
+              );
+              return;
+            }
+            // 与 permission/userInput 同构：先入 pending map，再广播请求事件。
+            emitSessionEvent(workspace, parsed.data.sessionId, {
+              type: "providerRuntimeHeaders.request",
+              request: parsed.data,
             });
             return;
           }
@@ -2293,7 +2587,7 @@ export function createZCodeAgentService(
             });
             return;
           }
-          // host 侧二次校验必须发生在**读取凭据之前**：未命中即返回，resolveHeaders 不被调用，
+          // host 侧二次校验必须发生在读取凭据之前：未命中即返回，resolveHeaders 不被调用，
           // 因此不会有任何凭据被读入内存。
           void (async () => {
             const trustedOrigins = options?.officialMcpTrustedOrigins;
@@ -2501,6 +2795,7 @@ export function createZCodeAgentService(
                 modelSelection: parsed.data.modelSelection,
                 mode: parsed.data.mode,
                 targetTaskId: parsed.data.targetTaskId,
+                botDeliveryTarget: parsed.data.botDeliveryTarget,
                 workspacePath: workspace.workspacePath,
                 workspaceIdentity: workspace.workspaceIdentity,
                 recurring: parsed.data.recurring ?? true,
@@ -3121,7 +3416,7 @@ export function createZCodeAgentService(
   }
 
   // 全局工作流的载体运行时选择：
-  // 调用方只给 `{ scope: "global" }` 不带 workspace 时，先复用任一已活跃的**本地** runtime
+  // 调用方只给 `{ scope: "global" }` 不带 workspace 时，先复用任一已活跃的本地 runtime
   // （existing-only 语义：只看 activeClientsByWorkspaceKey，绝不为此拉起新进程），否则回落到
   // 管理面 workspace——照 getPluginManagementClient 先例用专用 pluginProcessManager 拉一个控制面
   // runtime。选它而非 getOrStartReadOnlyClient 的理由：workflows/* 是无会话、不依赖 provider/model
@@ -3186,6 +3481,16 @@ export function createZCodeAgentService(
       emitter.dispose();
     }
     sessionEmitters.clear();
+    // Emitter.dispose() 只清 listeners，不会触发 onDidRemoveLastListener；
+    // 不同步清空会让订阅计数在 disposeAll 之后残留。
+    sessionsWithSessionEventSubscriber.clear();
+    // 能力声明同理：渲染层不会在 host 退出时逐个 dispose，必须由这里统一清空。
+    // Emitter 同样只清 listeners、不触发 last-listener 回调，所以两处都要清。
+    for (const emitter of captchaCapabilityEmitters.values()) {
+      emitter.dispose();
+    }
+    captchaCapabilityEmitters.clear();
+    captchaCapableSessionKeys.clear();
     sessionRuntimePreferencesRequestEmitter.dispose();
     processResourceSampleEmitter.dispose();
     mcpTelemetryEmitter.dispose();
@@ -4733,6 +5038,14 @@ export function createZCodeAgentService(
         }
         return disposable;
       };
+    },
+
+    async respondProviderRuntimeHeaders(params) {
+      return respondProviderRuntimeHeaders(params);
+    },
+
+    onDynamicSessionCaptchaCapability(params) {
+      return getCaptchaCapabilityEmitter(params).event;
     },
 
     onDynamicSessionEvent(params: ZCodeAgentSessionSubscribeParams) {

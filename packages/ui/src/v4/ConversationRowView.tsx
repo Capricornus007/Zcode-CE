@@ -75,12 +75,18 @@ import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { WorkflowToolSummary } from "@/v4/WorkflowToolSummary.js";
-import { readWorkflowName } from "@/ToolCallBlocks/renderers/createWorkflowInput.js";
+import {
+  readWorkflowName,
+  readWorkflowRetuneCall,
+} from "@/ToolCallBlocks/renderers/createWorkflowInput.js";
+import { WorkflowRetuneRow } from "@/ToolCallBlocks/renderers/WorkflowRetuneRow.js";
+import { workflowRunSettingsCeiling } from "@/components/workflow-timeline/workflowRunSettings.js";
 import { isAmendWorkflowToolCall } from "@/lib/workflowToolNames.js";
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { resolveWorkflowRunOpenToolCallId } from "@/v4/workflowRunCardJoin.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
+import { writeTextToClipboard } from "@/lib/clipboardText.js";
 import { logger } from "@/logger.js";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
 import {
@@ -166,31 +172,41 @@ const CopyRowAction = memo(function CopyRowAction({
   rowId,
   label,
   tooltip = label,
+  dataTestId,
 }: {
   text: string;
   rowId: number;
   label: string;
   tooltip?: string;
+  dataTestId?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    if (!text || !navigator.clipboard) return;
+    if (!text) return;
+    // http 远控（手机经 IP 访问）没有 navigator.clipboard；helper 在手势栈内同步回退 execCommand。
     void runUserActionAsync({
       input: { featureId: "conversation.history.feedback", action: "copy", trigger: "button" },
-      operation: () => navigator.clipboard.writeText(text),
+      operation: () => writeTextToClipboard(text),
       completed: { resultSource: "platform_result" },
       failureStage: "clipboard_write",
-    }).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    });
+    }).then(
+      () => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1200);
+      },
+      (error: unknown) => {
+        // 写入失败（无剪贴板 API 且 execCommand 回退也失败）：与改动前一致静默不打勾，
+        // 只记日志，避免 unhandled rejection。
+        logger.warn("[v4-copy] clipboard write failed", error);
+      },
+    );
   }, [text]);
   return (
     <MessageAction
       aria-label={label}
       label={label}
       tooltip={tooltip}
-      data-testid={`v4-copy-${rowId}`}
+      data-testid={dataTestId ?? `v4-copy-${rowId}`}
       disabled={text.length === 0}
       onClick={handleCopy}
     >
@@ -1277,7 +1293,7 @@ const UserInputRowView = memo(function UserInputRowView({
       <MessageActions
         className={cn(
           "mt-1",
-          "opacity-0 transition-opacity group-hover/user-row:opacity-100 focus-within:opacity-100",
+          "opacity-0 transition-opacity group-hover/user-row:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
         )}
       >
         <CopyRowAction
@@ -1310,11 +1326,14 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   turnId,
   onFork,
   onFeedbackChange,
+  copyScope = "row",
   className,
 }: {
   rowId: number;
   entityId?: string;
   text: string;
+  /** "turn"：text 是整轮 assistant 正文合并（轮尾工具栏），文案明确为"复制完整回复"。 */
+  copyScope?: "row" | "turn";
   createdAt: number;
   feedback?: AssistantMessageFeedback | null;
   hookInvocations?: readonly HookInvocationRow[];
@@ -1326,7 +1345,9 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
 }) {
   const { intl, locale } = useZCodeIntl();
   const [localFeedback, setLocalFeedback] = useState<AssistantMessageFeedback | null>(feedback);
-  const copyLabel = intl.formatMessage({ id: "chat.message.copy" });
+  const copyLabel = intl.formatMessage({
+    id: copyScope === "turn" ? "chat.message.copy.fullResponse" : "chat.message.copy",
+  });
   const likeLabel = intl.formatMessage({
     id: localFeedback === "like" ? "chat.message.liked" : "chat.message.like",
   });
@@ -1386,6 +1407,7 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
         rowId={rowId}
         label={copyLabel}
         tooltip={resolveTooltip(copyLabel)}
+        dataTestId={copyScope === "turn" ? `v4-copy-turn-${rowId}` : undefined}
       />
       {entityId && onFeedbackChange ? (
         <>
@@ -1556,7 +1578,7 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
           onFeedbackChange={onFeedbackChange}
           className={cn(
             "mt-1",
-            "opacity-0 transition-opacity group-hover/assistant-row:opacity-100 focus-within:opacity-100",
+            "opacity-0 transition-opacity group-hover/assistant-row:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
           )}
         />
       ) : null}
@@ -1917,7 +1939,47 @@ const ToolCallRowView = memo(function ToolCallRowView({
       </RowShell>
     );
   }
-  // 工具行去掉纵向内边距（对齐旧版无 per-tool padding）；连续工具间距由
+  // 就地生效的修订：只改并发上限、run 又在飞时这次调用
+  // 不编译、不铸新 run，结果只有一句话。判据全在已经上线的字段上——入参的形状、没有 display、
+  // 成功且非错误；工具的结构化输出不过 v4，而三处 create_workflow display schema 都是冻结字段集
+  // 的 `.strict()`，多一个键会让旧端把整条工具结果丢掉，所以这条路不新增任何协议字段。
+  // 退回真修订的那一条（run 已结算）两条判据都不成立：它有 display，也铸出一条按 toolCallId
+  // 联接得上的 run，上面那个分支先接走它。
+  const retune = isAmendWorkflowToolCall(row) ? readWorkflowRetuneCall(row.input) : undefined;
+  if (
+    retune !== undefined &&
+    row.status === "success" &&
+    (row.output?.display ?? row.display) === undefined &&
+    !context.workflowRunByToolCallId?.has(row.toolCallId)
+  ) {
+    const sessionId = context.sessionId;
+    // 被调整那条 run 的投影：只为两件事——本机天花板（措辞据它不念出一个大于上限的数）与
+    // 打开请求里那条 run 的发起行 id。它不进上面的 `workflowRun`：那个变量回答的是「这一行是不是
+    // 某条 run 的发起行」，而这一行不是。
+    const retuned = context.workflowRunByRunId?.get(retune.runId);
+    const ceiling =
+      retuned?.run === undefined ? undefined : workflowRunSettingsCeiling(retuned.run);
+    return (
+      <RowShell rowId={row.rowId} className="py-0">
+        <WorkflowRetuneRow
+          requested={retune.requested}
+          runId={retune.runId}
+          {...(ceiling === undefined ? {} : { ceiling })}
+          {...(context.onOpenWorkflowRun && sessionId
+            ? {
+                onOpen: () =>
+                  context.onOpenWorkflowRun?.({
+                    parentSessionId: sessionId,
+                    toolCallId: resolveWorkflowRunOpenToolCallId(row.toolCallId, retuned),
+                    runId: retune.runId,
+                  }),
+              }
+            : {})}
+        />
+      </RowShell>
+    );
+  }
+  // 工具行去掉纵向内边距（对齐 z-code-2 无 per-tool padding）；连续工具间距由
   // ConversationAssistantWorkItems 的 gap-4 组容器统一给。
   return (
     <RowShell rowId={row.rowId} className="py-0">

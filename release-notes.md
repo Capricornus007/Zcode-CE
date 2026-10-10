@@ -1,48 +1,31 @@
-# ZCode-CE v3.14.3-ce.2
+# ZCode-CE
 
 ## 新增功能
 
-- **Office 文档能力不再依赖系统 Python**。文档生成与结构校验改为随包 Node 载荷，开箱即用；
-  此前需要自行安装 Python 3 与相关库，未安装时技能完全不可用。
-- **新增「工具与权限」设置页**。可以查看危险命令清单、把某条命令加严为「每次都要确认」，
-  或放宽某条命令；也可以关闭「危险命令进入持久授权」，让它们每次都重新确认。
+- **macOS 安装包已就绪但本版未产出**：构建矩阵与 ad-hoc 签名配置都已上线，但本版发布时 GitHub 的 macOS runner 排队超时，两个 mac 构建被取消——**本版 Release 里没有 macOS 安装包**。macOS 用户请从源码构建（`docs/development/`），或等下一个版本附上 .dmg/.zip（届时首次打开需在 Gatekeeper 提示里选「仍要打开」，或执行 `xattr -dr com.apple.quarantine <应用>`；自动更新在 macOS 上仍会保持关闭）。
+- **内网探测改为你点头才探**：工作台里「探测局域网服务」（TCP 目标）现在会对每一个目标弹确认（显示真实 host 与端口），确认后才开始连接；同一会话内重复探测同一目标无需再确认。服务端不再对未经确认的内网地址发起任何请求。
 
 ## 体验优化
 
-- **授权弹窗现在显示真实范围**。此前它只显示「前缀」类规则，把「该工具的任意命令」这类规则
-  静默省略 —— 你无法从界面上看出自己到底授予了多大范围。现在三种范围都会列出（任意 / 前缀 / 精确）。
-  终端界面（TUI）有同一处问题，也已修。
-- **Office 技能明确了能力边界**：docx / pptx 为纯生成器，不支持重度编辑既有文档；
-  xlsx 可读写，但重写既有工作簿会丢弃图表部件（合并单元格与公式保留）。交付前会如实告知。
-- **渲染（转 PDF / 视觉检查）明确为可选增强**。需要 LibreOffice，缺失时会说明「未做视觉检查」
-  而不是静默跳过；你仍可用已有的 Word / WPS / Pages 完成同类任务。
+- **macOS 的更新提示改了说法**：点「检查更新」现在会提示去 GitHub Releases 下载未签名安装包（上一版的提示指向从源码构建——当时还没有安装包）。
+- **电子表格公式交付前先问清楚**：交付带公式的表格前会先确认本环境能否重算公式；不能时（本版就是不能）会在回复里明确写出「缓存结果未在本构建中重算」，不会把缓存的旧值当成新算的结果交出去，也不用常量冒充公式。
+- **飞书机器人的长连接内存稳定了**：用户名缓存原先只增不删，长开几天会缓慢涨内存；现在写入时顺带清掉过期项。
 
 ## 问题修复
 
-- **修复电脑控制在正式包中完全不可用**。此前驱动载荷在打包时被静默丢弃，首次调用会报
-  `Cannot find package '@trycua/cua-driver'`；该文案会误导模型安装不存在的包。
-- **修复开发模式下 office 载荷与电脑控制驱动缺失**（`pnpm dev:desktop`）。
-- **修复危险命令被记成「整类命令」**。批准一次 `sudo apt install foo` 此前会记住
-  「`sudo apt install` 任意包」；现在只记住这一条确切命令。同类问题（`doas`、`pkexec`）一并修复。
-- **修复校验器可被小文件耗尽内存**。40 KB 的构造文档可让它占用 4.2 GB 并崩溃、且不输出结果；
-  修复后同一文件占用 77 MB。
-- **修复空命令导致的权限放大**。`Bash` 收到空命令时，「始终允许本项目」会退化成
-  「本项目内任意 Bash 永久免问」，且界面上没有提示。
-- **修复校验器误判自己生成的 Word 文档**。用 docx 库产出的 `.docx` 会被校验器判为失败（而 Python 版判通过），原因是它按属性书写顺序解析命名空间，而规范里声明对该元素的所有属性生效、与顺序无关。现已修复，并补齐了同一路径掩盖的两类非法输入检查。
-- **修复校验器的 `--out` 参数可覆盖输入文档**（当它指向输入文档的符号链接时）。
-- **修复 Excel 流式读取不可用**。读取大型工作簿的流式接口恢复可用。
+- **编辑消息重发后，后台任务不再永久「运行中」**：此前在后台任务跑着的时候编辑并重发一条消息，任务完成的通知会被「分支过期」逻辑悄悄丢弃，界面永远转圈、取消也报「任务不在运行」。现在存活任务的完成通知不再被误丢，取消也能正常生效。
+- **建好的自动化不再改掉你手动命名的会话标题**：此前创建自动化（定时任务等）会无条件把会话标题改写成冻结标题，盖掉你手动起的名字；现在只在标题不是你手动起的时候才冻结。
+- **微信渠道的附件下载补上了保护**：此前微信机器人接收的附件由回调里的下载地址直接抓取（既绕过了只允许公网地址的判据，也没有超时），现在与其它渠道走同一套地址判据与 30 秒超时。
+- **导入分享时的下载补上了地址判据**：导入别人分享的会话产物时，服务端会先检查产物地址是不是公网地址，不再抓取分享方指定的任意内网地址。
+- **首次个性引导不再卡住**：引导流程在宿主未就绪时会挂起无限等待；现在 5 秒未就绪即明确报错，而不是一直转。
+- **网页端的设备身份对齐了**：此前网页端会把浏览器指纹写进新设备的记录，与桌面端生成的设备身份不一致（计费与权限锚点会分叉）；现在新记录一律由服务端统一生成设备身份。
+- **IM 机器人的交互回执诚实了**：机器人对「已处理过」的交互回执此前无论是否真的处理都回「成功」；现在未处理会明确回「未处理」并记日志，不再吞掉多端并发应答。
 
-## 其他变更
+## 本版尚未验证
 
-- 移除依赖链中**无许可依据**的 `buffers@0.1.1`（npm 无许可声明、包内无 LICENSE、上游仓库已不可访问）。
-- 补登三个此前缺失上游许可文本的第三方包。
-- **危险命令的持久授权默认关闭**。这是行为变更：此前能被「记住」的危险命令（如 `rm -rf ./build`）
-  现在每次都要重新确认。可在「工具与权限」页一键放宽。
-
-## 已知限制
-
-- **电脑控制本次只验证到「枚举应用」（`list_apps`）**，动作类调用（点击、输入）未验证。
-- **Office 载荷的验证止于打包链**，未在「安装后的完整包」中做端到端验证。
+- **macOS 构建本版未产出**：runner 排队超时、两个 mac job 被取消；配置与矩阵都在 CI 上（linux/windows 已按同一流水线产出），mac 包形态只能等下一次发布流水线真正跑通后再验证。
+- **内网探测的确认弹窗未在真实桌面/浏览器窗口里逐屏看过**：门控行为有行为测试覆盖，但真实渲染未验证。
+- **导入分享的全链路未跑**：地址判据抽成独立函数单独验证过；从创建分享到导入的完整链路未端到端跑过。
 
 ---
 
@@ -50,56 +33,27 @@
 
 ## New features
 
-- **Office document capabilities no longer need a system Python.** Document creation and structural
-  checks ship a self-contained Node payload and work out of the box. A system Python 3 install used
-  to be required, and the skills were unusable without it.
-- **New "Tools & permissions" settings page.** Review the dangerous-command list, tighten a command
-  to "always ask", relax one, or turn off persistent grants for dangerous commands entirely so they
-  are confirmed every time.
+- **macOS builds are ready but not in this release**: the build matrix and ad-hoc signing configuration are live, but GitHub's macOS runner queue timed out at release time and both mac builds were cancelled — **there are no macOS installers in this release**. macOS users should build from source (`docs/development/`) or wait for the next version, which will ship .dmg/.zip (on first launch choose "Open anyway" in the Gatekeeper prompt, or run `xattr -dr com.apple.quarantine <app>`; automatic updates stay off on macOS).
+- **Intranet probing now asks first**: "probe a LAN service" (TCP targets) now confirms each target with a dialog showing the real host and port before connecting; repeated probes of the same target in one session do not ask again. The server no longer contacts unconfirmed intranet addresses.
 
 ## Improvements
 
-- **The approval dialog now shows the real scope.** It used to list only "prefix" rules and silently
-  omit rules like "any command of this tool" — you could not tell how far a grant reached. All three
-  kinds are now listed (any / prefix / exact). The terminal UI (TUI) had the same problem and is fixed too.
-- **Office skills now state their capability boundaries**: docx / pptx are pure generators and do not
-  support heavy edits to existing documents; xlsx can read and write, but rewriting an existing
-  workbook drops chart parts (merges and formulas are preserved). This is disclosed before delivery.
-- **Rendering (PDF / visual checks) is explicitly an optional enhancement.** It needs LibreOffice;
-  when absent, the build says visual layout was not inspected rather than silently skipping it.
-  You can still use software you already have (Word, WPS, Pages) for the same task.
+- **The macOS update hint was reworded**: "Check for updates" now points to the unsigned installers on GitHub Releases (the previous wording pointed at building from source — there were no installers back then).
+- **Spreadsheet formulas are checked before delivery**: before delivering a spreadsheet with formulas, the environment now states whether recalculation is available; when it is not (as in this build), the reply explicitly says "cached values were not recalculated in this build" instead of passing cached values off as freshly computed.
+- **Feishu bot long-connection memory stabilized**: the display-name cache grew without bound; expired entries are now evicted on write.
 
 ## Fixes
 
-- **Fixed Computer Use being entirely unavailable in packaged builds.** The driver payload was
-  silently dropped during packaging, so the first call failed with
-  `Cannot find package '@trycua/cua-driver'` — wording that led the model to install a package that
-  does not exist.
-- **Fixed missing office payload and Computer Use driver in development mode** (`pnpm dev:desktop`).
-- **Fixed dangerous commands being remembered as a whole family.** Approving `sudo apt install foo`
-  used to remember "any `sudo apt install`"; it now remembers that exact command only. The same
-  problem with `doas` and `pkexec` is fixed as well.
-- **Fixed a validator memory exhaustion from small files.** A crafted 40 KB document could make the
-  validator consume 4.2 GB and crash without producing output; the same file now uses 77 MB.
-- **Fixed a permission escalation via empty commands.** With an empty `Bash` command, "Always allow
-  in this project" degraded into "any Bash command in this project, permanently, without asking",
-  with no hint in the UI.
-- **Fixed the validator rejecting Word documents it produced itself.** A `.docx` written by the docx library was judged as failing (while the Python implementation passed): it parsed namespaces in attribute order, whereas the spec makes a declaration apply to every attribute of that element regardless of order. Fixed, along with two illegal-input checks that the same code path had been masking.
-- **Fixed the validator's `--out` overwriting the input document** when it pointed at a symlink to it.
-- **Fixed Excel streaming reads being unavailable.** The streaming API for large workbooks works again.
+- **A background task no longer stays "running" forever after editing and resending a message**: when a message was edited while a background task was running, the completion notification was silently dropped by the branch-expiry logic, leaving the UI spinning and cancel reporting "task not running". Surviving tasks now receive their completion notifications and cancel works.
+- **Creating an automation no longer overwrites a session title you named manually**: the title is frozen only when it was not manually set.
+- **WeChat-channel attachment downloads are now guarded**: attachments arriving via the WeChat bot callback used to be fetched directly from whatever URL the callback carried (bypassing the public-address restriction and any timeout); they now go through the same address check with a 30-second timeout.
+- **Share imports now check artifact addresses**: when importing a shared session artifact, the server first verifies the address is a public one instead of fetching whatever URL the sharing side specified.
+- **First-run onboarding no longer hangs**: if the host is not ready, the flow fails clearly after 5 seconds instead of spinning forever.
+- **Web client device identity is now consistent**: the web client used to write a browser fingerprint into new device records, diverging from the device identity generated by the desktop side (billing and permission anchors disagreed). New records now get their device identity from the server.
+- **IM bot interaction receipts are honest**: an "already handled" reply used to claim success regardless of whether it was actually handled; unhandled now returns "not handled" with a log entry, without breaking concurrent replies from other endpoints.
 
-## Other changes
+## Not yet verified in this version
 
-- Removed **`buffers@0.1.1`** from the dependency chain: no license declaration on npm, no LICENSE
-  file in the package, and its upstream repository is no longer reachable.
-- Added upstream license texts for three third-party packages that were missing them.
-- **Persistent grants for dangerous commands are off by default.** This is a behavior change:
-  dangerous commands that used to be remembered (such as `rm -rf ./build`) are now confirmed every
-  time. It can be relaxed with one click on the "Tools & permissions" page.
-
-## Known limitations
-
-- **Computer Use was verified only up to listing applications (`list_apps`)**; action calls
-  (clicks, typing) were not verified.
-- **Office payload verification stops at the packaging chain** — no end-to-end check inside a fully
-  installed build.
+- **macOS builds were not produced in this version**: the runner queue timed out and both mac jobs were cancelled; the configuration and matrix are in CI (linux/windows shipped via the same pipeline), and the packaged-mac experience can only be validated once a release pipeline actually completes the mac jobs.
+- **The intranet-probe confirmation dialog has not been seen in a real desktop/browser window**: the gating behavior is covered by behavior tests, but the rendered dialog was not verified end to end.
+- **The full share-import chain was not run**: the address check is factored out and tested on its own; the end-to-end path from creating a share to importing it was not executed.

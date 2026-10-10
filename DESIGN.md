@@ -49,6 +49,14 @@ User-facing theme choices are:
 
 Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
 
+The persisted theme preference is the `localStorage` key `zcode-theme`, and only the built-in values
+(`system` / `light` / `dark` / `zai-light` / `zai-dark`) are accepted. Every read point (the shared theme
+reader in `packages/ui/src/useTheme.ts`, the Zustand store, the desktop renderer boot scripts, and the web
+bootstrap inline script) validates the stored value: unrecognized entries — including third-party values
+injected into renderer `localStorage` (issue #2) — fall back to the built-in Zai Dark palette and are
+reported through the UI logger instead of being applied. Custom palette entries are not a supported
+theme input; the palette is static CSS, never parsed from `localStorage`.
+
 ## Color Palette
 
 ### Core semantic colors
@@ -485,6 +493,8 @@ Depth rules:
 ## Workspace layout
 
 Desktop and wide Web workspace content uses independent conversation, bottom terminal, and Side Pane frames. The conversation frame contains WorkspaceHeader and conversation; the optional terminal has its own frame below it, and Side Pane owns its tab bar. Frames use their own background and border, with 4px resizable gaps matching the macOS outer inset. Resize handles keep a transparent 4px hit area and show a 2px tertiary foreground (`foreground-subtlest/50`) line on hover, focus or drag. The indicator extends along the panel edge, inset by the panel radius at both ends, with rounded ends and no mask. Layout frames do not count toward content radius levels. Mobile remote control retains its single-column and drawer presentation.
+
+> **Upstream-only note.** The mobile remote-control feature was removed before this tree was open-sourced: there is no drawer implementation here and the narrow-remote switches are always `false`, so read that sentence as upstream design intent rather than as a description of code you can find in this repository. See [official-diff](docs/development/official-diff.md).
 
 ## Responsive Behavior
 

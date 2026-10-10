@@ -1,7 +1,7 @@
 # 持续集成与发布构建
 
-本仓库用 GitHub Actions 承担两件事：日常校验（`ci.yml`）与发布打包（`release.yml`）。
-两者都在 `.github/workflows/` 下，无需自建 runner。
+本仓库用 GitHub Actions 承担三件事：日常校验（`ci.yml`）、发布打包（`release.yml`）、
+跨平台实测（`cross-platform.yml`）。三者都在 `.github/workflows/` 下，无需自建 runner。
 
 ## 为什么发布必须走 CI
 
@@ -20,12 +20,97 @@
 | 格式检查 | `pnpm fmt:check`                           |
 | 测试     | `pnpm test`                                |
 | 架构检查 | `pnpm run architecture:check -- --changed` |
+| 构建检查 | 见下方「构建检查」                         |
 
 用 `fetch-depth: 0` 做完整克隆，因为 `architecture:check --changed` 需要与基线比较变更集，
 浅克隆会让它算错改动范围。
 
+**`pnpm test` 在 CI 上跑的是「无构建产物」形态**：它前面只有 `pnpm typecheck`，而该工程列表
+（根 `package.json` 的 `typecheck`）**不含 `apps/zcode-cli`** ⇒ `apps/zcode-cli/packages/*/dist`
+在 runner 上从不存在。因此 `scripts/run-tests.mjs` 对 `apps/zcode-cli/**` 的测试包追加
+`--import packages/services/test/support/zcodeSourceResolver.mjs`，把 `@zcode/*` 解析到源码；
+根 `packages/*` 的 `dist` 由 typecheck 真产出，保持按 `exports` 解析。
+**本地复刻 CI 时必须先移走这些 dist**，否则「本机构建过」会掩盖这条链路的失败
+（`ERR_MODULE_NOT_FOUND`）—— 见 `docs/development/local-setup.md`。
+
+**同一个「无产物」前提还有第二种失败形态：包内相对导入指向被 gitignore 的生成文件。**
+`@zcode/dynamic-workflow` 的 `src/compiler/compile.ts` 导入 `./libs.generated.js`，
+而该文件只由本包的 `scripts/generate-libs.mjs` 产出（`.ts` 形态、被 `.gitignore` 忽略）。
+它在干净检出里从不存在 ⇒ 该包与依赖它的 `core` / `bootstrap` 测试在 ESM link 阶段
+直接 `ERR_MODULE_NOT_FOUND`（CI run 36136866942）。这不是 `zcodeSourceResolver.mjs` 的缺口：
+那个钩子只重写 `@zcode/*` 的**包解析**，而这是**包内相对导入**；且 tsx 本来就会把
+`./x.js` 映射到同名 `x.ts`，只是**目标文件必须存在**。
+因此 `scripts/run-tests.mjs` 用 `TEST_PACKAGE_GENERATORS` 登记「跑测试前必须先跑的生成脚本」，
+只对登记过的包执行其自身的生成脚本（幂等、实测 0.02s、不跑 tsc）。
+**新增「源码 import 一个被 gitignore 的生成文件」时，必须同时在该表登记它的生成脚本。**
+
 **刻意不跑 `pnpm licenses:check`**：它比对的平台包集合与 runner 平台相关，
 在 CI 环境会因平台差异产生与改动无关的失败。
+
+### 构建检查（Build check (agent bundle)）
+
+```bash
+shopt -s nullglob
+rm -rf apps/zcode-cli/packages/*/dist packages/desktop/bundled-agents
+node scripts/build-desktop-agent-cli.mjs
+test -s apps/zcode-cli/packages/cli/dist/zcode.cjs
+```
+
+**为什么存在**：上面五步**都不解析打包器的模块解析**。`pnpm typecheck`（tsc/NodeNext）与
+`pnpm test`（`tsx --test`）按各包 `package.json` 的 `exports` 解析模块，而 agent bundle 走的是
+**手写白名单 + 前缀改写**的 esbuild 别名表（`apps/zcode-cli/packages/cli/scripts/build.mjs`
+的 `resolveBuildAliases`）。两条链路互不相干，于是「源码级全绿、构建级红」可以一路漂到打包才暴露。
+
+**实测过一次完整漂移**：新增 shared 子路径 `@zcode/shared/mcpDisabledTools` 时漏登记别名，
+上面五步全部通过，而 `prepare:remote-assets`、桌面 agent 打包、SEA 打包**三条链同时断**，
+报错是 esbuild 把子路径拼到总入口后面：
+
+```
+✘ [ERROR] Cannot read directory ".../packages/shared/src/index.ts": not a directory
+✘ [ERROR] Could not resolve ".../packages/shared/src/index.ts/mcpDisabledTools"
+```
+
+**能抓住哪类失败**：
+
+| 类别                  | 例子                                                                                                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 打包期模块解析        | 新增/改名的 `@zcode/shared/<subpath>`、`@zcode/*` 子路径或 workspace 包入口漏登记 esbuild 别名                                                                                                                  |
+| 打包产物生成          | 入口图里出现打包器解不开的东西。**真实候选**：`@zcode/node-repl-host` 的 `exports` 各条都没有 `import` 条件、直接指向 `./src/*.ts`（实测命令见下），一旦有打包入口图把它当普通依赖解析就会挂，而 `tsc` 完全正常 |
+| 独立 runtime 产物校验 | `node-repl-host/dist/mcp/server.js`、`browser-use-plugin/scripts/browser-client.mjs` 缺失时报错                                                                                                                 |
+| 构建期断言            | 构建脚本内部对 workspace 包产物/清单的校验（例如 shared 必须钉一个精确的 zod v4 版本）                                                                                                                          |
+
+**先删 dist 是刻意的**：不删 `dist` 时构建可能直接打到上一次留下的产物，别名错误因此**看不见**（实测过这种假通过）。
+
+上面那条 `node-repl-host` 的候选可以用一段只读脚本复核（它只解析 `package.json` 的 `exports` 形状）：
+
+```bash
+node -e "for (const p of ['node-repl-host','core','adapters']) {
+  const e = require('./apps/zcode-cli/packages/'+p+'/package.json').exports ?? {};
+  for (const [k, v] of Object.entries(e))
+    if (typeof v === 'object' && v && !('import' in v)) console.log(p + k + ' -> ' + JSON.stringify(v));
+}"
+```
+
+**实测代价**（本仓库 Linux 开发机、Node 24；CI 为 ubuntu-latest，量级相同）：
+
+| 项目                         | 实测                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| 这步新增的墙钟时间           | **约 32–35s**（`pnpm typecheck` 之后、干净 dist 上跑：32s / 31s / 35s 三次） |
+| 其中 library 的 tsc          | 约 27s（7 个 workspace 包全量重编译，它是 bundle 的前置条件，删不掉）        |
+| 其中两个独立 runtime 构建    | 约 4s                                                                        |
+| 其中 esbuild 打 agent bundle | < 1s                                                                         |
+| 联网/大资产                  | **无**（全部来自 workspace 与 `node_modules`；不下载 Node 运行时）           |
+
+**为什么不用 `pnpm prepare:remote-assets`**：它会下载 Node 运行时并写约 500MB 的 `mock-cdn`，
+还要为每个平台产一份 seed，不适合每次 PR。这里选的是它的**前段**（同一份
+`scripts/build-desktop-agent-cli.mjs`），只覆盖当前平台的 agent bundle。
+
+**与 `release.yml` 的关系（重要）**：这步**不是**发布构建，也不是它的替代。
+它只证明「模块能被正确解析并打出 agent bundle」；发布构建还会做平台化 seed、远程资产装配、
+安装包生成与产物审计（见下一节）。**CI 绿不等于可以发版**。
+
+**本地无法完整验证的部分**：GitHub Actions 只能在 GitHub runner 上执行，本地无法运行工作流本身；
+这步的命令级行为已在本地按原样跑过（含负对照，见下），但 job 整体仍需在真实 PR 上确认一次。
 
 ## `release.yml` — 发布打包
 
@@ -117,7 +202,41 @@ permissions:
 使用 Actions 自带的 `secrets.GITHUB_TOKEN`，不需要额外 PAT。构建步骤显式注入
 `GH_TOKEN`，因为 electron-builder 的 GitHub publisher 读的是这个变量名。
 
+## `cross-platform.yml` — 跨平台实测（三 OS 构建 + smoke）
+
+把 macOS / Windows 的「**能构建 / 能启动 / 能连面板**」从**推断**变成**实测**，而不需要我们自己
+拥有 mac/Windows 硬件。依据：[`.reverse/36-ssh/ROADMAP.md` §1](../../.reverse/36-ssh/ROADMAP.md)
+的阶梯 ①（最便宜，且是 ②③④⑤ 的前置）。
+
+| 项   | 值                                                                                                                                                                                       |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 触发 | `workflow_dispatch`（手动）+ `schedule`（每日 03:00 UTC 漂移检测）                                                                                                                       |
+| 矩阵 | `ubuntu-latest` / `macos-latest` / `windows-latest`，`fail-fast: false`                                                                                                                  |
+| 步骤 | checkout → pnpm → node 24.14.0 → `pnpm install --frozen-lockfile` → `node scripts/build-zcode.mjs --allow-placeholder-base-url` → `node scripts/zcode-distribution-smoke.mjs <精确路径>` |
+| 超时 | `timeout-minutes: 60`                                                                                                                                                                    |
+
+**为什么单独一个 workflow**（既不并进 `ci.yml`，也不并进 `release.yml`）：
+
+- 并进 `ci.yml` ⇒ **每个 PR** 都要在 mac/Windows runner 上跑一遍完整构建 + 解包 + smoke，成本过高。
+  `.reverse/archive/45-release/CE3-CHECKLIST.md` §1 的 F2-M 已定口径：**nightly 或发布前，不进每个 PR**。
+- 并进 `release.yml` ⇒ 只有打 tag 才知道结果，而那时已经在发版路径上（红会卡住发版）。
+
+**为什么用 `--allow-placeholder-base-url` 而不是 `pnpm build:zcode`**：后者要求仓库变量
+`ZCODE_DIST_BASE_URL`，缺失时直接抛错；本工作流不发布，也不该依赖该变量是否存在。
+占位基址只写进 `install.sh` 与 `latest.json`，**包体与之无关**（该不变式由
+`scripts/test/installScriptBaseUrl.test.mjs` 钉住，见 [headless-server.md](./headless-server.md) §2 的例外）。
+
+**不设 `continue-on-error`**：某个 OS 跑不通就让它红 —— 那是本工作流要产出的信息本身。
+已知 Windows 上会红（smoke 的 POSIX 专属断言：执行位 755、`SIGTERM` ⇒ 143），
+根因与处置口径见 [headless-server.md](./headless-server.md) §10.1。
+
+**本地无法验证的部分**：GitHub Actions 只能在 GitHub 的 runner 上执行，**本地无法运行工作流本身**。
+本工作流已做的本地核对只有：YAML 可解析（`yaml.parse`）、步骤/矩阵形状断言、以及
+`scripts/test/releaseWorkflowReleasePaths.test.mjs`（它会扫描**所有** workflow，确认
+`dist/zcode/releases/` 引用都带版本目录）。**三个 OS 上的真实结果尚未观测**，需 push 后在 Actions 页面确认。
+
 ## 本地无法验证的部分
 
 GitHub Actions 只能在 GitHub 的 runner 上执行，**本地无法运行**。因此工作流文件的改动
-只能做 YAML 语法校验与命令级核对，真实运行结果需要在第一次打 tag 时确认。
+只能做 YAML 语法校验与命令级核对，真实运行结果需要在第一次打 tag 时确认
+（`cross-platform.yml` 则是第一次 `workflow_dispatch` / nightly）。

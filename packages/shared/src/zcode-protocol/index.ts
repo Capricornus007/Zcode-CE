@@ -3,6 +3,9 @@ import {
   databaseStartupErrorDetailsSchema,
   databaseMigrationFactsSchema,
 } from "../database-startup.js";
+// disabledTools 的上限唯一所有者是 `../mcpDisabledTools.js`（叶子模块，不依赖任何本仓模块）。
+// 这里只**消费**它，不再自带一份常量：两份同值常量会各自漂移，而 wire 边界与配置边界必须同一个数。
+import { MCP_SERVER_MAX_DISABLED_TOOLS } from "../mcpDisabledTools.js";
 /* oxlint-disable eslint(max-lines) -- ZCode Protocol schema 需要单文件导出，方便 app 与 agent 共享同一份协议契约。 */
 // ── 旧协议删除边界──────────────────────
 // 剩余 ~257 个导出：旧 ZCode Protocol 方法契约、请求/响应/事件 schema、
@@ -20,6 +23,7 @@ import { bashOutputDisplaySchema } from "../bash-output-display.js";
 // 后台详情共享精简的只读响应 schema，不携带命令或计时元数据。
 export * from "../background-bash-output.js";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
+import { zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
 import { z } from "zod";
 export * from "../process-diagnostic.js";
 import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
@@ -637,6 +641,10 @@ export const zcodeProtocolMcpServerSchema = z.union([
       env: z.array(zcodeProtocolMcpEntrySchema),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      // 工具级启停（disabledTools）必须走 wire：它是 server 配置对象的一部分，UI 读到的
+      // server.config 要原样下发给 agent。这个 schema 是 .strict() 的——漏声明该键，
+      // host 传下来的启用列表会在协议校验阶段被判成非法，整个 session/create 失败。
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -649,6 +657,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       oauth: zcodeProtocolMcpOAuthSchema.optional(),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -1752,6 +1761,7 @@ export const zcodeSessionSendParamsSchema = z
     automationId: nonEmptyString.optional(),
     offPeakTaskId: nonEmptyString.optional(),
     offPeakRunType: z.enum(["init", "resume"]).optional(),
+    botDeliveryTarget: zcodeAutomationBotDeliveryTargetSchema.optional(),
     toolDenylist: z.array(nonEmptyString).optional(),
   })
   .strict()
@@ -2386,7 +2396,15 @@ export const zcodeUserInputResponseSchema = z
   .strict();
 export type ZCodeUserInputResponse = z.infer<typeof zcodeUserInputResponseSchema>;
 
-export const zcodeProviderRuntimeHeadersRequestReasonSchema = z.enum(["model-request"]);
+// `captcha-retry`：start-plan 的 3007 验证码挑战触发单次重试时，agent 以此 reason
+// 重新请求运行时鉴权材料，使渲染层重新求解验证码并回传新 token（对齐官方语义）。
+export const zcodeProviderRuntimeHeadersRequestReasonSchema = z.enum([
+  "model-request",
+  "captcha-retry",
+]);
+export type ZCodeProviderRuntimeHeadersRequestReason = z.infer<
+  typeof zcodeProviderRuntimeHeadersRequestReasonSchema
+>;
 export const zcodeProviderRuntimeHeadersRequestParamsSchema = z
   .object({
     requestId: nonEmptyString,
@@ -2419,13 +2437,21 @@ export const zcodeProviderRuntimeHeadersResponseSchema = z.discriminatedUnion("h
   z
     .object({
       headersApplied: z.literal(true),
-      // 合并重接：成功必须携带当前请求的鉴权材料，不依赖旧 Registry 已被写入。
+      // 合并重接：成功携带当前请求的鉴权材料，不依赖旧 Registry 已被写入。
+      // 可选：渲染层应答（如 start-plan 的验证码挑战）不携带账号材料——账号材料由 host 自行
+      // 解析，渲染层只回传 runtimeProviderHeaders。与官方 renderer 的响应形态一致
+      // （官方只发 {headersApplied:true, runtimeProviderHeaders}）。
+      // host 自答路径仍会填该字段；把它设为必填会让渲染层被迫发一个它不该管的字段。
       requestAuth: z
         .object({
           apiKey: nonEmptyString.optional(),
           headers: z.record(nonEmptyString, nonEmptyString).optional(),
         })
-        .strict(),
+        .strict()
+        .optional(),
+      // 渲染层回传的运行时请求头（当前仅 start-plan 的阿里云验证码凭据）。
+      // host 只把白名单内的头并入 requestAuth.headers，不接受任意头注入。
+      runtimeProviderHeaders: z.record(nonEmptyString, nonEmptyString).optional(),
       errorMessage: nonEmptyString.optional(),
     })
     .strict(),
@@ -3386,6 +3412,7 @@ export const zcodeAutomationCreateParamsSchema = z
     modelSelection: modelSelectionSchema.optional(),
     mode: zcodeTaskModeSchema.optional(),
     targetTaskId: nonEmptyString.optional(),
+    botDeliveryTarget: zcodeAutomationBotDeliveryTargetSchema.optional(),
     recurring: z.boolean().optional(),
     maxRuns: z.number().int().positive().optional(),
     // 会话侧自定义重复 carrier：每 N 分钟/小时/天/周/月/年均通过此字段归一化为权威 scheduleRule，

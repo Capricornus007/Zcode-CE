@@ -12,6 +12,7 @@ import type {
   StableForkGoalBoundaryMetadata,
   TraceContext,
 } from "@zcode/contracts";
+import type { ZCodeAutomationBotDeliveryTarget } from "@zcode/shared";
 import type {
   CommandAck,
   CommandEnvelope,
@@ -69,6 +70,8 @@ export interface V4SessionRecordView {
   activeAutomationId?: string;
   /** 当前正在执行的闲时派发 turn；只在 turn 运行期间存在。 */
   activeOffPeakTaskId?: string;
+  /** 当前 Bot 入站 turn 的稳定回推地址；turn 结束后必须恢复。 */
+  activeBotDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
   /** 恢复失败告警：存在时拒绝新 turn（历史损坏不能静默续写）。 */
   restoreWarning?: { message: string; type: string };
   taskType?: SessionTaskType;
@@ -87,6 +90,14 @@ export interface V4CommandCoreHost {
   /** guide eligibility：只阻止已有 ordinary queue；已有 guide 仍允许继续按 FIFO admission。 */
   hasQueuedDelivery?(sessionId: string, delivery: "guide" | "queue"): boolean;
   getQueueLength?(sessionId: string): number;
+  /**
+   * 切模型复位队列授权位（spec 130 §4.6）的判据读侧：投影里的 queue.autoDrain + pauseReason。
+   * 无投影 → null（调用方按「不复位」处理）。数据源 = v4 投影，与 getInputRoutingMode 同一条
+   * 「命令层读投影」通路，不新建第二份状态。
+   */
+  getQueueAutoDrainState?(
+    sessionId: string,
+  ): { autoDrain: boolean; pauseReason?: "stopped" | "manual" | "error" } | null;
   /** timeline/child 这类无 user message 的成功副作用持久化查重事实。 */
   recordPersistentCommandFact?(
     sessionId: string,

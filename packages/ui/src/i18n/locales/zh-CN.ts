@@ -1035,6 +1035,14 @@ const zhCN: Record<string, string> = {
   "codeBlock.mermaid.ariaLabel": "Mermaid 图表",
   "codeBlock.wrapLines": "自动换行",
   "codeBlock.copyCode": "复制代码",
+  "codeBlock.sendToTerminal": "发送到终端（不会自动执行，需你在终端里按回车）",
+  "codeBlock.sendToTerminalElevated":
+    "发送到终端（需要管理员权限，不会自动执行，需你在终端里按回车）",
+  "codeBlock.sendToTerminalDelivered": "已发送到终端，请在终端里确认后按回车执行。",
+  "codeBlock.sendToTerminalNeedsBracketedPaste":
+    "这条多行命令无法安全地一次性粘贴到当前终端，请逐条发送或手动复制。",
+  "codeBlock.sendToTerminalUnavailable": "没有可用的集成终端，请先打开终端面板再发送。",
+  "codeBlock.sendToTerminalOpenFailed": "终端打开失败，请重试。",
   "codeBlock.mermaid.empty": "Mermaid 源码为空。",
   "codeBlock.mermaid.error": "Mermaid 图表渲染失败",
   "codeBlock.mermaid.openPreview": "放大查看",
@@ -1172,6 +1180,8 @@ const zhCN: Record<string, string> = {
   "update.toast.downloading": "正在下载新版本 v{version}",
   "update.toast.alreadyDownloading": "正在下载新版本（{progress}%）",
   "update.toast.ready": "v{version} 已下载，重启即可安装",
+  "update.toast.unsupportedPlatform":
+    "macOS 暂不支持自动更新：从 GitHub Releases 下载未签名安装包（首次打开需允许 Gatekeeper）。",
   "update.toast.devSkipped": "开发环境不检查更新",
   "update.toast.error": "检查更新失败：{error}",
   "forceUpdate.title": "需要升级 ZCode 后继续使用",
@@ -1252,6 +1262,19 @@ const zhCN: Record<string, string> = {
     "已移除项目，但检测到 {count} 个 Windows 保留名文件，可能影响后续删除或重命名目录：{path}",
   "workspaceSidebar.reconnect": "重新连接",
   "workspaceSidebar.connecting": "连接中",
+  "workspaceRuntime.starting.title": "正在启动工作区…",
+  "workspaceRuntime.failed.title": "「{workspace}」启动失败",
+  "workspaceRuntime.failed.reasonUnavailable":
+    "没有拿到具体原因，可重试一次；若持续失败请查看日志。",
+  "workspaceRuntime.failed.retry": "重试",
+  "workspaceRuntime.notStarted.title": "未启动（点开即启动，不影响其它工作区）",
+  "workspaceRuntime.notStarted.persistedSessions": "已有 {count} 个会话，最近活动 {activity} 前",
+  "workspaceRuntime.notStarted.noSessions": "还没有会话；打开后可新建任务",
+  "workspaceRuntime.notStarted.open": "打开并启动",
+  "workspaceSidebar.registry.showAll": "显示全部工作区（还有 {count} 个）",
+  "workspaceSidebar.registry.hideAll": "收起未打开的工作区",
+  "workspaceSidebar.registry.loadFailed": "工作区列表读取失败：{reason}",
+  "workspaceSidebar.registry.retry": "重新读取",
   "workspaceSidebar.notConnected": "未连接",
   "workspaceSidebar.empty": "暂无工作区，请先打开一个工作区。",
   "workspaceSidebar.unavailableLocalDirectory":
@@ -1259,6 +1282,142 @@ const zhCN: Record<string, string> = {
   "workspaceSidebar.showSidebar": "显示侧边栏",
   "workspaceSidebar.hideSidebar": "隐藏侧边栏",
   "workspaceSidebar.toggleSidebar": "切换侧边栏",
+  // 远控（ce.3 · 切片 1 入口 / 切片 3 面板）。文案按 spec §3.6.1：短语式、不写解释性长句。
+  // 措辞红线：说的是「在这台机器上开一个可被浏览器访问的工作台」，不是「控制桌面端 /
+  // 接管桌面会话」—— 桌面端已连的远端 SSH/Docker 目标不会共享给浏览器，不得在 UI 里承诺。
+  "remotePanel.entry.title": "远程控制",
+  "remotePanel.entry.status.off": "未开启",
+  "remotePanel.entry.status.running": "运行中",
+  // ce.4 加回：连接面落地后 waiting 第一次有了产出路径 ——
+  // 「服务在跑 且 已连设备数为 0」（连接面契约 §6.4 的 GET …/connections 返回空数组）。
+  // 与官方 webRemoteControl.statusDetail.idle「等待连接。」同义（文案自研，不搬原句）。
+  "remotePanel.entry.status.waiting": "等待连接",
+  "remotePanel.title": "远程控制",
+  "remotePanel.subtitle": "扫码或打开链接，即可操作这台机器上的工作台",
+  // ── 标签页共存（task-93）：两条不同的远控路径，命名必须让人一眼看出是两件事 ──
+  // 命名红线：UI 里不得出现「自托管」 —— 那是实现方式，不是用户能做的事。
+  // 伞名仍是「远程控制」；两条路径叫「Web 控制」（浏览器操作这台机器的工作台）
+  // 与「IM 机器人」（在聊天软件里跟机器人对话）。注意别与侧栏已有的
+  // `remote.trigger`「远程连接」（我连出去）撞名 —— 那一个方向相反。
+  "remotePanel.tab.web": "Web 控制",
+  "remotePanel.tab.imBot": "IM 机器人",
+  "remotePanel.imBot.description": "在微信、飞书或 Telegram 里跟机器人对话，让它操作这个工作区。",
+  "remotePanel.imBot.badge.disabled": "未启用",
+  "remotePanel.imBot.badge.enabling": "启用中",
+  "remotePanel.imBot.badge.enabled": "已启用",
+  "remotePanel.imBot.action.enable": "启用",
+  // fix.2：原先这里有一条 pendingServer 说明（"服务端能力尚未接入：现在启用只会记下请求"）。
+  // 那一档已改为「整页不渲染」（remoteControlPanelModel.ts 的 canRenderRemoteControlImBotTab），
+  // 文案不再有产出路径，故删除 —— 留着一个永不可达的键会让下一个人以为还有这条路径。
+  "remotePanel.imBot.state.enabling": "正在启用…",
+  "remotePanel.imBot.state.requested":
+    "已请求启用，等待服务端就绪；在此之前机器人不会收发任何消息。",
+  "remotePanel.imBot.state.enabled": "已启用：在聊天软件里给机器人发消息即可操作这个工作区。",
+  "remotePanel.imBot.reminder.title": "启用前须知",
+  "remotePanel.imBot.reminder.account":
+    "需要外部账号：微信、飞书、Telegram 的机器人身份与凭据由对应平台签发，ZCode 不代你注册。",
+  "remotePanel.imBot.reminder.thirdParty":
+    "消息与文件会经过第三方平台的服务端：你发给机器人的内容、机器人回复的内容都不只在本机流转。",
+  "remotePanel.imBot.reminder.platformRecords":
+    "这些平台侧的记录不在这台机器的控制范围内，删除本机数据也不会删掉它们。",
+  // 生效时机（spec §10 P4：新增渠道要重启才生效，可接受但不得静默）。
+  // 不写成"配置未生效"这类含糊说法 —— 用户要知道的是"现在该做什么"。
+  "remotePanel.imBot.restartNotice":
+    "新增或启用渠道后，入站回调要重启服务才生效；删除渠道立即生效。",
+  "remotePanel.imBot.confirm.title": "启用 IM 机器人？",
+  "remotePanel.imBot.confirm.body":
+    "启用后，机器人会把消息和文件发到第三方聊天平台。确认这三点再继续：",
+  "remotePanel.imBot.confirm.continue": "继续启用",
+  "remotePanel.badge.stopped": "未开启",
+  "remotePanel.badge.stale": "已停止",
+  "remotePanel.badge.starting": "开启中",
+  "remotePanel.badge.running": "运行中",
+  "remotePanel.badge.stopping": "停止中",
+  "remotePanel.badge.untrusted": "未接管",
+  "remotePanel.badge.failed": "启动失败",
+  "remotePanel.advice.stopped": "开启后，其他设备用浏览器连上这台机器的工作台。",
+  "remotePanel.advice.stale": "上一次的服务已不在，可以重新开启。",
+  "remotePanel.advice.stale.pidDead": "上一次的服务进程已退出，可以重新开启。",
+  "remotePanel.advice.stale.portClosed": "上一次的服务已不在，可以重新开启。",
+  "remotePanel.advice.stale.probeTimeout": "端口上有东西但不响应。重新开启，或先排查该端口。",
+  "remotePanel.advice.starting": "正在开启…",
+  "remotePanel.advice.stopping": "正在停止…",
+  "remotePanel.advice.running": "浏览器打开链接即可操作这台机器的工作台。",
+  "remotePanel.advice.running.adopted": "这台机器上已有工作台在运行，已接管显示。",
+  "remotePanel.advice.untrusted": "该端口上是别的服务，未接管。换个端口再试。",
+  "remotePanel.advice.failed": "启动失败。重试，或查看日志。",
+  "remotePanel.advice.failed.portTaken": "端口已被占用。换个端口再试。",
+  "remotePanel.advice.failed.spawnFailed": "服务进程没能启动。查看日志后重试。",
+  "remotePanel.advice.failed.probeTimeout": "服务未在预期时间内就绪。重试，或查看日志。",
+  "remotePanel.advice.failed.tokenUnreadable": "令牌文件读不到。检查文件权限后重试。",
+  // 措辞修正（服务端本批加固后）：不得再把「仅本机」当成无令牌时的兜底 ——
+  // 一旦配置里出现可信代理/登记域名这类「会被外部访问」的信号，回环绑定同样拒绝启动
+  // （packages/server/src/exposureGate.ts）。承诺「换回环就能用」是承诺一个不存在的出路。
+  "remotePanel.advice.failed.nonLoopbackWithoutToken":
+    "没有可用令牌就不能对外开放。请恢复令牌文件，或查清令牌为何为空。",
+  "remotePanel.action.none": "不可用",
+  "remotePanel.action.start": "开启",
+  "remotePanel.action.stop": "停止",
+  "remotePanel.action.retry": "重试",
+  "remotePanel.action.retryOtherPort": "换端口重试",
+  "remotePanel.action.copyLink": "复制链接",
+  "remotePanel.action.copied": "已复制",
+  "remotePanel.action.copyFailed": "复制失败",
+  // ce.4 连接面：令牌轮换入口只在桌面面板出现（spec §6.5 决策④）。UI 侧按
+  // 「宿主是否提供该动作」门控 —— 不提供就不渲染（不是渲染成禁用按钮）。
+  "remotePanel.action.rotateToken": "轮换令牌",
+  "remotePanel.action.rotatingToken": "轮换中…",
+  // 监听范围（spec §3.3）：默认「本机所在的局域网」，一键切回环。
+  "remotePanel.listen.label": "监听范围",
+  "remotePanel.listen.loopback": "仅本机",
+  "remotePanel.listen.lan": "本机所在的局域网",
+  "remotePanel.listen.portAuto": "自动选择端口",
+  "remotePanel.listen.customPort": "指定端口",
+  "remotePanel.listen.portLabel": "端口",
+  "remotePanel.listen.portPlaceholder": "留空 = 自动选择空闲端口",
+  // 端口非法时拒绝启动并说清（不静默退回自动选端口：那会让用户以为指定生效了）。
+  "remotePanel.listen.portInvalid": "端口需要是 1-65535 之间的整数；留空则自动选择空闲端口。",
+  // 已连设备（spec §3.3 / §6.4）。空态与"读不到"是两个不同的事实：
+  // 空数组 = 确实没人连着；读不到（null）= 不知道，不宣称任何结论。
+  "remotePanel.devices.title": "已连设备",
+  "remotePanel.devices.empty": "暂无设备",
+  "remotePanel.devices.unknown": "暂时读不到已连设备。",
+  "remotePanel.devices.revokeOne": "断开",
+  "remotePanel.devices.revokeAll": "全部断开",
+  "remotePanel.devices.column.address": "地址",
+  "remotePanel.devices.column.role": "角色",
+  "remotePanel.devices.column.connectedAt": "连接时间",
+  "remotePanel.devices.column.userAgent": "客户端",
+  "remotePanel.devices.role.terminalClient": "浏览器",
+  "remotePanel.devices.role.trustedHost": "受信主机",
+  "remotePanel.connection.title": "连接方式",
+  "remotePanel.connection.audience": "手机、电脑都能连",
+  "remotePanel.connection.linkPending": "链接准备中…",
+  "remotePanel.qr.alt": "远程控制二维码",
+  "remotePanel.qr.fallback": "扫码不便？用链接",
+  "remotePanel.safety.title": "安全提示",
+  "remotePanel.safety.lanExposure": "已对局域网开放：同网段任何人都可以尝试连接，令牌是唯一屏障。",
+  "remotePanel.safety.tokenIsTheOnlyBarrier":
+    "令牌等同于 agent 级访问：能在这台机器上执行命令、读写文件。",
+  "remotePanel.safety.linkIsCredential": "链接与二维码本身就是凭据，不要公开分享，也不要截图外发。",
+  "remotePanel.safety.plainHttp": "明文 http 仅限可信局域网；跨网络请放在 TLS 反代或隧道之后。",
+  "remotePanel.confirm.startLan.title": "对局域网开放？",
+  "remotePanel.confirm.startLan.body":
+    "开启后，同网段任何人都可以尝试连接这台机器上的工作台。\n令牌是唯一屏障：拿到令牌就等于能在这台机器上执行命令、读写文件。",
+  "remotePanel.confirm.startLan.continue": "继续",
+  // ce.4 写动作的二次确认（spec §6.3）。危险动作一律二次确认。
+  "remotePanel.confirm.stop.title": "停止服务？",
+  "remotePanel.confirm.stop.body": "所有已连设备都会断开，需要重新扫码或打开链接才能回来。",
+  "remotePanel.confirm.rotateToken.title": "轮换令牌？",
+  "remotePanel.confirm.rotateToken.body": "轮换后旧链接与二维码立即失效，所有人需重新连接。",
+  "remotePanel.confirm.revokeOne.title": "断开这台设备？",
+  "remotePanel.confirm.revokeOne.body": "该设备上的页面会断开，需要重新扫码或打开链接才能回来。",
+  "remotePanel.confirm.revokeAll.title": "断开全部设备？",
+  "remotePanel.confirm.revokeAll.body": "所有已连设备都会断开，需要重新扫码或打开链接才能回来。",
+  // 常驻危险提示（spec §3.5 危险品口径，不可关闭）。
+  "remotePanel.danger.credentials": "链接与二维码本身就是凭据，不要公开分享。",
+  "remotePanel.danger.sharedToken": "令牌是共享密钥，轮换后所有人需重连。",
+  "remotePanel.danger.noTls": "明文 http 仅限可信局域网，跨网请放在 TLS 反代或隧道之后。",
   "workspaceSidebar.resizeSidebar": "调整侧边栏宽度",
   "workspaceSidebar.toggleArchivedTasks": "归档",
   "workspaceSidebar.showFileTree": "查看文件",
@@ -2245,6 +2404,10 @@ const zhCN: Record<string, string> = {
   "settings.mcp.form.type.sse": "SSE（Server-Sent Events）",
   "settings.mcp.form.command": "命令",
   "settings.mcp.form.args": "参数（空格分隔）",
+  // 工具级启停：工具名必须手输（关闭某工具时常常连不上该 server，无法枚举工具清单）。
+  "settings.mcp.form.disabledTools": "关闭的部分工具（可选）",
+  "settings.mcp.form.disabledToolsHint":
+    "每行一个工具名（MCP 服务器里的原始名称，如 get_issue），关闭后模型看不到它，直接调用也会失败。留空 = 全部启用。",
   "settings.mcp.form.add": "添加",
   "settings.mcpServers.import.open": "从外部 Agent 导入 MCP 服务器",
   "settings.mcpServers.import.title": "导入外部 Agent MCP 服务器",
@@ -4047,6 +4210,7 @@ const zhCN: Record<string, string> = {
   "chat.message.copy": "复制",
   "chat.message.copy.copied": "已复制",
   "chat.message.copy.requiresFull": "加载完整消息后复制",
+  "chat.message.copy.fullResponse": "复制完整回复",
   "chat.message.like": "赞",
   "chat.message.liked": "已赞",
   "chat.message.dislike": "踩",
@@ -4146,6 +4310,8 @@ const zhCN: Record<string, string> = {
   "chat.contextUsage.title": "上下文容量",
   "chat.contextUsageDescription": "提示词、工具调用和回复都会共享上下文窗口。",
   "chat.contextUsage.cacheHitRate": "平均缓存命中率",
+  // 仅存在可领取活动时触发器的无障碍标签（余额/ Coding Plan 段不存在时的回落）。
+  "chat.contextUsage.claimTitle": "可领取额度",
   "chat.contextUsage.breakdown": "上下文来源",
   "chat.contextUsage.breakdown.messages": "消息",
   "chat.contextUsage.breakdown.systemPrompt": "系统提示词",
@@ -4724,7 +4890,7 @@ const zhCN: Record<string, string> = {
     "运行记录来自本项目的工作流日志，重启后仍然保留；「查看实例」会回到发起它的对话并打开实例详情。",
   "workflows.hub.history.tokens": "{tokens} tokens",
   // 中枢的产物条：详情页头部那条「最近产物」。
-  // 取的是**最近一次 completed run** 的产物，所以措辞不能读成"这个工作流的产物"。
+  // 取的是最近一次 completed run 的产物，所以措辞不能读成"这个工作流的产物"。
   "workflows.hub.artifacts.latest": "最近产物",
   "workflows.hub.reason.invalid_name": "名字不合法",
   "workflows.hub.reason.not_found": "文件不存在",
@@ -4960,10 +5126,10 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.run.result.stoppedTitle": "实例已停止",
   "chat.toolCall.workflow.run.result.noError": "没有记录到错误详情。",
   // Artifacts 区（用户面产物）：与上面那个「结果」
-  // **不是同一件事**——`result.title`（结果）是脚本的顶层返回值（给模型的），这一节（产物）
-  // 是脚本用 `artifact.*` 交付给**用户**的产出。两者在屏幕上必须可区分，措辞刻意不重叠。
+  // 不是同一件事——`result.title`（结果）是脚本的顶层返回值（给模型的），这一节（产物）
+  // 是脚本用 `artifact.*` 交付给用户的产出。两者在屏幕上必须可区分，措辞刻意不重叠。
   "chat.toolCall.workflow.run.artifacts.title": "产物",
-  // 折叠 aria-label。这一节**默认展开**（产物是交付物，紧贴图之下常开）。
+  // 折叠 aria-label。这一节默认展开（产物是交付物，紧贴图之下常开）。
   "chat.toolCall.workflow.run.artifacts.expand": "展开产物",
   "chat.toolCall.workflow.run.artifacts.collapse": "收起产物",
   // 六个 kind 词 = facade `artifact.*` 的六个成员。file/markdown 是内容产物（有字节与版本），
@@ -4987,7 +5153,7 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.copy": "复制",
   "chat.toolCall.workflow.run.artifacts.copied": "已复制",
   "chat.toolCall.workflow.run.artifacts.openInBrowser": "在浏览器中打开",
-  // 打开的是**工作区里的原文件**，不是这一版被钉住的字节（协议不给 renderer store 路径）。
+  // 打开的是工作区里的原文件，不是这一版被钉住的字节（协议不给 renderer store 路径）。
   // 卡上必须写明这件事，否则用户会以为自己在看历史版本。
   "chat.toolCall.workflow.run.artifacts.openInBrowserNote":
     "打开的是工作区里的那一份，不是这一版钉住的字节。",
@@ -5056,7 +5222,7 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.run.actor.notStarted.body":
     "这个子代理还没有被问过任何问题。它的首个步骤一派发，会话记录就会出现在这里。",
   // 逐条引擎事件的标签（`workflowRunEventLines` 的词汇表）。run 侧板的事件日志区已撤走，
-  // 分区自己的表头与空/错文案随之删除；这一族**保留**——它是
+  // 分区自己的表头与空/错文案随之删除；这一族保留——它是
   // journal 事件的展示规则，回放导出桶（replay.ts）仍在静态数据上用它。
   "chat.toolCall.workflow.run.event.runStarted": "实例启动",
   "chat.toolCall.workflow.run.event.actorCreated": "创建子代理",
@@ -5093,7 +5259,7 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.run.concurrency.cooldown": "冷却至 {time}",
   // 子代理模型：只在这次 run 被指定过模型时在场。
   // 详情侧板摘要行的第一段——这一行本来就是「这条 run 的几个数」，模型是它的第一个词。
-  // `{model}` 是**解析过的模型名**（describeWorkflowSubagentModel），不是规范串：规范串里的
+  // `{model}` 是解析过的模型名（describeWorkflowSubagentModel），不是规范串：规范串里的
   // providerId 可能是一个 UUID，它只住在 tooltip 里。
   "chat.toolCall.workflow.run.subagentModel.label": "子代理 {model}",
   // 模型名 + 思考强度：确认窗与 tooltip 说整句，卡与侧板只取模型名。
@@ -5302,7 +5468,7 @@ const zhCN: Record<string, string> = {
   "chat.permission.allowCommand": "始终允许此命令",
   "chat.permission.allowForProject": "始终允许本项目",
   // ── task-73「工具与权限」：批准范围可视化（settings.toolPolicy.* 与本块同属 task-73）──
-  // 用户必须能看出这次「记住」覆盖多大范围。无 ruleContent 的规则匹配该工具的**全部调用**，
+  // 用户必须能看出这次「记住」覆盖多大范围。无 ruleContent 的规则匹配该工具的全部调用，
   // 原实现把它从可视化里静默剔除（安全审计 task-72 的 P1，三层 UI 兜底全部失效）。
   "chat.permission.ruleScope.anyToolCommand": "{toolName} 的任意命令",
   "chat.permission.cua.allowForProject": "始终允许本项目中的电脑控制",
@@ -5393,7 +5559,7 @@ const zhCN: Record<string, string> = {
   // 原文案「后续相同命令不再询问」读起来像"这次"或"同一个请求"，而实际授予的是
   // 「本项目内、匹配该规则的请求，永久」。前缀规则的范围更大（npm install:* 覆盖任意包），
   // 无 ruleContent 的规则更是整个工具。弹窗里前缀/精确/任意三种范围现在会内联展示，
-  // 这三条 description 是**没有规则可视化时**的兜底，必须自己说清范围与持久性。
+  // 这三条 description 是没有规则可视化时的兜底，必须自己说清范围与持久性。
   "chat.permission.allowAlways.description.command": "本项目内，后续相同命令不再询问",
   "chat.permission.allowAlways.description.file": "本项目内，后续相同文件操作不再询问",
   "chat.permission.allowAlways.description.generic": "本项目内，此类权限请求之后都不再询问",
@@ -6242,6 +6408,19 @@ const zhCN: Record<string, string> = {
   "cuaPermission.ready.sessionValidationHint":
     "首个会话启动时，ZCode 会针对该会话精确验证电脑控制工具。",
   "settings.computerUse.title": "电脑控制",
+  // 「远程资产发布根」：让用户自己选从哪个发布点取远程工作区资产（默认仍是官方 CDN）。
+  // 文案里两句话是硬要求，不能省：① 必须指向发布根、不要带版本号；② 留空 = 用默认。
+  "settings.remoteAssets.title": "远程资产",
+  "settings.remoteAssets.cdnBaseUrl": "自定义远程资产 CDN 地址",
+  "settings.remoteAssets.cdnBaseUrlDescription":
+    "远程工作区从哪个发布根下载运行时资产。必须是 http/https 地址，指向发布根即可，不要带版本号（例如 https://your-host/assets）。留空 = 用默认地址。仅影响桌面端发起的远程连接，且只对修改后新建的连接生效；运行期环境变量 ZCODE_REMOTE_ASSET_CDN_BASE_URL 的优先级高于此处。",
+  "settings.remoteAssets.savedHint": "已保存。新建的远程连接会使用该地址。",
+  "settings.remoteAssets.error.protocol": "地址必须以 http:// 或 https:// 开头。",
+  "settings.remoteAssets.error.invalid": "地址不是有效的 URL。",
+  "settings.remoteAssets.error.tooLong": "地址过长，请检查是否误贴了其它内容。",
+  "settings.remoteAssets.error.queryOrFragment":
+    "地址不能带 ? 查询串或 # 片段 —— 请只填发布根，例如 https://your-host/assets。",
+  "settings.remoteAssets.error.saveFailed": "保存失败，请重试。",
   "settings.computerUse.toggleLabel": "启用电脑控制",
   "settings.computerUse.toggleDescription": "开启后将启用电脑控制及其 MCP 与技能。",
   "settings.computerUse.composerEntry.label": "在输入框显示电脑操作按钮",
@@ -6336,6 +6515,13 @@ const zhCN: Record<string, string> = {
   "settings.modelProvider.manualClaim.claim": "领取",
   "settings.modelProvider.manualClaim.loadFailed": "暂时无法获取可领取的套餐，请稍后重试。",
   "settings.modelProvider.manualClaim.success": "领取成功，权益已生效。",
+  // 成功票券（自画）的四条文案。有效期前缀与重播标签抄官方横幅渲染物的口径
+  // （qnn 里硬编码的「有效期至」/「Valid until」与「重播」/「Replay」），
+  // 主按钮与弹窗标题按官方 success_popup 的语义自写（那两项在服务端，我们拿不到）。
+  "settings.modelProvider.manualClaim.ticket.validUntil": "有效期至",
+  "settings.modelProvider.manualClaim.ticket.replay": "重播",
+  "settings.modelProvider.manualClaim.ticket.dismiss": "知道了",
+  "settings.modelProvider.manualClaim.ticket.effectiveAt": "{name} 将于 {time} 生效",
   "settings.modelProvider.manualClaim.captcha.title": "完成安全验证",
   "settings.modelProvider.manualClaim.captcha.description":
     "领取需要完成一次安全验证，验证在你的浏览器环境中进行，不会离开本机。",
@@ -6357,6 +6543,295 @@ const zhCN: Record<string, string> = {
   manual_claim_failure_http_error: "服务暂时不可用，请稍后重试。",
   manual_claim_failure_network: "网络异常，请检查网络后重试。",
   manual_claim_failure_unknown: "领取失败，请稍后重试。",
+  // ---- Bot 管理面（BotsDialog）——搬运自上游 v3.14.3（Apache-2.0，见 third-party/copied-components.json）----
+  "bots.runtime.deliveryFailed": "机器人回复发送失败",
+  "bots.runtime.deliveryFailedDescription":
+    "消息未能送达，请提供以下错误详情以便排查。下一次发送成功后，此提示会自动清除。",
+  "bots.title": "机器人",
+  "bots.description": "把外部聊天工具和 Webhook 接入 ZCode 机器人。",
+  "bots.listTitle": "机器人",
+  "bots.addBot": "新建机器人",
+  "bots.addBinding": "添加新的绑定",
+  "bots.setup.chooseBot": "选择机器人",
+  "bots.setup.createBot": "创建机器人",
+  "bots.setup.createAndTest": "测试并继续",
+  "bots.setup.bindBot": "绑定机器人",
+  "bots.setup.setBot": "设置机器人",
+  "bots.setup.next": "下一步",
+  "bots.setup.finish": "完成",
+  "bots.setup.bindDescription": "生成绑定码后，在对应机器人私聊里发送绑定命令。",
+  "bots.setup.bindCodeCreating": "正在生成绑定码…",
+  "bots.setup.bindExpiresIn": "绑定码将在 {time} 后失效",
+  "bots.setup.bindRegenerating": "绑定码已失效，正在重新生成…",
+  "bots.setup.refreshBindCode": "刷新绑定码",
+  "bots.setup.bound": "已绑定 {count} 个用户，可以继续设置机器人。",
+  "bots.setup.bindAdvanceIn": "{seconds} 秒后进入下一步。",
+  "bots.setup.allowedWorkspaces": "允许的 workspace",
+  "bots.setup.allowedAll": "允许所有 workspace（*）",
+  "bots.setup.allowedSelected": "只允许选中的 workspace",
+  "bots.setup.allowedAllShort": "全部",
+  "bots.setup.allowedSelectedShort": "指定",
+  "bots.setup.allowedAllDescription": "当前机器人允许使用配置中的所有 workspace。",
+  "bots.setupDescription.chooseBot": "选择要接入的第三方聊天机器人。",
+  "bots.setupDescription.createBot": "填写机器人或 webhook 凭据，下一步会先测试连通性。",
+  "bots.setupDescription.bindBot": "生成绑定码并在机器人私聊中完成账号绑定。",
+  "bots.setupDescription.setBot": "设置默认上下文、允许的 workspace 和第三方回复颗粒度。",
+  "bots.setup.guide.createTitle": "准备指引",
+  "bots.setup.guide.bindTitle": "绑定指引",
+  "bots.setup.guide.createNote": "先按右侧步骤在第三方平台准备好凭据，再回来点“测试并继续”。",
+  "bots.setup.callbackUrlTitle": "Callback URL",
+  "bots.setup.callbackUrlDescription.webhook":
+    "外部系统向这个地址发送入站消息回调。出站回复仍然走你在左侧填写的 Webhook URL。",
+  "bots.setup.callbackUrlDescription.webhookBind":
+    "Webhook 绑定时，也是在这个地址上发送 text = /bind <code> 的私聊回调请求。",
+  "bots.setup.guide.telegram.create.1": "在 Telegram 中打开 @BotFather，创建一个新机器人。",
+  "bots.setup.guide.telegram.create.2": "复制 BotFather 返回的 HTTP API Token，并粘贴到当前表单。",
+  "bots.setup.guide.telegram.create.3":
+    "建议提前打开这个机器人的私聊窗口；后面绑定时要在私聊里发送绑定命令。",
+  "bots.setup.guide.telegram.bind.1": "回到 Telegram，打开刚创建的机器人私聊窗口。",
+  "bots.setup.guide.telegram.bind.2":
+    "如果还没开始过对话，先点 Start 或发任意一条消息，再发送 {command}。",
+  "bots.setup.guide.telegram.bind.3": "收到绑定成功提示后回到这里继续下一步。",
+  "bots.setup.guide.weixin.create.1": "点击微信扫码登录，用微信扫描二维码并在手机端确认。",
+  "bots.setup.guide.weixin.create.2":
+    "ZCode 会直接保存 iLink 返回的 bot_token；扫码后请在微信里向 Bot 发送任意消息完成会话激活。",
+  "bots.setup.guide.weixin.create.3":
+    "ZCode 内置 iLink 客户端，通过 `/ilink/bot/getupdates` 长轮询收消息，通过 `/ilink/bot/sendmessage` 回复。",
+  "bots.setup.guide.weixin.bind.1": "在微信里打开要绑定的单聊。",
+  "bots.setup.guide.weixin.bind.2": "发送 {command}。",
+  "bots.setup.guide.weixin.bind.3": "看到绑定成功后回到这里继续配置默认 workspace 和 CLI。",
+  "bots.setup.guide.feishu.create.1": "在飞书开放平台创建一个自建应用，并开启机器人能力。",
+  "bots.setup.guide.feishu.create.2":
+    "从应用凭据页复制 App ID、App Secret，并为 `im.message.receive_v1` 和卡片回调开启长连接事件。",
+  "bots.setup.guide.feishu.create.3":
+    "选择与你的租户一致的 Feishu / Lark 域名，再把凭据填回当前表单。",
+  "bots.setup.guide.feishu.bind.1": "把这个应用安装到你的飞书租户，并打开与该机器人的单聊窗口。",
+  "bots.setup.guide.feishu.bind.2": "在单聊中直接发送 {command}。",
+  "bots.setup.guide.feishu.bind.3": "看到绑定成功后回到这里继续配置默认 workspace 和 CLI。",
+  "bots.setup.guide.webhook.create.1":
+    "Webhook 模式不需要先在第三方平台创建原生机器人；你的系统只需要能向 ZCode 回调接口发消息。",
+  "bots.setup.guide.webhook.create.2":
+    "先约定一个共享 secret；如果你还想接收异步回复，再填一个出站 Webhook URL。",
+  "bots.setup.guide.webhook.create.3":
+    "同一个外部用户要保持稳定的 userId，这样绑定和后续上下文才能对应到同一人。",
+  "bots.setup.guide.webhook.bind.1": "向 ZCode 的 `/api/bots/webhook` 发送一条私聊消息回调。",
+  "bots.setup.guide.webhook.bind.2":
+    '请求体至少带上当前 botId、稳定的 userId、`chatType: "private"`，并把 text 设成 {command}。',
+  "bots.setup.guide.webhook.bind.3":
+    "如果配置了 secret，请同时在请求头里带上 `x-zcode-bot-secret`；绑定成功后再回到这里完成设置。",
+  "bots.setup.footer.choose": "选择一个已支持的渠道后继续。",
+  "bots.setup.footer.create": "测试通过后才会进入绑定步骤。",
+  "bots.setup.testSuccess": "连通性测试通过",
+  "bots.setup.testFailed": "连通性测试失败",
+  "bots.setup.footer.bind": "绑定码默认允许所有 workspace，最终范围在下一步保存。",
+  "bots.setup.footer.set": "完成后机器人会启用并出现在已添加列表。",
+  "bots.setup.discardTitle": "放弃这个机器人？",
+  "bots.setup.discardDescription": "当前创建流程还没有完成，已创建的临时机器人会被删除。",
+  "bots.setup.discardConfirm": "放弃创建",
+  "bots.refresh": "刷新机器人",
+  "bots.namePlaceholder": "机器人名称",
+  "bots.credentialPlaceholder": "关联机器人",
+  "bots.weixinBotTokenPlaceholder": "扫码后自动保存，也可手动粘贴 bot_token",
+  "bots.webhookSecretPlaceholder": "Webhook secret",
+  "bots.webhookUrlPlaceholder": "出站 Webhook URL",
+  "bots.feishuAppIdPlaceholder": "飞书 App ID",
+  "bots.feishuAppSecretPlaceholder": "飞书 App Secret",
+  "bots.callbackSecretPlaceholder": "回调密钥",
+  "bots.feishuRegistrationTitle": "扫码创建应用",
+  "bots.feishuRegistrationDescription": "扫码创建应用并保存凭据。",
+  "bots.feishuRegistrationButton": "扫码",
+  "bots.feishuRegistrationQrAlt": "飞书应用注册二维码",
+  "bots.feishuRegistrationScanHint": "用飞书 / Lark 扫码并确认创建应用。",
+  "bots.feishuRegistrationScanHint.feishu": "用飞书扫码并确认创建应用。",
+  "bots.feishuRegistrationScanHint.lark": "用 Lark 扫码并确认创建应用。",
+  "bots.feishuRegistrationStarted": "飞书扫码注册已开始",
+  "bots.feishuRegistrationSuccess": "飞书应用凭据已填入",
+  "bots.feishuRegistrationFailed": "启动飞书扫码注册失败：{error}",
+  "bots.feishuRegistrationExpired": "二维码已过期，请重新开始。",
+  "bots.feishuRegistration.access_denied": "注册已被拒绝。",
+  "bots.feishuRegistration.expired": "二维码已过期，请重新开始。",
+  "bots.feishuRegistration.error": "注册失败。",
+  "bots.enabledToggle": "启用 {name}",
+  "bots.replyGranularity": "机器人回复颗粒度",
+  "bots.replyGranularity.description": "消息详细程度。",
+  "bots.replyGranularity.assistantChanges": "标准回复",
+  "bots.replyGranularity.assistantChanges.description":
+    "回复助手正文和文件变更，隐藏工具调用过程。",
+  "bots.replyGranularity.assistantToolcallsChanges": "完整回复",
+  "bots.replyGranularity.assistantToolcallsChanges.description":
+    "回复助手正文、工具调用进度和文件变更。",
+  "bots.replyGranularity.summaryChanges": "摘要回复",
+  "bots.replyGranularity.summaryChanges.description":
+    "仅回复最终结果和文件变更摘要，适合低打扰通知。",
+  "bots.replyGranularity.streamingCard": "流式卡片",
+  "bots.replyGranularity.streamingCard.description":
+    "飞书/Lark 仅支持基于 Card JSON 2.0 的流式卡片，工具调用只显示折叠摘要。",
+  "bots.add": "添加",
+  "bots.channel.telegram": "Telegram",
+  "bots.channel.weixin": "微信",
+  "bots.channel.feishu": "飞书",
+  "bots.channel.lark": "Lark",
+  "bots.channel.dingding": "钉钉",
+  "bots.channel.discord": "Discord",
+  "bots.channel.wecom": "企业微信",
+  "bots.channel.webhook": "Webhook",
+  "bots.newBot.title": "新建机器人",
+  "bots.newBot.chooseChannel": "选择渠道",
+  "bots.newBot.description":
+    "选择这个机器人接收消息的渠道。选择渠道后，再配置凭据、绑定、允许的 workspace 和默认上下文。",
+  "bots.newBot.selectProviderHint": "在右侧选择一个渠道来创建机器人。",
+  "bots.newBot.fallbackName": "新机器人",
+  "bots.newBot.comingSoon": "即将支持",
+  "bots.newBot.providerDescription.telegram": "创建机器人，再消息绑定。",
+  "bots.newBot.providerDescription.weixin": "扫码登录，首条消息激活。",
+  "bots.newBot.providerDescription.feishu": "扫码创建应用，再消息绑定。",
+  "bots.newBot.providerDescription.lark": "扫码创建应用，再消息绑定。",
+  "bots.newBot.providerDescription.dingding": "钉钉机器人集成规划中。",
+  "bots.newBot.providerDescription.webhook": "从你的系统接收入站回调，并可配置出站回复。",
+  "bots.newBot.providerDescription.discord": "Discord 机器人集成规划中。",
+  "bots.newBot.providerDescription.wecom": "企业微信机器人集成规划中。",
+  "bots.empty": "还没有配置机器人。",
+  "bots.name": "机器人名称",
+  "bots.provider": "渠道",
+  "bots.enabled": "启用",
+  "bots.enabled.description": "开启或关闭这个机器人，也可以清理它的运行状态。",
+  "bots.credential": "凭据",
+  "bots.webhookSecret": "Webhook secret",
+  "bots.webhookUrl": "Webhook URL",
+  "bots.providerSettings": "渠道设置",
+  "bots.providerSettings.telegram": "保存 BotFather token。",
+  "bots.providerSettings.weixin": "扫码后保存凭据，首条微信消息激活会话。",
+  "bots.providerSettings.feishu": "扫码获取应用凭据。",
+  "bots.providerSettings.lark": "扫码获取应用凭据。",
+  "bots.providerSettings.webhook":
+    "Webhook 使用回调密钥校验入站请求，也可以配置出站 URL 接收回复。",
+  "bots.providerSettings.discord": "Discord 暂未开放配置。",
+  "bots.providerSettings.wecom": "企业微信暂未开放配置。",
+  "bots.telegramBotToken": "关联机器人",
+  "bots.weixinRegistrationTitle": "微信扫码登录",
+  "bots.weixinRegistrationDescription": "扫码登录后，在微信里发送任意消息激活会话。",
+  "bots.weixinRegistrationButton": "扫码",
+  "bots.weixinRegistrationQrAlt": "微信登录二维码",
+  "bots.weixinRegistrationScanHint": "用微信扫码并确认登录。",
+  "bots.weixinRegistrationStarted": "微信扫码登录已开始",
+  "bots.weixinRegistrationSuccess": "微信机器人已关联，请在微信里发送任意消息激活",
+  "bots.weixinActivationHint": "请在微信里向 Bot 发送任意消息；首次消息会收到欢迎和帮助。",
+  "bots.weixinRegistrationFailed": "启动微信扫码登录失败：{error}",
+  "bots.weixinRegistration.pending": "等待扫码",
+  "bots.weixinRegistration.scanned": "已扫码，等待手机确认",
+  "bots.weixinRegistration.success": "登录成功",
+  "bots.weixinRegistration.expired": "二维码已过期，请重新开始。",
+  "bots.weixinRegistration.error": "登录失败。",
+  "bots.weixinBotToken": "微信 bot_token",
+  "bots.feishuAppSecret": "飞书 App Secret",
+  "bots.callbackSecret": "回调密钥",
+  "bots.webhookOutboundUrl": "出站 Webhook URL",
+  "bots.webhookAuthHeaderName": "认证 Header 名称",
+  "bots.feishuAppId": "飞书 App ID",
+  "bots.saveSecrets": "保存密钥",
+  "bots.saveSecret": "保存",
+  "bots.removeSecret": "移除密钥",
+  "bots.removeSecretFailed": "移除密钥失败：{error}",
+  "bots.botToken": "关联机器人",
+  "bots.botTokenDescription.telegram": "保存 BotFather token。",
+  "bots.botTokenDescription.feishu": "扫码获取应用凭据。",
+  "bots.botTokenDescription.lark": "扫码获取应用凭据。",
+  "bots.botTokenDescription.weixin": "扫码后自动保存凭据。",
+  "bots.botTokenDescription.webhook": "用于连接这个 Webhook 机器人。",
+  "bots.telegramBotFatherQrAlt": "Telegram BotFather 二维码",
+  "bots.telegramBotFatherScanHint": "扫码打开 BotFather，创建机器人并粘贴 token。",
+  "bots.openBotFather": "打开 BotFather",
+  "bots.connected": "已连通",
+  "bots.notConnected": "未连通",
+  "bots.runtime.telegramLongPollingRunning": "Telegram 长轮询运行中。",
+  "bots.runtime.telegramLongPollingStarting": "Telegram 长轮询启动中。",
+  "bots.runtime.telegramLongPollingStopped": "Telegram 长轮询已停止。",
+  "bots.runtime.telegramLongPollingHandledElsewhere": "Telegram 长轮询由另一个 ZCode 窗口处理。",
+  "bots.runtime.telegramTokenMissing": "Telegram 机器人凭据缺失。",
+  "bots.runtime.telegramPollingFailedRetrying": "Telegram 轮询失败，正在重试。",
+  "bots.runtime.feishuWebSocketStarting": "飞书 WebSocket 启动中。",
+  "bots.runtime.feishuWebSocketConnecting": "飞书 WebSocket 连接中。",
+  "bots.runtime.feishuWebSocketRunning": "飞书 WebSocket 运行中。",
+  "bots.runtime.feishuWebSocketStopped": "飞书 WebSocket 已停止。",
+  "bots.runtime.connectionFailed": "机器人连接失败",
+  "bots.runtime.feishuConnectionFailed": "飞书连接失败",
+  "bots.runtime.larkConnectionFailed": "Lark 连接失败",
+  "bots.runtime.cannotConnectFeishu": "无法连接飞书",
+  "bots.runtime.cannotConnectLark": "无法连接 Lark",
+  "bots.runtime.feishuConnectionInterrupted": "飞书连接已中断",
+  "bots.runtime.larkConnectionInterrupted": "Lark 连接已中断",
+  "bots.runtime.boundConnectionInterrupted": "连接中断",
+  "bots.runtime.boundConnectionInterruptedDescription": "机器人已绑定，但当前长连接中断。",
+  "bots.runtime.credentialsSavedConnectionFailedDescription": "应用凭据已保存，但长连接失败。",
+  "bots.runtime.connectionBlocksBinding": "机器人当前无法接收消息，因此暂时不能完成绑定。",
+  "bots.runtime.feishuConnectionRecoverySuggestion":
+    "长连接数可能已达上限或飞书服务繁忙。请稍后重试；若持续失败，可绑定新的机器人。",
+  "bots.runtime.larkConnectionRecoverySuggestion":
+    "长连接数可能已达上限或 Lark 服务繁忙。请稍后重试；若持续失败，可绑定新的机器人。",
+  "bots.runtime.errorCode": "错误码",
+  "bots.runtime.errorDetail": "详情",
+  "bots.runtime.unknownError": "未知连接错误",
+  "bots.runtime.weixinLongPollingRunning": "微信长轮询运行中。",
+  "bots.runtime.weixinLongPollingStarting": "微信长轮询启动中。",
+  "bots.runtime.weixinLongPollingStopped": "微信长轮询已停止。",
+  "bots.runtime.botDisabled": "机器人已停用。",
+  "bots.scanQrCode": "扫码",
+  "bots.authorizationQr": "授权二维码",
+  "bots.bindCommand": "绑定命令",
+  "bots.binding": "绑定",
+  "bots.allowedCommands": "允许的命令",
+  "bots.unbound": "未绑定",
+  "bots.generateBindCode": "生成绑定码",
+  "bots.resetState": "重置状态",
+  "bots.allowedWorkspaces": "工作区访问范围",
+  "bots.allowedWorkspaces.all": "全部",
+  "bots.allowedWorkspaces.mode.all": "所有工作区",
+  "bots.allowedWorkspaces.mode.selected": "指定工作区",
+  "bots.allowedWorkspaces.allDescription": "这个机器人可以使用所有已配置的工作区。",
+  "bots.allowedWorkspaces.selectedDescription": "这个机器人可以使用 {count} 个指定工作区。",
+  "bots.botMeta": "{users} 个已绑定用户 · 工作区 {workspace}",
+  "bots.botSummary": "{users} 个用户 · {workspaces} 个工作区 · {workspace}",
+  "bots.userCount": "{count} 个用户",
+  "bots.editDescription": "查看运行状态，调整默认上下文、回复颗粒度和绑定用户。",
+  "bots.edit.basicSettings": "基础设置",
+  "bots.edit.binding": "绑定用户",
+  "bots.edit.emptyUsers": "还没有绑定用户。生成绑定码后，在机器人私聊里发送绑定命令。",
+  "bots.edit.userWorkspaces": "允许 {count} 个工作区",
+  "bots.test": "测试",
+  "bots.bind": "绑定",
+  "bots.unbind": "解绑",
+  "bots.delete": "删除机器人",
+  "bots.delete.description": "移除这个机器人。",
+  "bots.deleteConfirmTitle": "删除机器人“{name}”？",
+  "bots.deleteConfirmDescription": "删除后会移除这个机器人的配置、凭据和绑定状态，无法撤销。",
+  "bots.bindCode": "绑定码",
+  "bots.bindHint": "在机器人私聊中发送 {command}。",
+  "bots.bindCodeExpires": "绑定码将在 {time} 后失效",
+  "bots.bindCodeExpired": "绑定码已过期，请重新生成。",
+  "bots.bindSuccess": "绑定成功",
+  "bots.copyBindCommand": "复制绑定命令",
+  "bots.bindCommandGuide": "复制下面的绑定命令，并发送给机器人私聊。",
+  "bots.bindCommandStep.copy": "复制绑定命令",
+  "bots.bindCommandStep.openChat": "打开机器人私聊",
+  "bots.bindCommandStep.send": "粘贴并发送，完成当前工作区绑定",
+  "bots.bindCommandCopied": "绑定命令已复制，请打开机器人私聊，粘贴并发送。",
+  "bots.bindCommandCopyFailed": "复制绑定命令失败：{error}",
+  "bots.loadFailed": "加载机器人失败：{error}",
+  "bots.saveSuccess": "机器人已保存",
+  "bots.saveFailed": "保存机器人失败：{error}",
+  "bots.testFailed": "机器人测试失败：{error}",
+  "bots.bindCodeCreated": "绑定码已生成",
+  "bots.bindCodeFailed": "生成绑定码失败：{error}",
+  "bots.unbindSuccess": "机器人已解绑",
+  "bots.unbindFailed": "解绑机器人失败：{error}",
+  "bots.deleteFailed": "删除机器人失败：{error}",
+  "intranetProbe.consent.title": "确认内网探测目标",
+  "intranetProbe.consent.description":
+    "即将对以下目标发起内网探测（TCP 连接），请确认：\n{targets}",
+  "intranetProbe.consent.confirm": "确认探测",
+  "intranetProbe.error.consentDeclined": "内网探测已取消：未确认的目标不会被探测。",
+  "intranetProbe.error.consentQueryFailed": "查询内网探测授权状态失败。",
+  "intranetProbe.error.consentRecordFailed": "记录内网探测授权失败。",
 };
 
 export default zhCN;

@@ -105,6 +105,7 @@ export * from "./dynamic-workflow-feature.js";
 export * from "./markdown-artifact-images.js";
 export * from "./serviceAuthority.js";
 export * from "./server-remote.js";
+export * from "./workspace-registry.js";
 
 export interface ICredentialStore {
   get(key: string): Promise<string | null>;
@@ -123,6 +124,7 @@ export * from "./e2e-test-bridge.js";
 export * from "./remoteAppConfig.js";
 export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
+export * from "./remoteAssetCdn.js";
 export * from "./onboardingRecord.js";
 export * from "./remoteResourcePackages.js";
 export * from "./plan-identity.js";
@@ -193,6 +195,17 @@ export type {
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteServiceSession,
+  WebServiceConnectionInfoPayload,
+  WebServiceStatusErrorCode,
+  WebServiceStatusPayload,
+  WebServiceStatusStaleReason,
+  WebServiceStatusState,
+  RemoteControlConnection,
+  RemoteControlConnectionRole,
+  RemoteControlConnectionsPayload,
+  RemoteControlRevokeRequest,
+  RemoteControlRevokeResult,
+  RemoteControlRotateTokenResult,
   SSHConfigAliasOption,
   TaskNotificationPayload,
   UpdateCheckResultPayload,
@@ -267,6 +280,9 @@ export * from "./hooks.js";
 export * from "./openrouter-attribution.js";
 export * from "./workspaceSessionRestore.js";
 export * from "./skill-scan-policy.js";
+// Bot Channel（IM 机器人）共享合约。搬运自官方 v3.14.3（MIT），见
+// docs/development/official-diff.md 与 third-party/copied-components.json。
+export * from "./bots.js";
 export * from "./browser-use/index.js";
 
 export * from "./coding-plan-reset.js";

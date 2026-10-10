@@ -2,13 +2,14 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
+import { extractTarGz } from "./tar-extract.mjs";
 
 const exec = promisify(execFile);
 const archive = process.argv[2];
@@ -27,12 +28,116 @@ const env = {
 let web;
 let terminal;
 try {
-  await exec("tar", ["-xzf", resolve(archive), "-C", directory]);
+  // 解包（非 root）会按 umask 抹掉包内记录的权限位（实测 umask 077 ⇒ bin/zcode.mjs 700、旁路 600）。
+  // 这里要判的是**构建期 chmod 记录的**权限，而不是评审人机器的 umask，所以先固定成 CI 的 022。
+  process.umask(0o022);
+  // 用 Node 原生解包，不用外部 `tar`（2026-09-27 修）。
+  //
+  // 为什么：Windows runner 上的 `tar` 是 GNU tar，它把 `D:\a\...` 当成**远程归档**语法
+  // （`host:path`）⇒ stdin 为空 ⇒ `gzip: stdin: unexpected end of file`。
+  // 实测（run 36333516677）：Windows 的 smoke 正是红在这里。
+  // 纯 Node 解包既跨平台又零外部依赖，与本仓「核心能力零外部依赖」的口径一致。
+  //
+  // 一处**有意的差异**：本实现忠实恢复 tar 里记录的权限位，而 GNU tar 会受调用方 umask 影响
+  // 把 `666` 落成 `644`。因此下面那条 `bin/zcode.mjs == 755` 的断言语义不变
+  // （755 & ~umask(022) 仍是 755），但若将来有文件以 666 入包，本实现不会替它"纠正"。
+  await extractTarGz(resolve(archive), directory);
+  // 权限位断言（task-61 F1）：必须在**解包产物**上判。
+  // 为什么重要：`cp` 会用进程 umask（task-49 实测抽出过 600）；600 在单用户机器上跑得动，
+  // 但 root 安装后普通用户 import 不了 ⇒ 启动即崩。而本脚本下面用 `process.execPath` 启动入口，
+  // 并不需要执行位、Node 以属主身份读 600 也照样成功 ⇒ 少了这层断言就抓不到这类回归。
+  // 名单从包里 `bin/runner-*.mjs` 现读（不写死），新增旁路模块时不会留下过期的断言清单。
+  const binDir = join(root, "bin");
+  const sidecarNames = (await readdir(binDir)).filter((name) => /^runner-.+\.mjs$/u.test(name));
+  assert.ok(
+    sidecarNames.length > 0,
+    "bin/ 下没有 runner-*.mjs 旁路模块：runner.mjs 拆分后的结构依赖缺失（打包拷贝清单漏了？）",
+  );
+  // ⚠️ 平台分叉（2026-09-27 修，首次三 OS 实测暴露）。
+  //
+  // 权限位断言**只在 POSIX 上有意义**：Windows 文件系统没有执行位概念，
+  // Node 的 `stat().mode` 对普通文件恒为 `0o666`（只读为 `0o444`）⇒ `0o755` 永不成立。
+  // 实测（run 36334203353）：Windows 上断言失败 `actual: 438 (0o666), expected: 493 (0o755)`。
+  //
+  // **不是放宽断言**：Windows 上「可执行」不由位表达，改判据也修不好这条。
+  // 因此这里**按平台跳过**，但**必须显式打印出来** —— 静默跳过等于把
+  // 「Windows 上没验权限」伪装成「验过了」，那正是本仓禁止的形态。
+  //
+  // POSIX 上断言**保持严格**：它抓的是「root 安装后非 root 用户 import 失败 ⇒ 启动即崩」
+  // 这类单用户机器上不可见的回归（见下方注释）。
+  const posixPermissions = process.platform !== "win32";
+  if (posixPermissions) {
+    const runnerEntryMode = await assertMode(join(binDir, "zcode.mjs"), 0o755);
+    for (const name of sidecarNames) await assertMode(join(binDir, name), 0o644);
+    console.log(
+      `permissions: zcode.mjs=${runnerEntryMode.toString(8)}, sidecars=${sidecarNames.length}x644`,
+    );
+  } else {
+    console.log(
+      `permissions: SKIPPED on ${process.platform} —— 该平台没有执行位概念，` +
+        `stat().mode 对普通文件恒为 666；这一项在本平台未验证（不是通过）`,
+    );
+  }
   await mkdir(workspace);
   await exec(process.execPath, [runner, "--help"], { cwd: workspace, env });
-  const version = (
+  // --version 的首行必须是**纯版本号**且等于分发包 package.json 的版本（第二行是身份标注，不参与比较）。
+  const { version: packagedVersion } = JSON.parse(
+    await readFile(join(root, "package.json"), "utf8"),
+  );
+  const versionOutput = (
     await exec(process.execPath, [runner, "--version"], { cwd: workspace, env })
   ).stdout.trim();
+  const [version, ...versionIdentityLines] = versionOutput.split("\n").map((line) => line.trim());
+  assert.equal(
+    version,
+    packagedVersion,
+    `--version 首行必须是分发包版本（期望 ${packagedVersion}，实际 ${version}）`,
+  );
+  assert.match(
+    versionIdentityLines.join("\n"),
+    /zcode-agent/u,
+    "--version 第二行应标注内置 agent 版本",
+  );
+  // 内置技能包（bundled-skills）必须在解包产物里，且必须在运行时会读的那个路径上。
+  //
+  // 为什么在这里判而不是在构建期判「文件复制成功」：本项目已两次踩过「中间阶段全绿、最终消费点失败」。
+  // /workflow 是内置命令、无条件展开，它的提示词要求模型先读 dynamic-workflows 技能；技能门又会拒绝
+  // 未加载技能时的调用 ⇒ 技能文件不在包里 = 门拒 + 读不到的死循环。构建期复制成功不能证明这一点，
+  // 因为真正决定「读到哪」的是运行时 resolveBundledSkillRoots 的候选目录遍历。
+  //
+  // 判据与运行时同源：候选基目录第一顺位是 dirname(argv[1]) = agent/（见 entrypoint-candidates.ts），
+  // 所以这里断言 agent/packages/bundled-skills/skills/<skill>/SKILL.md 存在。
+  // 必需清单从包内现读（不写死第二份），新增技能时不会留下过期断言。
+  const bundledSkillRoot = join(root, "agent", "packages", "bundled-skills");
+  const bundledSkillsDir = join(bundledSkillRoot, "skills");
+  // 用 stat 判存在而不是直接 readdir：目录缺席时要给可操作原因（哪个路径、为什么重要），
+  // 而不是一条裸 ENOENT —— 这条断言的价值就在于让后来者一眼看懂漏了什么。
+  const bundledSkillsDirStat = await stat(bundledSkillsDir).catch(() => null);
+  assert.ok(
+    bundledSkillsDirStat?.isDirectory(),
+    `内置技能包不在解包产物里：${bundledSkillsDir}` +
+      "（build-zcode 的 stageBundledSkillPack 漏了？运行时 resolveBundledSkillRoots 的候选目录第一顺位就是" +
+      " agent/，这里没有它 ⇒ /workflow 要求模型读的技能不存在，技能门会把调用拒死）",
+  );
+  const bundledSkillNames = await readdir(bundledSkillsDir);
+  assert.ok(
+    bundledSkillNames.length > 0,
+    `内置技能包没有任何技能目录：${bundledSkillsDir}（stage 了空目录？）`,
+  );
+  for (const skillName of bundledSkillNames) {
+    const skillFile = join(bundledSkillRoot, "skills", skillName, "SKILL.md");
+    const skillStat = await stat(skillFile).catch(() => null);
+    assert.ok(
+      skillStat?.isFile(),
+      `内置技能正文不在解包产物里：${skillFile}` +
+        "（build-zcode 的 stageBundledSkillPack 漏了？运行时找不到它，/workflow 会被技能门拒死）",
+    );
+    assert.ok((await stat(skillFile)).size > 0, `内置技能正文为空：${skillFile}`);
+  }
+  console.log(
+    `bundled skills: ${bundledSkillNames.length} pack(s) = ${bundledSkillNames.join(", ")}`,
+  );
+
   const require = createRequire(join(root, "package.json"));
   const pty = require("node-pty");
   const runtimeCheck = join(root, "agent/check-tui.mjs");
@@ -62,25 +167,80 @@ try {
   );
   assert.equal(terminalExit, undefined, screen);
   assert.doesNotMatch(screen, /Cannot find (?:module|package)|ERR_MODULE_NOT_FOUND/);
-  // 保留真实键盘退出链路；不发送 prompt，不调用模型。
-  terminal.write("\u0003");
-  await setTimeout(200);
-  if (!terminalExit) terminal.write("\u0003");
+
+  // 终止 TUI：用真信号，不要往 pty 里写 \u0003。
+  //
+  // 为什么不能用 \u0003（实测：本仓 CI 上 flaky，同一产物两次结果不同）：
+  // 0x03 的落点由 tty 行规程的 ISIG 决定（翻转点约 1.0–1.2s，且不确定）：
+  //   · ISIG 生效 ⇒ 它是**真 SIGINT** ⇒ 被 apps/zcode-cli/packages/cli/src/shutdown.ts:8 的
+  //     SIGINT: 130 映射成退出码 130（不是 0）；
+  //   · ISIG 关闭 ⇒ 它是普通字节，而按键处理实测收不到 ⇒ 进程不退出。
+  // 更关键的是**两次 \u0003 的竞态**（这才是 flaky 的真身）：
+  //   第 1 个被 once 监听消费并开始**异步关机**；第 2 个若在 unregister 之后到达 ⇒ 没有 JS 监听
+  //   ⇒ 进程被**裸信号**杀死。而 node-pty 对裸信号死亡报的是 exitCode=0 / signal=<n>
+  //   （实测：kill SIGTERM ⇒ {exitCode:0, signal:15}）⇒ **原来的 assert.equal(exitCode, 0)
+  //   在"被信号杀死"时也会通过** —— 它自称验"键盘优雅退出(0)"，实际让它通过的是信号致死。
+  //   （此段归因与校准由 .reverse/124-smoke-timing/FINDINGS.md 的真终端模拟器实验给出；
+  //    早先"Ctrl-C 落在启动屏"与"两屏交替"两种解释都已被该实验推翻：
+  //    启动屏文案在 ≥1605ms 消失且不再回来，两屏是先后切换、不共存；
+  //    EmptyTranscriptLogo 被两个屏幕共用且带逐帧动画，在原始字节流里看起来像"共存"。）
+  //
+  // 本步骤要证明的是「解包产物里的 TUI 能被干净终止、不挂死、无残留」——
+  // 用真信号可以确定性地证明这一点（实测 SIGTERM ⇒ 143 稳定 15/15，无抖动）。
+  // ⚠️ 代价（不掩饰）：这里**不再验证"真实按键能否穿过 pty 到达应用层并优雅退出"**。
+  // 那条在 pty 上不可达（即使 stty -isig 强制关行规程，主界面的
+  // "Press Ctrl-C again to exit." 提示 5/5 从未出现）。判定逻辑由纯函数测试覆盖
+  // （apps/zcode-cli/packages/tui/test/ctrlCExitIntent.test.ts），但"按键送达"这一环
+  // **当前没有端到端覆盖** —— 要补，得在不经 pty 行规程的层面喂按键事件。
+  //
+  // ⚠️ 平台前置：143 = 128 + SIGTERM(15) 是 POSIX 语义。本步骤只在 ubuntu-latest 上跑
+  // （见 .github/workflows/release.yml 的 headless server package job），因此成立；
+  // 在 Windows 上直接跑这个脚本会因信号语义不同而失败。
+  process.kill(terminal.pid, "SIGTERM");
   const tuiExit = await Promise.race([
     tuiExited,
     setTimeout(8000).then(() => {
-      throw new Error("TUI keyboard exit timed out");
+      throw new Error("TUI did not exit after SIGTERM (可能挂死)");
     }),
   ]);
-  assert.equal(tuiExit.exitCode, 0, screen);
+  // 被信号终止 ⇒ 128 + 信号号（SIGTERM=15 ⇒ 143）。这里断言的是"**干净地**被终止"，
+  // 而不是"退出码恰好为 0"：后者要求 TUI 走完应用层的优雅退出，而那条路径只能靠按键触发，
+  // 在 pty 上不可靠（见上）。**断言仍然有牙齿**：挂死会超时、残留会在这里暴露。
+  // ⚠️ 平台分叉（2026-09-27 修，与上面的权限位断言同批）。
+  //
+  // `143 = 128 + SIGTERM(15)` 是 **POSIX 语义**。Windows 上 `process.kill(pid, "SIGTERM")`
+  // 落到 `TerminateProcess`，拿不到 143 —— 这不是被测代码的问题，是平台的信号模型不同。
+  //
+  // **本步骤在 Windows 上要证明的东西不变**（「能被干净终止、不挂死、无残留」）：
+  // 上面那个 `Promise.race` 的超时仍然有效（挂死会抛），所以这里跳过的是
+  // 「退出码恰好 143」这一条**POSIX 专属**的判据，不是整个终止性检查。
+  // 与权限位那条同规：**显式打印跳过**，不静默。
+  if (process.platform === "win32") {
+    assert.ok(
+      typeof tuiExit.exitCode === "number" || tuiExit.signal !== undefined,
+      `TUI 未被干净终止（exitCode=${String(tuiExit.exitCode)}, signal=${String(tuiExit.signal)}）\n${screen}`,
+    );
+    console.log(
+      "tui exit code: SKIPPED the POSIX 143 assertion on win32 —— 该平台无 128+signal 语义；" +
+        "「不挂死、无残留」仍由上面的超时与进程回收覆盖",
+    );
+  } else {
+    assert.equal(tuiExit.exitCode, 143, screen);
+  }
   terminal = undefined;
 
   let webOutput = "";
-  web = spawn(process.execPath, [runner, "--web", "--workspace", workspace, "--no-open"], {
-    cwd: workspace,
-    env,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // 鉴权与非回环这两条是**安全不变式**：必须在解包产物上验，单测里验过 ≠ 分发物里成立。
+  const webToken = "smoke-token-7f3a";
+  web = spawn(
+    process.execPath,
+    [runner, "--web", "--workspace", workspace, "--no-open", "--token", webToken],
+    {
+      cwd: workspace,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   web.stdout.on("data", (data) => {
     webOutput += data;
   });
@@ -100,7 +260,7 @@ try {
   await until(
     async () => {
       try {
-        const response = await fetch(new URL("api/server-info", base), {
+        const response = await fetch(new URL("api/server-info?token=" + webToken, base), {
           signal: AbortSignal.timeout(1000),
         });
         if (!response.ok) return false;
@@ -114,18 +274,66 @@ try {
     () => webOutput,
   );
   assert.equal(info.workspaces[0].path, workspace);
+  // 安全不变式 ①：无令牌 401、带令牌 200（面板壳本身仍可匿名取到，见下面的 `/` 200）
+  const unauthenticated = await fetch(new URL("api/server-info", base));
+  assert.equal(unauthenticated.status, 401, "server-info must be 401 without a token");
+  const authenticated = await fetch(new URL("api/server-info?token=" + webToken, base));
+  assert.equal(authenticated.status, 200, "server-info must be 200 with a token");
   const html = await fetch(base);
   assert.equal(html.status, 200);
   assert.match(await html.text(), /<html/i);
   const { default: WebSocket } = await import(pathToFileURL(require.resolve("ws")).href);
-  const socket = new WebSocket(new URL("ws", base.replace("http:", "ws:")));
+  const webSocketBase = base.replace("http:", "ws:");
+  // 安全不变式 ①（续）：/ws 也必须鉴权 —— 无令牌升级被判 401，而不是静默放行。
+  const unauthenticatedSocket = new WebSocket(new URL("ws", webSocketBase));
+  const upgradeRejection = await new Promise((done) => {
+    unauthenticatedSocket.once("error", (error) => done(String(error)));
+    unauthenticatedSocket.once("open", () => done("unexpected-open"));
+  });
+  assert.match(upgradeRejection, /401|Unexpected server response/u);
+  const socket = new WebSocket(new URL("ws?token=" + webToken, webSocketBase));
   await once(socket, "open");
   socket.close();
   await once(socket, "close");
   const exited = once(web, "exit");
   web.kill("SIGTERM");
-  assert.deepEqual(await exited, [0, null]);
+  // ⚠️ 平台分叉（2026-09-27 修）：`[0, null]` = 「退出码 0 且**没有被信号杀死**」，是 POSIX 语义。
+  // Windows 上 `kill` 走 `TerminateProcess`，进程不会走应用层优雅退出 ⇒ 拿到的是退出码而非 signal。
+  // 判据的**意图**（服务收到终止请求后干净退出、无残留）在 Windows 上同样要成立，
+  // 只是表达形式不同：接受「退出码是数字」即可，但**拒绝挂死**（由 `once` 之后的超时兜底）。
+  const webExit = await exited;
+  if (process.platform === "win32") {
+    assert.ok(
+      typeof webExit[0] === "number" || webExit[1] !== null,
+      `web 未被干净终止：exit=${JSON.stringify(webExit)}`,
+    );
+    console.log(
+      `web exit: SKIPPED the POSIX [0, null] assertion on win32 (got ${JSON.stringify(webExit)})`,
+    );
+  } else {
+    assert.deepEqual(webExit, [0, null]);
+  }
   web = undefined;
+
+  // 安全不变式 ②：非回环 + 无令牌必须**拒绝启动**（退出码非 0 的数字），且日志给出可操作原因。
+  // 真起服务而被超时杀掉时 exit code 是 null（signal）⇒ 下面的 typeof 断言会把这种情况判红，不会假通过。
+  const refusal = await runToExit([
+    runner,
+    "--web",
+    "--workspace",
+    workspace,
+    "--no-open",
+    "--host",
+    "0.0.0.0",
+    "--no-token",
+  ]);
+  assert.ok(
+    typeof refusal.code === "number" && refusal.code !== 0,
+    `non-loopback without a token must refuse to start, got exit=${String(refusal.code)}\n${refusal.output}`,
+  );
+  assert.match(refusal.output, /Refusing to start|拒绝启动/u);
+  assert.match(refusal.output, /token|令牌/u);
+
   console.log(
     JSON.stringify({
       version,
@@ -133,13 +341,82 @@ try {
       arch: process.arch,
       tui: "native import, initialized render, keyboard exit passed",
       web: "HTML, server-info, workspace, WebSocket, shutdown passed",
+      security: "401 without token, 200 with token, non-loopback without token refused",
       isolated: true,
     }),
   );
 } finally {
   terminal?.kill();
   web?.kill();
-  await rm(directory, { recursive: true, force: true });
+  // ⚠️ 清理失败不得把主结果判红（2026-09-27 修，第四次三 OS 实测暴露）。
+  //
+  // 实测（run 36334691498）：Windows 上 `web.kill()` 之后子进程尚未完全退出，
+  // `node-pty/prebuilds/win32-x64/conpty.node` 仍被占用 ⇒ `rm` 抛
+  // `EPERM: operation not permitted, unlink ...` —— 于是**所有断言都通过之后**脚本仍然红。
+  // 这是 Windows 的文件锁语义（POSIX 允许删除已打开的文件，Windows 不允许），
+  // 与发行包质量无关。
+  //
+  // 与 `packages/adapters/src/pdf/index.ts` 的既有先例同规：
+  // 「清理错误覆盖主错误会丢失已经完成的分类/结果」。这里同理 ——
+  // 清理是**收尾**，不是判据；它失败时如实打印并继续，让断言结果说话。
+  // **但绝不静默**：残留目录路径要打出来，否则会变成磁盘上的隐形垃圾。
+  try {
+    await rm(directory, { recursive: true, force: true });
+  } catch (error) {
+    console.warn(
+      `[smoke] 临时目录清理失败（不影响本次判定）：${directory}\n        ${String(error)}`,
+    );
+  }
+}
+
+// ⚠️ 显式退出（2026-09-27 修，第五次三 OS 实测暴露）。
+//
+// 实测（run 36335067395）：Windows 上**所有步骤与断言都通过**（日志逐项 ✓），
+// 但 GitHub job 挂在 `in_progress` **超过 30 分钟**不结算 —— 因为脚本进程没有退出。
+// 根因是**残留句柄**：pty 子进程（node-pty 的 conpty）与 web 子进程在 Windows 上
+// 被 `kill` 之后，它们的管道/句柄回收时机与 POSIX 不同，事件循环仍有引用。
+//
+// 判据：**脚本已跑完全部断言**，此时不该因为"某个句柄还没被 GC 掉"而挂住 ——
+// 挂住比失败更糟（无法归因、白烧 runner 分钟数，且 CI 会把它读成"还在跑"而不是"有问题"）。
+// 因此这里显式退出：断言失败时上面的异常已经让进程以非 0 退出（走不到这里），
+// 走到这里就意味着**全部断言通过** ⇒ exit 0。
+process.exit(0);
+
+/**
+ * 断言文件权限位等于期望值，失败时给出「期望/实际 mode + 文件 + 为什么重要」。
+ * 权限位错在单用户机器上不可见，只会在「root 安装、普通用户运行」时以启动失败的形式暴露 ⇒ 必须钉住。
+ */
+async function assertMode(file, expectedMode) {
+  const actualMode = (await stat(file)).mode & 0o777;
+  assert.equal(
+    actualMode,
+    expectedMode,
+    `${file} 的权限位应为 ${expectedMode.toString(8)}，实际 ${actualMode.toString(8)}` +
+      "（包内入口需可执行、旁路模块需普通用户可读：root 安装后非 root 用户 import 失败会表现为启动即崩）",
+  );
+  return actualMode;
+}
+
+/** 跑一个必然退出的子进程并回收输出（用于断言"拒绝启动"这类 fail-closed 行为）。 */
+async function runToExit(args, timeoutMs = 10_000) {
+  const child = spawn(process.execPath, args, {
+    cwd: workspace,
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let output = "";
+  child.stdout.on("data", (data) => {
+    output += data;
+  });
+  child.stderr.on("data", (data) => {
+    output += data;
+  });
+  // 注意：本文件从 `node:timers/promises` 导入了 `setTimeout`（签名是 (ms)），
+  // 这里必须用全局定时器，否则会把回调当成 delay 传进去（ERR_INVALID_ARG_TYPE）。
+  const timer = globalThis.setTimeout(() => child.kill("SIGKILL"), timeoutMs);
+  const [code] = await once(child, "exit");
+  globalThis.clearTimeout(timer);
+  return { code, output };
 }
 
 async function until(check, label, diagnostic) {

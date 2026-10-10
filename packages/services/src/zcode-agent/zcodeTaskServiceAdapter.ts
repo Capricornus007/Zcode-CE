@@ -45,6 +45,7 @@ import {
   type ZCodeBackgroundTaskNotificationInfo,
   type ZCodeBackgroundTaskControlItem,
   type ZCodeBackgroundTurnAttribution,
+  type ZCodeAutomationBotDeliveryTarget,
   type ZCodeCancelTaskCommandResult,
   type ZCodeConfigOption,
   type ZCodeEnqueueTaskCommandResult,
@@ -376,6 +377,8 @@ export function createZCodeTaskServiceAdapter(
       content: string;
       attachments?: ZCodePromptAttachment[];
       toolDenylist?: string[];
+      /** Bot 来源 turn 的稳定回推地址；经本函数原样转发，供本轮 CronCreate 读取。 */
+      botDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
       clientId?: string;
       clientMode?: ZCodeTaskClientMode;
       logReason?: string;
@@ -426,6 +429,8 @@ export function createZCodeTaskServiceAdapter(
           modelExecution: params.modelExecution,
           ...turnAttributionOf(params),
           toolDenylist: promptToolDenylist,
+          // Bot 回推地址必须与 toolDenylist 同一出口转发：丢掉它会让本轮定时任务无法回推（静默降级）。
+          botDeliveryTarget: params.botDeliveryTarget,
           ...(params.clientMode ? { clientMode: params.clientMode } : {}),
         });
       } else {
@@ -448,6 +453,8 @@ export function createZCodeTaskServiceAdapter(
               ...(params.modelExecution ? { modelExecution: params.modelExecution } : {}),
               ...turnAttributionOf(params),
               ...(promptToolDenylist ? { toolDisallowlist: promptToolDenylist } : {}),
+              // botDeliveryTarget 未声明时 v4 schema 会剥离；声明后必须在 payload 里真正带上。
+              ...(params.botDeliveryTarget ? { botDeliveryTarget: params.botDeliveryTarget } : {}),
             },
             sessionId: target.taskId,
             commandId: params.traceId,
@@ -1627,6 +1634,21 @@ export function createZCodeTaskServiceAdapter(
       return;
     }
 
+    // start-plan 验证码挑战的运行时请求头请求（spec §4.2/§4.3）。
+    //
+    // 必须在这里显式 early-return：本函数是 catch-all，末尾会无条件执行
+    // `mapSessionEvent(params, event.event, ...)`；本事件没有 `.event` 字段，
+    // 落到末尾会以 undefined 解引用抛错（新分支被兜底吃掉，与 126 报告里
+    // host 守卫写反属同一类「兜底/简化吞掉分支」的教训）。
+    //
+    // 语义上也刻意不投影：渲染层由 agentService 的
+    // `providerRuntimeHeaders.request` 事件驱动（见 zcodeAgent.ts 的
+    // ZCodeAgentServiceEvent），task-index/stream 这条 replayable 读路径不承载
+    // 一次性验证码凭据（spec §3：凭据不落盘、不入 store、不进日志）。
+    if (event.type === "providerRuntimeHeaders.request") {
+      return;
+    }
+
     if (event.type === "session.event") {
       // 遥测移除（P1）：这里原有 recordAgentModelNetworkTelemetry(event.event)，
       // 把 model_request_completed / model_request_failed 折算成 NetworkObservation 后
@@ -1896,6 +1918,8 @@ export function createZCodeTaskServiceAdapter(
         clientMode: params.clientMode,
         modelSelection: params.modelSelection,
         modelExecution: params.modelExecution,
+        // IZCodeTaskService.sendPrompt 已声明该字段（zcodeTaskService.ts）；此处不转发会在 adapter 断链。
+        botDeliveryTarget: params.botDeliveryTarget,
       });
     },
 
@@ -2190,6 +2214,20 @@ export function createZCodeTaskServiceAdapter(
         }),
       });
       assertV4CommandAckOk("resolveInteraction", ack, `permission ${params.requestId}`);
+      // 修复原因（133-im-bot-approval-loop B3）：resolveInteraction 是「先到先得，晚到 noop」
+      // （packages/shared 的 command.ts）。noop 表示该 interaction 已被其它端（桌面 / 手机）
+      // 或自动裁决先行收口——本次提交并未生效。把 noop 与 accepted/duplicate 分开：
+      // 不抛错（noop 是多端并发应答的正常幂等语义，抛 failed 会误导客户端，见 133 §5.2），
+      // 但返回 false，让 Bot 侧回复「该权限已处理」而不是「已提交」——把别端的裁决说成
+      // 本次提交，会让用户误以为自己的选择生效了。
+      if (ack.status === "noop") {
+        logger.info(
+          undefined,
+          "resolveInteraction noop (already resolved elsewhere), permission submission not applied",
+          { requestId: params.requestId },
+        );
+        return false;
+      }
       return true;
     },
 
@@ -2220,6 +2258,18 @@ export function createZCodeTaskServiceAdapter(
         }),
       });
       assertV4CommandAckOk("resolveInteraction", ack, `elicitation ${params.requestId}`);
+      // 修复原因（133 B3，与 respondPermission 同一条判据）：noop 表示该问答已被其它端
+      // 或自动裁决先行收口，本次提交未生效。返回 false 让 Bot 侧回复「该问答已处理」；
+      // 同时跳过下面的 replayable 事件投递——那是「本次应答已生效、请各端清理弹窗」的语义，
+      // 在 noop 下投递会把未生效的应答广播给桌面 / 手机 observer。
+      if (ack.status === "noop") {
+        logger.info(
+          undefined,
+          "resolveInteraction noop (already resolved elsewhere), elicitation submission not applied",
+          { requestId: params.requestId },
+        );
+        return false;
+      }
       if (params.clientMode === "web-remote-replayable") {
         // 语义保真（原 agentService.respondUserInput 的 web-remote-replayable 分支）：
         // 手机远控应答后，桌面/其它 observer 需要显式响应事件清理同一 requestId 的弹窗；
@@ -3415,7 +3465,7 @@ function getSnapshotGoalActiveIterationCount(snapshot: ZCodeSessionStateSnapshot
 }
 
 function toZCodeDeliveryKind(
-  deliveryKind: "continuous" | "replayable" | "mixed" | undefined,
+  deliveryKind: "continuous" | "bot-channel-continuous" | "replayable" | "mixed" | undefined,
 ): ZCodeDeliveryKind {
   return deliveryKind === "replayable" ? "web-remote-replayable" : "desktop-continuous";
 }

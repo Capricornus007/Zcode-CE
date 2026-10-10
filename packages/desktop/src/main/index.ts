@@ -70,6 +70,9 @@ import {
   HostMessageTypes,
 } from "@zcode/shared";
 import { logger } from "./logger.js";
+import { registerWebServiceIpc } from "./web-service/ipc.js";
+import { createWebServiceConnectionPlane } from "./web-service/remoteControlClient.js";
+import { createWebServiceRuntime } from "./web-service/runtime.js";
 import { markMainLaunchAppReady } from "./desktopLaunchMarks.js";
 import { createCuaPipFocusRouter, resolveCuaPipWindowKey } from "./cuaPipFocusRouter.js";
 import {
@@ -140,6 +143,7 @@ import {
   resolveBundledGlmBinaryPath,
   resolveRemoteAssetDirs,
   resolveZCodeEndpointEnvBaseOrigin,
+  setRemoteAssetCdnBaseUrlSetting,
   runtimeApplicationName,
   runtimeHomePath,
   runtimeSessionDataPath,
@@ -839,6 +843,12 @@ function syncCloseToTrayOnWindows(value: unknown) {
 
 function syncImmediateAppSettings(patch: AppSettingsSyncPatch) {
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
+
+  if (patch.remoteAssetCdnBaseUrl !== undefined) {
+    // 设置页改自定义远程资产 CDN 基址：只刷新进程内缓存，**新建**的远程连接才会用到新值。
+    // 已建立的远程会话沿用旧基址（下载地址在连接时已确定），设置项文案已如实标注这一点。
+    setRemoteAssetCdnBaseUrlSetting(patch.remoteAssetCdnBaseUrl);
+  }
 
   if (typeof patch.keepAwakeWhileRunning === "boolean") {
     keepAwakeWhileRunning = patch.keepAwakeWhileRunning;
@@ -1752,6 +1762,9 @@ app.whenReady().then(async () => {
       loadedBootstrapLocale = true;
       currentApplicationLocale = bootstrapSettings.locale;
     }
+    // 自定义远程资产 CDN 基址（设置页）：与其它 AppSettings 字段同一处读取。
+    // 它有独立的进程内缓存，因为消费点 `resolveRemoteAssetDirs` 是同步接口。
+    setRemoteAssetCdnBaseUrlSetting(bootstrapSettings.remoteAssetCdnBaseUrl);
     closeToTrayOnWindows = bootstrapSettings.closeToTrayOnWindows ?? true;
     keepAwakeWhileRunning = bootstrapSettings.keepAwakeWhileRunning ?? false;
     currentDesktopZoomLevel = clampDesktopZoomLevel(bootstrapSettings.desktopZoomLevel ?? 0);
@@ -1994,6 +2007,38 @@ app.whenReady().then(async () => {
   // 主窗口 renderer 的 60 秒 heap 读数入口；随 App 生命周期常驻，只注册一次。
   // 它保留的是 renderer → main 的本地诊断 IPC 通道，不是上报链路。
   registerRendererHeapSampleIpc();
+
+  // ── 本地 Web 服务（远程控制 Slice 1）─────────────────────────────────────────
+  // 生产者（随包 .cjs / 静态根 / pty.node + spawn / 探活 / 选端口 / 停 pid）全在
+  // web-service/runtime.ts；这里只做**接线与注册**：状态由编排器持有，main 不承载业务状态。
+  // 令牌只经 connectionInfo 的 linkWithToken 交付渲染进程；status/changed 的载荷不含令牌。
+  const webServiceRuntime = createWebServiceRuntime({
+    resourceRoot: process.resourcesPath,
+    ...(app.isPackaged ? {} : { fallbackRoot: app.getAppPath() }),
+    nodeExecPath: process.execPath,
+    childEnv: { ELECTRON_RUN_AS_NODE: "1" },
+    onChildOutput: (chunk, stream) => logger.info(`[web-service:${stream}] ${chunk.trimEnd()}`),
+  });
+  // 连接面（谁连着）：main 侧带上令牌去请求本机服务端的 HTTP 端点（spec §6.4）。
+  // 令牌不跨 IPC 边界 —— 只有结果（已由 remoteControlClient 逐字段重建）转给渲染进程。
+  const webServiceConnectionPlane = createWebServiceConnectionPlane({
+    status: () => webServiceRuntime.controller.status(),
+    tokenPath: webServiceRuntime.tokenPath,
+  });
+  registerWebServiceIpc({
+    ipcMain,
+    controller: webServiceRuntime.controller,
+    connectionPlane: webServiceConnectionPlane,
+    broadcast: (channel, payload) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          win.webContents.send(channel, payload);
+        }
+      }
+    },
+    onError: (error, channel) => logger.error(`[web-service] ${channel} 失败`, error),
+  });
+
   // main 进程自身的 60 秒内存诊断：门控后写一行 `[memory] role=main`，计数器取自
   // mainMemoryDiagnosticsRegistry。遥测移除前它寄生在 10 秒资源采样节拍里（每 6 个 tick
   // ≈60 秒读一次 main 内存），现在由本模块自持唯一的 unref 定时器。

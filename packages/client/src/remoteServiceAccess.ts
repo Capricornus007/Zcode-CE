@@ -25,12 +25,14 @@ import {
   IClientConfigService,
   IClientScenesService,
   IOffPeakTaskService,
+  IWorkspaceRegistryService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
   IPluginSyncService,
   IPluginsService,
   IPluginManagementService,
+  IBotsService,
   ISubagentsService,
   ICommandsService,
   IHooksService,
@@ -77,12 +79,19 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly clientConfigService: IClientConfigService;
   readonly clientScenesService: IClientScenesService;
   readonly offPeakTaskService: IOffPeakTaskService;
+  readonly workspaceRegistryService: IWorkspaceRegistryService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
   readonly pluginSyncService: IPluginSyncService;
   readonly pluginsService: IPluginsService;
   readonly pluginManagementService: IPluginManagementService;
+  /**
+   * Bot 管理面（ce.5）：「IM 机器人」标签页与 BotsDialog 的数据源。
+   * channel 由 exposeOnChannelServer 随已注册服务自动暴露（IBotsService 在 createLocalServices 注册），
+   * 旧 host 未注册该 channel 时调用会失败，由消费方按「能力缺失」处理。
+   */
+  readonly botsService: IBotsService;
   readonly subagentsService: ISubagentsService;
   readonly commandsService: ICommandsService;
   readonly hooksService: IHooksService;
@@ -175,6 +184,12 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.offPeakTaskService = ProxyChannel.toService<IOffPeakTaskService>(
       channelClient.getChannel(IOffPeakTaskService.channelName),
     );
+    // 工作区注册表（M1.3）：侧栏枚举来源。旧 host 未注册该 channel 时调用会失败，
+    // 由消费方（useWorkspaceRegistry）按「不可用」处理并回落到本客户端显式列出，
+    // 不得把失败当成「没有任何工作区」。
+    this.workspaceRegistryService = ProxyChannel.toService<IWorkspaceRegistryService>(
+      channelClient.getChannel(IWorkspaceRegistryService.channelName),
+    );
     this.skillsService = ProxyChannel.toService<ISkillsService>(
       channelClient.getChannel(ISkillsService.channelName),
     );
@@ -192,6 +207,9 @@ export class RemoteServiceAccess implements IServiceAccessor {
     );
     this.pluginManagementService = ProxyChannel.toService<IPluginManagementService>(
       channelClient.getChannel(IPluginManagementService.channelName),
+    );
+    this.botsService = ProxyChannel.toService<IBotsService>(
+      channelClient.getChannel(IBotsService.channelName),
     );
     this.subagentsService = ProxyChannel.toService<ISubagentsService>(
       channelClient.getChannel(ISubagentsService.channelName),

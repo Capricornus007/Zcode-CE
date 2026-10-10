@@ -9,6 +9,7 @@ import type {
   OnboardingRecordFile,
 } from "@zcode/shared";
 import { atomicWriteText } from "../fs/atomicFileUtils.js";
+import { ensureDeviceMid } from "../device/deviceMid.js";
 import { getAppConfigDir } from "../paths.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
 import type {
@@ -59,6 +60,33 @@ export function createOnboardingRecordService(
   };
 
   /**
+   * 解析新建记录文件要固化的 deviceMid；拿不到非空值时返回 null。
+   *
+   * 这里不允许兜底造值：schema 要求 deviceMid min(1)，写空串会让整份文件下次读取
+   * 解析失败（readRecordFile 返回 null），刚落的决策与 entries 一并被当成"从未记录"，
+   * 用户的关闭动作静默丢失。宁可本次不写并 warn，也不写出必然读不回来的文件。
+   */
+  const resolveNewFileDeviceMid = async (): Promise<string | null> => {
+    try {
+      const raw = options.resolveDeviceMid
+        ? await options.resolveDeviceMid()
+        : await ensureDeviceMid();
+      const deviceMid = typeof raw === "string" ? raw.trim() : "";
+      if (!deviceMid) {
+        logger.warn(
+          undefined,
+          "onboarding record deviceMid resolved empty, skip write (schema requires min(1))",
+        );
+        return null;
+      }
+      return deviceMid;
+    } catch (error) {
+      logger.warn(undefined, "resolve deviceMid for onboarding record failed:", error);
+      return null;
+    }
+  };
+
+  /**
    * 落一条决策并保证幂等：同一 (userId, status) 已存在时不重复追加。
    *
    * 失败只 warn 不抛：决策是"下次别再弹"的优化，写盘失败不应阻断引导判定本身
@@ -73,13 +101,14 @@ export function createOnboardingRecordService(
     try {
       await enqueueWrite(async () => {
         const filePath = getRecordFile();
-        const file = existingFile ??
-          (await readRecordFile(filePath)) ?? {
-            version: 2 as const,
-            deviceMid: "",
-            entries: [],
-            decisions: [],
-          };
+        let file = existingFile ?? (await readRecordFile(filePath));
+        if (!file) {
+          // 新建文件必须固化一个非空 deviceMid（见 resolveNewFileDeviceMid）：
+          // 解析不到就放弃本次写入，而不是写一份下次读不回来的文件。
+          const deviceMid = await resolveNewFileDeviceMid();
+          if (!deviceMid) return;
+          file = { version: 2, deviceMid, entries: [], decisions: [] };
+        }
         if (file.decisions.some((d) => d.userId === userId && d.status === status)) return;
         file.decisions.push({
           userId,
@@ -116,8 +145,16 @@ export function createOnboardingRecordService(
           }
           file = existing;
         } else {
-          // 新文件直接落 v2：v1 只在读取旧文件时出现，由 onboardingRecordFileSchema 无损升级。
-          file = { version: 2, deviceMid, entries: [], decisions: [] };
+          // 修复原因（C48）：原实现在这里直接落调用方传入的 deviceMid——web 客户端的
+          // platform.getDeviceId() 返回浏览器物理指纹（main.tsx，非 UUID），全新部署下
+          // 首条 appendRecord 会把指纹固化为记录文件的 deviceMid，与 telemetry-state.json
+          // 的设备身份（X-Device-Mid / claim / 反馈同源）分叉。新建文件的 deviceMid
+          // 一律走宿主侧设备身份入口（resolveDeviceMid / ensureDeviceMid），与
+          // recordDecisionSafely（dismiss 路径）同一口径；调用方传入值退化为纯诊断
+          // （上方的 mismatch warn 正是 C48 这类分叉的可观测出口）。
+          const resolvedDeviceMid = await resolveNewFileDeviceMid();
+          if (!resolvedDeviceMid) return;
+          file = { version: 2, deviceMid: resolvedDeviceMid, entries: [], decisions: [] };
         }
         const record: OnboardingRecordEntry = {
           userId,
@@ -162,14 +199,18 @@ export function createOnboardingRecordService(
       const file = await readRecordFile(getRecordFile());
 
       // 判定顺序与官方 3.14.1 一致，不可调换：
-      // 1) 用户主动关闭过 → 不再引导（否则「关闭后重启又弹」的老症状会复现）。
+      // 1) 该 userId 在 entries 或 decisions 里已有任意一条记录 → 不再引导。
       // 2) 本机已有任务 → 视为老用户，落一条 existing_local_user 决策后不引导。
       //    没有这一步，升级到本版的老用户会被当成新用户弹一次引导。
-      if (
-        file?.decisions.some(
-          (decision) => decision.userId === userId && decision.status === "dismissed",
-        )
-      ) {
+      //
+      // 第 1 步的判定面是 entries ∪ decisions 的并集（判据见 @zcode/shared 的
+      // onboardingDecisionSchema 注释），不按 status 过滤：只认 dismissed 时，第 2 步
+      // 自己写下的 existing_local_user 决策会在本机任务被删空后失效，同一个人被再弹一次。
+      // 这是收窄引导触发面（少弹一次），不会让本该引导的人不引导。
+      const hasIdentityRecord =
+        file?.entries.some((entry) => entry.userId === userId) === true ||
+        file?.decisions.some((decision) => decision.userId === userId) === true;
+      if (hasIdentityRecord) {
         return false;
       }
 
@@ -180,8 +221,7 @@ export function createOnboardingRecordService(
         return false;
       }
 
-      if (!file) return true;
-      return !file.entries.some((entry) => entry.userId === userId);
+      return true;
     },
 
     async dismissOnboarding(): Promise<void> {

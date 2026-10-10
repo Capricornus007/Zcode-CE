@@ -138,6 +138,7 @@ import type {
   SessionUsageSeed,
 } from "./product-projection.js";
 import type { ConversationRowTargetAction } from "./product-projection.js";
+import { SessionsIndexFanoutThrottle } from "./sessions-index-fanout-throttle.js";
 import { SessionsIndexPublisher } from "./sessions-index-publisher.js";
 import { SessionsIndexPublisherRegistry } from "./sessions-index-publisher-registry.js";
 import { WorkspaceConfigPublisher } from "./workspace-config-publisher.js";
@@ -321,6 +322,15 @@ export interface V4GatewayHost {
   invalidatePersistentCommandFacts?(sessionId: string): void;
   /** canonical goal complete 已进入 projection；宿主副作用必须 detached，禁止阻塞 ingest。 */
   onTargetCompleted?(sessionId: string, event: SessionEvent): void;
+  /**
+   * 队列授权位被复位后请宿主重评一次自动提升（spec 130 §4.6）。
+   *
+   * 与 onTargetCompleted 同源：bridge 内两者都落到同一个 `autoDrainV4QueueIfReady`。
+   * 为什么必须重评：暂停队列的项只活在投影里（core 的 activeTurn.pendingInputs 已随 turn
+   * 结束释放），idle 会话没有任何 active turn 能替它启动队首——只翻授权位不够，
+   * 用户切完渠道仍会看到队列卡着。这条与 queue.ts:138-142 的 setAutoDrain(true) 义务一致。
+   */
+  requestQueueDrainReevaluation?(sessionId: string): void;
   /** 完整 chunk transaction commit 后一次性写 session artifact。 */
   putSessionAttachment?(
     sessionId: string,
@@ -612,6 +622,10 @@ export class ConversationV4Gateway {
       if (parsed.success) this.host.emitLocalTtftFacts?.(parsed.data);
     },
   );
+  /** 高频进度事件的 index fan-out 节流（14-sessions-index「事件 fan-out 节奏」）。 */
+  private readonly indexFanoutThrottle = new SessionsIndexFanoutThrottle({
+    publish: (sessionId) => this.publishCurrentSummaryToIndex(sessionId),
+  });
   private readonly attachmentPruneTimer: ReturnType<typeof setInterval>;
   private readonly now: () => number;
   private readonly createLogEpoch: (sessionId: string) => string;
@@ -1074,6 +1088,12 @@ export class ConversationV4Gateway {
    */
   private fanOutToIndex(sessionId: string, event: SessionEvent): void {
     if (event.type === SessionEventType.ModelStreaming) return;
+    // 工作流进度同样是高频流（实测 8s 4000 条），但列表要继续动，所以不是丢弃而是
+    // leading + trailing 窗口节流：窗内合并为窗末一帧，终态仍在一个窗口内送达。
+    if (event.type === SessionEventType.DynamicWorkflowRunProgress) {
+      this.indexFanoutThrottle.request(sessionId);
+      return;
+    }
     this.publishCurrentSummaryToIndex(sessionId);
   }
 
@@ -1086,6 +1106,8 @@ export class ConversationV4Gateway {
    * task-index syncer 无法观察到 draft→visible，也就不会创建侧栏 task row。
    */
   private publishCurrentSummaryToIndex(sessionId: string): void {
+    // 这一次发布带的就是窗内合并后的当前摘要：待发的 trailing 到此被满足，不重复发帧。
+    this.indexFanoutThrottle.notePublished(sessionId);
     const getWorkspaceId = this.host.getSessionWorkspaceId;
     if (!getWorkspaceId) return;
     try {
@@ -1402,6 +1424,9 @@ export class ConversationV4Gateway {
       connectionId: params.connectionId,
       base: params.base,
       deliveryProfile: profileName,
+      // 与 clientMode 同族的可信注入：能力位来自该连接的 clientHello，缺席一律按旧消费者办
+      // （整键 patch + 旧界裁剪）。resync / rehydrate 沿用订阅上已记下的这一位，不再重取。
+      workflowRunDeltas: params.workflowRunDeltas === true,
     });
     const routeKey = subscriptionRouteKey(
       params.topic,
@@ -2574,6 +2599,34 @@ export class ConversationV4Gateway {
     return this.publishers.get(sessionId)?.getSnapshot().queue.items.length ?? 0;
   }
 
+  /**
+   * 切模型复位队列授权位（spec 130 §4.6）的判据读侧：queue.autoDrain + pauseReason。
+   *
+   * 为什么必须由投影提供 pauseReason：core 只有 agent-runtime.ts:216 的 `queueAutoDrain`
+   * 布尔，不区分原因（127 §6.1 第 4 点）；pauseReason 只在投影
+   * （packages/shared/src/zcode-protocol-v4/snapshot.ts:222）。没有它就无法区分
+   * 「turn 失败造成的 held」与「用户主动 Stop 造成的 held」，而后者按 spec 必须保留。
+   *
+   * 无 publisher（会话尚无投影 / 冷恢复未水合）→ null，调用方按「不复位」处理：
+   * 宁可漏一次自动复位（用户仍可点「恢复队列」），也不误清用户主动停止的暂停队列。
+   */
+  getQueueAutoDrainState(sessionId: string): {
+    autoDrain: boolean;
+    pauseReason?: "stopped" | "manual" | "error";
+  } | null {
+    const queue = this.publishers.get(sessionId)?.getSnapshot().queue;
+    if (!queue) return null;
+    return {
+      autoDrain: queue.autoDrain,
+      ...(queue.pauseReason ? { pauseReason: queue.pauseReason } : {}),
+    };
+  }
+
+  /** 见 V4GatewayHost.requestQueueDrainReevaluation：转发给宿主（实现归 bridge）。 */
+  requestQueueDrainReevaluation(sessionId: string): void {
+    this.host.requestQueueDrainReevaluation?.(sessionId);
+  }
+
   /** Resident 回收保护：publisher queue 与 CommandInbox pinned facts 任一存在都不可关闭。 */
   hasResidencyBlockingCommands(sessionId: string): boolean {
     return this.getQueueLength(sessionId) > 0 || this.inbox.hasPinnedSessionState(sessionId);
@@ -2749,6 +2802,7 @@ export class ConversationV4Gateway {
         this.host.onError?.("v4.sessionsIndex.remove", error);
       }
     }
+    this.indexFanoutThrottle.clearSession(sessionId);
     for (const [routeKey, state] of this.flushStates) {
       if (state.sessionId !== sessionId) continue;
       if (state.timer) clearTimeout(state.timer);
@@ -2799,6 +2853,7 @@ export class ConversationV4Gateway {
       );
     }
     clearInterval(this.attachmentPruneTimer);
+    this.indexFanoutThrottle.clear();
     this.attachmentUploads.clear();
     this.binaryReadCache.clear();
     this.binaryReadCacheBytes = 0;

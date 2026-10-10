@@ -12,7 +12,7 @@ import { useMemo, useRef, useState } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
-import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
+import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon, SquareTerminalIcon } from "lucide-react";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
@@ -101,6 +101,8 @@ export function WorkspaceHeaderTitleSection({
   isWindowsDesktop: _isWindowsDesktop,
   selectedEditor: _selectedEditor,
   simplifyForNarrowRemote = false,
+  isTerminalOpen = false,
+  onToggleTerminal,
   compact = false,
 }: WorkspaceHeaderTitleSectionProps) {
   const { intl } = useZCodeIntl();
@@ -452,6 +454,10 @@ export function WorkspaceHeaderTitleSection({
             variant="ghost"
             size={compact ? "icon-sm" : "icon-md"}
             data-testid={TID_WORKSPACE_PATH}
+            // 窄屏（手机）收起这个工作区/分支图标：标题簇 [文件夹 28][标题][⋯ 28] 在 360 宽下
+            // 只能把标题压到 58px（阶段 2 §9.3 的遗留项）。工作区名在侧栏、分支名在草稿态
+            // 上下文行都有等价展示；桌面（≥768）逐项不变。
+            className="max-md:hidden"
             aria-label={[workspaceContextLabel, workspaceBranchLabel].filter(Boolean).join(" · ")}
             onClick={() => setWorkspaceContextOpen(true)}
           >
@@ -503,6 +509,22 @@ export function WorkspaceHeaderTitleSection({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
+              {/* 窄屏：头部为了给标题留宽度收起了终端按钮，这里补一个带文字标签的等价入口
+                  （1 次点击可达的替代路径，不是死路）。桌面保持原样：头部已有终端按钮。 */}
+              {simplifyForNarrowRemote && onToggleTerminal ? (
+                <>
+                  <DropdownMenuItem
+                    data-testid="workspace-more-terminal-toggle"
+                    data-terminal-open={isTerminalOpen ? "true" : "false"}
+                    disabled={Boolean(readOnlyReason)}
+                    onSelect={() => onToggleTerminal()}
+                  >
+                    <SquareTerminalIcon className="size-4" />
+                    {intl.formatMessage({ id: "terminal.toggle" })}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
               {showRemoteSkillSyncAction && remoteTarget ? (
                 <>
                   <RemoteSyncMenuItems

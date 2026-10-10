@@ -52,6 +52,7 @@ import {
   formatRemoteWorkspaceDisplayLabel,
 } from "@/lib/remoteWorkspaceHistory.js";
 import { TaskList } from "@/TaskList.js";
+import type { WorkspaceRuntimeState } from "@/hooks/useWorkspaceRuntimeStates.js";
 import { selectWorkspaceZCodeState, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import type { WorkspaceTabState } from "@/store/tabStore.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
@@ -151,6 +152,10 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   itemStyle,
   sortableBindings,
   isDragging = false,
+  runtimeState,
+  persistedSessionCount,
+  lastActivityAt,
+  isRegistryDerived = false,
 }: {
   tab: WorkspaceTabState;
   isActiveWorkspace: boolean;
@@ -185,6 +190,16 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   itemStyle?: CSSProperties;
   sortableBindings?: SortableBindings;
   isDragging?: boolean;
+  /** §3.2：runtime 状态（"unknown" 或缺席时不显示任何「未启动」标识）。 */
+  runtimeState?: WorkspaceRuntimeState;
+  /** 持久层会话数（注册表事实）。 */
+  persistedSessionCount?: number | null;
+  lastActivityAt?: number | null;
+  /**
+   * 本行由服务端注册表派生（本客户端设置里没有它）。不是真 tab：
+   * 关闭按钮等「对 tab 操作」的入口必须隐藏，点开走 onOpenRegistryWorkspace。
+   */
+  isRegistryDerived?: boolean;
 }) {
   const { intl } = useZCodeIntl();
   const workspaceZCodeState = useZCodeSessionStore((state) =>
@@ -769,6 +784,20 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
           {taskListLiveWorkflowCount > 1 ? taskListLiveWorkflowCount : null}
         </span>
       ) : null}
+      {/*
+       * 「未启动」徽标已移除（fix.2 / Task F1）。
+       *
+       * 为什么删：徽标挂在工作区行上，而 runtime 是按工作区懒启动的，所以首屏几乎每行都带它
+       * （实测 29 行里 28 行带徽标，见 .reverse/40-remote-control/M1-CRITERIA-3-4.md:37）。
+       * 一个恒亮、几乎人人有份的徽标不携带信息，只会变成噪音。
+       *
+       * 为什么可以删而不会退回「以为会话丢了」：列会话不需要 runtime（数据在 SQLite），
+       * 展开行后由 TaskList 的 WorkspaceRuntimeNotice 如实给出「已有 N 个会话、最近活动」与
+       * 「打开并启动」动作（该分支先于「暂无任务」，见 TaskList.tsx 的 isHonestRuntimePlaceholder）。
+       * 也就是说，诚实未启动态由展开后的画面承载，不再由行上的常驻徽标承载。
+       *
+       * 运行中状态仍由官方既有的圆圈表达（组头 liveWorkflowCount 旁 STATUS_DOT.running），未动。
+       */}
       {readOnlyReason ? (
         <ControlHintTooltip title={readOnlyReason} side="right" align="center">
           <span
@@ -900,7 +929,13 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
                       logs={reconnectRuntimeLogs}
                     />
                   ) : null} */}
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div
+                    // 手机（触屏）上把行内操作图标的命中区补到 44×44：icon-sm 实测 24×24，三个图标
+                    // 相邻中心距仅 20–22px，拇指（≈44px）必然误触（task-22 审计 §2.7：更多/查看文件/
+                    // 新建任务分别出现 44/43/40 次）。用 min-* 不用 size-*，避免文字行被撑变形。
+                    // 桌面鼠标路径（pointer: fine）逐项不变。
+                    className="flex shrink-0 items-center gap-1 [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11"
+                  >
                     {shouldMountWorkspaceRowActions ? (
                       <DropdownMenu
                         open={workspaceActionMenuOpen}
@@ -930,27 +965,37 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
                             onOpenMcpSync={() => setRemoteMcpSyncOpen(true)}
                             onOpenPluginSync={() => setRemotePluginSyncOpen(true)}
                           />
-                          <DropdownMenuItem
-                            data-testid={testId(TID_WORKSPACE_CLOSE, tab.workspacePath)}
-                            onMouseDown={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                            }}
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              void handleRemoveWorkspace();
-                            }}
-                          >
-                            <XIcon className="h-3.5 w-3.5" />
-                            {intl.formatMessage({
-                              id: "workspaceSidebar.remove",
-                            })}
-                          </DropdownMenuItem>
+                          {/*
+                           * 注册表派生的行不是本客户端的 tab：这里没有可关闭的 tab，
+                           * 「移除」会打到 `closeTab`（对不存在的 id 是空操作），
+                           * 对用户表现为「点了没反应」。因此只对真 tab 提供该入口。
+                           */}
+                          {isRegistryDerived ? null : (
+                            <DropdownMenuItem
+                              data-testid={testId(TID_WORKSPACE_CLOSE, tab.workspacePath)}
+                              onMouseDown={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                              }}
+                              onSelect={(event) => {
+                                event.preventDefault();
+                                void handleRemoveWorkspace();
+                              }}
+                            >
+                              <XIcon className="h-3.5 w-3.5" />
+                              {intl.formatMessage({
+                                id: "workspaceSidebar.remove",
+                              })}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : null}
-                    {shouldMountWorkspaceRowActions && showFileTreeAction ? (
-                      <span className="shrink-0">
+                    {/* 文件树依赖该 workspace 的 host 连接；未打开（注册表派生）的行先不提供，避免“点了没反应”。 */}
+                    {shouldMountWorkspaceRowActions && showFileTreeAction && !isRegistryDerived ? (
+                      // 窄屏（手机）不再并排第三个图标：文件树入口在同一个 ⋯ 菜单里已有
+                      // （workspaceSidebar.showFileTree），保留它只会把工作区名挤到更窄。
+                      <span className="shrink-0 max-md:hidden">
                         {/* Project 文件树入口以前单独覆盖 hover:bg-surface-hover，
                             与 Pinned / Grouped 的 bg-hover 不一致；三种入口统一复用同一 action。 */}
                         <TaskRowActionButton
@@ -1133,6 +1178,11 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
             onArchiveTask={handleArchiveTask}
             onSetTaskUnread={handleSetTaskUnread}
             readOnlyReason={readOnlyReason}
+            runtimeState={runtimeState}
+            persistedSessionCount={persistedSessionCount}
+            lastActivityAt={lastActivityAt}
+            onStartRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
+            onRetryRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
           />
         </CollapsibleContent>
       </Collapsible>

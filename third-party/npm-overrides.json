@@ -18,7 +18,7 @@
     "file": "third-party/upstream/0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a.txt",
     "sha256": "0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a",
     "source": "https://registry.npmjs.org/unsafe-pointer/0.2.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -36,7 +36,7 @@
     "file": "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt",
     "sha256": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
     "source": "https://registry.npmjs.org/react-remove-scroll-bar/2.3.8",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -51,7 +51,7 @@
     "file": "third-party/upstream/f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452.txt",
     "sha256": "f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452",
     "source": "https://registry.npmjs.org/quickjs-wasi/2.2.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -120,7 +120,7 @@
     "file": "third-party/upstream/c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817.txt",
     "sha256": "c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817",
     "source": "https://registry.npmjs.org/@hono%2fnode-ws/1.3.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -138,7 +138,7 @@
     "file": "third-party/upstream/93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955.txt",
     "sha256": "93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955",
     "source": "https://registry.npmjs.org/strict-event-emitter/0.5.1",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -228,7 +228,7 @@
     "file": "third-party/upstream/f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a.txt",
     "sha256": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a",
     "source": "https://registry.npmjs.org/lazy-val/1.0.5",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -246,7 +246,7 @@
     "file": "third-party/upstream/1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17.txt",
     "sha256": "1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17",
     "source": "https://registry.npmjs.org/semaphore/1.1.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -270,7 +270,7 @@
     "file": "third-party/upstream/2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d.txt",
     "sha256": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d",
     "source": "https://registry.npmjs.org/boolbase/1.0.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "ISC",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -285,7 +285,7 @@
     "file": "third-party/upstream/b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65.txt",
     "sha256": "b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65",
     "source": "https://registry.npmjs.org/@open-draft%2fdeferred-promise/2.2.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -393,7 +393,7 @@
     "file": "third-party/upstream/000ffa2d773c511f4459fb31d89f841806f93bf5caf2050468ab2097c081b443.txt",
     "sha256": "000ffa2d773c511f4459fb31d89f841806f93bf5caf2050468ab2097c081b443",
     "source": "https://registry.npmjs.org/is-node-process/1.2.0",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "MIT",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -419,7 +419,7 @@
     "file": "third-party/upstream/2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e.txt",
     "sha256": "2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e",
     "source": "https://registry.npmjs.org/ansi-to-react/6.2.6",
-    "evidenceKind": "publisher-license-identifier-and-standard-terms",
+    "evidenceKind": "publisher-declared-standard-terms",
     "license": "BSD-3-Clause",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
@@ -469,10 +469,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -484,10 +484,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -499,10 +499,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -514,10 +514,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -529,10 +529,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -544,10 +544,10 @@
     "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
     "evidenceKind": "pinned-upstream-license-file",
-    "license": "MIT",
+    "license": "MIT AND MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+      "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
       "upstreamLicenseFiles": ["LICENSE.md"]
     }
   },
@@ -562,7 +562,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -577,7 +577,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -592,7 +592,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -607,7 +607,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -622,7 +622,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -637,7 +637,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -652,7 +652,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -667,7 +667,7 @@
     "license": "MPL-2.0",
     "reviewEvidence": {
       "checkedOn": "2026-09-21",
-      "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
       "upstreamLicenseFiles": ["LICENSE"]
     }
   },
@@ -689,5 +689,116 @@
     "package": "https@1.0.0",
     "license": "ISC",
     "acceptedMissingNotice": "占位包：tarball 仅含 package.json（main 指向不存在的 index.js），无代码、无 README、无 LICENSE。pptxgenjs 声明依赖它但运行时不 require（实测 grep 无命中）。包内许可字段为 ISC，无可登记的完整许可文本，故按「接受缺失上游文本」登记。"
+  },
+  {
+    "package": "fontkit@2.0.4",
+    "repo": "foliojs/fontkit",
+    "refs": ["v2.0.4", "2.0.4", "fontkit@2.0.4"],
+    "file": "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt",
+    "sha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
+    "source": "https://registry.npmjs.org/fontkit/2.0.4",
+    "evidenceKind": "publisher-declared-standard-terms",
+    "license": "MIT",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-24",
+      "result": "The versioned npm archive contains no standalone LICENSE file. The package files whitelist is NOT the reason: npm always packs README, LICENSE and LICENCE whatever the files field says, so an archive without a LICENSE means the repository has none. Re-checked exhaustively: all 7 branches carry license files only under test/data (bundled test fonts), and master HEAD equals the v2.0.4 tag fbf3b9ef. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
+      "inArchivePublisherStatements": [
+        "package/package.json declares license MIT",
+        "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
+      ],
+      "registryPublisherIdentity": "npm 2.0.4 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==",
+      "notPublisherMaterial": "PR foliojs/fontkit#300 (Add LICENSE, head e208a491449fe9759637e09e92bfbc9b032d2707) is an unmerged third-party contribution - re-checked 2026-09-24 as state=open, merged=false - so it is not a publisher statement and is not used as material. Downstream fork fontkitten@1.0.3 publishes package/LICENSE (sha256 e626e38b2081908f1ffa133bd13a695d7cc8f70005d2f7b282b262610fe307cd) reproducing Copyright (c) 2014 Devon Govett and stating that it applies to code originating from foliojs/fontkit; that corroborates the copyright line only and is not publisher material.",
+      "npmArchiveSha256": "f686a9515af33fce16ab4bffe50570728197e53165068548c6f75a1793797a08",
+      "sourceTreeUrl": "https://api.github.com/repos/foliojs/fontkit/git/trees/master?recursive=1",
+      "sourceTreeAlsoChecked": "https://api.github.com/repos/foliojs/fontkit/git/trees/v2.0.4?recursive=1 (217 entries; license paths only under test/data) plus the trees of all 7 branches",
+      "upstreamLicenseFiles": []
+    }
+  },
+  {
+    "package": "brotli@1.3.3",
+    "file": "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt",
+    "sha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
+    "source": "https://registry.npmjs.org/brotli/1.3.3",
+    "evidenceKind": "publisher-declared-standard-terms",
+    "license": "MIT",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-24",
+      "result": "CORRECTED on 2026-09-24. The earlier text claimed the upstream publishes no license material at all; that was produced by a filename-only scan and is false. The versioned npm archive ships a verbatim Google copyright and Apache-2.0 notice as the leading comment of all seven shipped dec/*.js files; it is now registered as the embedded component google/brotli (vendored in brotli@1.3.3). What is still missing is a notice issued by the publisher for the package body itself, which declares MIT in package.json and carries only a README License heading. The synthesized standard MIT text is kept because the archive ships no MIT file either.",
+      "inArchivePublisherStatements": [
+        "package/package.json declares license MIT",
+        "package/readme.md carries a License heading whose body is MIT; already captured by the notice collector as the readme.md (license section) member"
+      ],
+      "registryPublisherIdentity": "npm 1.3.3 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==",
+      "inArchiveLicenseMaterialFound": "package/dec/{bit_reader,context,decode,dictionary,dictionary-data,prefix,transform}.js lines 1-13: Copyright 2013 Google Inc. All Rights Reserved. plus the Apache License 2.0 notice; byte-identical across all seven files, sha256 e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613. The same header is still present in pdfkit@0.17.1 js/pdfkit.standalone.js (five occurrences), confirming downstreams retain it.",
+      "vendorProvenance": "foliojs/brotli.js v1.3.3 pins submodule vendor/brotli to google/brotli commit 5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421 (.gitmodules -> git@github.com:google/brotli.git); the Makefile Emscripten-compiles vendor/brotli/common and vendor/brotli/enc into build/encode.js and build/mem.js. That LICENSE is byte-identical (sha256 3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94) to the google/brotli notice already registered for @napi-rs/canvas.",
+      "npmArchiveSha256": "3c7c260f6263df95fee49a9119e9fd21227d628b6c9d99080a75edfd9e2bdb24"
+    }
+  },
+  {
+    "package": "dfa@1.2.0",
+    "file": "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt",
+    "sha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
+    "source": "https://registry.npmjs.org/dfa/1.2.0",
+    "evidenceKind": "publisher-declared-standard-terms",
+    "license": "MIT",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-24",
+      "result": "The versioned npm archive contains no standalone LICENSE file and the upstream repository devongovett/dfa publishes none either - re-checked exhaustively on 2026-09-24: the tarball has 6 entries with no license-named member, and the repository has a single branch whose v1.2.0 tree holds 17 entries with no license path at any depth. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
+      "inArchivePublisherStatements": [
+        "package/package.json declares license MIT",
+        "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
+      ],
+      "registryPublisherIdentity": "npm 1.2.0 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==",
+      "npmArchiveSha256": "d781eb3a307ab6aa2d97028f695b17dbeadf6fd27788c333b1fb96d18d2a23ad"
+    }
+  },
+  {
+    "package": "png-js@1.1.0",
+    "repo": "devongovett/png.js",
+    "license": "MIT",
+    "source": "https://registry.npmjs.org/png-js/1.1.0",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-23",
+      "result": "The versioned npm archive ships a complete LICENSE (MIT License, Copyright (c) 2017 Devon Govett); it is snapshotted verbatim under the version-pinned tarball URL. package.json omits the license field, so the license identifier is recorded here as well.",
+      "npmArchiveSha256": "8fc286c879eb4ac49ab405054956e3afbdfe696e48f360f2c4d6adb2cf053faf"
+    },
+    "file": "third-party/upstream/bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3.txt",
+    "sha256": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3"
+  },
+  {
+    "package": "agent-base@6.0.2",
+    "repo": "TooTallNate/node-agent-base",
+    "refs": ["6.0.2"],
+    "file": "third-party/upstream/a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f.txt",
+    "sha256": "a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f",
+    "source": "https://registry.npmjs.org/agent-base/6.0.2",
+    "evidenceKind": "publisher-declared-standard-terms",
+    "license": "MIT",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-24",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; existing publisher declaration and original README license sections remain preserved. Upstream authorization/copyright material is still required to close this review.",
+      "npmArchiveSha256": "bc6da06f2a2e6bc80fa5878bd7227bd0318812976d45f47f17e1aafcec2be831",
+      "sourceRevision": "c4b8ea2e1a11bae023bb09b708050a50418204e9",
+      "sourceTreeUrl": "https://api.github.com/repos/TooTallNate/node-agent-base/git/trees/c4b8ea2e1a11bae023bb09b708050a50418204e9?recursive=1",
+      "upstreamLicenseFiles": []
+    }
+  },
+  {
+    "package": "https-proxy-agent@5.0.1",
+    "repo": "TooTallNate/node-https-proxy-agent",
+    "refs": ["5.0.1"],
+    "file": "third-party/upstream/32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb.txt",
+    "sha256": "32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb",
+    "source": "https://registry.npmjs.org/https-proxy-agent/5.0.1",
+    "evidenceKind": "publisher-declared-standard-terms",
+    "license": "MIT",
+    "reviewEvidence": {
+      "checkedOn": "2026-09-24",
+      "result": "The versioned npm archive contains no standalone complete LICENSE; existing publisher declaration and original README license sections remain preserved. Upstream authorization/copyright material is still required to close this review.",
+      "npmArchiveSha256": "6da16fb44331f2e5d30bd21bf880aa934c1ad4fe7da7187910ef2b2509712019",
+      "sourceRevision": "d0d80cc0482f20495aa8595f802e1a9f3b1b3409",
+      "sourceTreeUrl": "https://api.github.com/repos/TooTallNate/node-https-proxy-agent/git/trees/d0d80cc0482f20495aa8595f802e1a9f3b1b3409?recursive=1",
+      "upstreamLicenseFiles": []
+    }
   }
 ]

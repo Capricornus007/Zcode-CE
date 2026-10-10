@@ -32,6 +32,7 @@ import type {
   ZCodeTaskTokenUsageResult,
   ZCodePermissionResponse,
   ModelSelection,
+  ZCodeAutomationBotDeliveryTarget,
   ZCodeBackgroundTurnAttribution,
 } from "@zcode/shared";
 import type {
@@ -234,6 +235,8 @@ export interface IZCodeTaskService {
      * 让输入 admission 在写 session_input 外键账本前先统一持久化 session 主记录。
      */
     deferPersistenceUntilFirstPrompt?: boolean;
+    /** Bot/host 使用 v4 原生 createSession 建立 draft，再配置并发送。 */
+    v4Create?: boolean;
   }): Promise<ZCodeTaskCreateResult>;
 
   /** 发送 prompt 到指定 task */
@@ -255,6 +258,8 @@ export interface IZCodeTaskService {
       modelSelection?: CommandPayloadMap["sendText"]["modelSelection"];
       /** 单次执行约束与动态鉴权；仅 idle start-now 接受，不进入普通队列。 */
       modelExecution?: CommandPayloadMap["sendText"]["modelExecution"];
+      /** Bot 来源 turn 的稳定回推地址；由 BotsService 注入，模型不可控。 */
+      botDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
     } & ZCodeBackgroundTurnAttribution,
   ): Promise<void>;
 
@@ -329,7 +334,14 @@ export interface IZCodeTaskService {
     expectedRevision?: number;
   }): Promise<ZCodeSessionGoalResult>;
 
-  /** 响应权限请求 */
+  /**
+   * 响应权限请求。
+   *
+   * 返回值语义：true 表示本次提交生效（ACK = accepted/duplicate）；
+   * false 表示提交未生效——具体是 CLI 侧 resolveInteraction 回 noop：
+   * 该 interaction 已被其它端或自动裁决先行收口（先到先得语义，见
+   * packages/shared 的 command.ts）。调用方应据此回复「已处理」而非「已提交」。
+   */
   respondPermission(params: {
     taskId: string;
     workspacePath?: string;
@@ -340,7 +352,12 @@ export interface IZCodeTaskService {
     response: ZCodePermissionResponse;
   }): Promise<boolean>;
 
-  /** 响应用户问答请求（Elicitation） */
+  /**
+   * 响应用户问答请求（Elicitation）。
+   *
+   * 返回值语义与 respondPermission 一致：noop（已被其它端 / 自动裁决收口）时
+   * 返回 false，调用方据此回复「已处理」。
+   */
   respondElicitation(params: {
     taskId: string;
     workspacePath?: string;
@@ -720,7 +737,7 @@ export interface IZCodeTaskService {
     workspaceIdentity?: string;
     taskId: string;
     clientId?: string;
-    deliveryKind?: "continuous" | "replayable" | "mixed";
+    deliveryKind?: "continuous" | "bot-channel-continuous" | "replayable" | "mixed";
   }): Event<ZCodeStreamEvent>;
 
   /**

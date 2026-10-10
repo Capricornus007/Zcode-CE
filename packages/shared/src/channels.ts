@@ -135,6 +135,10 @@ export const ServiceChannels = {
   OffPeakTask: "off-peak-task",
   /** Onboarding 完成记录服务（本地持久化，后续上传服务器） */
   OnboardingRecord: "onboarding-record",
+  /** 工作区注册表（M1.3）：可见工作区集合的唯一真相源，只读面 */
+  WorkspaceRegistry: "workspace-registry",
+  /** Bots 远程聊天控制服务（IM 机器人渠道） */
+  Bots: "bots",
 } as const;
 
 export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceChannels];
@@ -179,6 +183,40 @@ export const PlatformChannels = {
   ListDockerContainers: "zcode:list-docker-containers",
   /** Renderer → Main：列出 SSH config 里可用于快速填表的 alias */
   ListSSHConfigAliases: "zcode:list-ssh-config-aliases",
+  /**
+   * 远程控制（本地 Web 服务）四条 handle 通道 + 一条广播（契约 §5）。
+   *
+   * 为什么集中在这里而不是留在 `packages/desktop/src/main/web-service/ipc.ts`：
+   * preload 需要同一份字符串才能订阅，而 preload 属于 shared 的消费方 —— 两处各写一份
+   * 字符串迟早漂移（改一处忘一处 ⇒ 通道名对不上，且**静默**：渲染进程永远收不到广播）。
+   * `web-service/ipc.ts` 的 `WEB_SERVICE_CHANNELS` 现在从这里取，保持单一来源。
+   */
+  WebServiceStatus: "webService:status",
+  WebServiceStart: "webService:start",
+  WebServiceStop: "webService:stop",
+  WebServiceConnectionInfo: "webService:connectionInfo",
+  /** Main → Renderer：探活结论变化时的广播（入口据此回显，**不轮询**）。 */
+  WebServiceChanged: "webService:changed",
+  /**
+   * 连接面（谁连着）三条通道（spec §6.4）。读一条、写两条。
+   *
+   * 与上面五条的差别：那五条描述的是服务面（进程/监听/端口/令牌），
+   * 这三条描述的是连接面（哪些客户端连在这个服务上）。spec §3.5 把两面分给不同渲染面
+   * （Web 面板只看连接面，桌面面板两面都有），所以通道也分开 —— 合成一条会让
+   * "Web 面板不提供令牌轮换"这条决策失去可断言的边界。
+   *
+   * 令牌不变式对本组同样成立：WebServiceConnections 的载荷是服务端连接清单，
+   * 不含令牌；main 侧为了请求服务端会在进程内部带上令牌，但它不跨 IPC 边界。
+   */
+  WebServiceConnections: "webService:connections",
+  /** Renderer → Main：断开连接。载荷恰好是 { id } 或 { all: true } 之一（spec §6.4）。 */
+  WebServiceRevokeConnection: "webService:revokeConnection",
+  /**
+   * Renderer → Main：轮换服务端令牌（spec §6.4 的桌面面板专属写动作，决策④）。
+   *
+   * 轮换会让所有已连设备立即失效，所以它只由桌面面板触发；Web 面板不暴露该入口。
+   */
+  WebServiceRotateToken: "webService:rotateToken",
   /** Renderer → Main：从用户目录加载 CLI MCP 配置 */
   LoadMcpFromUserDirectory: "zcode:load-mcp-from-user-directory",
   /** Renderer → Main：保存 CLI MCP 配置到用户目录 */
@@ -507,6 +545,12 @@ export const HostMessageTypes = {
   TaskOwnerCommandDeliver: "task-owner-command-deliver",
   /** main → host：deliver owner command result to requester */
   TaskOwnerCommandResult: "task-owner-command-result",
+  /** main → host：Bot 远端 workspace 重连结果 */
+  BotRemoteWorkspaceReconnectResult: "bot-remote-workspace-reconnect-result",
+  /** main → host：Bot 远端 workspace 连接状态查询结果 */
+  BotRemoteWorkspaceConnectionStatusResult: "bot-remote-workspace-connection-status-result",
+  /** main → host：Bot 远端 workspace runtime RPC 端口 */
+  BotRemoteWorkspaceRuntimePort: "bot-remote-workspace-runtime-port",
   /** main → host：把 session message 投递到该 host 管理的目标 session */
   SessionMessageDeliver: "session-message-deliver",
   /** main → host：把 session message 投递结果回写到源 session */
@@ -591,6 +635,12 @@ export const HostResponseTypes = {
   TaskOwnerCommandRequest: "task-owner-command-request",
   /** host → main：owner 返回 task command result */
   TaskOwnerCommandResult: "task-owner-command-result",
+  /** host → main：Bot 请求创建远端 workspace session */
+  BotRemoteWorkspaceReconnectRequest: "bot-remote-workspace-reconnect-request",
+  /** host → main：Bot 查询当前窗口是否已有远端 workspace session */
+  BotRemoteWorkspaceConnectionStatusRequest: "bot-remote-workspace-connection-status-request",
+  /** host → main：Bot 请求远端 workspace runtime RPC 端口 */
+  BotRemoteWorkspaceRuntimePortRequest: "bot-remote-workspace-runtime-port-request",
   /** host → main：Agent 请求向另一个 session 发送消息 */
   SessionMessageSendRequested: "session-message-send-requested",
   /** host → main：声明一个 ZCode Agent session 当前归属该 host */

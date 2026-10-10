@@ -36,6 +36,10 @@ const installed = new Map();
 const MANUAL_LICENSE = {
   "exif-parser": "MIT", // 包内 LICENSE.md
   khroma: "MIT", // 包内 license 文件
+  // png-js@1.1.0 的 package.json **没有 license 字段**（npm registry 也没有），但包内 LICENSE 是
+  // MIT 全文（Copyright (c) 2017 Devon Govett）—— 由 pdfkit 的 PNG 解码路径引入，随 pdf-plugin
+  // 的依赖树进仓库。登记依据：node_modules/png-js/LICENSE 首行 "MIT License"。
+  "png-js": "MIT", // 包内 LICENSE 文件；package.json 无 license 字段
   semaphore: "MIT", // 包内 README License 段
   "css-value": "MIT", // 包内 Readme License 段
   "@fig/autocomplete-helpers": "MIT", // 包内 LICENSE
@@ -123,11 +127,17 @@ const WEAK_ALLOW = [[/^lightningcss/, "当前仅构建依赖；进入生产图�
 const PROD_WEAK_ALLOW = [
   [
     /^@ubjs\/(?:core|node)(?:-|$)/,
-    "@ubjs/* 是 MPL-2.0（uniffi N-API 运行时），原样分发未修改；源码见 pinned 上游 tag，许可材料已登记",
+    // 源码可提供这条是**独立核实过**的，不是继承自上游自述：pinned tag 0.31.0-3 可达，
+    // 且实际分发的 .node 二进制对应源码就在该 tag 的 runtimes/napi/（Cargo.toml/build.rs/src/lib.rs）。
+    // 核实记录写在 third-party/npm-overrides.json 各条的 reviewEvidence.result 里。
+    "@ubjs/* 是 MPL-2.0（uniffi N-API 运行时），原样分发未修改；源码见 pinned 上游 tag（已独立核实可达且覆盖实际分发的二进制来源），MPL-2.0 全文随 THIRD-PARTY-NOTICES.md 分发，许可材料已登记",
   ],
   [
     /^@trycua\/cua-driver(?:-|$)/,
-    "平台包声明 MIT AND MPL-2.0，MPL 部分仅覆盖 node runtime 垫片（包内 node-runtime-NOTICE.md 有说明）；原样分发未修改，许可材料已登记",
+    // 注意：**平台包声明的是 MIT AND MPL-2.0**，不是 MIT —— MPL 部分覆盖随包分发的
+    // cua_driver_node_runtime.node（包内 node-runtime-NOTICE.md 自述）。登记表此前把 7 条
+    // 全记成 MIT，等于把这个义务藏掉；已按已发布物订正为 MIT AND MPL-2.0。
+    "平台包声明 MIT AND MPL-2.0，MPL 部分覆盖随包分发的 cua_driver_node_runtime.node（包内 node-runtime-NOTICE.md 有说明）；原样分发未修改，MPL-2.0 全文随 THIRD-PARTY-NOTICES.md 分发，许可材料已登记",
   ],
 ];
 function weakAllowReason(r) {
@@ -157,9 +167,16 @@ if (command === "check") {
   const reviewRequired =
     JSON.parse(await readFile(path.join(ROOT, "third-party/inventory.json"), "utf8"))
       .reviewRequired ?? [];
+  const documentedLimitations = JSON.parse(
+    await readFile(path.join(ROOT, "third-party/inventory.json"), "utf8"),
+  ).documentedLimitations;
   if (reviewRequired.length)
     console.warn(
       `待补齐/核验材料 ${reviewRequired.length} 项；发布前运行 node scripts/licenses.mjs check --strict，不得将基础检查通过视为合规完成。`,
+    );
+  if (documentedLimitations?.length)
+    console.log(
+      `按「发布者已发布的声明 + 标准条款 + 已记录出处」记为非阻断的书面限制 ${documentedLimitations.length} 项（不等于材料齐全，见 third-party/README.md）。`,
     );
   const n = installed.size;
   console.log(

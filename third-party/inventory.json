@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "64407a0ed702b9e27dbb5c5167e88fdcebd81f5c6dc2d28082b7885078877617",
+  "noticesSha256": "2897e2de27c05b266033c54cec52dc9a98e2bf26787b22a5af832817541e17ff",
   "inputs": {
     ".agents/skills/agent-browser/references/authentication.md": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b",
     ".agents/skills/agent-browser/references/commands.md": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909",
@@ -252,13 +252,15 @@
     "apps/zcode-cli/packages/documents-plugin/scripts/lib/office-xml-scan.mjs": "190d335c7862893e4abda9660b9a1b2c05b9989b8c08ae92abc10c3259a2a2e4",
     "apps/zcode-cli/packages/documents-plugin/scripts/lib/office-xml-tree.mjs": "32d0d169b95e866a6dfe5124b2f4044f137a6a982b951981f79538df8ce3b281",
     "apps/zcode-cli/packages/documents-plugin/scripts/lib/office-zip.mjs": "6f432c94b654d93267468af0e9e3f106aa41fb3bc9c6108bd23a377af32e98d1",
-    "apps/zcode-cli/packages/documents-plugin/skills/docx/SKILL.md": "fded1712def8814d2e65981412518dd6b0dc8e18969e6d77f4491a937272723e",
+    "apps/zcode-cli/packages/documents-plugin/skills/docx/SKILL.md": "9bc8ca5ed65a4b470432a652797460b464bc005a0b489c73d02cdf9ea94da4bb",
     "apps/zcode-cli/packages/documents-plugin/test/checkOffice.test.mjs": "6197dfe9c2481378c3de489a8566b3840ae4941aa334ef83e6ace50b8bd7bded",
     "apps/zcode-cli/packages/documents-plugin/test/checkOfficePrefix.test.mjs": "de63355f4bfe5a897706bb044c16e419c289b38b2e8b5ef2b731f43900258b98",
+    "apps/zcode-cli/packages/documents-plugin/test/skillVisualChain.test.mjs": "e2943c0df55fc9d6de451e19f555b1dce8adf5c8f731071aa20bb3c095d4a646",
     "apps/zcode-cli/packages/dynamic-workflow-runtime/package.json": "f8dab813c3b9f236b593d4d04f1b78e511e15d586cb7dcdd74147e7d1c22ec5c",
     "apps/zcode-cli/packages/dynamic-workflow/package.json": "aac5891463ddeb419ff6f73fc95b7c407964b06f8aeff66b6a9ba4d999164f99",
     "apps/zcode-cli/packages/i18n/package.json": "025e4620d80f39cac3df06249866fcaed531615b6b8a4c4a727c4557066f7b1b",
     "apps/zcode-cli/packages/node-repl-host/package.json": "1f593b58799ead7927275a71bcda496ad4861c491ae639b721830594171fa96b",
+    "apps/zcode-cli/packages/pdf-plugin/package.json": "851504a767ac018e1173f8d635076798428d14c47ddfc355c88e6bf7bd960d46",
     "apps/zcode-cli/packages/plugin-creator-plugin/.zcode-plugin/plugin.json": "d42e59ed999c0614d7a968d00cfd01d51d2d6df267b196ad8723efb313ddfb4d",
     "apps/zcode-cli/packages/plugin-creator-plugin/skills/plugin-creator/references/installing-and-updating.md": "3e9fc24e1b28ea4aa1355f92d61aab27537545e1e9f8da4382b63ecb9b2d2688",
     "apps/zcode-cli/packages/plugin-creator-plugin/skills/plugin-creator/references/plugin-json-spec.md": "9ffea825cc42ee199a593dcf55863ab26f7113dbef11828ef2cd169079654f66",
@@ -283,7 +285,7 @@
     "apps/zcode-cli/packages/presentations-plugin/scripts/lib/office-xml-scan.mjs": "190d335c7862893e4abda9660b9a1b2c05b9989b8c08ae92abc10c3259a2a2e4",
     "apps/zcode-cli/packages/presentations-plugin/scripts/lib/office-xml-tree.mjs": "32d0d169b95e866a6dfe5124b2f4044f137a6a982b951981f79538df8ce3b281",
     "apps/zcode-cli/packages/presentations-plugin/scripts/lib/office-zip.mjs": "6f432c94b654d93267468af0e9e3f106aa41fb3bc9c6108bd23a377af32e98d1",
-    "apps/zcode-cli/packages/presentations-plugin/skills/pptx/SKILL.md": "2ddea27121fce2defbc116b678f16c384065e2985011c08e58644bc2a4a644ef",
+    "apps/zcode-cli/packages/presentations-plugin/skills/pptx/SKILL.md": "285a4237427d107eb60b4bc1a858eddd963717cfb1982ebc3c56a74de9e2dae4",
     "apps/zcode-cli/packages/restore-legacy-sessions-plugin/.zcode-plugin/plugin.json": "74580ca50246dd14e747321f25925755c1f091969166f01470de30dd0f3fdb8d",
     "apps/zcode-cli/packages/restore-legacy-sessions-plugin/commands/restore-legacy-sessions.md": "50fefcf09f13e4e8c8fa424adf5cda4385a9da6e020f337f3517447ff4fc9aff",
     "apps/zcode-cli/packages/restore-legacy-sessions-plugin/README.md": "c0f365788e147d6e5a6b70a30260aac9a19f913e6800a27f8ff81ef7cb1ec0ae",
@@ -308,7 +310,12 @@
     "apps/zcode-cli/packages/spreadsheets-plugin/scripts/lib/office-xml-scan.mjs": "190d335c7862893e4abda9660b9a1b2c05b9989b8c08ae92abc10c3259a2a2e4",
     "apps/zcode-cli/packages/spreadsheets-plugin/scripts/lib/office-xml-tree.mjs": "32d0d169b95e866a6dfe5124b2f4044f137a6a982b951981f79538df8ce3b281",
     "apps/zcode-cli/packages/spreadsheets-plugin/scripts/lib/office-zip.mjs": "6f432c94b654d93267468af0e9e3f106aa41fb3bc9c6108bd23a377af32e98d1",
-    "apps/zcode-cli/packages/spreadsheets-plugin/skills/xlsx/SKILL.md": "055256bc83a5f7bc7ffc027c7aa4e4a1e3aa8d2dd4f897981564a10ed0916686",
+    "apps/zcode-cli/packages/spreadsheets-plugin/scripts/office-capabilities.mjs": "d821918a22f2db53c989e9921694733a63f7c42b7b7b576ca06174c5d42f2cda",
+    "apps/zcode-cli/packages/spreadsheets-plugin/skills/xlsx/SKILL.md": "587cb7dcf1d22e054df23b20f30e7d8ba84fba2e00702cdf5fec9ec5c904b8eb",
+    "apps/zcode-cli/packages/spreadsheets-plugin/test/fixtures/pdftoppm-fake.cjs": "e24f950403ec6a84704453dfec7fba50519ff353a1a819543a7ec3309c04b565",
+    "apps/zcode-cli/packages/spreadsheets-plugin/test/fixtures/soffice-fake.cjs": "6b6819686ff4e8d0c4f32389b72edd8a79521fca19d5b38cb869be98d18e96d3",
+    "apps/zcode-cli/packages/spreadsheets-plugin/test/lib/blank-render-support.mjs": "8ec4fd0933f907a12aae6f750717237c5b1365abc3ccf024d603be0a63db6c88",
+    "apps/zcode-cli/packages/spreadsheets-plugin/test/officeE2eBlankRender.test.mjs": "dffdf410bc5bd1f9b703cf34fc40389785bed61868465edc82cd0f05d8cd2aab",
     "apps/zcode-cli/packages/superpowers-plugin/LICENSE": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "apps/zcode-cli/packages/swift-bridge/package.json": "958674fcd44c789564ee672b0e6c687f1f900f4286174280700ddfb442d23906",
     "apps/zcode-cli/packages/tui/package.json": "097d5896b0b37a455eafaf015f21113dfbea7b05bb3f92666f423f7753720eb1",
@@ -326,7 +333,7 @@
     "apps/zcode-cli/packages/zcode-guide-plugin/skills/zcode-configuration-guide/SKILL.md": "c173c54d3d125e5a3228f01a154c6a55e760dce07835226f0fa8dea644b0570d",
     "apps/zcode-cli/tools/prompt-trajectory/package.json": "7f161fc87f36691f01eb8c2034bd89cf28107da36db02bc20e76f059edd36af6",
     "apps/zcode-cli/tools/typescript/package.json": "23d7e50d2089d205ce3022c5bafbb6b3e31d000e41ac678a5934e0b72627cf3a",
-    "package.json": "da6bbb22e5c3c62be2fdc18f3d3944ce41ad61014c897c9b2433c7e58a87427e",
+    "package.json": "d020f5f0672e113144be60e56680a2c86fcf134c92064f31069f5688ec8b7f69",
     "packages/client/package.json": "e76f441549130dc3e5e68072a36b6cb9044e19a6625f1e813f19a4def2b1b689",
     "packages/desktop/package.json": "bafff01fd85e4b57e32d0c3bc5acf2bceb6b90744dce35b9b1466c3626e9d9d3",
     "packages/desktop/src/renderer/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
@@ -1500,17 +1507,63 @@
     "packages/rpc/src/remote.ts": "a11e072d5df7e1c1ce64814a68f72afc081246b364f0da409b5c9d22bc815957",
     "packages/rpc/src/serialization.ts": "e949418e1cd17cc863c147fc8d1ff15237e1b5f0cb8e3344fd2a9ccfae9d54e7",
     "packages/server/package.json": "0a6119239c88af79bc766e3c023eb4437105a0d35b03ecca1137d1e688e60a90",
-    "packages/services/package.json": "8d7757a8d8328ef827925cb730c28ce21fed20e27ddd83f2aae7b447229bd17a",
-    "packages/shared/package.json": "6394da63b39d6bf4cabadf803a4f26cf9758de944ac6e0cc5c4f0dc303f66b77",
+    "packages/services/package.json": "34a8d00b4b0e4874c1427cdde4ab0c3d21be955750661dbb19f5241a53a3cb9f",
+    "packages/services/src/bots/attachmentPathGuard.ts": "7db16b5bbd951690ae4d92f811a7176451059554ce048ce5229891b27204c687",
+    "packages/services/src/bots/attachmentUrlGuard.ts": "d8cf20f186118d484049a1af80fee77ddaa64e2449699758c29e51fa0b35882a",
+    "packages/services/src/bots/botAttachmentLimits.ts": "8ed42b6c752ff26af77438ac157d5f35c1cb1e7e647e088cdecfaa1032a9b347",
+    "packages/services/src/bots/botConfigHelpers.ts": "f4d5e4d3a6141d44a5d99418417c1d4eed80321084b671ae07d1ea86726abe9a",
+    "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
+    "packages/services/src/bots/botRemoteWorkspaceBridge.ts": "740b0cf99acc93d3d901919d4ef2652ebf06279ae445d2476c88a106286a1ae7",
+    "packages/services/src/bots/bots.ts": "01764678a4aff2c3fcc8732ae7cf4fa945ea639cf5cd23c331a4d0ac08750fcc",
+    "packages/services/src/bots/botsService.ts": "8041ba62d1da58a89f117d8b180df7d0346a3cf15755856473613ce57bb5b16d",
+    "packages/services/src/bots/channelRuntime.ts": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74",
+    "packages/services/src/bots/commandOrder.ts": "5bd3200e30f1458351b355d97328763496c798f4959326c27e581b7fba5f0a72",
+    "packages/services/src/bots/commandParser.ts": "bc592f34c14b6f73d5b1ab2c913c0c77c99138f1e043cdb18187143fd069b8ff",
+    "packages/services/src/bots/config.ts": "be93598984c0e73e129a0f1135d9baf490d6207ffa91dd804df58d6afa3fc542",
+    "packages/services/src/bots/feishuChannelRuntime.ts": "aab47c1a41c7e2e921cc6d5374ac56bdac2ef2d1d989710b7ed00fd3fd9bd111",
+    "packages/services/src/bots/messages.ts": "9ccb13a86ed74e78ee34de7a0408be1eeb40c937e887e03676c082033a1989fd",
+    "packages/services/src/bots/modelSelectionHelpers.ts": "1b8279ecc7e2ee11980346cadc088eaa3f38d2ac3b51c283bb9a709dbe70b051",
+    "packages/services/src/bots/providers/feishuAppRegistration.ts": "7a6a1919de4d0f9f862e4755f25a9383f4f3e73b80d0e86f1727930b77486978",
+    "packages/services/src/bots/providers/feishuDisplayNameCache.ts": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf",
+    "packages/services/src/bots/providers/feishuProvider.ts": "08f13ed9dcdd759c9e555dd4fc9ac06021839f57c3660b01e3322f6079f1d298",
+    "packages/services/src/bots/providers/providerRequest.ts": "8412040408c61525b4e1291e1721556febdcf80b5b39584f06b9eae47b8d314b",
+    "packages/services/src/bots/providers/telegramProvider.ts": "19e64d9c9042329564d8045fb5e96a90a6a65d5f71b14559b963274bb24b7ff7",
+    "packages/services/src/bots/providers/types.ts": "92dee8cc703901971d854f0a9c81b19e673d5fb323a2fa181b6b69a96442b07a",
+    "packages/services/src/bots/providers/webhookProvider.ts": "53bcb8e9787097a46ce4e5ff780a45a77170926231a4afe4803446897c24008a",
+    "packages/services/src/bots/providers/weixinProvider.ts": "7f88a6adb5e6883dbf00e1f2c5f1e6f38f0c9063bc9f8c5b4490f208432f9804",
+    "packages/services/src/bots/providers/weixinRegistration.ts": "290ff395a2ca6c0ca9d185dae0af029b0f2589d639c0b20edb9d37bf7ed0f276",
+    "packages/services/src/bots/replyFormatter.ts": "ab4910698d8beaf273e1fbe7c680a97409a7aa2d8391832172f762ac90f1ffed",
+    "packages/services/src/bots/repo.ts": "0e1489d2c452d4c4463f155823dcffb9a445ab74122a3e8d977124fe0a37f9b1",
+    "packages/services/src/bots/statusFormatting.ts": "f645bb81625ab71504cffa14438b153ed6d3f13fcdcfbd584e653e9513d01369",
+    "packages/services/src/bots/storageMigration.ts": "d6b806bd77f4f3ba070559c6bc48bd64e20848c14a0639fefb95c3d1bf96baf6",
+    "packages/services/src/bots/taskFailureMessage.ts": "ca18d0f1372daf9ed0d673b54f02222f3ab8eb346fca4170283efc818467b30d",
+    "packages/services/src/bots/telegramChannelRuntime.ts": "92936b803880362960acbfbcc78b3bed8e85dee7c6a95ef49a49a306c7075028",
+    "packages/services/src/bots/weixinChannelRuntime.ts": "701c2482365fabb20503a4681dd7cfa560b9137e7f8678077cc0e4b6516cd876",
+    "packages/services/src/bots/workspaceHelpers.ts": "2681a2c8cb2a7c11d44920060bb60af3d45a1fb28389bf5079940898fade0871",
+    "packages/shared/package.json": "27426dda8fb05376acfef8bf004d86522c1e555213f01fed19f5397d30a2c84e",
+    "packages/shared/src/bots.ts": "1474521b9d3afdf9ba5802cfe09c97b8770f9c78914e85d349c833fcc7131cf4",
     "packages/shared/src/zcode-protocol-v4/wire-codec.ts": "ac2494a3acc795c809c94ee9393f50271a9c2a0fd33813459e5ab93842ceef75",
     "packages/ui/package.json": "220e916077604008bb6ffea19d6bdf7148c4b09472bea251248a230ba3c69bf5",
+    "packages/ui/src/assets/channel-icons/icon-dingding@2x.png": "61ffd13c4bc10cdb6641e41530883a6555b774517325326c8f7b3091fdd0ac8e",
+    "packages/ui/src/assets/channel-icons/icon-discord@2x.png": "a0bfaf4674ee3d8439d6918f3933af81a888344fc204ac275b46b7e46232a4c5",
+    "packages/ui/src/assets/channel-icons/icon-feishu@2x.png": "2d1b25fec5efdde3778245428effe525afa783370834683d9484a8ca9c323969",
+    "packages/ui/src/assets/channel-icons/icon-telegram@2x.png": "0f4221ffa99e1dd3555a0e3ffc61114be0d2ae53ac1f03639ae8665eaa95fef4",
+    "packages/ui/src/assets/channel-icons/icon-wecom@2x.png": "2e70ab6625a440923747163d5819c70ad2fc2eb4db6ae3f66108307331515b91",
+    "packages/ui/src/assets/channel-icons/icon-weixin@2x.png": "a0b79a3dcff1779f3b9d1c7c3d39a34d71663084fdf6c088a33a39abbc8a6892",
+    "packages/ui/src/assets/channel-icons/index.ts": "680b3668b05d2ebffc79ee0b0b0921222f2f1c148eb583fab821a50d45ef15fa",
+    "packages/ui/src/BotsDialog.tsx": "f10a443b66f3dfd2ee038561dbe16e59a00ca2a48314f3c5ab8256ac2ca2c153",
+    "packages/ui/src/BotsDialog/BotSummaryCard.tsx": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d",
+    "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx": "1a6a756dccc89776cbbf9dd27cb3589b81b58c92c6f7f8df6dffd3aa8984b6b6",
+    "packages/ui/src/BotsDialog/shared.tsx": "579f732a289b46b6e2ca59676db75e24335cc7472bd9250d038b02a0cc3d4827",
+    "packages/ui/src/BotsDialog/WorkspaceAccessCard.tsx": "d4999d83d94b394b096b0cbfe0e1423f0462f5a4f2ae3fc1171310cf5ad94904",
+    "packages/ui/src/botsUi.ts": "fbf8febfa53c5971ecf2cac1e64e69ec452ed4b1c1537671a52ced15ae93ad9e",
     "packages/ui/src/components/ai-elements/agent.tsx": "830e7ea9e927de1524851337f1d35bda0e5690e3e4fa307fff854b60006b16c7",
     "packages/ui/src/components/ai-elements/artifact.tsx": "7d73f08864d6280ac86c77d32e56d0e702f8aa6208e5910820139d0fb08ce64c",
     "packages/ui/src/components/ai-elements/attachments.tsx": "7a847ce6c8ac9dc630481a82dd20a5e9e00949bf710a41fea1d32a18123011d8",
     "packages/ui/src/components/ai-elements/canvas.tsx": "7bc92905e97c182c9a2f52b421a4d70414c8700a66039af9a4466587f74d2687",
     "packages/ui/src/components/ai-elements/chat-loading.tsx": "b75d4398d778179f78209debde63547410d76e01cdaf3887f60b13ef9a35331f",
     "packages/ui/src/components/ai-elements/checkpoint.tsx": "72459f6fb8668e9245ec32542f92c7de809cc9b5a366bb44ab08f91ea4e1255b",
-    "packages/ui/src/components/ai-elements/code-block.tsx": "ae4f975537ebb9c8ef905b7b9de39bc37180f81511bffc027dc4da1929037f18",
+    "packages/ui/src/components/ai-elements/code-block.tsx": "6e136410ea1607ad4aab2d11e5edb61e943d97ca91f5179e8586a030f34581cf",
     "packages/ui/src/components/ai-elements/commit.tsx": "e9f5dcffac4ec7702b6d77b41cfc28fab54f0595375dd2c992dc972c0a9e74d2",
     "packages/ui/src/components/ai-elements/confirmation.tsx": "bb39ae89d5550f4ffcbb36e73dc8b75d1c9930f0fdba28cc8ff135d753b65a9b",
     "packages/ui/src/components/ai-elements/connection.tsx": "6e6cf65efcef612a3d14f5fda69e27009bc06046d1f7aa842a1a93b9142a7f81",
@@ -1595,7 +1648,7 @@
     "packages/ui/src/components/ui/tooltip.tsx": "301dbf3a6f8b1bc496f9bdc6fbc5fe6202ed373182897f39cd1ecd19b00fdfbe",
     "packages/ui/src/components/ui/usePdfZoomOverlay.ts": "c8c91b003ce2fded32c7a2369dc6eac43aa4b9dc9c830a0f5ceccb21d366b610",
     "packages/ui/src/components/ui/ZCodeAboutLogo.tsx": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a",
-    "packages/ui/src/lib/builtinSkillI18n.ts": "9640e8db6813244029e85b7569845cf2c098bd9b92dcb1d98befb3211280f7e4",
+    "packages/ui/src/lib/builtinSkillI18n.ts": "fbb44f7044214b70148f64dbafc1cea5ea550531e8084965ea978c5defc06deb",
     "packages/ui/src/styles.css": "22d5b58e44cdebdbe7154c418ee05fef6dde689e384f0dd590d4057739487be7",
     "packages/web/package.json": "0810e762bf1d6641d5f73ab642b81953e183e53fd963a1d405ffc65b206e5ce6",
     "packages/web/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
@@ -2748,13 +2801,14 @@
     "packages/zcode-server-cli/package.json": "6e294c4409cb90863d85b2e3d60f92766b156ccee577ebfeaffcb85e94194004",
     "patches/@ai-sdk__anthropic@3.0.81.patch": "d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18",
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
-    "pnpm-lock.yaml": "b36f3e8e8389e631d4637d74e608559d70f1d4f357bd1d073f0d540e3beb64c1",
+    "pnpm-lock.yaml": "fd7f0b85bf33e46eba0f184b3d5592c12d1690275b853a2256901c0de7116e21",
     "pnpm-workspace.yaml": "f18a18233e82cda1dc40be61bf2ad1bc99de25de63ad0be64bc652761a638372",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
     "scripts/native-search-tools-config.mjs": "281d368464f61363fa2d8ab74f416962fe730dd0a0572db5564475f876bb65aa",
     "scripts/remote-native-search-tools-config.mjs": "472322a66f84c7452f96aa9e16e9c4e0600f7c2588a03dc6bc869229161b1cb2",
-    "third-party/copied-components.json": "4aa5977f93478687e7f16d1a15b853b0c9113eab6dd29542b4db049d01d8c18d",
-    "third-party/embedded-components.json": "9586ccca15897f56d4ca1d703dffe9e02880fedd766c1dff93f7ac1f52ea891a",
+    "third-party/copied-components.json": "afbfd86057ec73608f11d13573f38adc21eb8692a7286079d16811e7efd8c101",
+    "third-party/embedded-components.json": "1160d4b37e297584099e640998b75599a9ac237dc39dc29d49f2a538e514bb4e",
     "third-party/native-search/licenses/00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce.txt": "00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce",
     "third-party/native-search/licenses/01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f.txt": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f",
     "third-party/native-search/licenses/029d615cc92cc216eeefa50fea59bb9838e8e8f22a9f19ec5ee224a31ec9f383.txt": "029d615cc92cc216eeefa50fea59bb9838e8e8f22a9f19ec5ee224a31ec9f383",
@@ -2870,7 +2924,7 @@
     "third-party/native-search/licenses/f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af.txt": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
     "third-party/native-search/licenses/f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505.txt": "f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505",
     "third-party/native-search/sources.json": "5a7b2d7abf5bd5f310712710cbbd0ca70dc9491e723cbf070b5c696fe155a962",
-    "third-party/npm-overrides.json": "114a62fef7e60d5529238e913fb76b8080aea7256aebb456c320d2f761334645",
+    "third-party/npm-overrides.json": "33228892d79550e3a8fbed22c7ce62dd83e7f6d407f5af34b3201c881443feb4",
     "third-party/runtime/node-22.16.0-LICENSE.txt": "1ae62e2015784ba438db7b04ebd33f3c4ff3efdb824c111c4ececd99945fd52d",
     "third-party/runtime/node-24.14.0-LICENSE.txt": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
     "third-party/runtime/sources.json": "b27bc8d81aeb71108e523602364ffbb6a1b19c2d5d47733fd43094b769006741",
@@ -2885,6 +2939,7 @@
     "third-party/upstream/17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee.txt": "17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee",
     "third-party/upstream/1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d.txt": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d",
     "third-party/upstream/1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17.txt": "1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17",
+    "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
     "third-party/upstream/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
     "third-party/upstream/268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5.txt": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5",
     "third-party/upstream/2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a.txt": "2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a",
@@ -2893,11 +2948,13 @@
     "third-party/upstream/2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d.txt": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d",
     "third-party/upstream/3007cd45c9afdf93812c0c8a7643ea32a7db0b24e495dc0f2312c8a43990b0dd.txt": "3007cd45c9afdf93812c0c8a7643ea32a7db0b24e495dc0f2312c8a43990b0dd",
     "third-party/upstream/31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87.txt": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
+    "third-party/upstream/32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb.txt": "32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb",
     "third-party/upstream/34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4.txt": "34dee5fd5e5cc756efb5ad4d64652bce719bdf5e900ca5d7538253e737930bc4",
     "third-party/upstream/37398454f23ddeb02f0b81113fef9ebdc4571b7297cb6e18376c1ccb9bb1453e.txt": "37398454f23ddeb02f0b81113fef9ebdc4571b7297cb6e18376c1ccb9bb1453e",
     "third-party/upstream/3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94.txt": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
     "third-party/upstream/417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6.txt": "417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6",
     "third-party/upstream/43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1.txt": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+    "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
     "third-party/upstream/4a1d35b6325ede5ff9fc338fe7e6fdcaa9fe770767a0114242b817dcba28253f.txt": "4a1d35b6325ede5ff9fc338fe7e6fdcaa9fe770767a0114242b817dcba28253f",
     "third-party/upstream/508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f.txt": "508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f",
     "third-party/upstream/5129f8779dca579cfcb235570688a2f15822b270575e04f27ef906aabbcc0355.txt": "5129f8779dca579cfcb235570688a2f15822b270575e04f27ef906aabbcc0355",
@@ -2910,6 +2967,7 @@
     "third-party/upstream/5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf.txt": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
     "third-party/upstream/5f745b8244890bde0a2258fe32342d60c577fad043e8601d923690a5bfe1b54f.txt": "5f745b8244890bde0a2258fe32342d60c577fad043e8601d923690a5bfe1b54f",
     "third-party/upstream/5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd.txt": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
+    "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
     "third-party/upstream/66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101.txt": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101",
     "third-party/upstream/6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469.txt": "6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469",
     "third-party/upstream/7261b3ab93df04c6d8f3398f87275d28f0e87d88cbd0033b788fb50402de03c5.txt": "7261b3ab93df04c6d8f3398f87275d28f0e87d88cbd0033b788fb50402de03c5",
@@ -2925,6 +2983,7 @@
     "third-party/upstream/992490064b90ec94c302fe5f29dcc14cb44145857064e46f9ffe6c8f511c1093.txt": "992490064b90ec94c302fe5f29dcc14cb44145857064e46f9ffe6c8f511c1093",
     "third-party/upstream/9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b.txt": "9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b",
     "third-party/upstream/9b7a157a0079ef346f3215b964071fa460d0dd251ca93cbf581bcc91595066ca.txt": "9b7a157a0079ef346f3215b964071fa460d0dd251ca93cbf581bcc91595066ca",
+    "third-party/upstream/a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f.txt": "a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f",
     "third-party/upstream/a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400.txt": "a37e0e9697144819e1d965176ac4ae5bc3fa02d11e7812036bbcadf6dafe2400",
     "third-party/upstream/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
     "third-party/upstream/af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160.txt": "af0d7d2cef91fc243cf4ad98570b03d1f26f5e0227cad0f5f4a7376e2feb3160",
@@ -2932,6 +2991,7 @@
     "third-party/upstream/b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529.txt": "b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529",
     "third-party/upstream/ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64.txt": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
     "third-party/upstream/bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526.txt": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+    "third-party/upstream/bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3.txt": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3",
     "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "third-party/upstream/c5adaf9051f20a1bbeecfb39de415cac1fef591d4fcda2b55d66b31354fdba1e.txt": "c5adaf9051f20a1bbeecfb39de415cac1fef591d4fcda2b55d66b31354fdba1e",
     "third-party/upstream/c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817.txt": "c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817",
@@ -2940,12 +3000,14 @@
     "third-party/upstream/cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c.txt": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
     "third-party/upstream/cdab3014d4f69b49dde2b85e81792208c72de613aa6aed7f7a9b5c6609b89670.txt": "cdab3014d4f69b49dde2b85e81792208c72de613aa6aed7f7a9b5c6609b89670",
     "third-party/upstream/cf81859d85e99ff2fad83d51d9dfd85ca5189b23c4442aacf1890c54665d92f4.txt": "cf81859d85e99ff2fad83d51d9dfd85ca5189b23c4442aacf1890c54665d92f4",
+    "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
     "third-party/upstream/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
     "third-party/upstream/d65ff929f8a373ea16b21d45d5489557d51389ba6583a5c9959d5487c02ce965.txt": "d65ff929f8a373ea16b21d45d5489557d51389ba6583a5c9959d5487c02ce965",
     "third-party/upstream/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
     "third-party/upstream/e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c.txt": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
     "third-party/upstream/e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c.txt": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c",
+    "third-party/upstream/e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613.txt": "e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613",
     "third-party/upstream/ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855.txt": "ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855",
     "third-party/upstream/ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be.txt": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
@@ -4448,6 +4510,22 @@
       ]
     },
     {
+      "name": "@larksuiteoapi/node-sdk",
+      "version": "1.74.0",
+      "license": "MIT",
+      "repository": "https://github.com/larksuite/node-sdk.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344"
+        }
+      ]
+    },
+    {
       "name": "@lexical/clipboard",
       "version": "0.42.0",
       "license": "MIT",
@@ -5199,6 +5277,114 @@
         {
           "member": "README.md (license section)",
           "sha256": "1a70b7436b85394d20ba1a0b5574002fc33b4619b9d1b62388ef74d79f9cf0de"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/aspromise",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/base64",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/codegen",
+      "version": "2.0.5",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/eventemitter",
+      "version": "1.1.1",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/fetch",
+      "version": "1.1.1",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/float",
+      "version": "1.0.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/path",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/pool",
+      "version": "1.1.0",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/dcodeIO/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
+        }
+      ]
+    },
+    {
+      "name": "@protobufjs/utf8",
+      "version": "1.1.2",
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/protobufjs/protobuf.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "a67b34a24a5daddcce46aea68c5004e4442bbfb63690329fa607bf4de4269794"
         }
       ]
     },
@@ -6435,6 +6621,18 @@
       ]
     },
     {
+      "name": "@swc/helpers",
+      "version": "0.5.23",
+      "license": "Apache-2.0",
+      "repository": "git+https://github.com/swc-project/swc.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "d96eba1f1881334d50ffc144276dfa98e147a415e7c591ecdfcb81680361dc91"
+        }
+      ]
+    },
+    {
       "name": "@tanstack/react-virtual",
       "version": "3.13.23",
       "license": "MIT",
@@ -7580,6 +7778,22 @@
     },
     {
       "name": "agent-base",
+      "version": "6.0.2",
+      "license": "MIT",
+      "repository": "git://github.com/TooTallNate/node-agent-base.git",
+      "notices": [
+        {
+          "member": "README.md (license section)",
+          "sha256": "9392da8d1d2ccb224d60025fee4d6223ae0b863469fcd8c6b9461145723cf1c4"
+        },
+        {
+          "member": "https://registry.npmjs.org/agent-base/6.0.2",
+          "sha256": "a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f"
+        }
+      ]
+    },
+    {
+      "name": "agent-base",
       "version": "7.1.4",
       "license": "MIT",
       "repository": "https://github.com/TooTallNate/proxy-agents.git",
@@ -7899,6 +8113,22 @@
       ]
     },
     {
+      "name": "axios",
+      "version": "1.20.0",
+      "license": "MIT",
+      "repository": "https://github.com/axios/axios.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "82761059eaedacb3356803aea8a170d8298609f91b14fc32ee1bfb40d690183c"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "8473eb9be53be85369a78427af60d82922bf44da8c3a16d6ebe643badd150f31"
+        }
+      ]
+    },
+    {
       "name": "bail",
       "version": "2.0.2",
       "license": "MIT",
@@ -7939,6 +8169,22 @@
         {
           "member": "LICENSE.md",
           "sha256": "d408f38ffa3355c5faec517153295338892eb0f1ea43f57874bb23c6075979b5"
+        }
+      ]
+    },
+    {
+      "name": "base64-js",
+      "version": "0.0.8",
+      "license": "MIT",
+      "repository": "git://github.com/beatgammit/base64-js.git",
+      "notices": [
+        {
+          "member": "LICENSE.MIT",
+          "sha256": "136239d1783a151cdbf6fd7935dd945082b9d0ee2cbb8497cc0ae49e8a743a47"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "d6ead4a120036ff90fd2665ec1befd9687c25d2074e932f8f59eecddca113de8"
         }
       ]
     },
@@ -8143,6 +8389,38 @@
         {
           "member": "README.md (license section)",
           "sha256": "a5555dc3e925c3c12eb3daa35c12fa696b089014b1261e9262ac428cf0bea33d"
+        }
+      ]
+    },
+    {
+      "name": "brotli",
+      "version": "1.3.3",
+      "license": "MIT",
+      "repository": "https://github.com/devongovett/brotli.js.git",
+      "notices": [
+        {
+          "member": "readme.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        },
+        {
+          "member": "https://registry.npmjs.org/brotli/1.3.3",
+          "sha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793"
+        }
+      ]
+    },
+    {
+      "name": "browserify-zlib",
+      "version": "0.2.0",
+      "license": "MIT",
+      "repository": "git+https://github.com/devongovett/browserify-zlib.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "ddd770379e07bf0574dfaa4485be80a23b3248b36d09f33ec79276c09b829daf"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -8579,6 +8857,22 @@
         {
           "member": "LICENSE.txt",
           "sha256": "2dc0465729366c3a7890dfa9e972a1ba7048a26c02116fb8b419a6a1ac110149"
+        }
+      ]
+    },
+    {
+      "name": "clone",
+      "version": "2.1.2",
+      "license": "MIT",
+      "repository": "git://github.com/pvorb/node-clone.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "3fb0857ef0133928cf72c88dfc464e931486e88778961eedec25585e2321507f"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "3d98dedcafc7fc533a3d4bfa09b0b0a11159523bbae0953fad44c3c7dd097db9"
         }
       ]
     },
@@ -9039,6 +9333,18 @@
         {
           "member": "README.md (license section)",
           "sha256": "ae23bc497387d4df92901cf403625e16c228dc6ef366a5f74d9ba0117a3bfce0"
+        }
+      ]
+    },
+    {
+      "name": "crypto-js",
+      "version": "4.2.0",
+      "license": "MIT",
+      "repository": "http://github.com/brix/crypto-js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f729d14b7e1bf8adca0dcc38b93b929d14d53fcd5db56c3d1c9b2daa7aa69396"
         }
       ]
     },
@@ -9835,6 +10141,22 @@
         {
           "member": "readme.md (license section)",
           "sha256": "dd4053e49e206d0070116e07dc6d9d13ba98919dd46be963fbb9f6dd7b9c9213"
+        }
+      ]
+    },
+    {
+      "name": "dfa",
+      "version": "1.2.0",
+      "license": "MIT",
+      "repository": "git+ssh://git@github.com/devongovett/dfa.git",
+      "notices": [
+        {
+          "member": "README.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        },
+        {
+          "member": "https://registry.npmjs.org/dfa/1.2.0",
+          "sha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355"
         }
       ]
     },
@@ -10855,8 +11177,40 @@
       ]
     },
     {
+      "name": "fontkit",
+      "version": "2.0.4",
+      "license": "MIT",
+      "repository": "git://github.com/foliojs/fontkit.git",
+      "notices": [
+        {
+          "member": "README.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        },
+        {
+          "member": "https://registry.npmjs.org/fontkit/2.0.4",
+          "sha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153"
+        }
+      ]
+    },
+    {
       "name": "form-data",
       "version": "4.0.5",
+      "license": "MIT",
+      "repository": "git://github.com/form-data/form-data.git",
+      "notices": [
+        {
+          "member": "License",
+          "sha256": "e5b780d4f38d1d3328e3e53186c4e62d3fa149ea6f2bacd5de5ad0c30ac85343"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "8d4313d2ec98dee47b0c630ccfe5ca0b6e7c60e8d74cf460db5bcb271f908c14"
+        }
+      ]
+    },
+    {
+      "name": "form-data",
+      "version": "4.0.6",
       "license": "MIT",
       "repository": "git://github.com/form-data/form-data.git",
       "notices": [
@@ -11303,6 +11657,18 @@
       ]
     },
     {
+      "name": "hasown",
+      "version": "2.0.4",
+      "license": "MIT",
+      "repository": "git+https://github.com/inspect-js/hasOwn.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "bf9b0d665be2a689851eea667ca9f42066ea1d903b38349c51e6a44b2577680a"
+        }
+      ]
+    },
+    {
       "name": "hast-util-from-dom",
       "version": "5.0.1",
       "license": "ISC",
@@ -11655,6 +12021,22 @@
         {
           "member": "LICENSE",
           "sha256": "71368fd0f5b4129191e9afcd1e1ef2dc89a9090d3e4d80bbab92dafd032b3bef"
+        }
+      ]
+    },
+    {
+      "name": "https-proxy-agent",
+      "version": "5.0.1",
+      "license": "MIT",
+      "repository": "git://github.com/TooTallNate/node-https-proxy-agent.git",
+      "notices": [
+        {
+          "member": "README.md (license section)",
+          "sha256": "58f4074efa400c8397add18c6561d0a17e4721e24bfd1b4d1e8ca764a8cb3eca"
+        },
+        {
+          "member": "https://registry.npmjs.org/https-proxy-agent/5.0.1",
+          "sha256": "32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb"
         }
       ]
     },
@@ -12338,6 +12720,18 @@
       ]
     },
     {
+      "name": "jpeg-exif",
+      "version": "1.1.4",
+      "license": "MIT",
+      "repository": "https://github.com/zhso/jpeg-exif.git",
+      "notices": [
+        {
+          "member": "LICENSE.txt",
+          "sha256": "a8202d59ed0629ee6e58df1f883519d5ede193cd64419a00003e31f29c62e26d"
+        }
+      ]
+    },
+    {
       "name": "jpeg-js",
       "version": "0.4.4",
       "license": "BSD-3-Clause",
@@ -12742,6 +13136,22 @@
       ]
     },
     {
+      "name": "linebreak",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/devongovett/linebreaker.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "cf22b8198f0886a8d4626121579114f23141070e1fceab02ab3c1c361e163440"
+        },
+        {
+          "member": "readme.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        }
+      ]
+    },
+    {
       "name": "lines-and-columns",
       "version": "1.2.4",
       "license": "MIT",
@@ -12862,6 +13272,18 @@
       ]
     },
     {
+      "name": "lodash.identity",
+      "version": "3.0.0",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE.txt",
+          "sha256": "2b61a34ef17beffb1e555efa8b46110d25398d47f2e88b2cacc46f8bd382c639"
+        }
+      ]
+    },
+    {
       "name": "lodash.isboolean",
       "version": "3.0.3",
       "license": "MIT",
@@ -12934,6 +13356,30 @@
       ]
     },
     {
+      "name": "lodash.merge",
+      "version": "4.6.2",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "f71e8ed126b46346494aad5486874cd8f0aafe95092ed67d2e3cb6110f939abc"
+        }
+      ]
+    },
+    {
+      "name": "lodash.pickby",
+      "version": "4.6.0",
+      "license": "MIT",
+      "repository": "lodash/lodash",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
+        }
+      ]
+    },
+    {
       "name": "lodash.union",
       "version": "4.6.0",
       "license": "MIT",
@@ -12966,6 +13412,18 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+        }
+      ]
+    },
+    {
+      "name": "long",
+      "version": "5.3.2",
+      "license": "Apache-2.0",
+      "repository": "https://github.com/dcodeIO/long.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
         }
       ]
     },
@@ -14859,6 +15317,22 @@
     },
     {
       "name": "pako",
+      "version": "0.2.9",
+      "license": "MIT",
+      "repository": "nodeca/pako",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "3bc404ffa7888053253eedcc5a667619aa08dc1be0bea400e5ff28c51602180f"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "e45629d9b3a56012e2bfc7ac24eec4361a9208659973c33777184718e1291df5"
+        }
+      ]
+    },
+    {
+      "name": "pako",
       "version": "1.0.11",
       "license": "(MIT AND Zlib)",
       "repository": "nodeca/pako",
@@ -15210,6 +15684,22 @@
       ]
     },
     {
+      "name": "pdfkit",
+      "version": "0.17.1",
+      "license": "MIT",
+      "repository": "https://github.com/foliojs/pdfkit.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "427d01cbe37b367b97f2ea655935d94f4ed03ed11343c3c00e78c8366df810cc"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "1914214939de6408667a6c114ca8b0ec45fa8c8e77d26ef506d9cfd35dc526e6"
+        }
+      ]
+    },
+    {
       "name": "pend",
       "version": "1.2.0",
       "license": "MIT",
@@ -15330,6 +15820,22 @@
         {
           "member": "NOTICE",
           "sha256": "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d"
+        }
+      ]
+    },
+    {
+      "name": "png-js",
+      "version": "1.1.0",
+      "license": "MIT",
+      "repository": "https://github.com/devongovett/png.js.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3"
+        },
+        {
+          "member": "https://registry.npmjs.org/png-js/1.1.0",
+          "sha256": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3"
         }
       ]
     },
@@ -15542,6 +16048,22 @@
         {
           "member": "readme.md (license section)",
           "sha256": "c4cb93eae39264b5b3cf06e4e497e5c42349c8dd2d59e99b50f2307f15fdaed6"
+        }
+      ]
+    },
+    {
+      "name": "protobufjs",
+      "version": "7.6.6",
+      "license": "BSD-3-Clause",
+      "repository": "protobufjs/protobuf.js",
+      "notices": [
+        {
+          "member": "google/LICENSE",
+          "sha256": "4ab87e6e3c0c0b78e47c77d49ec10c048f8a519fb8062e6e3217e3e6e9b0c6e9"
+        },
+        {
+          "member": "LICENSE",
+          "sha256": "49d6a1c9a623784c61c6cb70f773f3457faceb1914a13c8560a9823b7631950c"
         }
       ]
     },
@@ -16322,6 +16844,22 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
+        }
+      ]
+    },
+    {
+      "name": "restructure",
+      "version": "3.0.2",
+      "license": "MIT",
+      "repository": "git://github.com/devongovett/restructure.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "c0df7f551401f8f80197ff31bf69b8cd23727d127423403282514d242a3ab132"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -17338,6 +17876,22 @@
       ]
     },
     {
+      "name": "tiny-inflate",
+      "version": "1.0.3",
+      "license": "MIT",
+      "repository": "git://github.com/devongovett/tiny-inflate.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "c0df7f551401f8f80197ff31bf69b8cd23727d127423403282514d242a3ab132"
+        },
+        {
+          "member": "readme.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        }
+      ]
+    },
+    {
       "name": "tiny-invariant",
       "version": "1.3.3",
       "license": "MIT",
@@ -17806,6 +18360,38 @@
         {
           "member": "LICENSE",
           "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
+        },
+        {
+          "member": "README.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        }
+      ]
+    },
+    {
+      "name": "unicode-properties",
+      "version": "1.4.1",
+      "license": "MIT",
+      "repository": "git://github.com/devongovett/unicode-properties.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "43439dbd4f43837aadab215cdbe5a422cc6323a50c4ea84d8d6bbc3671666a1d"
+        },
+        {
+          "member": "readme.md (license section)",
+          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
+        }
+      ]
+    },
+    {
+      "name": "unicode-trie",
+      "version": "2.0.0",
+      "license": "MIT",
+      "repository": "git://github.com/devongovett/unicode-trie.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "43439dbd4f43837aadab215cdbe5a422cc6323a50c4ea84d8d6bbc3671666a1d"
         },
         {
           "member": "README.md (license section)",
@@ -19520,7 +20106,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/code-block.tsx",
-          "sha256": "ae4f975537ebb9c8ef905b7b9de39bc37180f81511bffc027dc4da1929037f18"
+          "sha256": "6e136410ea1607ad4aab2d11e5edb61e943d97ca91f5179e8586a030f34581cf"
         },
         {
           "file": "packages/ui/src/components/ai-elements/commit.tsx",
@@ -29601,7 +30187,7 @@
       "files": [
         {
           "file": "packages/ui/src/lib/builtinSkillI18n.ts",
-          "sha256": "9640e8db6813244029e85b7569845cf2c098bd9b92dcb1d98befb3211280f7e4"
+          "sha256": "fbb44f7044214b70148f64dbafc1cea5ea550531e8084965ea978c5defc06deb"
         },
         {
           "file": "apps/zcode-cli/packages/superpowers-plugin/LICENSE",
@@ -29940,7 +30526,7 @@
         "apps/zcode-cli/packages/presentations-plugin",
         "apps/zcode-cli/packages/spreadsheets-plugin"
       ],
-      "scope": "Office document authoring skills (docx/pptx/xlsx SKILL.md), the shared OOXML structural checker (scripts/check_office.py, kept as the behavioral baseline; scripts/check_office.mjs + scripts/lib/*.mjs is the Node rewrite actually invoked by the skills), and the MIT license text. Adapted for ZCode-CE: the upstream `load_workspace_dependencies` / `render_document` / `present` tool references were replaced with a self-contained Node payload (docx/pptxgenjs/exceljs bundled under scripts/office-node/) and file-path equivalents, and the skill directory was renamed from `assets/` to `skills/` to match this repository's plugin layout. The `agents/visual-judge.md` file is an independent ZCode-CE implementation, not copied from upstream, as are each plugin's `package.json`, `.zcode-plugin/plugin.json` and `documents-plugin/test/checkOffice.test.mjs`.",
+      "scope": "Office document authoring skills (docx/pptx/xlsx SKILL.md), the shared OOXML structural checker (scripts/check_office.py, kept as the behavioral baseline; scripts/check_office.mjs + scripts/lib/*.mjs is the Node rewrite actually invoked by the skills), and the MIT license text. Adapted for ZCode-CE: the upstream `load_workspace_dependencies` / `render_document` / `present` tool references were replaced with a self-contained Node payload (docx/pptxgenjs/exceljs bundled under scripts/office-node/) and file-path equivalents, and the skill directory was renamed from `assets/` to `skills/` to match this repository's plugin layout. The `agents/visual-judge.md` file is an independent ZCode-CE implementation, not copied from upstream, as are each plugin's `package.json`, `.zcode-plugin/plugin.json`, `documents-plugin/test/checkOffice.test.mjs`, the recalculate capability probe `spreadsheets-plugin/scripts/office-capabilities.mjs` (S-level closure of the upstream recalculate gap: probe + honest declaration, engine not vendored), and the e2e pilot `spreadsheets-plugin/test/officeE2eBlankRender.test.mjs` with `test/lib/blank-render-support.mjs` and `test/fixtures/{soffice,pdftoppm}-fake.cjs` (DSH LLM-in-loop pattern, docs/development/137-dsh-e2e-pattern.md).",
       "locallyModifiedFiles": [
         "apps/zcode-cli/packages/documents-plugin/skills/docx/SKILL.md",
         "apps/zcode-cli/packages/presentations-plugin/skills/pptx/SKILL.md",
@@ -30013,7 +30599,7 @@
         },
         {
           "file": "apps/zcode-cli/packages/documents-plugin/skills/docx/SKILL.md",
-          "sha256": "fded1712def8814d2e65981412518dd6b0dc8e18969e6d77f4491a937272723e"
+          "sha256": "9bc8ca5ed65a4b470432a652797460b464bc005a0b489c73d02cdf9ea94da4bb"
         },
         {
           "file": "apps/zcode-cli/packages/documents-plugin/test/checkOffice.test.mjs",
@@ -30022,6 +30608,10 @@
         {
           "file": "apps/zcode-cli/packages/documents-plugin/test/checkOfficePrefix.test.mjs",
           "sha256": "de63355f4bfe5a897706bb044c16e419c289b38b2e8b5ef2b731f43900258b98"
+        },
+        {
+          "file": "apps/zcode-cli/packages/documents-plugin/test/skillVisualChain.test.mjs",
+          "sha256": "e2943c0df55fc9d6de451e19f555b1dce8adf5c8f731071aa20bb3c095d4a646"
         },
         {
           "file": "apps/zcode-cli/packages/presentations-plugin/.zcode-plugin/plugin.json",
@@ -30085,7 +30675,7 @@
         },
         {
           "file": "apps/zcode-cli/packages/presentations-plugin/skills/pptx/SKILL.md",
-          "sha256": "2ddea27121fce2defbc116b678f16c384065e2985011c08e58644bc2a4a644ef"
+          "sha256": "285a4237427d107eb60b4bc1a858eddd963717cfb1982ebc3c56a74de9e2dae4"
         },
         {
           "file": "apps/zcode-cli/packages/spreadsheets-plugin/.zcode-plugin/plugin.json",
@@ -30148,8 +30738,28 @@
           "sha256": "6f432c94b654d93267468af0e9e3f106aa41fb3bc9c6108bd23a377af32e98d1"
         },
         {
+          "file": "apps/zcode-cli/packages/spreadsheets-plugin/scripts/office-capabilities.mjs",
+          "sha256": "d821918a22f2db53c989e9921694733a63f7c42b7b7b576ca06174c5d42f2cda"
+        },
+        {
           "file": "apps/zcode-cli/packages/spreadsheets-plugin/skills/xlsx/SKILL.md",
-          "sha256": "055256bc83a5f7bc7ffc027c7aa4e4a1e3aa8d2dd4f897981564a10ed0916686"
+          "sha256": "587cb7dcf1d22e054df23b20f30e7d8ba84fba2e00702cdf5fec9ec5c904b8eb"
+        },
+        {
+          "file": "apps/zcode-cli/packages/spreadsheets-plugin/test/fixtures/pdftoppm-fake.cjs",
+          "sha256": "e24f950403ec6a84704453dfec7fba50519ff353a1a819543a7ec3309c04b565"
+        },
+        {
+          "file": "apps/zcode-cli/packages/spreadsheets-plugin/test/fixtures/soffice-fake.cjs",
+          "sha256": "6b6819686ff4e8d0c4f32389b72edd8a79521fca19d5b38cb869be98d18e96d3"
+        },
+        {
+          "file": "apps/zcode-cli/packages/spreadsheets-plugin/test/lib/blank-render-support.mjs",
+          "sha256": "8ec4fd0933f907a12aae6f750717237c5b1365abc3ccf024d603be0a63db6c88"
+        },
+        {
+          "file": "apps/zcode-cli/packages/spreadsheets-plugin/test/officeE2eBlankRender.test.mjs",
+          "sha256": "dffdf410bc5bd1f9b703cf34fc40389785bed61868465edc82cd0f05d8cd2aab"
         }
       ]
     },
@@ -30415,6 +31025,232 @@
           "sha256": "91e6c48a3b1e5891e0965134247d2c55f6a47e4b8e9751dcc290a1b4d58d2f5d"
         }
       ]
+    },
+    {
+      "id": "ZCode Bot Channel (Z.ai)",
+      "referenceRevision": "29628c9acdb81b703bbd4080c207a0e7ce5e276e",
+      "source": "https://raw.githubusercontent.com/zai-org/ZCode/29628c9acdb81b703bbd4080c207a0e7ce5e276e/LICENSE",
+      "file": "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt",
+      "sha256": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
+      "importRevision": "29628c9acdb81b703bbd4080c207a0e7ce5e276e",
+      "provenance": "Copied from the official open-source checkout zai-org/ZCode at revision 29628c9 (feat: update v3.14.3), which is the commit that introduced the Bot Channel block. The upstream repository declares license Apache-2.0 in package.json; the LICENSE snapshot pinned here is that repository's Apache-2.0 text (sha256 verified byte-for-byte). 21 of the 27 copied files are byte-identical to upstream; the remaining 6 are listed in modifiedFiles. Upstream records no per-file copyright header, so no upstream-supplied notice line exists to reproduce. Formatting note: the copied sources were additionally run through this repository's oxfmt (0.41.0) because pnpm fmt:check covers packages/services. Upstream does NOT keep this block oxfmt-clean (measured: 18 of 27 upstream files fail our oxfmt), so 19 files are no longer byte-identical to upstream for formatting reasons alone. That formatting-only set was verified by formatting a pristine upstream copy with the same formatter and comparing byte-for-byte: 23 files match the formatted upstream exactly, and only the 4 files in locallyModifiedFiles carry substantive local edits. All copied files were copied verbatim first; no semantic change was introduced by formatting.",
+      "roots": [
+        "packages/services/src/bots",
+        "packages/shared/src/bots.ts"
+      ],
+      "scope": "Bot Channel (IM bot) subsystem: packages/services/src/bots/** (27 files, 13830 lines at upstream) plus packages/shared/src/bots.ts (558 lines) — the shared schema/type contract for that subsystem. The Apache-2.0 basis covers these copied sources. The Feishu channel lazily imports @larksuiteoapi/node-sdk, which is a separately registered npm dependency (MIT), not part of this copy. Two files in this directory (attachmentPathGuard.ts, attachmentUrlGuard.ts) are ZCode-CE originals added for SSRF and path-traversal hardening, not upstream copies.",
+      "license": "Apache-2.0",
+      "modifiedFiles": [
+        "packages/services/src/bots/botsService.ts",
+        "packages/services/src/bots/feishuChannelRuntime.ts",
+        "packages/services/src/bots/providers/feishuProvider.ts",
+        "packages/services/src/bots/telegramChannelRuntime.ts"
+      ],
+      "files": [
+        {
+          "file": "packages/services/src/bots/attachmentPathGuard.ts",
+          "sha256": "7db16b5bbd951690ae4d92f811a7176451059554ce048ce5229891b27204c687"
+        },
+        {
+          "file": "packages/services/src/bots/attachmentUrlGuard.ts",
+          "sha256": "d8cf20f186118d484049a1af80fee77ddaa64e2449699758c29e51fa0b35882a"
+        },
+        {
+          "file": "packages/services/src/bots/botAttachmentLimits.ts",
+          "sha256": "8ed42b6c752ff26af77438ac157d5f35c1cb1e7e647e088cdecfaa1032a9b347"
+        },
+        {
+          "file": "packages/services/src/bots/botConfigHelpers.ts",
+          "sha256": "f4d5e4d3a6141d44a5d99418417c1d4eed80321084b671ae07d1ea86726abe9a"
+        },
+        {
+          "file": "packages/services/src/bots/botRemoteRuntimeServices.ts",
+          "sha256": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59"
+        },
+        {
+          "file": "packages/services/src/bots/botRemoteWorkspaceBridge.ts",
+          "sha256": "740b0cf99acc93d3d901919d4ef2652ebf06279ae445d2476c88a106286a1ae7"
+        },
+        {
+          "file": "packages/services/src/bots/bots.ts",
+          "sha256": "01764678a4aff2c3fcc8732ae7cf4fa945ea639cf5cd23c331a4d0ac08750fcc"
+        },
+        {
+          "file": "packages/services/src/bots/botsService.ts",
+          "sha256": "8041ba62d1da58a89f117d8b180df7d0346a3cf15755856473613ce57bb5b16d"
+        },
+        {
+          "file": "packages/services/src/bots/channelRuntime.ts",
+          "sha256": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74"
+        },
+        {
+          "file": "packages/services/src/bots/commandOrder.ts",
+          "sha256": "5bd3200e30f1458351b355d97328763496c798f4959326c27e581b7fba5f0a72"
+        },
+        {
+          "file": "packages/services/src/bots/commandParser.ts",
+          "sha256": "bc592f34c14b6f73d5b1ab2c913c0c77c99138f1e043cdb18187143fd069b8ff"
+        },
+        {
+          "file": "packages/services/src/bots/config.ts",
+          "sha256": "be93598984c0e73e129a0f1135d9baf490d6207ffa91dd804df58d6afa3fc542"
+        },
+        {
+          "file": "packages/services/src/bots/feishuChannelRuntime.ts",
+          "sha256": "aab47c1a41c7e2e921cc6d5374ac56bdac2ef2d1d989710b7ed00fd3fd9bd111"
+        },
+        {
+          "file": "packages/services/src/bots/messages.ts",
+          "sha256": "9ccb13a86ed74e78ee34de7a0408be1eeb40c937e887e03676c082033a1989fd"
+        },
+        {
+          "file": "packages/services/src/bots/modelSelectionHelpers.ts",
+          "sha256": "1b8279ecc7e2ee11980346cadc088eaa3f38d2ac3b51c283bb9a709dbe70b051"
+        },
+        {
+          "file": "packages/services/src/bots/providers/feishuAppRegistration.ts",
+          "sha256": "7a6a1919de4d0f9f862e4755f25a9383f4f3e73b80d0e86f1727930b77486978"
+        },
+        {
+          "file": "packages/services/src/bots/providers/feishuDisplayNameCache.ts",
+          "sha256": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf"
+        },
+        {
+          "file": "packages/services/src/bots/providers/feishuProvider.ts",
+          "sha256": "08f13ed9dcdd759c9e555dd4fc9ac06021839f57c3660b01e3322f6079f1d298"
+        },
+        {
+          "file": "packages/services/src/bots/providers/providerRequest.ts",
+          "sha256": "8412040408c61525b4e1291e1721556febdcf80b5b39584f06b9eae47b8d314b"
+        },
+        {
+          "file": "packages/services/src/bots/providers/telegramProvider.ts",
+          "sha256": "19e64d9c9042329564d8045fb5e96a90a6a65d5f71b14559b963274bb24b7ff7"
+        },
+        {
+          "file": "packages/services/src/bots/providers/types.ts",
+          "sha256": "92dee8cc703901971d854f0a9c81b19e673d5fb323a2fa181b6b69a96442b07a"
+        },
+        {
+          "file": "packages/services/src/bots/providers/webhookProvider.ts",
+          "sha256": "53bcb8e9787097a46ce4e5ff780a45a77170926231a4afe4803446897c24008a"
+        },
+        {
+          "file": "packages/services/src/bots/providers/weixinProvider.ts",
+          "sha256": "7f88a6adb5e6883dbf00e1f2c5f1e6f38f0c9063bc9f8c5b4490f208432f9804"
+        },
+        {
+          "file": "packages/services/src/bots/providers/weixinRegistration.ts",
+          "sha256": "290ff395a2ca6c0ca9d185dae0af029b0f2589d639c0b20edb9d37bf7ed0f276"
+        },
+        {
+          "file": "packages/services/src/bots/replyFormatter.ts",
+          "sha256": "ab4910698d8beaf273e1fbe7c680a97409a7aa2d8391832172f762ac90f1ffed"
+        },
+        {
+          "file": "packages/services/src/bots/repo.ts",
+          "sha256": "0e1489d2c452d4c4463f155823dcffb9a445ab74122a3e8d977124fe0a37f9b1"
+        },
+        {
+          "file": "packages/services/src/bots/statusFormatting.ts",
+          "sha256": "f645bb81625ab71504cffa14438b153ed6d3f13fcdcfbd584e653e9513d01369"
+        },
+        {
+          "file": "packages/services/src/bots/storageMigration.ts",
+          "sha256": "d6b806bd77f4f3ba070559c6bc48bd64e20848c14a0639fefb95c3d1bf96baf6"
+        },
+        {
+          "file": "packages/services/src/bots/taskFailureMessage.ts",
+          "sha256": "ca18d0f1372daf9ed0d673b54f02222f3ab8eb346fca4170283efc818467b30d"
+        },
+        {
+          "file": "packages/services/src/bots/telegramChannelRuntime.ts",
+          "sha256": "92936b803880362960acbfbcc78b3bed8e85dee7c6a95ef49a49a306c7075028"
+        },
+        {
+          "file": "packages/services/src/bots/weixinChannelRuntime.ts",
+          "sha256": "701c2482365fabb20503a4681dd7cfa560b9137e7f8678077cc0e4b6516cd876"
+        },
+        {
+          "file": "packages/services/src/bots/workspaceHelpers.ts",
+          "sha256": "2681a2c8cb2a7c11d44920060bb60af3d45a1fb28389bf5079940898fade0871"
+        },
+        {
+          "file": "packages/shared/src/bots.ts",
+          "sha256": "1474521b9d3afdf9ba5802cfe09c97b8770f9c78914e85d349c833fcc7131cf4"
+        }
+      ]
+    },
+    {
+      "id": "ZCode Bot Management UI (Z.ai)",
+      "referenceRevision": "29628c9acdb81b703bbd4080c207a0e7ce5e276e",
+      "source": "https://raw.githubusercontent.com/zai-org/ZCode/29628c9acdb81b703bbd4080c207a0e7ce5e276e/LICENSE",
+      "file": "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt",
+      "sha256": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
+      "importRevision": "29628c9acdb81b703bbd4080c207a0e7ce5e276e",
+      "provenance": "Copied from the official open-source checkout zai-org/ZCode at revision 29628c9 (feat: update v3.14.3) — the Bot management dialog (BotsDialog) that consumes the Bot Channel subsystem copied under 'ZCode Bot Channel (Z.ai)'. Upstream declares license Apache-2.0 in package.json; the pinned LICENSE snapshot is the same file as the Bot Channel entry. Formatting note (same treatment as the Bot Channel copy precedent): the copied sources were run through this repository's oxfmt (0.41.0) because pnpm fmt:check covers packages/ui, and upstream does NOT keep these files oxfmt-clean. Measured against pristine upstream blobs (lead-verified 2026-10-03): the 6 PNG icons, channel-icons/index.ts and ProviderSettingsCard.tsx are byte-identical to upstream raw; the other 5 .tsx files (BotsDialog.tsx, botsUi.ts, BotSummaryCard.tsx, WorkspaceAccessCard.tsx, shared.tsx) differ from upstream raw only by oxfmt line-normalization (verified against oxfmt-formatted pristine upstream blobs) with zero semantic changes; hence no modifiedFiles entries. In addition, 259 'bots.*' message keys per locale (zh-CN / en-US) were appended verbatim from the same upstream revision into packages/ui/src/i18n/locales/{zh-CN,en-US}.ts; those two locale files are ZCode-CE files carrying CE content plus this appended block. The dialog is mounted from the remote-control panel host (packages/ui/src/RemoteControlPanelHost.tsx + WorkspaceSidebar.tsx) and reads IBotsService via the existing useServices hook — those wiring files are ZCode-CE originals, not upstream copies. The 6 PNG channel icons are IM provider brand logos redistributed as they appear in the upstream repository.",
+      "roots": [
+        "packages/ui/src/BotsDialog.tsx",
+        "packages/ui/src/BotsDialog",
+        "packages/ui/src/botsUi.ts",
+        "packages/ui/src/assets/channel-icons"
+      ],
+      "scope": "Bot management UI (BotsDialog + 4 subcomponents + botsUi.ts + 6 channel brand icons): create bots, configure channels (telegram/feishu/lark/weixin/webhook), QR binding, workspace authorization, reply granularity, enable/disable and delete. Plus the 259 'bots.*' i18n keys appended to both locale files. dingding/discord/wecom providers are placeholder-only (implemented: false), same as upstream.",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "file": "packages/ui/src/BotsDialog.tsx",
+          "sha256": "f10a443b66f3dfd2ee038561dbe16e59a00ca2a48314f3c5ab8256ac2ca2c153"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/BotSummaryCard.tsx",
+          "sha256": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx",
+          "sha256": "1a6a756dccc89776cbbf9dd27cb3589b81b58c92c6f7f8df6dffd3aa8984b6b6"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/WorkspaceAccessCard.tsx",
+          "sha256": "d4999d83d94b394b096b0cbfe0e1423f0462f5a4f2ae3fc1171310cf5ad94904"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/shared.tsx",
+          "sha256": "579f732a289b46b6e2ca59676db75e24335cc7472bd9250d038b02a0cc3d4827"
+        },
+        {
+          "file": "packages/ui/src/botsUi.ts",
+          "sha256": "fbf8febfa53c5971ecf2cac1e64e69ec452ed4b1c1537671a52ced15ae93ad9e"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-dingding@2x.png",
+          "sha256": "5101fd13230552f0a2b81f0d563b96c971945930c7cdd61d45aaebdd5742a6ab"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-discord@2x.png",
+          "sha256": "c2d75be8f00d13d66460679babf5682bb1070be92f5d2c191c947b20cce13b7d"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-feishu@2x.png",
+          "sha256": "19fabcf4cff0d754b655b9899390b6d1c6201c952c096253794590b4f767d5e2"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-telegram@2x.png",
+          "sha256": "5eb395e9e7b6914a76eba02274f69af677447d9ee73e11cd40eab974bf46048b"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-wecom@2x.png",
+          "sha256": "8e81afbce8bb291a200f0d6901a20600e253b3d6e3a835f3114a951464304f76"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/icon-weixin@2x.png",
+          "sha256": "074b6749d2bb5ce0a925c05008ad8cb2ea034b596e0cc7d5e019527171143b4d"
+        },
+        {
+          "file": "packages/ui/src/assets/channel-icons/index.ts",
+          "sha256": "680b3668b05d2ebffc79ee0b0b0921222f2f1c148eb583fab821a50d45ef15fa"
+        }
+      ]
     }
   ],
   "patches": [
@@ -30441,7 +31277,7 @@
       "file": "third-party/upstream/0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a.txt",
       "sha256": "0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a",
       "source": "https://registry.npmjs.org/unsafe-pointer/0.2.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30461,7 +31297,7 @@
       "file": "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt",
       "sha256": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
       "source": "https://registry.npmjs.org/react-remove-scroll-bar/2.3.8",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30480,7 +31316,7 @@
       "file": "third-party/upstream/f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452.txt",
       "sha256": "f29b60ea39a2132e3baa98927c2d473b349a54143da44a0c6762b243e6459452",
       "source": "https://registry.npmjs.org/quickjs-wasi/2.2.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30497,7 +31333,7 @@
       "file": "third-party/upstream/c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817.txt",
       "sha256": "c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817",
       "source": "https://registry.npmjs.org/@hono%2fnode-ws/1.3.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30519,7 +31355,7 @@
       "file": "third-party/upstream/93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955.txt",
       "sha256": "93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955",
       "source": "https://registry.npmjs.org/strict-event-emitter/0.5.1",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30539,7 +31375,7 @@
       "file": "third-party/upstream/f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a.txt",
       "sha256": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a",
       "source": "https://registry.npmjs.org/lazy-val/1.0.5",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30559,7 +31395,7 @@
       "file": "third-party/upstream/1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17.txt",
       "sha256": "1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17",
       "source": "https://registry.npmjs.org/semaphore/1.1.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30581,7 +31417,7 @@
       "file": "third-party/upstream/2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d.txt",
       "sha256": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d",
       "source": "https://registry.npmjs.org/boolbase/1.0.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "ISC",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30598,7 +31434,7 @@
       "file": "third-party/upstream/b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65.txt",
       "sha256": "b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65",
       "source": "https://registry.npmjs.org/@open-draft%2fdeferred-promise/2.2.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30620,7 +31456,7 @@
       "file": "third-party/upstream/000ffa2d773c511f4459fb31d89f841806f93bf5caf2050468ab2097c081b443.txt",
       "sha256": "000ffa2d773c511f4459fb31d89f841806f93bf5caf2050468ab2097c081b443",
       "source": "https://registry.npmjs.org/is-node-process/1.2.0",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "MIT",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30640,7 +31476,7 @@
       "file": "third-party/upstream/2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e.txt",
       "sha256": "2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e",
       "source": "https://registry.npmjs.org/ansi-to-react/6.2.6",
-      "evidenceKind": "publisher-license-identifier-and-standard-terms",
+      "evidenceKind": "publisher-declared-standard-terms",
       "license": "BSD-3-Clause",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
@@ -30680,10 +31516,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30699,10 +31535,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30718,10 +31554,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30737,10 +31573,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30756,10 +31592,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30775,10 +31611,10 @@
       "sha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
       "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
       "evidenceKind": "pinned-upstream-license-file",
-      "license": "MIT",
+      "license": "MIT AND MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive carries no standalone LICENSE; the publisher declares MIT and the pinned upstream LICENSE.md is preserved as the copyright and permission notice.",
+        "result": "The versioned npm archive carries no standalone LICENSE; the published package.json declares MIT AND MPL-2.0 (the MPL part covers the bundled cua_driver_node_runtime.node, as the in-package node-runtime-NOTICE.md states), and the pinned upstream LICENSE.md is preserved as the MIT copyright and permission notice. NOTE: that in-package notice names scripts/build-node-runtime.mjs as the build script, but that path is 404 at the pinned tag; the real path is libs/cua-driver/scripts/build-node-runtime.mjs (verified 2026-09-27).",
         "upstreamLicenseFiles": [
           "LICENSE.md"
         ]
@@ -30797,7 +31633,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30816,7 +31652,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30835,7 +31671,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30854,7 +31690,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30873,7 +31709,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30892,7 +31728,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30911,7 +31747,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30930,7 +31766,7 @@
       "license": "MPL-2.0",
       "reviewEvidence": {
         "checkedOn": "2026-09-21",
-        "result": "The versioned npm archive contains no standalone complete LICENSE; the publisher's declared license identifier and the pinned upstream license file are preserved instead. The dependency is redistributed unmodified, so the MPL-2.0 source-availability obligation is met by the upstream release the pinned version was built from.",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; it ships only the MPL-2.0 Exhibit A short notice (192 B). The pinned upstream LICENSE at tag 0.31.0-3 is byte-identical to the recorded snapshot, and the MPL-2.0 full text is shipped alongside in THIRD-PARTY-NOTICES.md. The MPL source-availability obligation was verified independently on 2026-09-27 rather than inherited: the pinned tag resolves (0.31.0-3 -> commit dcb5c4ab2350d57f6d26f5fa81a99c77ed86d449) and the Rust source of the distributed binaries is present in that tag at runtimes/napi/ (Cargo.toml, build.rs, src/lib.rs). The dependency is redistributed unmodified.",
         "upstreamLicenseFiles": [
           "LICENSE"
         ]
@@ -30940,6 +31776,533 @@
       "package": "https@1.0.0",
       "license": "ISC",
       "acceptedMissingNotice": "占位包：tarball 仅含 package.json（main 指向不存在的 index.js），无代码、无 README、无 LICENSE。pptxgenjs 声明依赖它但运行时不 require（实测 grep 无命中）。包内许可字段为 ISC，无可登记的完整许可文本，故按「接受缺失上游文本」登记。"
+    },
+    {
+      "package": "fontkit@2.0.4",
+      "repo": "foliojs/fontkit",
+      "refs": [
+        "v2.0.4",
+        "2.0.4",
+        "fontkit@2.0.4"
+      ],
+      "file": "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt",
+      "sha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
+      "source": "https://registry.npmjs.org/fontkit/2.0.4",
+      "evidenceKind": "publisher-declared-standard-terms",
+      "license": "MIT",
+      "reviewEvidence": {
+        "checkedOn": "2026-09-24",
+        "result": "The versioned npm archive contains no standalone LICENSE file. The package files whitelist is NOT the reason: npm always packs README, LICENSE and LICENCE whatever the files field says, so an archive without a LICENSE means the repository has none. Re-checked exhaustively: all 7 branches carry license files only under test/data (bundled test fonts), and master HEAD equals the v2.0.4 tag fbf3b9ef. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
+        "inArchivePublisherStatements": [
+          "package/package.json declares license MIT",
+          "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
+        ],
+        "registryPublisherIdentity": "npm 2.0.4 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==",
+        "notPublisherMaterial": "PR foliojs/fontkit#300 (Add LICENSE, head e208a491449fe9759637e09e92bfbc9b032d2707) is an unmerged third-party contribution - re-checked 2026-09-24 as state=open, merged=false - so it is not a publisher statement and is not used as material. Downstream fork fontkitten@1.0.3 publishes package/LICENSE (sha256 e626e38b2081908f1ffa133bd13a695d7cc8f70005d2f7b282b262610fe307cd) reproducing Copyright (c) 2014 Devon Govett and stating that it applies to code originating from foliojs/fontkit; that corroborates the copyright line only and is not publisher material.",
+        "npmArchiveSha256": "f686a9515af33fce16ab4bffe50570728197e53165068548c6f75a1793797a08",
+        "sourceTreeUrl": "https://api.github.com/repos/foliojs/fontkit/git/trees/master?recursive=1",
+        "sourceTreeAlsoChecked": "https://api.github.com/repos/foliojs/fontkit/git/trees/v2.0.4?recursive=1 (217 entries; license paths only under test/data) plus the trees of all 7 branches",
+        "upstreamLicenseFiles": []
+      }
+    },
+    {
+      "package": "brotli@1.3.3",
+      "file": "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt",
+      "sha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
+      "source": "https://registry.npmjs.org/brotli/1.3.3",
+      "evidenceKind": "publisher-declared-standard-terms",
+      "license": "MIT",
+      "reviewEvidence": {
+        "checkedOn": "2026-09-24",
+        "result": "CORRECTED on 2026-09-24. The earlier text claimed the upstream publishes no license material at all; that was produced by a filename-only scan and is false. The versioned npm archive ships a verbatim Google copyright and Apache-2.0 notice as the leading comment of all seven shipped dec/*.js files; it is now registered as the embedded component google/brotli (vendored in brotli@1.3.3). What is still missing is a notice issued by the publisher for the package body itself, which declares MIT in package.json and carries only a README License heading. The synthesized standard MIT text is kept because the archive ships no MIT file either.",
+        "inArchivePublisherStatements": [
+          "package/package.json declares license MIT",
+          "package/readme.md carries a License heading whose body is MIT; already captured by the notice collector as the readme.md (license section) member"
+        ],
+        "registryPublisherIdentity": "npm 1.3.3 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==",
+        "inArchiveLicenseMaterialFound": "package/dec/{bit_reader,context,decode,dictionary,dictionary-data,prefix,transform}.js lines 1-13: Copyright 2013 Google Inc. All Rights Reserved. plus the Apache License 2.0 notice; byte-identical across all seven files, sha256 e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613. The same header is still present in pdfkit@0.17.1 js/pdfkit.standalone.js (five occurrences), confirming downstreams retain it.",
+        "vendorProvenance": "foliojs/brotli.js v1.3.3 pins submodule vendor/brotli to google/brotli commit 5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421 (.gitmodules -> git@github.com:google/brotli.git); the Makefile Emscripten-compiles vendor/brotli/common and vendor/brotli/enc into build/encode.js and build/mem.js. That LICENSE is byte-identical (sha256 3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94) to the google/brotli notice already registered for @napi-rs/canvas.",
+        "npmArchiveSha256": "3c7c260f6263df95fee49a9119e9fd21227d628b6c9d99080a75edfd9e2bdb24"
+      }
+    },
+    {
+      "package": "dfa@1.2.0",
+      "file": "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt",
+      "sha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
+      "source": "https://registry.npmjs.org/dfa/1.2.0",
+      "evidenceKind": "publisher-declared-standard-terms",
+      "license": "MIT",
+      "reviewEvidence": {
+        "checkedOn": "2026-09-24",
+        "result": "The versioned npm archive contains no standalone LICENSE file and the upstream repository devongovett/dfa publishes none either - re-checked exhaustively on 2026-09-24: the tarball has 6 entries with no license-named member, and the repository has a single branch whose v1.2.0 tree holds 17 entries with no license path at any depth. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
+        "inArchivePublisherStatements": [
+          "package/package.json declares license MIT",
+          "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
+        ],
+        "registryPublisherIdentity": "npm 1.2.0 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==",
+        "npmArchiveSha256": "d781eb3a307ab6aa2d97028f695b17dbeadf6fd27788c333b1fb96d18d2a23ad"
+      }
+    },
+    {
+      "package": "agent-base@6.0.2",
+      "repo": "TooTallNate/node-agent-base",
+      "refs": [
+        "6.0.2"
+      ],
+      "file": "third-party/upstream/a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f.txt",
+      "sha256": "a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f",
+      "source": "https://registry.npmjs.org/agent-base/6.0.2",
+      "evidenceKind": "publisher-declared-standard-terms",
+      "license": "MIT",
+      "reviewEvidence": {
+        "checkedOn": "2026-09-24",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; existing publisher declaration and original README license sections remain preserved. Upstream authorization/copyright material is still required to close this review.",
+        "npmArchiveSha256": "bc6da06f2a2e6bc80fa5878bd7227bd0318812976d45f47f17e1aafcec2be831",
+        "sourceRevision": "c4b8ea2e1a11bae023bb09b708050a50418204e9",
+        "sourceTreeUrl": "https://api.github.com/repos/TooTallNate/node-agent-base/git/trees/c4b8ea2e1a11bae023bb09b708050a50418204e9?recursive=1",
+        "upstreamLicenseFiles": []
+      }
+    },
+    {
+      "package": "https-proxy-agent@5.0.1",
+      "repo": "TooTallNate/node-https-proxy-agent",
+      "refs": [
+        "5.0.1"
+      ],
+      "file": "third-party/upstream/32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb.txt",
+      "sha256": "32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb",
+      "source": "https://registry.npmjs.org/https-proxy-agent/5.0.1",
+      "evidenceKind": "publisher-declared-standard-terms",
+      "license": "MIT",
+      "reviewEvidence": {
+        "checkedOn": "2026-09-24",
+        "result": "The versioned npm archive contains no standalone complete LICENSE; existing publisher declaration and original README license sections remain preserved. Upstream authorization/copyright material is still required to close this review.",
+        "npmArchiveSha256": "6da16fb44331f2e5d30bd21bf880aa934c1ad4fe7da7187910ef2b2509712019",
+        "sourceRevision": "d0d80cc0482f20495aa8595f802e1a9f3b1b3409",
+        "sourceTreeUrl": "https://api.github.com/repos/TooTallNate/node-https-proxy-agent/git/trees/d0d80cc0482f20495aa8595f802e1a9f3b1b3409?recursive=1",
+        "upstreamLicenseFiles": []
+      }
+    }
+  ],
+  "documentedLimitations": [
+    {
+      "id": "@open-draft/deferred-promise@2.2.0",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/@open-draft%2fdeferred-promise/2.2.0",
+        "noticeFile": "third-party/upstream/b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65.txt",
+        "noticeSha256": "b1688598c3e32605b3973902a546225e0159349c05a0f74db67f76e08e116e65",
+        "archiveSha256": "57f8d0cf303951c66dcdab2a10c2fe57194ad4cbb851880c604d4c3e521def2b",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-darwin-arm64@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-darwin-x64@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-linux-arm64-gnu@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-linux-x64-gnu@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-win32-arm64-msvc@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver-win32-x64-msvc@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT AND MPL-2.0",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: node-runtime-NOTICE.md"
+        ]
+      }
+    },
+    {
+      "id": "@trycua/cua-driver@0.28.2",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/trycua/cua/cua-driver-rs-v0.28.2/LICENSE.md",
+        "noticeFile": "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt",
+        "noticeSha256": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
+        "archiveSha256": null,
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/core@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-darwin-arm64@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-darwin-x64@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-linux-arm64-gnu@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-linux-x64-gnu@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-win32-arm64-msvc@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node-win32-x64-msvc@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "@ubjs/node@0.31.0-3",
+      "tier": "pinned-upstream-license-file",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://raw.githubusercontent.com/jhugman/uniffi-bindgen-react-native/0.31.0-3/LICENSE",
+        "noticeFile": "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt",
+        "noticeSha256": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
+        "archiveSha256": null,
+        "declaredLicense": "MPL-2.0",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "agent-base@6.0.2",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/agent-base/6.0.2",
+        "noticeFile": "third-party/upstream/a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f.txt",
+        "noticeSha256": "a371115904e82924a6c4e6884b9fa9080e35809e8c04cbc98adbec8551341b7f",
+        "archiveSha256": "bc6da06f2a2e6bc80fa5878bd7227bd0318812976d45f47f17e1aafcec2be831",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "ansi-to-react@6.2.6",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/ansi-to-react/6.2.6",
+        "noticeFile": "third-party/upstream/2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e.txt",
+        "noticeSha256": "2c88816684a40c718113a10062a8335b665cec00d3c7b32e2b3fe9c620a3e03e",
+        "archiveSha256": "e06fc6be19323cf447f0058975cfcf41923d3422ea613cff2e67d8fd8ee1d655",
+        "declaredLicense": "BSD-3-Clause",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "boolbase@1.0.0",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/boolbase/1.0.0",
+        "noticeFile": "third-party/upstream/2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d.txt",
+        "noticeSha256": "2d2349188616c4b64ceeae33e1386bb546b0658864b4f7f8c9785757cb065b5d",
+        "archiveSha256": "69628ff8092c5ff940ea4a0f29da98d520615bae138755c9e059033606c6caa8",
+        "declaredLicense": "ISC",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "brotli@1.3.3",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/brotli/1.3.3",
+        "noticeFile": "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt",
+        "noticeSha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
+        "archiveSha256": "3c7c260f6263df95fee49a9119e9fd21227d628b6c9d99080a75edfd9e2bdb24",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: readme.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "dfa@1.2.0",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/dfa/1.2.0",
+        "noticeFile": "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt",
+        "noticeSha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
+        "archiveSha256": "d781eb3a307ab6aa2d97028f695b17dbeadf6fd27788c333b1fb96d18d2a23ad",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "fontkit@2.0.4",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/fontkit/2.0.4",
+        "noticeFile": "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt",
+        "noticeSha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
+        "archiveSha256": "f686a9515af33fce16ab4bffe50570728197e53165068548c6f75a1793797a08",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "https-proxy-agent@5.0.1",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/https-proxy-agent/5.0.1",
+        "noticeFile": "third-party/upstream/32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb.txt",
+        "noticeSha256": "32d9310abf9099556ff17b83c09d7b5a91646825580de5a397e5b150a0d737bb",
+        "archiveSha256": "6da16fb44331f2e5d30bd21bf880aa934c1ad4fe7da7187910ef2b2509712019",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "lazy-val@1.0.5",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/lazy-val/1.0.5",
+        "noticeFile": "third-party/upstream/f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a.txt",
+        "noticeSha256": "f18c12b8e7daf98d572518b7db133b2dc66a713921dac4825410dd656e0c1a1a",
+        "archiveSha256": "7d8602ad98db3d19fbd5b46fbf3831dd996197a013ef1ff7badc205e41435372",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
+    },
+    {
+      "id": "react-remove-scroll-bar@2.3.8",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/react-remove-scroll-bar/2.3.8",
+        "noticeFile": "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt",
+        "noticeSha256": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
+        "archiveSha256": "ccc872d7a2dc007cbf9d755f30d56b8d80eabdbe22c44c95a709129bfdc46f01",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "strict-event-emitter@0.5.1",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/strict-event-emitter/0.5.1",
+        "noticeFile": "third-party/upstream/93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955.txt",
+        "noticeSha256": "93f24a47f95aea2be1b0dad78de98dc6d3de01ce22c0b72dc73e453c7917b955",
+        "archiveSha256": "43c456f72612074a13e8399c29ffd59c8c277274924b633f6e4fa07342f63cab",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field",
+          "published notice members: README.md (license section)"
+        ]
+      }
+    },
+    {
+      "id": "unsafe-pointer@0.2.0",
+      "tier": "publisher-declared-standard-terms",
+      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
+      "evidence": {
+        "source": "https://registry.npmjs.org/unsafe-pointer/0.2.0",
+        "noticeFile": "third-party/upstream/0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a.txt",
+        "noticeSha256": "0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a",
+        "archiveSha256": "9c9795688a9e224759468aeee2ff88d917fadc65f7b3480e62571f0853eaa446",
+        "declaredLicense": "MIT",
+        "declarationLocation": [
+          "package.json license field"
+        ]
+      }
     }
   ],
   "embedded": [
@@ -31189,6 +32552,28 @@
           "sha256": "5f745b8244890bde0a2258fe32342d60c577fad043e8601d923690a5bfe1b54f"
         }
       ]
+    },
+    {
+      "id": "google/brotli (vendored in brotli@1.3.3)",
+      "parentPackage": "brotli@1.3.3",
+      "revision": "5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421",
+      "source": "https://github.com/foliojs/brotli.js/tree/v1.3.3",
+      "notices": [
+        {
+          "component": "google/brotli JavaScript decoder (dec/*.js)",
+          "source": "https://registry.npmjs.org/brotli/-/brotli-1.3.3.tgz (package/dec/transform.js)",
+          "extraction": "Original leading copyright and license comment, verbatim. The first 13 lines are byte-identical in all seven shipped dec/*.js files (bit_reader, context, decode, dictionary, dictionary-data, prefix, transform); only the per-file description line after the blank line differs.",
+          "file": "third-party/upstream/e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613.txt",
+          "sha256": "e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613"
+        },
+        {
+          "component": "google/brotli C sources (Emscripten-compiled into build/encode.js and build/mem.js)",
+          "source": "https://raw.githubusercontent.com/google/brotli/5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421/LICENSE",
+          "extraction": "The revision pinned by the vendor/brotli submodule of foliojs/brotli.js v1.3.3 (.gitmodules -> git@github.com:google/brotli.git); byte-identical to the google/brotli LICENSE already registered for the @napi-rs/canvas component, so the two share one notice text.",
+          "file": "third-party/upstream/3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94.txt",
+          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
+        }
+      ]
     }
   ],
   "runtimes": {
@@ -31213,108 +32598,20 @@
       "reason": "Pinned upstream README and skill declare MIT, but a complete original copyright/license notice has not been obtained."
     },
     {
-      "id": "unsafe-pointer@0.2.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "react-remove-scroll-bar@2.3.8",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
       "id": "quickjs-wasi@2.2.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
+      "reason": "Publisher-declaration tier criteria not met: (c) the published artifact carries no publisher copyright subject (package.json author/contributors/maintainers, or a Copyright line in a published licence text)"
     },
     {
       "id": "@hono/node-ws@1.3.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "strict-event-emitter@0.5.1",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "lazy-val@1.0.5",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
+      "reason": "Publisher-declaration tier criteria not met: (c) the published artifact carries no publisher copyright subject (package.json author/contributors/maintainers, or a Copyright line in a published licence text)"
     },
     {
       "id": "semaphore@1.1.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "boolbase@1.0.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@open-draft/deferred-promise@2.2.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
+      "reason": "Publisher-declaration tier criteria not met: (c) the published artifact carries no publisher copyright subject (package.json author/contributors/maintainers, or a Copyright line in a published licence text)"
     },
     {
       "id": "is-node-process@1.2.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "ansi-to-react@6.2.6",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-darwin-arm64@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-darwin-x64@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-linux-arm64-gnu@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-linux-x64-gnu@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-win32-arm64-msvc@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@trycua/cua-driver-win32-x64-msvc@0.28.2",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/core@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-darwin-arm64@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-darwin-x64@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-linux-arm64-gnu@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-linux-x64-gnu@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-win32-arm64-msvc@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
-    },
-    {
-      "id": "@ubjs/node-win32-x64-msvc@0.31.0-3",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
+      "reason": "Publisher-declaration tier criteria not met: (c) the published artifact carries no publisher copyright subject (package.json author/contributors/maintainers, or a Copyright line in a published licence text)"
     },
     {
       "id": "https@1.0.0",

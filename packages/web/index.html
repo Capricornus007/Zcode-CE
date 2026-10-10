@@ -2,7 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- interactive-widget=resizes-content：软键盘弹出时收缩布局视口（Chrome/Android）。
+         默认的 resizes-visual 只收缩视觉视口，而外壳高度来自 h-dvh（跟随布局视口），
+         结果底部 composer 被键盘盖住（手机上无法边看边输入）。 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#161616" />
     <meta name="color-scheme" content="dark" />
     <!-- Chrome dev 下可能不发 favicon 网络请求；内嵌小尺寸 App 图标，避免标签页回退到默认图标。-->
@@ -18,6 +24,7 @@
         // JS bundle 执行前先按本地主题偏好决定首屏底色，避免 dark 用户在这一帧看到白底闪烁。
         const STORAGE_KEY = "zcode-theme";
         const DEFAULT_THEME = "zai-dark";
+        const KNOWN_THEMES = ["light", "dark", "zai-light", "zai-dark", "system"];
         const BROWSER_THEME_COLORS = {
           dark: "#161616",
           light: "#f8f8f8",
@@ -41,7 +48,11 @@
         };
 
         try {
-          const saved = localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+          // 本脚本先于 JS bundle 执行，无法引入 logger；非法条目的完整检测/告警在
+          // bundle 的 readPersistedTheme 里做，这里只做回退（issue #2）。
+          const rawSaved = localStorage.getItem(STORAGE_KEY);
+          const saved =
+            rawSaved !== null && KNOWN_THEMES.indexOf(rawSaved) !== -1 ? rawSaved : DEFAULT_THEME;
           const resolved =
             saved === "system"
               ? window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches

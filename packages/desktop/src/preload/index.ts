@@ -66,6 +66,12 @@ import type {
   WindowControlsOverlayReadyPayload,
   CreateTempTextAttachmentRequest,
   OpenCuaPermissionOnboardingOptions,
+  WebServiceStatusPayload,
+  WebServiceConnectionInfoPayload,
+  RemoteControlConnectionsPayload,
+  RemoteControlRevokeRequest,
+  RemoteControlRevokeResult,
+  RemoteControlRotateTokenResult,
 } from "@zcode/shared";
 import { InternalChannels, PlatformChannels, formatZCodeRendererProcessName } from "@zcode/shared";
 import { createOAuthCallbackHandler } from "./oauthCallbackBridge.js";
@@ -285,6 +291,42 @@ contextBridge.exposeInMainWorld("zcode", {
   /** 长文本粘贴落盘为真正的本地附件，避免正文和 prompt payload 被撑大 */
   createTempTextAttachment: (payload: CreateTempTextAttachmentRequest) =>
     ipcRenderer.invoke(PlatformChannels.CreateTempTextAttachment, payload),
+  /**
+   * 本地 Web 服务（远程控制）八条通道（契约 §5）：服务面五条 + 连接面三条。
+   *
+   * 令牌不变式：`webService:connectionInfo` **是唯一**把带令牌链接交给渲染进程的通道；
+   * 其余七条（status/start/stop/changed + connections/revokeConnection/rotateToken）的载荷都不含令牌。
+   * 通道名统一取自 `PlatformChannels`，与 main 侧 `web-service/ipc.ts` 共用同一份常量。
+   *
+   * 连接面三条必须在这里暴露，也必须同时映射进 `desktopPlatform.ts` 的 `IPlatformService` ——
+   * 只做一处会让 UI 的能力探测把桌面端也判成"能力缺失"：入口与面板静默不渲染且无报错
+   * （task-84 记过这一形态）。
+   */
+  getWebServiceStatus: (): Promise<WebServiceStatusPayload> =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceStatus),
+  startWebService: (options: { scope: "loopback" | "lan"; port?: number }) =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceStart, options),
+  stopWebService: () => ipcRenderer.invoke(PlatformChannels.WebServiceStop),
+  getWebServiceConnectionInfo: (): Promise<WebServiceConnectionInfoPayload | null> =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceConnectionInfo),
+  /** 订阅探活结论变化（入口据此回显，不轮询），返回 disposer */
+  onWebServiceChanged: (callback: (status: WebServiceStatusPayload) => void) => {
+    const handler = (_event: unknown, payload: unknown) =>
+      callback(payload as WebServiceStatusPayload);
+    ipcRenderer.on(PlatformChannels.WebServiceChanged, handler);
+    return () => ipcRenderer.removeListener(PlatformChannels.WebServiceChanged, handler);
+  },
+  /** 读已连设备清单（连接面）。null = 不知道（服务没在跑/读失败），空数组 = 确定 0 台。 */
+  getWebServiceConnections: (): Promise<RemoteControlConnectionsPayload | null> =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceConnections),
+  /** 断开连接：载荷恰好 { id } 或 { all: true } 之一（main 侧会再校验一次）。 */
+  revokeWebServiceConnection: (
+    input: RemoteControlRevokeRequest,
+  ): Promise<RemoteControlRevokeResult> =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceRevokeConnection, input),
+  /** 轮换服务端令牌（桌面专属）：轮换后所有已连设备立即失效。 */
+  rotateWebServiceToken: (): Promise<RemoteControlRotateTokenResult> =>
+    ipcRenderer.invoke(PlatformChannels.WebServiceRotateToken),
   /** 订阅当前窗口内远程连接过程日志，返回 disposer */
   onRemoteConnectionLog: (callback: (entry: RemoteConnectionRuntimeLog) => void) => {
     const handler = (_event: unknown, payload: unknown) =>

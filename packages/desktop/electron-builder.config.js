@@ -11,7 +11,7 @@ import { resolveNativeSearchReleasePlan } from "../../scripts/native-search-tool
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
 import { collectRuntimeModuleClosureEntries } from "./scripts/runtime-dependency-closure.mjs";
 import {
-  resolvePackagedNodePtyPrebuildPath,
+  assertPackagedNodePtyPayloadVerified,
   restoreTargetNodePtyPrebuild,
 } from "./scripts/node-pty-package-assets.mjs";
 import { cleanupPackagedSourcemaps } from "./scripts/packaged-sourcemap-cleanup.mjs";
@@ -141,6 +141,12 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 已在线上触发安装包启动即报 Cannot find module 'ms'（Require stack: debug/src/common.js），
   // 自动更新链路直接崩。ms 是叶子包，显式注入即可让 debug 在 app.asar 内稳定解析。
   "ms",
+  // Bot Channel 的飞书渠道在 host 进程里惰性 import 该 SDK（feishuProvider.ts:1514），
+  // 它在 tsup 里是外部依赖，因此 app.asar 必须真的带上它。这里以它为闭包根注入，
+  // 让递归依赖收集把 ws/axios/protobufjs 等传递依赖一起补齐；漏掉的话用户启用
+  // 飞书渠道时才会在 host 里抛 ERR_MODULE_NOT_FOUND。与上游 v3.14.3 的
+  // desktop/electron-builder.config.js:143 同一处置。
+  "@larksuiteoapi/node-sdk",
 ];
 // pacman 依赖必须使用 Arch 官方仓库中的包名。electron-builder 的历史默认集合包含
 // 已移除的 libappindicator-gtk3/http-parser，且缺少 Electron 实际需要的运行库；显式
@@ -431,13 +437,17 @@ function assertPackagedNativeResourcePolicy(context) {
   }
 }
 
+// 断言产物里 node-pty 的**载荷完整性**（不再只是"存在性"）：
+// ① 不得带 build/Release|build/Debug 下的 pty.node —— node-pty 的加载顺序是
+//    [build/Release, build/Debug, prebuilds/<platform>-<arch>]（node-pty/lib/utils.js:19），
+//    build/Release 优先 ⇒ 带上它就会静默加载未经我们验证的原生模块；
+// ② prebuilds/<platform>/pty.node 的 md5 必须等于 @lydell/node-pty-<platform> 平台包里那一份。
+// 具体断言与原因注释见 scripts/node-pty-package-assets.mjs（含单测 packages/desktop/test/nodePtyPackagingGuard.test.ts）。
 function assertPackagedNodePtyPrebuild(context) {
-  const targetBinaryPath = resolvePackagedNodePtyPrebuildPath({
+  assertPackagedNodePtyPayloadVerified({
     resourcesDir: resolvePackagedResourcesDir(context),
     platformKey: targetPlatform.key,
   });
-  if (!existsSync(targetBinaryPath))
-    throw new Error(`node-pty 预编译产物缺失: ${targetBinaryPath}`);
 }
 
 /**
@@ -614,6 +624,30 @@ export default {
           },
         ]
       : []),
+    // ── 本地 Web 服务（远程控制，Slice 1）随包 ──────────────────────────────────────────
+    // 三件事：HTTP 入口 .cjs、它的运行时依赖闭包、裁剪后的 web 静态资源。
+    // 主进程用 `process.resourcesPath/web-service/**` 解析（见 web-service/paths.ts 的所有权约定）。
+    {
+      from: resolve(workspaceRoot, "packages/server/dist/remote/zcode-server-http.cjs"),
+      to: "web-service/zcode-server-http.cjs",
+    },
+    {
+      // node-pty 的**原生件**：bundle 里 node-pty 的 JS 被内联，它按自身 __dirname 找
+      // `build/Release/pty.node` ⇒ 必须与 .cjs 同级同构地放在 web-service/ 下。
+      from: resolve(workspaceRoot, "node_modules/node-pty/build/Release/pty.node"),
+      to: "web-service/build/Release/pty.node",
+    },
+    {
+      // web 静态资源：**排除 sourcemap**（`**/*.map`，实测占 packages/web/dist 的 55%）。
+      // 规则与前提（task-80 步骤 3，已定）：
+      //   · `pdfjs/`、`pdf.worker.min.mjs` 必须保留 —— pdf.js 的 cMapUrl 指向它，剪掉会让含 CJK 字体的 PDF **静默缺字**；
+      //   · `material-icons/` 必须保留 —— 文件类型图标全部来自它，剪掉全 404；
+      //   · Office 预览 wasm（*.wasm）必须保留 —— 剪掉会直接收窄能力；
+      //   · 只有 `*.map` 是纯调试产物 ⇒ 本版不随包；**若将来要做崩溃符号化，需按版本另存 maps**（届时要改这一行）。
+      from: resolve(workspaceRoot, "packages/web/dist"),
+      to: "web-service/web",
+      filter: ["**/*", "!**/*.map"],
+    },
     {
       // 正式包不能依赖仓库目录读取社区、反馈等内置兜底配置。
       // 显式放入 resources/config，与主进程的 process.resourcesPath 解析保持一致。
@@ -704,7 +738,9 @@ export default {
   mac: {
     target: ["dmg", "zip"],
     category: "public.app-category.developer-tools",
-    artifactName: buildDesktopArtifactName("mac"),
+    // 产物名中的平台 token 用 darwin（ZCode-CE-<版本>-darwin-<arch>.dmg/.zip），
+    // 与 electron-updater / 更新渠道的 darwin 平台命名一致。
+    artifactName: buildDesktopArtifactName("darwin"),
     extendInfo: {
       NSAppleEventsUsageDescription: `${desktopProductIdentity.productName} needs Apple Events access to coordinate local automation workflows with user-approved desktop apps.`,
     },
@@ -714,7 +750,10 @@ export default {
     // z-code 之前只有本地未签名打包配置，CI 即使注入了证书变量，
     // electron-builder 也不会自动切到 hardened runtime / entitlement 这套发布参数。
     // 这里显式收拢到环境开关，保证本地开发不被签名配置绑死，CI 发布时再按需打开。
-    identity: shouldEnableMacSigning ? macSigningIdentity : null,
+    // 未配置 Apple 签名身份时用 ad-hoc（identity 为 "-"，即 codesign -f -s -，无需 Apple 账号）：
+    // electron-builder 26.x 下 identity: null 会整包跳过签名（arm64 也只 warn 不签，
+    // 未签名的 arm64 二进制在 Apple Silicon 上无法启动）；x64 同样 ad-hoc 保持一致。
+    identity: shouldEnableMacSigning ? macSigningIdentity : "-",
     // macOS 产物采用“build 阶段签名 + 独立公证阶段”的两段式流水线。
     // 如果这里不显式关闭 electron-builder 内置 notarize，它会在 build 阶段读取 Apple 凭据后直接尝试公证，
     // 并强制要求 APPLE_APP_SPECIFIC_PASSWORD，导致 build 还没产出 DMG 就提前失败。

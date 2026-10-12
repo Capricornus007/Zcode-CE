@@ -308,4 +308,45 @@ export * from "./pluginStoreOrder.js";
 export * from "./clientConfig.js";
 export * from "./pluginStoreOrdering.js";
 export * from "./session-debug.js";
+// ---- 官方 3.15.1 增量 barrel（整版升级移植）----
+export * from "./attachment-source.js";
+export * from "./channel-mention.js";
+export * from "./conversationSelection.js";
+export * from "./highspeed.js";
+export * from "./marketingTouch.js";
+export * from "./memory.js";
+export * from "./networkCapture.js";
+export * from "./output-style.js";
+export * from "./remoteUsageTelemetry.js";
+// rendererActionTrace 属 CE 移除的遥测面，不导出（文件已删）
+export * from "./request-security-edition/verification-policy.js";
+export * from "./rewardsBridge.js";
+export * from "./rewardsEmbedded.js";
+export * from "./sessionCreateTelemetry.js";
+export * from "./subagent-profile.js";
+export * from "./subagent-runtime-config.js";
+export * from "./web-remote-control.js";
+export * from "./web-remote-control-heartbeat.js";
+export * from "./web-remote-control-rpc-transport.js";
+export * from "./zcode-session-content-profile.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
+
+// ---- 官方 3.15.1 增量导出（整版升级移植）----
+export { cloudContentPayloadSchema, contentBundleSchema } from "./cloudContent.js";
+export * from "./networkCapture.js";
+export type {
+  CloudContentPayload,
+  CloudContentBundle,
+} from "./cloudContent.js";
+export { resolveSafeTelemetryHostname } from "./telemetry.js";
+export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
+export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
+export {
+  projectAccessTokenFingerprint,
+  ProjectAccessTokenTransientError,
+} from "./project-access-token.js";
+export {
+  ProjectAccessTokenClient,
+  type ProjectAccessTokenInput,
+  type ProjectAccessTokenMaterial,
+} from "./project-access-token-client.js";

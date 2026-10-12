@@ -339,3 +339,52 @@ export type {
   BotSaveBotParams,
   BotTestResult,
 } from "./bots/bots.js";
+
+// ---- 官方 3.15.1 增量导出（整版升级移植）----
+export { IGenUiService } from "./gen-ui/contract.js";
+export { ICloudContentService } from "#src/cloud-content/cloudContent.js";
+export { IMarketingTouchService } from "#src/marketing-touch/marketingTouch.js";
+export { IHighspeedCardService } from "./highspeed/highspeedCard.js";
+export { IOutputStyleService } from "./output-style/outputStyle.js";
+
+// ---- 官方 3.15.1 增量：plugin-ui-bridge 服务导出块（整版升级移植）----
+import {
+FeedbackTicketModule,
+  FeedbackTicketSeverity,
+  FeedbackTicketStatus,
+  FeedbackTicketSummary,
+  FeedbackTicketType,
+} from "@zcode/shared";
+
+// 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
+export {
+  createPluginUiBridgeService,
+  createPluginUiAppToolsService,
+  createPluginUiSamplingService,
+  IPluginUiSamplingService,
+  type PluginUiSamplingParams,
+  type PluginUiCancelSamplingParams,
+  PluginUiBridgeError,
+  IPluginUiAppToolsService,
+  type PluginUiAppToolInstanceParams,
+  type PluginUiAppToolCallParams,
+  type PluginUiAppToolAcceptedResult,
+  type PluginUiRegisterAppToolsParams,
+  type PluginUiRegisterAppToolsResult,
+  type PluginUiResolveAppToolCallParams,
+} from "./plugin-ui-bridge/index.js";
+export {
+  IPluginUiBridgeService,
+  type PluginUiCallToolParams,
+  type PluginUiCallToolResult,
+  type PluginUiPrepareSandboxParams,
+  type PluginUiReadResourceParams,
+  type PluginUiReadResourceResult,
+  type PluginUiPluginScope,
+  type PluginUiListResourcesParams,
+  type PluginUiListResourcesResult,
+  type PluginUiListResourceTemplatesResult,
+  type PluginUiResourceSubscriptionParams,
+  type PluginUiSurfaceEntry,
+  type PluginUiWorkspaceTarget,
+} from "./plugin-ui-bridge/index.js";

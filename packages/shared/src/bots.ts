@@ -1,6 +1,9 @@
+import { zcodeProtocolTraceSchema, type ZCodeProtocolTrace } from "./zcode-protocol/trace.js";
+import { channelContentPartsSchema, type ChannelContentPart } from "./channel-mention.js";
 /* oxlint-disable eslint(max-lines) -- Bot 共享合约集中维护 provider、状态和 schema，保持类型与校验就近。 */
 import { z } from "zod";
 import { modelSelectionSchema, type ModelSelection } from "./model-selection.js";
+import { conversationQuotesSchema } from "./conversationSelection.js";
 import { ZCODE_AGENT_PROVIDER, ZCODE_AGENT_PROVIDER_LABEL } from "./zcode-agent-policy.js";
 import type {
   ZCodeConfigOption,
@@ -44,6 +47,8 @@ export const zcodeAutomationBotDeliveryTargetSchema = z
     botId: z.string().trim().min(1),
     providerUserId: z.string().trim().min(1),
     chatType: z.enum(["private", "group"]),
+    threadId: z.string().min(1).optional(),
+    rootMessageId: z.string().min(1).optional(),
   })
   .strict();
 
@@ -176,6 +181,7 @@ export interface BotsConfigFile {
 
 export interface BotState {
   botId: string;
+  group?: BotGroupSession;
   workspacePath: string;
   workspaceIdentity?: string;
   workspaceId?: string;
@@ -187,382 +193,14 @@ export interface BotState {
   telegramOffset?: number;
   weixinGetUpdatesBuf?: string;
   weixinActivatedAt?: number;
+  /** 单聊绑定代际，阻止换绑后迟到事件恢复旧关联。 */
+  privateBindingId?: string;
+  /** iLink 登录返回机器人身份，单聊接收人来自已授权入站消息。 */
+  privateRecipientId?: string;
   updatedAt: number;
 }
 
 export type BotContextState = BotState;
-
-export interface BotsStateFile {
-  version: 3;
-  bots: Record<string, BotState>;
-}
-
-export interface BotRuntimeInfo {
-  /** 最近一次消息投递错误；独立于长连接状态，成功投递后清除。 */
-  deliveryError?: string;
-  botId: string;
-  provider: BotProvider;
-  status: "disabled" | "idle" | "polling" | "connected" | "error";
-  messageId?: string;
-  message?: string;
-  lastUpdateAt?: number;
-  offset?: number;
-}
-
-export interface BotActor {
-  provider: BotProvider;
-  botId: string;
-  providerUserId: string;
-  displayName?: string;
-  chatType: "private" | "group";
-  chatId?: string;
-  providerMessageId?: string;
-  providerContextToken?: string;
-}
-
-export type BotInboundAttachmentKind = "image" | "audio" | "video" | "file";
-
-export interface BotInboundAttachment {
-  id: string;
-  kind: BotInboundAttachmentKind;
-  filename: string;
-  mimeType: string;
-  sizeBytes?: number;
-  providerFileId?: string;
-  downloadUrl?: string;
-  dataBase64?: string;
-  localPath?: string;
-  providerMetadata?: Record<string, string>;
-}
-
-export type BotCommand =
-  | { type: "bind"; code: string }
-  | { type: "help" }
-  | { type: "status" }
-  | { type: "new" }
-  | { type: "reconnect" }
-  | { type: "workspace.list" }
-  | { type: "workspace.set"; value: string }
-  | { type: "model.list" }
-  | { type: "model.provider.set"; value: string }
-  | { type: "model.set"; value: string }
-  | { type: "mode.list" }
-  | { type: "mode.set"; value: string }
-  | { type: "thoughtLevel.list" }
-  | { type: "thoughtLevel.set"; value: string }
-  | { type: "task.list" }
-  | { type: "task.set"; value: string }
-  | { type: "reply.list" }
-  | { type: "reply.set"; value: string }
-  | { type: "stop" }
-  | { type: "permission.respond"; value: string }
-  | { type: "elicitation.respond"; value: string }
-  | { type: "elicitation.submit" }
-  | { type: "approve"; requestId: string; optionId: string }
-  | { type: "deny"; requestId: string }
-  | { type: "unknown"; name: string; raw: string }
-  | { type: "selection.cancel" }
-  | { type: "message"; text: string };
-
-export interface SelectionPrompt {
-  id: string;
-  token?: string;
-  title: string;
-  currentId?: string;
-  cancelLabel?: string;
-  showCancel?: boolean;
-  action:
-    | "workspace.set"
-    | "model.provider.set"
-    | "model.set"
-    | "mode.set"
-    | "thoughtLevel.set"
-    | "task.set"
-    | "reply.set"
-    | "permission.respond"
-    | "elicitation.respond";
-  options: Array<{
-    id: string;
-    label: string;
-    description?: string;
-  }>;
-}
-
-export interface BotInboundMessage {
-  botId: string;
-  actor: BotActor;
-  text: string;
-  attachments?: BotInboundAttachment[];
-  elicitationResponse?: BotStructuredElicitationResponse;
-  receivedAt?: number;
-}
-
-export interface BotOutboundMessage {
-  botId: string;
-  provider: BotProvider;
-  providerUserId: string;
-  text: string;
-  locale?: Locale;
-  selection?: SelectionPrompt;
-  elicitation?: BotOutboundElicitationRequest;
-  providerContextToken?: string;
-}
-
-export interface BotTaskSummary {
-  taskId: string;
-  title: string;
-  status: ZCodeTaskRuntimeStatus | "persisted-completed" | "persisted-error" | "unknown";
-  workspacePath: string;
-  workspaceIdentity?: string;
-  provider?: ZCodeProvider;
-  model?: string;
-}
-
-export const BOT_TASK_BROADCAST_CHANNEL = "bots:task";
-export const BOT_TASK_STREAM_BROADCAST_CHANNEL = "bots:task-stream";
-
-export type BotTaskBroadcastEvent =
-  | "created"
-  | "prompt_sent"
-  | "resumed"
-  | "streaming"
-  | "permission_request"
-  | "permission_resolved"
-  | "elicitation_request"
-  | "elicitation_resolved"
-  | "updated"
-  | "completed"
-  | "error";
-
-export interface BotTaskBroadcastPayload {
-  workspacePath: string;
-  workspaceIdentity?: string;
-  taskId: string;
-  event: BotTaskBroadcastEvent;
-  updatedAt: number;
-  task?: ZCodeTaskMeta;
-  provider?: ZCodeProvider;
-  configOptions?: ZCodeConfigOption[];
-  prompt?: {
-    content: string;
-    attachments?: ZCodePromptAttachment[];
-    messageId: string;
-    sentAt: number;
-  };
-  permissionRequest?: ZCodePermissionRequest;
-  elicitationRequest?: ZCodeElicitationRequest;
-  requestId?: string;
-  error?: string;
-}
-
-export interface BotTaskStreamBroadcastPayload {
-  workspacePath: string;
-  workspaceIdentity?: string;
-  taskId: string;
-  event: ZCodeStreamEvent;
-  updatedAt: number;
-}
-
-export interface BotServiceStatus {
-  botsCount: number;
-  enabledBotsCount: number;
-  contextsCount: number;
-  botRuntime: BotRuntimeInfo[];
-}
-
-export interface BotProviderCallbackResult {
-  ok: boolean;
-  replies: BotOutboundMessage[];
-  responseBody?: unknown;
-  status?: number;
-}
-
-export const botAllowedCommandsSchema = z
-  .object({
-    status: z.boolean(),
-    new: z.boolean(),
-    workspace: z.boolean(),
-    model: z.boolean(),
-    mode: z.boolean().optional(),
-    thoughtLevel: z.boolean(),
-    sandboxMode: z.boolean().optional(),
-    approvalPolicy: z.boolean().optional(),
-    // 兼容旧 bot-config.json；/cli 命令已移除，新配置不会再写入这个字段。
-    cli: z.boolean().optional(),
-    reply: z.boolean(),
-  })
-  .strict();
-
-export const botCommandPolicySchema = botAllowedCommandsSchema;
-
-export const botCurrentOptionsSchema = z
-  .object({
-    modelSelection: modelSelectionSchema.optional(),
-    mode: z.string().min(1).optional(),
-    sandboxMode: z.string().min(1).optional(),
-    approvalPolicy: z.string().min(1).optional(),
-    // 兼容旧 bot-config.json；CLI provider 现在统一由 ZCode Protocol 侧配置决定。
-    cli: z.literal(ZCODE_AGENT_PROVIDER).optional(),
-  })
-  .strict();
-
-export const botDraftOptionsSchema = z
-  .object({
-    provider: z.literal(ZCODE_AGENT_PROVIDER),
-    modelSelection: modelSelectionSchema.optional(),
-    mode: z.string().min(1).optional(),
-  })
-  .strict();
-
-const botElicitationOptionSchema = z
-  .object({
-    value: z.string(),
-    label: z.string(),
-    description: z.string().optional(),
-  })
-  .strict();
-
-const botElicitationQuestionSchema = z
-  .object({
-    question: z.string(),
-    header: z.string(),
-    options: z.array(botElicitationOptionSchema),
-    multiSelect: z.boolean().optional(),
-  })
-  .strict();
-
-const botPendingElicitationSchema = z
-  .object({
-    taskId: z.string().min(1),
-    requestId: z.string().min(1),
-    runId: z.string().min(1),
-    origin: zcodeInteractionRequestOriginSchema.optional(),
-    actorKey: z.string().min(1).optional(),
-    currentQuestionIndex: z.number().int().min(0),
-    questions: z.array(botElicitationQuestionSchema),
-    answers: z.record(z.string(), z.array(z.string())),
-    renderContext: z
-      .object({
-        kind: z.literal("plan_approval"),
-        plan: z.string().min(1),
-      })
-      .strict()
-      .optional(),
-    expandedCustomAnswerQuestionIndexes: z.array(z.number().int().min(0)).optional(),
-    handledAt: z.number().optional(),
-  })
-  .strict();
-
-export const botConfigSchema = z
-  .object({
-    id: z.string().min(1),
-    name: z.string(),
-    provider: z.enum(botProviders),
-    enabled: z.boolean(),
-    credentialRef: z.string().min(1).optional(),
-    webhookSecretRef: z.string().min(1).optional(),
-    webhookUrl: z.string().url().optional(),
-    webhookAuthHeaderName: z.string().min(1).optional(),
-    feishuAppId: z.string().min(1).optional(),
-    providerUserId: z.string().min(1).optional(),
-    displayName: z.string().optional(),
-    allowedWorkspaces: z.array(z.string().min(1)),
-    allowedCommands: botAllowedCommandsSchema,
-    currentOptions: botCurrentOptionsSchema,
-    replyMode: z.enum([
-      "assistant_changes",
-      "assistant_toolcalls_changes",
-      "summary_changes",
-      "streaming_card",
-    ]),
-  })
-  .strict();
-
-export const botsConfigFileSchema = z
-  .object({
-    version: z.literal(3),
-    bots: z.array(botConfigSchema),
-  })
-  .strict();
-
-export const botsStateFileSchema = z
-  .object({
-    version: z.literal(3),
-    bots: z.record(
-      z.string(),
-      z.object({
-        botId: z.string().min(1),
-        workspacePath: z.string().min(1),
-        workspaceIdentity: z.string().min(1).optional(),
-        workspaceId: z.string().min(1).optional(),
-        mode: z.enum(["draft", "task"]),
-        activeTaskId: z.string().min(1).nullable(),
-        draftOptions: botDraftOptionsSchema.optional(),
-        pendingPermissionOptions: z
-          .array(
-            z.object({
-              requestId: z.string().min(1),
-              optionId: z.string().min(1),
-              command: z.enum(["approve", "deny"]),
-              label: z.string().min(1),
-              response: zcodePermissionResponseSchema,
-              handledAt: z.number().optional(),
-            }),
-          )
-          .optional(),
-        pendingElicitation: botPendingElicitationSchema.optional(),
-        telegramOffset: z.number().optional(),
-        weixinGetUpdatesBuf: z.string().optional(),
-        weixinActivatedAt: z.number().optional(),
-        updatedAt: z.number(),
-      }),
-    ),
-  })
-  .strict();
-
-export const DEFAULT_BOT_COMMANDS: BotAllowedCommands = {
-  status: true,
-  new: true,
-  workspace: true,
-  model: true,
-  mode: true,
-  thoughtLevel: true,
-  reply: true,
-};
-
-export const DEFAULT_BOT_REPLY_GRANULARITY: BotReplyGranularity = "assistant_changes";
-
-export function getSupportedBotReplyGranularities(
-  provider: BotProvider,
-): readonly BotReplyGranularity[] {
-  return isFeishuBotProvider(provider)
-    ? (["streaming_card"] as const)
-    : BOT_REPLY_GRANULARITIES.filter(
-        // Bugfix: streaming card 依赖 Feishu/Lark Card JSON 2.0，其他 channel 无法渲染或更新该消息形态。
-        (granularity) => granularity !== "streaming_card",
-      );
-}
-
-export function normalizeBotReplyGranularity(
-  provider: BotProvider,
-  replyMode: BotReplyGranularity | undefined,
-): BotReplyGranularity {
-  const supported = getSupportedBotReplyGranularities(provider);
-  const candidate = replyMode ?? DEFAULT_BOT_REPLY_GRANULARITY;
-  return supported.includes(candidate) ? candidate : supported[0]!;
-}
-
-export const BOT_ZCODE_PROVIDER_OPTIONS: Array<{
-  id: ZCodeProvider;
-  label: string;
-}> = [{ id: ZCODE_AGENT_PROVIDER, label: ZCODE_AGENT_PROVIDER_LABEL }];
-// 区段依赖的官方共享模块（channel-mention / conversationSelection 已随合并入库）
-import { channelContentPartsSchema } from "./channel-mention.js";
-import { conversationQuotesSchema } from "./conversationSelection.js";
-import { zcodeProtocolTraceSchema } from "./zcode-protocol/trace.js";
-
-
-// ---- 官方 3.15.1 增量：v4 input-intent 依赖的 bots schema 族（整版升级移植，连续区段 204-451 行）----
 
 export const botGroupDeliverySchema = z
   .object({
@@ -811,3 +449,482 @@ export const botGroupInputSourceSchema = z
       });
   });
 export type BotGroupInputSource = z.infer<typeof botGroupInputSourceSchema>;
+
+export interface BotsStateFile {
+  version: 3;
+  bots: Record<string, BotState>;
+}
+
+export interface BotRuntimeInfo {
+  /** 最近一次消息投递错误；独立于长连接状态，成功投递后清除。 */
+  deliveryError?: string;
+  /** 当前进程保留的失败单聊回复；显式重试可能重复此前已收到的内容。 */
+  deliveryRetryId?: string;
+  botId: string;
+  provider: BotProvider;
+  status: "disabled" | "idle" | "polling" | "connected" | "error";
+  messageId?: string;
+  message?: string;
+  lastUpdateAt?: number;
+  offset?: number;
+}
+
+export interface BotActor {
+  /** 本次可信输入是否明确提及机器人；用于话题回复提醒。 */
+  mentionedBot?: boolean;
+  provider: BotProvider;
+  botId: string;
+  providerUserId: string;
+  displayName?: string;
+  chatType: "private" | "group";
+  chatId?: string;
+  threadId?: string;
+  /** 仅服务根据已保存的结果关联设置；null 表示原群默认任务。 */
+  conversationThreadId?: string | null;
+  rootMessageId?: string;
+  topicTitle?: string;
+  topicUrl?: string;
+  providerMessageId?: string;
+  providerContextToken?: string;
+}
+
+export type BotInboundAttachmentKind = "image" | "audio" | "video" | "file";
+
+export interface BotInboundAttachment {
+  id: string;
+  kind: BotInboundAttachmentKind;
+  filename: string;
+  mimeType: string;
+  sizeBytes?: number;
+  providerFileId?: string;
+  downloadUrl?: string;
+  dataBase64?: string;
+  localPath?: string;
+  providerMetadata?: Record<string, string>;
+}
+
+export type BotCommand =
+  | { type: "group.history"; enabled?: boolean }
+  | { type: "queue.cancel"; commandId: string }
+  | { type: "group.enable" }
+  | { type: "group.disable" }
+  | { type: "bind"; code: string }
+  | { type: "help" }
+  | { type: "status" }
+  | { type: "new" }
+  | { type: "reconnect" }
+  | { type: "workspace.list" }
+  | { type: "workspace.set"; value: string }
+  | { type: "model.list" }
+  | { type: "model.provider.set"; value: string }
+  | { type: "model.set"; value: string }
+  | { type: "mode.list" }
+  | { type: "mode.set"; value: string }
+  | { type: "thoughtLevel.list" }
+  | { type: "thoughtLevel.set"; value: string }
+  | { type: "task.list" }
+  | { type: "task.set"; value: string }
+  | { type: "reply.list" }
+  | { type: "reply.set"; value: string }
+  | { type: "stop" }
+  | { type: "topic.leave" }
+  | { type: "permission.respond"; value: string }
+  | { type: "elicitation.respond"; value: string }
+  | { type: "elicitation.submit" }
+  | { type: "approve"; requestId: string; optionId: string }
+  | { type: "deny"; requestId: string }
+  | { type: "unknown"; name: string; raw: string }
+  | { type: "selection.cancel" }
+  | { type: "message"; text: string };
+
+export interface SelectionPrompt {
+  id: string;
+  token?: string;
+  title: string;
+  currentId?: string;
+  cancelLabel?: string;
+  showCancel?: boolean;
+  action:
+    | "queue.cancel"
+    | "workspace.set"
+    | "model.provider.set"
+    | "model.set"
+    | "mode.set"
+    | "thoughtLevel.set"
+    | "task.set"
+    | "reply.set"
+    | "permission.respond"
+    | "elicitation.respond";
+  options: Array<{
+    id: string;
+    label: string;
+    description?: string;
+  }>;
+}
+
+export interface BotInboundMessage {
+  /** 仅供命令/纯唤醒识别；原文 text 和 contentParts 保持完整。 */
+  commandText?: string;
+  /** Provider 核验的当前机器人身份，不从正文推断。 */
+  botOpenId?: string;
+  /** Provider 校验的发送者类型；机器人正文不具有控制命令权限。 */
+  senderType?: "user" | "app";
+  contentParts?: ChannelContentPart[];
+  /** 由 Provider 根据真实 mention 身份设置；不是正文解析结果。 */
+  mentionedBot?: boolean;
+  /** 原生根消息经 Provider 核验确为当前机器人发送。 */
+  topicRootIsCurrentBot?: boolean;
+  /** 可信 Provider 校验后的明确引用，不参与控制命令解析。 */
+  referencedMessage?: import("./conversationSelection.js").ConversationSelectionText & {
+    messageId: string;
+  };
+  groupCard?: BotGroupCard;
+  groupCardAction?: boolean;
+  botId: string;
+  actor: BotActor;
+  text: string;
+  attachments?: BotInboundAttachment[];
+  elicitationResponse?: BotStructuredElicitationResponse;
+  receivedAt?: number;
+}
+
+export interface BotOutboundMessage {
+  trace?: ZCodeProtocolTrace;
+  contentParts?: ChannelContentPart[];
+  groupCard?: BotGroupCard;
+  threadId?: string;
+  conversationThreadId?: string | null;
+  rootMessageId?: string;
+  botId: string;
+  provider: BotProvider;
+  providerUserId: string;
+  text: string;
+  locale?: Locale;
+  selection?: SelectionPrompt;
+  elicitation?: BotOutboundElicitationRequest;
+  providerContextToken?: string;
+  /** 无权限/过期回调只能提示操作者，不能覆盖群共享卡片。 */
+  callbackToastOnly?: boolean;
+  /** 管理员待办独立通知，不允许用拒绝提示覆盖共享卡片。 */
+  administratorAttention?: boolean;
+  replyToMessageId?: string;
+  /** 可信输入决定的提醒对象；只作展示，不授予群操作权限。 */
+  mentionedUserIds?: string[];
+  deliveryId?: string;
+  /** 任务回推需在实际发送前重新验证群当前关联。控制命令回复不携带。 */
+  groupTaskId?: string;
+  /** 可信任务事件中的输入命令，用于将投递状态定位到对应回复。 */
+  groupSourceCommandId?: string;
+}
+
+export interface BotTaskSummary {
+  taskId: string;
+  title: string;
+  status: ZCodeTaskRuntimeStatus | "persisted-completed" | "persisted-error" | "unknown";
+  workspacePath: string;
+  workspaceIdentity?: string;
+  provider?: ZCodeProvider;
+  model?: string;
+}
+
+export const BOT_TASK_BROADCAST_CHANNEL = "bots:task";
+export const BOT_TASK_STREAM_BROADCAST_CHANNEL = "bots:task-stream";
+
+export type BotTaskBroadcastEvent =
+  | "created"
+  | "prompt_sent"
+  | "resumed"
+  | "streaming"
+  | "permission_request"
+  | "permission_resolved"
+  | "elicitation_request"
+  | "elicitation_resolved"
+  | "updated"
+  | "completed"
+  | "error";
+
+export interface BotTaskBroadcastPayload {
+  workspacePath: string;
+  workspaceIdentity?: string;
+  taskId: string;
+  event: BotTaskBroadcastEvent;
+  updatedAt: number;
+  task?: ZCodeTaskMeta;
+  provider?: ZCodeProvider;
+  configOptions?: ZCodeConfigOption[];
+  prompt?: {
+    content: string;
+    attachments?: ZCodePromptAttachment[];
+    messageId: string;
+    sentAt: number;
+  };
+  permissionRequest?: ZCodePermissionRequest;
+  elicitationRequest?: ZCodeElicitationRequest;
+  requestId?: string;
+  error?: string;
+}
+
+export interface BotTaskStreamBroadcastPayload {
+  workspacePath: string;
+  workspaceIdentity?: string;
+  taskId: string;
+  event: ZCodeStreamEvent;
+  updatedAt: number;
+}
+
+export interface BotServiceStatus {
+  botsCount: number;
+  enabledBotsCount: number;
+  contextsCount: number;
+  botRuntime: BotRuntimeInfo[];
+}
+
+export interface BotProviderCallbackResult {
+  ok: boolean;
+  replies: BotOutboundMessage[];
+  responseBody?: unknown;
+  status?: number;
+}
+
+export const botAllowedCommandsSchema = z
+  .object({
+    status: z.boolean(),
+    new: z.boolean(),
+    workspace: z.boolean(),
+    model: z.boolean(),
+    mode: z.boolean().optional(),
+    thoughtLevel: z.boolean(),
+    sandboxMode: z.boolean().optional(),
+    approvalPolicy: z.boolean().optional(),
+    // 兼容旧 bot-config.json；/cli 命令已移除，新配置不会再写入这个字段。
+    cli: z.boolean().optional(),
+    reply: z.boolean(),
+  })
+  .strict();
+
+export const botCommandPolicySchema = botAllowedCommandsSchema;
+
+// 修复原因：第三方 CLI provider 已移除，ZCodeProvider 只剩 glm，但旧 bot 配置与状态文件里可能仍存有
+// 已移除 provider 的历史值。改成严格 literal 会让整份文件 parse 失败、Bot 全部不可用；
+// 因此解析时继续接受这些历史值，并统一归一到当前唯一的 agent provider。
+const legacyBotAgentProviderSchema = z
+  .enum(["codex", "claude", "opencode", "gemini", "glm"])
+  .transform((): typeof ZCODE_AGENT_PROVIDER => ZCODE_AGENT_PROVIDER);
+
+export const botCurrentOptionsSchema = z
+  .object({
+    modelSelection: modelSelectionSchema.optional(),
+    mode: z.string().min(1).optional(),
+    sandboxMode: z.string().min(1).optional(),
+    approvalPolicy: z.string().min(1).optional(),
+    // 兼容旧 bot-config.json；CLI provider 现在统一由 ZCode Protocol 侧配置决定。
+    cli: legacyBotAgentProviderSchema.optional(),
+  })
+  .strict();
+
+export const botDraftOptionsSchema = z
+  .object({
+    provider: legacyBotAgentProviderSchema,
+    modelSelection: modelSelectionSchema.optional(),
+    mode: z.string().min(1).optional(),
+  })
+  .strict();
+
+const botElicitationOptionSchema = z
+  .object({
+    value: z.string(),
+    label: z.string(),
+    description: z.string().optional(),
+  })
+  .strict();
+
+const botElicitationQuestionSchema = z
+  .object({
+    question: z.string(),
+    header: z.string(),
+    options: z.array(botElicitationOptionSchema),
+    multiSelect: z.boolean().optional(),
+  })
+  .strict();
+
+const botPendingElicitationSchema = z
+  .object({
+    taskId: z.string().min(1),
+    requestId: z.string().min(1),
+    runId: z.string().min(1),
+    origin: zcodeInteractionRequestOriginSchema.optional(),
+    actorKey: z.string().min(1).optional(),
+    currentQuestionIndex: z.number().int().min(0),
+    questions: z.array(botElicitationQuestionSchema),
+    answers: z.record(z.string(), z.array(z.string())),
+    renderContext: z
+      .object({
+        kind: z.literal("plan_approval"),
+        plan: z.string().min(1),
+      })
+      .strict()
+      .optional(),
+    expandedCustomAnswerQuestionIndexes: z.array(z.number().int().min(0)).optional(),
+    handledAt: z.number().optional(),
+  })
+  .strict();
+
+export const botConfigSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string(),
+    provider: z.enum(botProviders),
+    enabled: z.boolean(),
+    credentialRef: z.string().min(1).optional(),
+    webhookSecretRef: z.string().min(1).optional(),
+    webhookUrl: z.string().url().optional(),
+    webhookAuthHeaderName: z.string().min(1).optional(),
+    feishuAppId: z.string().min(1).optional(),
+    providerUserId: z.string().min(1).optional(),
+    displayName: z.string().optional(),
+    allowedWorkspaces: z.array(z.string().min(1)),
+    allowedCommands: botAllowedCommandsSchema,
+    currentOptions: botCurrentOptionsSchema,
+    replyMode: z.enum([
+      "assistant_changes",
+      "assistant_toolcalls_changes",
+      "summary_changes",
+      "streaming_card",
+    ]),
+  })
+  .strict();
+
+export const botsConfigFileSchema = z
+  .object({
+    version: z.literal(3),
+    bots: z.array(botConfigSchema),
+  })
+  .strict();
+
+export const botsStateFileSchema = z
+  .object({
+    version: z.literal(3),
+    bots: z.record(
+      z.string(),
+      z.object({
+        botId: z.string().min(1),
+        group: z
+          .object({
+            chatId: z.string().trim().min(1),
+            chatMode: z.enum(["group", "topic"]).optional(),
+            threadId: z.string().trim().min(1).optional(),
+            rootMessageId: z.string().min(1).optional(),
+            topicTitle: z.string().optional(),
+            topicUrl: z.string().url().optional(),
+            historyEnabled: z.boolean().optional(),
+            topicActive: z.boolean().optional(),
+            preparation: z.array(botTopicPreparationSchema).optional(),
+            topicAliases: z
+              .record(
+                z.string(),
+                z.object({ taskId: z.string().min(1), rootMessageId: z.string().min(1) }).strict(),
+              )
+              .optional(),
+            name: z.string(),
+            ownerId: z.string().min(1),
+            enabled: z.boolean(),
+            taskIds: z.array(z.string().min(1)),
+            taskWorkspaces: z
+              .record(
+                z.string(),
+                z
+                  .object({
+                    workspacePath: z.string().min(1),
+                    workspaceIdentity: z.string().optional(),
+                  })
+                  .strict(),
+              )
+              .optional(),
+            currentOptions: botCurrentOptionsSchema,
+            initiatorId: z.string().optional(),
+            authorizationId: z.string().optional(),
+            deliveries: z.record(z.string(), botGroupDeliverySchema).optional(),
+            autoReplyGuard: botAutoReplyGuardSchema.optional(),
+            backgroundHistory: botBackgroundHistorySchema.optional(),
+            inputs: z
+              .record(
+                z.string(),
+                z
+                  .object({
+                    taskId: z.string().min(1),
+                    source: botGroupInputSourceSchema,
+                    admission: z.enum(["pending", "accepted", "rejected"]).optional(),
+                    progress: botGroupInputProgressSchema.optional(),
+                  })
+                  .strict(),
+              )
+              .optional(),
+          })
+          .strict()
+          .optional(),
+        workspacePath: z.string().min(1),
+        workspaceIdentity: z.string().min(1).optional(),
+        workspaceId: z.string().min(1).optional(),
+        mode: z.enum(["draft", "task"]),
+        activeTaskId: z.string().min(1).nullable(),
+        draftOptions: botDraftOptionsSchema.optional(),
+        pendingPermissionOptions: z
+          .array(
+            z.object({
+              requestId: z.string().min(1),
+              optionId: z.string().min(1),
+              command: z.enum(["approve", "deny"]),
+              label: z.string().min(1),
+              response: zcodePermissionResponseSchema,
+              handledAt: z.number().optional(),
+            }),
+          )
+          .optional(),
+        pendingElicitation: botPendingElicitationSchema.optional(),
+        telegramOffset: z.number().optional(),
+        weixinGetUpdatesBuf: z.string().optional(),
+        weixinActivatedAt: z.number().optional(),
+        privateBindingId: z.string().min(1).optional(),
+        privateRecipientId: z.string().min(1).optional(),
+        updatedAt: z.number(),
+      }),
+    ),
+  })
+  .strict();
+
+export const DEFAULT_BOT_COMMANDS: BotAllowedCommands = {
+  status: true,
+  new: true,
+  workspace: true,
+  model: true,
+  mode: true,
+  thoughtLevel: true,
+  reply: true,
+};
+
+export const DEFAULT_BOT_REPLY_GRANULARITY: BotReplyGranularity = "assistant_changes";
+
+export function getSupportedBotReplyGranularities(
+  provider: BotProvider,
+): readonly BotReplyGranularity[] {
+  return isFeishuBotProvider(provider)
+    ? (["streaming_card"] as const)
+    : BOT_REPLY_GRANULARITIES.filter(
+        // Bugfix: streaming card 依赖 Feishu/Lark Card JSON 2.0，其他 channel 无法渲染或更新该消息形态。
+        (granularity) => granularity !== "streaming_card",
+      );
+}
+
+export function normalizeBotReplyGranularity(
+  provider: BotProvider,
+  replyMode: BotReplyGranularity | undefined,
+): BotReplyGranularity {
+  const supported = getSupportedBotReplyGranularities(provider);
+  const candidate = replyMode ?? DEFAULT_BOT_REPLY_GRANULARITY;
+  return supported.includes(candidate) ? candidate : supported[0]!;
+}
+
+export const BOT_ZCODE_PROVIDER_OPTIONS: Array<{
+  id: ZCodeProvider;
+  label: string;
+}> = [{ id: ZCODE_AGENT_PROVIDER, label: ZCODE_AGENT_PROVIDER_LABEL }];

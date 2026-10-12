@@ -46,3 +46,6 @@ export function isZCodeAgentProvider(
 ): provider is typeof ZCODE_AGENT_PROVIDER {
   return provider === ZCODE_AGENT_PROVIDER;
 }
+
+// ---- CE 线增量回植：validation.ts 依赖的 provider schema（官方 3.15.1 移除了该导出）----
+export const zcodeAgentProviderSchema = z.literal(ZCODE_AGENT_PROVIDER);

@@ -166,8 +166,6 @@ export const ServiceChannels = {
   OnboardingRecord: "onboarding-record",
   /** 工作区注册表（M1.3）：可见工作区集合的唯一真相源，只读面 */
   WorkspaceRegistry: "workspace-registry",
-  /** Bots 远程聊天控制服务（IM 机器人渠道） */
-  Bots: "bots",
 } as const;
 
 export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceChannels];

@@ -48,3 +48,11 @@ export function boundedPhaseName(name: string | undefined): string | undefined {
 export function nonEmptyString(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
 }
+
+// ---- 官方 3.15.1 增量（整版升级移植）----
+export function boundedSessionId(value: unknown): string | undefined {
+  const text = nonEmptyString(value);
+  return text !== undefined && text.length <= WORKFLOW_RUNS_LIMITS.maxSessionIdLength
+    ? text
+    : undefined;
+}

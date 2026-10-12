@@ -271,6 +271,12 @@ export * from "./settings-sync.js";
 export * from "./uuid.js";
 export * from "./usage-stats.js";
 export * from "./coding-plan-subscription.js";
+// ManualClaim* 由 manual-claim-plan.ts 权威导出；此处显式排除避免 export * 歧义（TS2308）。
+export type {
+  ManualClaimPlanPreview,
+  ManualClaimPlanClaimRequest,
+  ManualClaimPlanEntitlement,
+} from "./manual-claim-plan.js";
 // 手动领取（周末/体验套餐）claim 平面协议类型：与购买链路分离，单独 barrel 导出。
 export * from "./manual-claim-plan.js";
 export * from "./forceUpdate.js";

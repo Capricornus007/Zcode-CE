@@ -556,3 +556,258 @@ export const BOT_ZCODE_PROVIDER_OPTIONS: Array<{
   id: ZCodeProvider;
   label: string;
 }> = [{ id: ZCODE_AGENT_PROVIDER, label: ZCODE_AGENT_PROVIDER_LABEL }];
+// 区段依赖的官方共享模块（channel-mention / conversationSelection 已随合并入库）
+import { channelContentPartsSchema } from "./channel-mention.js";
+import { conversationQuotesSchema } from "./conversationSelection.js";
+import { zcodeProtocolTraceSchema } from "./zcode-protocol/trace.js";
+
+
+// ---- 官方 3.15.1 增量：v4 input-intent 依赖的 bots schema 族（整版升级移植，连续区段 204-451 行）----
+
+export const botGroupDeliverySchema = z
+  .object({
+    /** 名字解析前的请求指纹；重复调用只读原回执，不因目录变化改发给其他人。 */
+    channelReplyRequestHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/u)
+      .optional(),
+    appId: z.string().optional(),
+    trace: zcodeProtocolTraceSchema.optional(),
+    authorizationId: z.string().optional(),
+    id: z.string().min(1),
+    taskId: z.string().min(1),
+    sourceCommandId: z.string().min(1).optional(),
+    text: z.string(),
+    replyToMessageId: z.string().optional(),
+    mentionedUserIds: z.array(z.string().min(1)).max(200).optional(),
+    contentParts: channelContentPartsSchema.optional(),
+    providerMessageId: z.string().optional(),
+    threadId: z.string().min(1).optional(),
+    rootMessageId: z.string().optional(),
+    status: z.enum(["pending", "sent", "failed", "unknown", "invalidated"]),
+    lastError: z.string().optional(),
+    updatedAt: z.number(),
+  })
+  .strict();
+export type BotGroupDelivery = z.infer<typeof botGroupDeliverySchema>;
+
+export const botGroupCardSchema = z
+  .object({
+    chatId: z.string().min(1),
+    threadId: z.string().min(1).optional(),
+    conversationThreadId: z.string().min(1).nullable().optional(),
+    taskId: z.string().nullable(),
+    authorizationId: z.string().min(1),
+  })
+  .strict();
+export type BotGroupCard = z.infer<typeof botGroupCardSchema>;
+
+export const botTopicMessageSchema = z
+  .object({
+    id: z.string().min(1),
+    chatId: z.string().min(1),
+    threadId: z.string().min(1),
+    senderId: z.string(),
+    senderName: z.string().optional(),
+    parentId: z.string().optional(),
+    attachments: z.array(z.object({ name: z.string(), kind: z.string() }).strict()).optional(),
+    senderType: z.enum(["user", "app"]),
+    text: z.string(),
+    createdAt: z.number(),
+    kind: z.string(),
+    controlCard: z.boolean().optional(),
+    deleted: z.boolean().optional(),
+  })
+  .strict();
+export type BotTopicMessage = z.infer<typeof botTopicMessageSchema>;
+
+export interface BotTopicHistoryRequest {
+  chatId: string;
+  threadId: string;
+  rootMessageId: string;
+  messageId: string;
+  checkpoint?: string;
+}
+
+export const botTopicContextSchema = z
+  .object({
+    messages: z.array(botTopicMessageSchema).max(201),
+    checkpoint: z.string().min(1),
+    hasGap: z.boolean(),
+  })
+  .strict();
+export type BotTopicHistoryBatch = z.infer<typeof botTopicContextSchema>;
+
+export const botIdentitySchema = z
+  .object({ name: z.string().min(1), openId: z.string().min(1).optional() })
+  .strict();
+export const botBackgroundHistorySchema = z
+  .object({ revision: z.string().min(1), checkpoint: z.string().min(1).optional() })
+  .strict();
+
+export const botAutoReplyGuardSchema = z
+  .object({
+    consecutive: z.number().int().min(0).max(5),
+    messageIds: z.array(z.string().min(1)),
+  })
+  .strict();
+
+export interface BotGroupSession {
+  preparation?: BotTopicPreparation[];
+  chatId: string;
+  chatMode?: "group" | "topic";
+  threadId?: string;
+  rootMessageId?: string;
+  topicTitle?: string;
+  topicUrl?: string;
+  /** 仅群默认记录拥有此配置；话题按群授权检查读取。 */
+  historyEnabled?: boolean;
+  /** 仅成功接收首次输入后接入；leave 后保留任务但停止普通消息触发。 */
+  topicActive?: boolean;
+  topicAliases?: Record<string, { taskId: string; rootMessageId: string }>;
+  name: string;
+  ownerId: string;
+  enabled: boolean;
+  taskIds: string[];
+  taskWorkspaces?: Record<string, { workspacePath: string; workspaceIdentity?: string }>;
+  currentOptions: BotCurrentOptions;
+  initiatorId?: string;
+  authorizationId?: string;
+  deliveries?: Record<string, BotGroupDelivery>;
+  autoReplyGuard?: z.infer<typeof botAutoReplyGuardSchema>;
+  backgroundHistory?: z.infer<typeof botBackgroundHistorySchema>;
+  inputs?: Record<
+    string,
+    {
+      taskId: string;
+      source: BotGroupInputSource;
+      admission?: "pending" | "accepted" | "rejected";
+      progress?: BotGroupInputProgress;
+    }
+  >;
+}
+
+export const botGroupInputStatusSchema = z.enum([
+  "waiting",
+  "working",
+  "done",
+  "failed",
+  "stopped",
+  "cancelled",
+  "discarded",
+]);
+export type BotGroupInputStatus = z.infer<typeof botGroupInputStatusSchema>;
+export const botTopicPreparationSchema = z
+  .object({
+    contentParts: channelContentPartsSchema.optional(),
+    messageId: z.string().min(1),
+    senderName: z.string(),
+    text: z.string(),
+    status: z.enum(["preparing", "waitingStop", "failed"]),
+    error: z.string().optional(),
+  })
+  .strict();
+export type BotTopicPreparation = z.infer<typeof botTopicPreparationSchema>;
+export const botGroupInputProgressSchema = z
+  .object({
+    status: botGroupInputStatusSchema,
+    interruptionReason: z.literal("newMessage").optional(),
+    cardMessageId: z.string().min(1).optional(),
+    cardStatus: botGroupInputStatusSchema.optional(),
+  })
+  .strict();
+export type BotGroupInputProgress = z.infer<typeof botGroupInputProgressSchema>;
+
+/** CLI 只接收轻量材料索引；原文留在 Host 归档及文本附件。 */
+export const botTopicHistorySourceSchema = z
+  .object({
+    checkpoint: z.string().min(1).max(256),
+    hasGap: z.boolean(),
+    messageCount: z.number().int().min(0).max(201),
+    resourceMessages: z
+      .array(
+        z
+          .object({
+            messageId: z.string().min(1).max(256),
+            count: z.number().int().min(1).max(1000),
+          })
+          .strict(),
+      )
+      .max(201),
+  })
+  .strict();
+
+export const botTopicInputMessageSchema = z
+  .object({
+    contentParts: channelContentPartsSchema.optional(),
+    messageId: z.string().min(1),
+    senderId: z.string().min(1),
+    senderName: z.string(),
+    mentionedBot: z.boolean().optional(),
+    text: z.string(),
+    conversationQuotes: conversationQuotesSchema.optional(),
+    attachmentIndexes: z.array(z.number().int().nonnegative()),
+  })
+  .strict();
+
+/** 可信 Host 注入的输入来源；身份展示不能反向授予执行权限。 */
+export const botGroupInputSourceSchema = z
+  .object({
+    botIdentity: botIdentitySchema.optional(),
+    appId: z.string().min(1).optional(),
+    contentParts: channelContentPartsSchema.optional(),
+    authorizationId: z.string().min(1).optional(),
+    botId: z.string().min(1),
+    provider: z.enum(["feishu", "lark"]),
+    chatId: z.string().min(1),
+    threadId: z.string().min(1).optional(),
+    rootMessageId: z.string().optional(),
+    senderId: z.string().min(1),
+    senderName: z.string(),
+    mentionedBot: z.boolean().optional(),
+    messageId: z.string().min(1),
+    messages: z.array(botTopicInputMessageSchema).min(1).max(200).optional(),
+    topicContext: botTopicContextSchema.optional(),
+    topicHistory: botTopicHistorySourceSchema.optional(),
+  })
+  .strict()
+  .superRefine((source, ctx) => {
+    if (
+      source.messages &&
+      (!source.threadId ||
+        source.messages.at(-1)?.messageId !== source.messageId ||
+        new Set(source.messages.map((message) => message.messageId)).size !==
+          source.messages.length)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["messages"],
+        message: "Topic batch boundary mismatch",
+      });
+    }
+
+    if (
+      source.topicHistory &&
+      (!source.threadId || source.topicHistory.checkpoint !== source.messageId)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["topicHistory"],
+        message: "Topic history scope mismatch",
+      });
+    }
+    if (
+      source.topicContext &&
+      (!source.threadId ||
+        source.topicContext.checkpoint !== source.messageId ||
+        source.topicContext.messages.some(
+          (m) => m.chatId !== source.chatId || m.threadId !== source.threadId,
+        ))
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["topicContext"],
+        message: "Topic context scope mismatch",
+      });
+  });
+export type BotGroupInputSource = z.infer<typeof botGroupInputSourceSchema>;

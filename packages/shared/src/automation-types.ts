@@ -1,4 +1,5 @@
 import type { ZCodeTaskMode } from "./zcode-task-types-core.js";
+import type { ZCodeAutomationBotDeliveryTarget } from "./bots.js";
 import type { ModelSelection } from "./model-selection.js";
 import type { ZCodeAutomationBotDeliveryTarget } from "./bots.js";
 

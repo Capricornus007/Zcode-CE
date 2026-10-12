@@ -11,5 +11,9 @@
     "emitDeclarationOnly": true
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../rpc" }, { "path": "../services" }]
+  "references": [
+    { "path": "../shared" },
+    { "path": "../rpc" },
+    { "path": "../services" }
+  ]
 }

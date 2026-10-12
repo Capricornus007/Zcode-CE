@@ -108,7 +108,7 @@ export const builtinProviderConfigRuleSchema = providerConfigRuleSchema.extend({
       group: providerGroupDataSchema.exclude(["standard-personal"]),
     }),
 });
-const personalProviderConfigRuleSchema = providerConfigRuleSchema
+export const personalProviderConfigRuleSchema = providerConfigRuleSchema
   .extend({
     config: providerConfigDataSchema.omit({ builtinModelIds: true }).extend({
       group: providerGroupDataSchema.extract(["standard-personal"]).nullable().optional(),

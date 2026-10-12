@@ -58,6 +58,7 @@ export const TaskList = memo(function TaskList({
   onSetTaskPinned,
   onArchiveTask,
   onSetTaskUnread,
+  mobileActiveTaskKey,
   readOnlyReason,
   runtimeState,
   persistedSessionCount,
@@ -85,6 +86,7 @@ export const TaskList = memo(function TaskList({
   onSetTaskPinned: (taskId: string, pinned: boolean) => Promise<ZCodeTaskMeta | null>;
   onArchiveTask: (taskId: string) => Promise<ZCodeTaskMeta | null>;
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
+  mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
   /**
    * §3.2 诚实未启动态：本 workspace 的 runtime 状态。
@@ -391,7 +393,10 @@ export const TaskList = memo(function TaskList({
         task={task}
         isPinned={isPinned}
         isActive={isWorkspaceActive && task.taskId === activeTaskId}
-        isMobileActive={false}
+        isMobileActive={
+          mobileActiveTaskKey ===
+          `${buildTaskWorkspaceKey(workspacePath, workspaceIdentity)}:${task.taskId}`
+        }
         onSelectTask={handleSelectTaskItem}
         onArchiveTaskInline={handleArchiveTaskFromInline}
         onCancelArchiveConfirm={handleCancelArchiveConfirm}

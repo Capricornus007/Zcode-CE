@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 import type { Logger, LogContext } from "@zcode/contracts";
 import {
   BUNDLED_SKILL_REQUIRED_PATHS,
@@ -110,7 +111,7 @@ test("缺任一必需资产时整包拒收并 warn，不抛错", async () => {
 
 test("SEA 分支：按真实清单解包到 <cliStorageRoot>/bundled-skills/<hash>/，正文逐字节落盘", async () => {
   const { collectSeaBundledSkillAssets } = await import(
-    join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")
+    pathToFileURL(join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")).href
   );
   const staging = mkdtempSync(join(tmpdir(), "zcode-sea-bs-staging-"));
   const cliStorageRoot = mkdtempSync(join(tmpdir(), "zcode-sea-bs-storage-"));
@@ -170,7 +171,7 @@ test("SEA 分支：按真实清单解包到 <cliStorageRoot>/bundled-skills/<has
 
 test("SEA 解包幂等：同一清单二次解析复用已完整目录", async () => {
   const { collectSeaBundledSkillAssets } = await import(
-    join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")
+    pathToFileURL(join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")).href
   );
   const staging = mkdtempSync(join(tmpdir(), "zcode-sea-bs-idem-"));
   const cliStorageRoot = mkdtempSync(join(tmpdir(), "zcode-sea-bs-idem-store-"));
@@ -201,7 +202,7 @@ test("SEA 解包幂等：同一清单二次解析复用已完整目录", async (
 
 test("SEA 资产哈希不符时降级到旧包；无旧包则 warn 并返回空（不抛错）", async () => {
   const { collectSeaBundledSkillAssets } = await import(
-    join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")
+    pathToFileURL(join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")).href
   );
   const staging = mkdtempSync(join(tmpdir(), "zcode-sea-bs-tamper-"));
   const cliStorageRoot = mkdtempSync(join(tmpdir(), "zcode-sea-bs-tamper-store-"));
@@ -243,7 +244,7 @@ test("SEA 资产哈希不符时降级到旧包；无旧包则 warn 并返回空�
 
 test("SEA 态缺 cliStorageRoot 时显式 warn 降级，不走向未定义路径", async () => {
   const { collectSeaBundledSkillAssets } = await import(
-    join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")
+    pathToFileURL(join(cliPackageRoot, "scripts", "sea-bundled-skill-assets.mjs")).href
   );
   const staging = mkdtempSync(join(tmpdir(), "zcode-sea-bs-nostorage-"));
   try {

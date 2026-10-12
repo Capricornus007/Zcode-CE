@@ -111,7 +111,10 @@ test("localPath：目录内的符号链接指向外部时被拒绝", async () =>
     await writeFile(join(outsideDir, "secret.txt"), "secret");
     await mkdir(root, { recursive: true });
     const link = join(root, "escape-link");
-    await symlink(outsideDir, link);
+    // "junction" 在 POSIX 被忽略（仍为普通符号链接），在 Windows 免符号链接
+    // 特权（目录联接），realpath 解析行为一致——否则无管理员/开发者模式的
+    // Windows 本机一跑就是 EPERM，测的是环境不是护栏。
+    await symlink(outsideDir, link, "junction");
     await assert.rejects(
       () => resolveAllowedAttachmentLocalPath(join(link, "secret.txt")),
       (error: unknown) => {

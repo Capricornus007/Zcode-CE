@@ -26,7 +26,7 @@ export function cosineSimilarity(a: readonly number[], b: readonly number[]): nu
 }
 
 /**
- * 全量融合（v3 架构，2026-10-02 bench 实证）：对**全部**条目做
+ * 全量融合（v3 架构，2026-10-02 bench 实证）：对全部条目做
  * 余弦×cosineWeight + 归一化词法×(1-cosineWeight)，词法零重叠条目按词法 0 分参与。
  *
  * 为什么不是「词法短名单内重排」：命理语料 bench（bench/memory-recall-probe.mjs）

@@ -70,6 +70,12 @@ test("★接管幂等：running 时连续 start 两次，子进程计数仍为 1
 });
 
 test("start 写入状态文件（0600）与令牌文件（0600），且状态里不含令牌明文", async () => {
+  if (process.platform === "win32") {
+    // POSIX 专属语义（kill -9/SIGTERM 信号面、0600 权限位回读）在 Windows 上不可表达——
+    // 按平台分叉跳过（05748b7 同款先例），语义由 Linux CI 守。
+    return;
+  }
+
   await withHarness(async (harness) => {
     const port = await pickFreePort();
     const controller = createWebServiceController(harness.deps);
@@ -117,6 +123,12 @@ test("connectionInfo 返回带令牌的链接；status 不带", async () => {
 });
 
 test("★stale 判定：kill -9（异常退出）后判 stale/pid-dead，状态文件保留，可被重新开启", async () => {
+  if (process.platform === "win32") {
+    // POSIX 专属语义（kill -9/SIGTERM 信号面、0600 权限位回读）在 Windows 上不可表达——
+    // 按平台分叉跳过（05748b7 同款先例），语义由 Linux CI 守。
+    return;
+  }
+
   await withHarness(async (harness) => {
     const port = await pickFreePort();
     const controller = createWebServiceController(harness.deps);
@@ -152,6 +164,12 @@ test("★stale 判定：kill -9（异常退出）后判 stale/pid-dead，状态�
 });
 
 test("★stop：SIGTERM 收干净 → 端口释放 → 之后才删状态文件", async () => {
+  if (process.platform === "win32") {
+    // POSIX 专属语义（kill -9/SIGTERM 信号面、0600 权限位回读）在 Windows 上不可表达——
+    // 按平台分叉跳过（05748b7 同款先例），语义由 Linux CI 守。
+    return;
+  }
+
   await withHarness(async (harness) => {
     const port = await pickFreePort();
     const controller = createWebServiceController(harness.deps);
@@ -183,6 +201,12 @@ test("stop 在没有状态文件时是幂等的（返回当前探活结果，不
 });
 
 test("★stale 的区分度：'从未开启' 与 '陈旧条目' 对外可区分（task-83 的核心判据）", async () => {
+  if (process.platform === "win32") {
+    // POSIX 专属语义（kill -9/SIGTERM 信号面、0600 权限位回读）在 Windows 上不可表达——
+    // 按平台分叉跳过（05748b7 同款先例），语义由 Linux CI 守。
+    return;
+  }
+
   await withHarness(async (harness) => {
     const port = await pickFreePort();
     const controller = createWebServiceController(harness.deps);
@@ -223,6 +247,12 @@ test("★stale 的区分度：'从未开启' 与 '陈旧条目' 对外可区分�
 });
 
 test("★stale 判定的时序：'端口已释放' 不等于 'pid 已死'（CI 那条 flaky 的根因）", async () => {
+  if (process.platform === "win32") {
+    // POSIX 专属语义（kill -9/SIGTERM 信号面、0600 权限位回读）在 Windows 上不可表达——
+    // 按平台分叉跳过（05748b7 同款先例），语义由 Linux CI 守。
+    return;
+  }
+
   // 这条确定性地复现 CI run 36151161461 上那条 flaky，并证明修法的判据是对的。
   //
   // 根因：SIGKILL 之后内核分两步收尾 —— 先 exit_files 关掉监听 socket（端口立即释放），

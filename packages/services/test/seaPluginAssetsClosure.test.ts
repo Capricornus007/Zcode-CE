@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { createZcodeSourceEsbuildPlugin } from "./support/zcodeEsbuildSourceResolvePlugin.mjs";
@@ -54,8 +55,12 @@ function readBootstrapAuthorities() {
 }
 
 function writeProbe(probePath: string) {
-  const definitionsImport = JSON.stringify(bootstrapAppRoot + "/official-plugin-definitions.ts");
-  const bundledSkillsImport = JSON.stringify(bootstrapAppRoot + "/bundled-skills.ts");
+  const definitionsImport = JSON.stringify(
+    pathToFileURL(bootstrapAppRoot + "/official-plugin-definitions.ts").href,
+  );
+  const bundledSkillsImport = JSON.stringify(
+    pathToFileURL(bootstrapAppRoot + "/bundled-skills.ts").href,
+  );
   const source = [
     "import { OFFICIAL_PLUGIN_DEFINITIONS } from " + definitionsImport + ";",
     "import { BUNDLED_SKILL_REQUIRED_PATHS } from " + bundledSkillsImport + ";",
@@ -109,7 +114,7 @@ interface SeaOfficialPluginCollection {
 
 test("内置技能包 SEA 清单：必需资产齐、sha256 与真实字节一致、采集脚本与 bootstrap 常量同源", async () => {
   const { collectSeaBundledSkillAssets, bundledSkillPackRequiredPaths } = await import(
-    join(cliScriptsRoot, "sea-bundled-skill-assets.mjs")
+    pathToFileURL(join(cliScriptsRoot, "sea-bundled-skill-assets.mjs")).href
   );
   const { bundledSkillRequiredPaths } = readBootstrapAuthorities();
 
@@ -147,10 +152,10 @@ test("内置技能包 SEA 清单：必需资产齐、sha256 与真实字节一�
 
 test("官方插件 SEA 闭包：清单条目与权威定义逐项对齐（运行时 seed 门的判据）", async () => {
   const { collectSeaOfficialPluginAssets } = await import(
-    join(cliScriptsRoot, "sea-official-plugin-assets.mjs")
+    pathToFileURL(join(cliScriptsRoot, "sea-official-plugin-assets.mjs")).href
   );
   const { prepareSeaPluginNodePayloads } = await import(
-    join(cliScriptsRoot, "sea-plugin-node-payloads.mjs")
+    pathToFileURL(join(cliScriptsRoot, "sea-plugin-node-payloads.mjs")).href
   );
   const { definitions } = readBootstrapAuthorities();
 
@@ -160,7 +165,7 @@ test("官方插件 SEA 闭包：清单条目与权威定义逐项对齐（运行
   // build-sea 的真实流程同样先产出该产物再收集，这里与发布同一套 esbuild 选项。
   const browserUsePluginRoot = join(cliWorkspaceRoot, "packages", "browser-use-plugin");
   const { buildBrowserUsePluginBundles } = await import(
-    join(browserUsePluginRoot, "scripts", "build.mjs")
+    pathToFileURL(join(browserUsePluginRoot, "scripts", "build.mjs")).href
   );
   // CI 的 verify 作业不构建 apps/zcode-cli 的工作区包（zcodeSourceResolver.mjs
   // 的注释是其根因），esbuild 解析 @zcode/* 会落到 dist 子路径而失败。装上与
@@ -174,7 +179,9 @@ test("官方插件 SEA 闭包：清单条目与权威定义逐项对齐（运行
   // 一样是 esbuild 现场产物（真实流程由工作区构建产出）。用同一个构建入口+插件
   // 产出，cuaHelperBuildId 走 dev 默认空串（不触发 fail-closed 守卫）。
   const nodeReplHostRoot = join(cliWorkspaceRoot, "packages", "node-repl-host");
-  const { buildNodeReplHostBundle } = await import(join(nodeReplHostRoot, "scripts", "build.mjs"));
+  const { buildNodeReplHostBundle } = await import(
+    pathToFileURL(join(nodeReplHostRoot, "scripts", "build.mjs")).href,
+  );
   await buildNodeReplHostBundle({
     esbuildPlugins: [createZcodeSourceEsbuildPlugin()],
   });

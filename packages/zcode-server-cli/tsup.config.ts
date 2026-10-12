@@ -51,5 +51,9 @@ export default defineConfig({
     "@lydell/node-pty-darwin-x64",
     "@lydell/node-pty-linux-arm64",
     "@lydell/node-pty-linux-x64",
+    // Windows 平台包同理必须外置：上游清单只列了 darwin/linux（从未在 Windows
+    // 构建过），win32 包被内联后其 CJS require 落到 __require 兜底，
+    // distEntrypoints 的 doesNotMatch(/__require/) 断言即红。
+    "@lydell/node-pty-win32-x64",
   ],
 });

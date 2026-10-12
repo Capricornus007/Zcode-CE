@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
  * Provider 请求缓存稳定性检测（cache-stability linter）。
  *
  * 语义：agent 循环的正常增长是「尾部追加」——相邻两次 provider 请求里，
- * 旧请求的全部内容应原样出现在新请求前缀里。任何发生在旧请求**尾部之前**的
+ * 旧请求的全部内容应原样出现在新请求前缀里。任何发生在旧请求尾部之前的
  * 变异（system 变了 / 工具表变了 / 第 i 条历史消息变了）都会让上一次写入的
  * prompt cache 前缀作废，等于白写一次缓存。
  *

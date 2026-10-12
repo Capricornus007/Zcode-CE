@@ -27,7 +27,7 @@ import type { MemoryManifestEntry } from "../../memory/recall/types.js";
  * 记忆 + 精确路径」，而不是全量索引；需要细节时用 Read 精确重取。
  *
  * v3 全量融合（2026-10-02 命理语料 bench 实证，bench/memory-recall-probe.mjs）：
- * embedding 端点已配置时对**全部**条目做 余弦×0.6+归一化词法×0.4——口语化提问
+ * embedding 端点已配置时对全部条目做 余弦×0.6+归一化词法×0.4——口语化提问
  * 与记忆术语零词元重叠时（「我老婆的事」vs「用户已婚……夫妻宫口径」，B 档
  * hit@5 词法 0%），短名单重排永远救不回；72 条真实语料实测全量融合 A/B 双档
  * hit@5 100%。词法档（无 embedding 配置）行为不变。向量按条目缓存

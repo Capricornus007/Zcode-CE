@@ -1,0 +1,2 @@
+{"tool":"pdftoppm","argv":[],"status":1,"error":"fake pdftoppm only implements -png or -jpeg output"}
+{"tool":"soffice","argv":[],"status":1,"error":"fake soffice only implements --convert-to pdf and --version"}

@@ -5,6 +5,7 @@ import { cp, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
+import { pathToFileURL } from "node:url";
 
 /**
  * 分发入口 `zcode --web` 的组合校验护栏。
@@ -412,7 +413,7 @@ test("分发 runner：**仅登记 TRUSTED_ORIGINS 不得拒绝**（服务端对�
  */
 test("交叉校验：runner 的信号解析与服务端解析器对同一批语料结论一致", async () => {
   const runnerExposure = await import(
-    join(repoRoot, "scripts/zcode-distribution/runner-exposure.mjs")
+    pathToFileURL(join(repoRoot, "scripts/zcode-distribution/runner-exposure.mjs")).href,
   );
   const { parseTrustedHosts } = await import("../src/hostAllowlist.js");
   const { parseTrustedProxies } = await import("../src/authThrottle.js");

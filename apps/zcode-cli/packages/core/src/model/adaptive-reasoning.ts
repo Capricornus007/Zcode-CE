@@ -6,7 +6,7 @@
  * 并直接拖慢到答案的墙钟时间（思考 token 也走解码）。首个模型步（新用户输入后）
  * 与综合类步保持用户配置档位不变。
  *
- * 契约通道：`ModelRequest.options.reasoningLevel` 支持**逐请求**覆盖（adapters 的
+ * 契约通道：`ModelRequest.options.reasoningLevel` 支持逐请求覆盖（adapters 的
  * model-option-map 在每次请求体上应用 reasoningLevel map），因此本路由不需要改
  * 会话级模型绑定，只在本步请求上降档。
  *

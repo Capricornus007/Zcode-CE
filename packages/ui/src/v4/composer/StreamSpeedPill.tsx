@@ -13,7 +13,7 @@ import type { SessionUsageState } from "@zcode/shared/zcode-protocol-v4";
  * outputTokens 差分拿该步精确 token 数 → 速度 = stepTokens / 流式毫秒，滑窗平均。
  * 字符→token 系数用已完成步自校准（EWMA），流式中以该系数给实时估算。
  *
- * v3 教训（实测经常飙到上万）：v2 度量的是**到达时间**，不是解码时间。GLM 网关
+ * v3 教训（实测经常飙到上万）：v2 度量的是到达时间，不是解码时间。GLM 网关
  * 重连后（Reconnecting N/10 高发）重放/缓冲一次性冲刷——数千字符在数百毫秒内
  * 到达，隐含速度破万。解码是自回归串行的，真实解码 30-120 tok/s；单流隐含速度
  * 超过解码合理上限的必是到达压缩伪象。v3 双向防护：

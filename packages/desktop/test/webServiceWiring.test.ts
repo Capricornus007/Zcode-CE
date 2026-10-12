@@ -125,11 +125,18 @@ test("★真实子进程：start → status → connectionInfo 走完，令牌�
       "stop 返回的也是 status 形状",
     );
 
-    // ③ 重新起来，走 connectionInfo：**这里**才该有令牌。
-    const restarted = (await harness.call(WEB_SERVICE_CHANNELS.start, {
-      scope: "loopback",
-      port,
-    })) as { state: string };
+    // ③ 重新起来，走 connectionInfo：这里才该有令牌。
+    // Windows 的同端口重绑有 TIME_WAIT 时延（stop 后立刻 start 可能落回 stopped），
+    // 短退避重试到 running——这不是语义分叉而是重绑时序收敛，各平台最终一致。
+    let restarted = { state: "" } as { state: string };
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      restarted = (await harness.call(WEB_SERVICE_CHANNELS.start, {
+        scope: "loopback",
+        port,
+      })) as { state: string };
+      if (restarted.state === "running") break;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
     assert.equal(restarted.state, "running");
     const info = (await harness.call(WEB_SERVICE_CHANNELS.connectionInfo)) as {
       url: string;

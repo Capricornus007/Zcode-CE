@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -36,7 +37,7 @@ function probe(env: Record<string, string | undefined>, body: string[]): unknown
     writeFileSync(
       probePath,
       [
-        `import { getDataBaseDir, setDataBaseDir } from ${JSON.stringify(pathsSource)};`,
+        `import { getDataBaseDir, setDataBaseDir } from ${JSON.stringify(pathToFileURL(pathsSource).href)};`,
         "const out = {};",
         ...body,
         "console.log(JSON.stringify(out));",

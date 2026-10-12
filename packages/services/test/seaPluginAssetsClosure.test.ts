@@ -180,7 +180,7 @@ test("官方插件 SEA 闭包：清单条目与权威定义逐项对齐（运行
   // 产出，cuaHelperBuildId 走 dev 默认空串（不触发 fail-closed 守卫）。
   const nodeReplHostRoot = join(cliWorkspaceRoot, "packages", "node-repl-host");
   const { buildNodeReplHostBundle } = await import(
-    pathToFileURL(join(nodeReplHostRoot, "scripts", "build.mjs")).href,
+    pathToFileURL(join(nodeReplHostRoot, "scripts", "build.mjs")).href
   );
   await buildNodeReplHostBundle({
     esbuildPlugins: [createZcodeSourceEsbuildPlugin()],

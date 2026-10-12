@@ -350,3 +350,5 @@ export {
   type ProjectAccessTokenInput,
   type ProjectAccessTokenMaterial,
 } from "./project-access-token-client.js";
+export { ZCODE_TELEMETRY_REPORT_ENDPOINT } from "./env.js";
+export { sanitizeTelemetryEventDetail, type TelemetryEventPayload } from "./telemetry.js";

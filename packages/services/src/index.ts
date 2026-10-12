@@ -348,13 +348,7 @@ export { IHighspeedCardService } from "./highspeed/highspeedCard.js";
 export { IOutputStyleService } from "./output-style/outputStyle.js";
 
 // ---- 官方 3.15.1 增量：plugin-ui-bridge 服务导出块（整版升级移植）----
-import {
-FeedbackTicketModule,
-  FeedbackTicketSeverity,
-  FeedbackTicketStatus,
-  FeedbackTicketSummary,
-  FeedbackTicketType,
-} from "@zcode/shared";
+
 
 // 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
 export {

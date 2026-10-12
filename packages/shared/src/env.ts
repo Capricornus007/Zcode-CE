@@ -5,6 +5,9 @@ export type ZCodeProductFlavor = "production" | "preview";
 // 非构建环境（如 e2e 测试的 mocha）下 define 不存在，用 typeof 检查 + fallback 避免 ReferenceError
 declare const __ZCODE_ENV__: string;
 declare const __ZCODE_PRODUCT_FLAVOR__: string;
+declare const __ZCODE_ARMS_RUM_ENDPOINT__: string;
+declare const __ZCODE_TELEMETRY_REPORT_ENDPOINT__: string;
+declare const __ZCODE_AUTO_UPDATE_ENABLED__: boolean;
 
 export function normalizeZCodeEnv(value: string | undefined): ZCodeEnv {
   return value?.trim().toLowerCase() === "production" ? "production" : "test";
@@ -41,6 +44,19 @@ export const ZCODE_BUILD_COMMIT_ID_ENV = "ZCODE_BUILD_COMMIT_ID" as const;
 // 启用调试模式，值为 inspect-brk 的端口号，如 ZCODE_DEBUG=9230
 export const RUNTIME_ZCODE_DEBUG =
   typeof process !== "undefined" ? process.env.ZCODE_DEBUG : undefined;
+
+// ── 构建期可选能力（3.15.1 升级回植：telemetryCore / remoteUsageTelemetry 依赖）──
+/** ARMS RUM 上报地址；为空时 SDK 以 enable=false 初始化，不产生上报。 */
+export const ZCODE_ARMS_RUM_ENDPOINT: string =
+  typeof __ZCODE_ARMS_RUM_ENDPOINT__ !== "undefined" ? __ZCODE_ARMS_RUM_ENDPOINT__ : "";
+/** 事件上报（数仓）地址；为空时不上报。 */
+export const ZCODE_TELEMETRY_REPORT_ENDPOINT: string =
+  typeof __ZCODE_TELEMETRY_REPORT_ENDPOINT__ !== "undefined"
+    ? __ZCODE_TELEMETRY_REPORT_ENDPOINT__
+    : "";
+/** 桌面自动更新是否启用。 */
+export const ZCODE_AUTO_UPDATE_ENABLED: boolean =
+  typeof __ZCODE_AUTO_UPDATE_ENABLED__ !== "undefined" ? __ZCODE_AUTO_UPDATE_ENABLED__ : false;
 
 // 遥测已全部移除（P1）：ZCODE_TELEMETRY_ENABLED / ZCODE_TELEMETRY_REPORT_ENDPOINT /
 // ZCODE_ARMS_RUM_ENDPOINT / mapZCodeEnvToArmsRumEnv / ArmsRumEnv 均已删除。

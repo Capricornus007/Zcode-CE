@@ -10,7 +10,9 @@ import {
 
 export interface AccountRequestAuthMaterial {
   apiKey?: string;
+  apiKeyId?: string;
   headers?: Record<string, string>;
+  accountScope?: string;
 }
 
 export interface AccountRequestAuthInput {

@@ -19,9 +19,9 @@ import { PILL_STAGGER_MS } from "./WorkflowTimeline.js";
 export { COMPLETION_INDEX_MAX } from "./WorkflowCompletionArtifacts.js";
 
 /**
- * 完成卡：主代理消化一条 **completed** 工作流通知的那一轮，
- * 轮尾落下这张卡。顺序即论点——表头 → 这次 run **交付了什么**（交付物行）→ **还做了什么**（产物索引，
- * 一件一行）→ **花了多少**（四格数字）。三段之间各隔一条细线，像一张收据。产物区在 `WorkflowCompletionArtifacts`。
+ * 完成卡：主代理消化一条 completed 工作流通知的那一轮，
+ * 轮尾落下这张卡。顺序即论点——表头 → 这次 run 交付了什么（交付物行）→ 还做了什么（产物索引，
+ * 一件一行）→ 花了多少（四格数字）。三段之间各隔一条细线，像一张收据。产物区在 `WorkflowCompletionArtifacts`。
  *
  * 纯展示：产物清单、四个数字、每件产物的预览都由宿主交进来（预览要读字节，那是宿主的活）。
  * 没有 chevron——没有可展开的东西；整卡不是开关。
@@ -76,7 +76,7 @@ function motionAllowed(): boolean {
 }
 
 /**
- * 数字从 0 翻到目标值。**首帧就是目标值**（静态渲染、测试、reduced-motion 看到的都是终值），
+ * 数字从 0 翻到目标值。首帧就是目标值（静态渲染、测试、reduced-motion 看到的都是终值），
  * 挂载之后才回到 0 再翻上来——「页面在静止时是完整的」。
  */
 function useCountUp(target: number | undefined): number | undefined {

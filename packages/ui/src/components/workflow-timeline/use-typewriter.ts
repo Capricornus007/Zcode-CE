@@ -8,12 +8,12 @@ import { useEffect, useRef, useState } from "react";
  * 再揭示下一站——笔没到的站还不在轨道上，哪怕扫描器已经知道它。名字在写到一半时变长（未闭合的
  * `phase("ver` 又来了字）笔接着写；名字变短或前缀变了（不该发生，但流式下要稳）退到公共前缀。
  *
- * `names` 是扫描器当前的站名序列；undefined 表示不是草稿，钩子静默。计时只认**内容**变化
+ * `names` 是扫描器当前的站名序列；undefined 表示不是草稿，钩子静默。计时只认内容变化
  * （按内容键控），脚本每来一块都换一个数组也不会把正在走的笔打断。
  * `prefers-reduced-motion: reduce` 下整站立即写完（仍一站一站揭示，只是不逐字）。
  *
  * 修订（GUI 崩溃 React #185 的根因）：
- * 笔只在**有站可揭示**时揭示。「还没有任何站时立即揭示」不看站数的话，空草稿（脚本开头的 `meta`
+ * 笔只在有站可揭示时揭示。「还没有任何站时立即揭示」不看站数的话，空草稿（脚本开头的 `meta`
  * 还没写到第一个 `phase(`）会揭示一个不存在的站、下一轮被裁回 0、再揭示……在 effect 里无限 setState。
  * 这个空转本身只烧 CPU，但它让 React 手里永远有一笔待处理的更新；投影帧一旦积压成几十次连续的
  * 同步提交，嵌套更新计数就过 50，React 抛 #185，整块聊天区被错误边界接管。
@@ -68,7 +68,7 @@ function reconcile(
 }
 
 /**
- * 已揭示各站写出的字数。reduced-motion 下整站算写完，**在渲染时派生**而不是 effect 里再 setState 一轮：
+ * 已揭示各站写出的字数。reduced-motion 下整站算写完，在渲染时派生而不是 effect 里再 setState 一轮：
  * 站名每个 delta 都在变长，effect 里的那次 setState 恰好落在投影帧的同步提交里，每帧都给嵌套更新计数
  * 记一笔。
  */
@@ -108,7 +108,7 @@ export function useTypewriter(names: readonly string[] | undefined): TypewriterS
       }, PEN_MS);
       return () => clearTimeout(timer);
     }
-    // 当前站写完了（或还没有站）：**有下一站才揭示**——空草稿什么都不做。
+    // 当前站写完了（或还没有站）：有下一站才揭示——空草稿什么都不做。
     if (current.length <= pen.visible) return undefined;
     const reveal = () => setState({ shown: [...pen.shown, 0], visible: pen.visible + 1 });
     if (target === undefined) {

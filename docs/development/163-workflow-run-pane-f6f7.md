@@ -1,6 +1,6 @@
 # 163 · F6/F7 工作流面板 UI:运行前调参 / 运行中并发 / 保存复跑 / 子代理模型
 
-> 状态:**零交付回退,需专门波次**。协议层(task-1 的 workflow-run-settings-command + workflow-runs-concurrency)已就绪,但 UI 集成与 CE 渲染层深度交织:① CE HEAD 有意裁剪了 station-observation(表外条目观察),而 F6 的 hole/fills/holeParents 字段实现依赖上游版 timeline-model 的 holeTable/holeParentsOf 构建——采用上游版会恢复被裁功能,已回滚;② 采用上游版 workflowRunSpine 会破坏 CE 既有 WorkflowRunPhaseList(spineSections 导出消失,9 处连锁错误),已回滚保护;③ save 链需 IZCodeAgentService 的 findSavedWorkflowForRun/saveSavedWorkflowFromRun(wave 1 未覆盖);④ subagent-model-label 缺 workflowActorModelLabels。结论:F6/F7 UI 按 F8 服务波次同例处理或专门裁决 model 裁剪冲突。覆盖公告「工作流创建前调参、运行中改并发、保存复跑」与「为每个子代理单独指定模型」的 UI 侧。
+> 状态:**A-prime 已落地(工作流时间线整套上游件对齐)**。此前「CE 自研/9 处连锁/有意裁剪 station-observation」的判别经核实全部是版本错配误读(spine 与 timeline 系文件均为 fork 点快照、CE 零提交, 详见 §4), 已按整套上游 3.15.1 件落地。
 
 ## 0. 读了什么 / 结论一致性
 
@@ -31,10 +31,19 @@
 - 协议:run-settings command、runs-concurrency 调整、per-subagent model meta(zcode-protocol-v4)。
 - UI 导入面:`components/workflow-timeline/*`(17)、`app-shell/WorkflowRun*Pills|Parts|Slots`(6)、`hooks/useWorkflowRunSave`、`store/workflowRunSavedStore`。
 
-## 4. 验收
+## 4. station-observation 裁剪判别(A-prime 已执行)
 
-- 创建前可改运行参数并生效;运行中调整并发有 pending→confirmed/failed 反馈;保存的配置可复跑;子代理面板能单独选模型。
-- 交互改动需要 E2E 场景(AGENTS.md「实现与验证」)。
+**判别结论(用户已批准 A-prime)**:「CE 裁剪 station-observation」与此前的「9 处连锁/破坏 CE 自研」经核实均为**版本错配误读**——spine 三件套(workflowRunSpine/WorkflowRunPhaseList/WorkflowRunSpineParts)与 timeline-model/roster-model/timeline-geometry/timeline-bands/workflowRunCardJoin/WorkflowRoll/workflowToolNames/workflowRunSettings/WorkflowRunSettingsFields/WorkflowRunSettingsPopover 等**全部是 fork 点快照、CE 零提交**(872ad96..HEAD 无提交; 唯二的 fork 后提交 9487ed83/2907feba 均为「搬上游 v3.14.3」性质, 是同一条搬运线的旧版本而非自研)。正确处置是整套采用上游 3.15.1 版本, 不保留 CE 版本。
+
+**已落地(task-22)**:
+
+- (1) timeline-model.ts 采用上游 3.15.1 版(355 行 holes/station/fill/unlisted);
+- (2) station-observation.ts + timeline-holes.ts 逐字节搬运;
+- (3) 12 个 workflow-timeline 渲染件 + 4 个 app-shell 渲染件(FillFrames/HoleParts/PaneSaveSlots/PhasePills) + createWorkflowHoleInput.ts 补件;
+- (4) spine 三件套整套采用; 消费方 reconcile: workflowRunSettingsCeiling → workflowRunDefaultConcurrency、clamp 2 参 → 1 参等 API 演进, ConversationRowView 2 处调用同步;
+- (5) shared 的 unlistedByPhase/holes 接线经类型门禁确认就位(zcode-protocol-v4/workflow-runs-started.ts/eviction.ts 消费链)。
+
+F6 矩阵从「部分跟进」变「已跟进」。
 
 ## 5. 搬运清单(待 3.14.3→3.15.1 精确增量确认后登记)
 

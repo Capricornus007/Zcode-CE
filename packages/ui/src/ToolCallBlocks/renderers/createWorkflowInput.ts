@@ -320,3 +320,51 @@ export function formatWorkflowArgValue(value: unknown): string {
     return String(value);
   }
 }
+
+/**
+ * 脚本给某些子代理点名了模型（CLI `resolveInput` 回填的 `model_bindings` 非空，docs/dynamic-workflow/
+ * launch.md「Models the script names」）。确认窗不逐名列出它们——那是作者模型的选择——只据此把模型
+ * 那一句改口成「子代理默认运行在」：它不再替每一个子代理说话。
+ */
+export function workflowScriptNamesModels(input: unknown): boolean {
+  return (
+    isPlainRecord(input) &&
+    isPlainRecord(input.model_bindings) &&
+    Object.keys(input.model_bindings).length > 0
+  );
+}
+
+/** CLI `resolveInput` 回填的「确认窗可调」事实（`adjustable_settings`）。 */
+export interface WorkflowAdjustableSettings {
+  /** 宿主能解析窗里选的模型；false 时模型那一行只是一句话。 */
+  subagentModel: boolean;
+  /**
+   * 默认并发 D（线上键 `concurrency_ceiling`，名字早于「默认并发」）；缺席即未知。它不是上限：
+   * 步进器从 1 起没有上界，只拿它写「默认 N」与判「等于默认 = 不设自己的界」。
+   */
+  defaultConcurrency?: number;
+}
+
+/**
+ * 确认窗可调的两项设置（docs/dynamic-workflow/launch.md「Adjusting the settings in the window」）。
+ * 走入参而不是 display：display 的字段集冻结，多一个键旧端会整块丢掉。块缺席即旧 agent——它不会
+ * 应用窗里改的值，确认窗就照旧只画纯文本条件行。
+ */
+export function readWorkflowAdjustableSettings(
+  input: unknown,
+): WorkflowAdjustableSettings | undefined {
+  if (!isPlainRecord(input) || !isPlainRecord(input.adjustable_settings)) {
+    return undefined;
+  }
+  const block = input.adjustable_settings;
+  // 线上键名 `concurrency_ceiling` 早于「默认并发」这个概念，为兼容旧端保留；它现在装的是 D。
+  const defaultConcurrency = block.concurrency_ceiling;
+  return {
+    subagentModel: block.subagent_model === true,
+    ...(typeof defaultConcurrency === "number" &&
+    Number.isInteger(defaultConcurrency) &&
+    defaultConcurrency > 0
+      ? { defaultConcurrency }
+      : {}),
+  };
+}

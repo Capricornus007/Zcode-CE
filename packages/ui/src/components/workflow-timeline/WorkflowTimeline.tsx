@@ -57,7 +57,7 @@ export { STATION_GAP, STATION_PITCH, STATION_WIDTH, timelineWidth } from "./time
  * 会话列），轨道行 24，弧道距 14。灯落在药丸头像列（站左缘 + 17），名字落在子代理名列（站左缘 + 34）
  * ——站头就是一枚没有背景的药丸。
  *
- * 宽过容器就自由滚动：灯滚出视口的站折叠到那一侧的**边檐**上——同一枚灯、16px 一枚，
+ * 宽过容器就自由滚动：灯滚出视口的站折叠到那一侧的边檐上——同一枚灯、16px 一枚，
  * 落在视口边缘干净的底上；轨道行在檐旁渐隐 40px，药丸只在视口真正的边界渐隐；位置在底部一根 2px 的滚动条里。
  * 原生滚动条隐藏，右缘不再涂渐变，表头也不再需要秩带。镜头照旧对准正在运行的站；镜头在飞时目标站不折
  * （视口在 scrollTo 之前量过，飞行中按陈旧位置算它在视野外是误报）。
@@ -155,7 +155,7 @@ export const WorkflowTimeline = memo(function WorkflowTimeline({
     pillOrdinal += 1;
     return delay;
   };
-  // 轨道段按**一对站**查：带里一站可以同时长出主线的一条、
+  // 轨道段按一对站查：带里一站可以同时长出主线的一条、
   // 分叉的一条与双线段。
   const railByPair = useMemo(
     () => new Map(rails.map((rail) => [railKey(rail.from, rail.to), rail])),

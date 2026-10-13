@@ -4,7 +4,7 @@ import type { WorkflowCausalityGraphData } from "@/components/workflow-graph/typ
 /**
  * 缓存 `timeline-model.ts` 的计算结果，同一对 (graph, run) 只构建一次。
  *
- * 为什么按**对象身份**做键是对的：两个输入都是不可变的协议对象——图是行上那份已校验的
+ * 为什么按对象身份做键是对的：两个输入都是不可变的协议对象——图是行上那份已校验的
  * display 载荷里的 `causalityGraph`，run 是 `workflowRuns` 投影里的一条；投影的归约与键级
  * 增量都是浅重建（变了的那条换新对象，没变的元素引用原样保留）。于是「同一个对象」等价于
  * 「同一份内容」，而内容一变必然换新对象——缓存不会喂出过期的模型。

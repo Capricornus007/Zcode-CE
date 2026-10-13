@@ -98,7 +98,7 @@ function agentsPart(
 }
 
 /**
- * 卡片表头右侧的细节：**只说阶段数与子代理数**（卡上不要出现「步」，只留
+ * 卡片表头右侧的细节：只说阶段数与子代理数（卡上不要出现「步」，只留
  * 阶段与子代理）。编写中 / 待确认按静态图数；联接到 run 后阶段数不变、子代理改成
  * 「n 个工作中」（跑着）或总数（结束）。步数、token、轮次、产物数都不再上表头——它们留在
  * run 详情页的摘要行（`workflowSummaryParts`）。
@@ -150,7 +150,7 @@ export function workflowCardDetail(
 /**
  * run 详情页摘要行的各段：`1 agent working · 4/7 steps · 42,118 tokens · round 2`；终态换成
  * `3 agents · 11/11 steps · … · 3 rounds · 2 artifacts`。返回值只是字符串，间隔符由渲染方画。
- * 末段数的是**产物**（脚本经 `artifact.*` 交付给用户的产出），不是 `report` 条目：Results 区已
+ * 末段数的是产物（脚本经 `artifact.*` 交付给用户的产出），不是 `report` 条目：Results 区已
  * 撤走，「results」在屏幕上再没有落点。
  * 聊天里的卡片（工具卡页脚、轮尾摘要）不再用它——卡上只说阶段与子代理
  * （`workflowHeaderDetail`）；这一行只剩详情页在读。
@@ -162,7 +162,7 @@ export function workflowSummaryParts(
   options: {
     tokens?: boolean;
     /**
-     * 子代理模型名（已解析，见 subagent-model-label.ts）：在场时是摘要行的**第一段**——
+     * 子代理模型名（已解析，见 subagent-model-label.ts）：在场时是摘要行的第一段——
      * 这一行本来就是「这条 run 的几个数」，模型是它的第一个词。状态头因此不再摆模型芯片。
      */
     subagentModelName?: string;

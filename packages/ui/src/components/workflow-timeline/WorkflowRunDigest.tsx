@@ -61,7 +61,7 @@ export interface WorkflowRunDigestProps {
   onOpenArtifact?: (artifactId: string) => void;
   /**
    * providerId → provider 名（宿主从会话的模型清单给，见 useWorkflowSubagentModelProviderName）。
-   * 缺席即拼名退回裸 modelId——**永远不显示 providerId**（团队套餐的它是一个 UUID）。
+   * 缺席即拼名退回裸 modelId——永远不显示 providerId（团队套餐的它是一个 UUID）。
    */
   subagentModelProviderName?: (providerId: string) => string | undefined;
   /**
@@ -122,7 +122,7 @@ export function WorkflowRunDigest({
   };
 
   const format = intl.formatMessage.bind(intl);
-  // 卡上刻意**不**画 lineage：
+  // 卡上刻意不画 lineage：
   // 「调整自 / 已被替代」两句只在详情页与确认窗说；卡只换种类词——卡上太吵。
   // 细节串的最后一段是子代理模型名（没指定过模型就没有这一段），强度与规范串进 tooltip。
   const cardDetail = workflowCardDetail(format, model, graph, run, subagentModelProviderName);

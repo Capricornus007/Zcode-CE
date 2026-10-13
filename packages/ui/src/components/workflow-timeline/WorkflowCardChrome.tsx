@@ -66,7 +66,7 @@ export function WorkflowRunStatus({
    * 带 `stopReason` 的来源对象（投影 run / 联接摘要）：`stopped` 时原因词跟在状态词后。
    * 按结构读，不绑死某个协议类型。
    *
-   * `resumable` 是**状态位**，跟着 run 从 CLI 过来，
+   * `resumable` 是状态位，跟着 run 从 CLI 过来，
    * 在场即为 true 时在原因词之后再加一个词。UI 绝不按 status 推导它——「已停止」并不蕴含可恢复。
    */
   run?:

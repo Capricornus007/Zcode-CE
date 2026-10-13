@@ -15,7 +15,7 @@ import type { WorkflowCompletionArtifact } from "./WorkflowArtifactTile.js";
 /**
  * 交付物行（侧板）：run 的 primary 产物在完成卡与 run 侧板上的样子。
  *
- * 它是**侧躺的瓦片**：同一只 16:10 预览框（160 × 100，与瓦片同一档——不是横幅），框旁是 kind 图标 +
+ * 它是侧躺的瓦片：同一只 16:10 预览框（160 × 100，与瓦片同一档——不是横幅），框旁是 kind 图标 +
  * 比说明行大一级的标题、作者写的 description（三行截断）、一行等宽的 `kind · size`，尾槽是瓦片的
  * （v{n}，悬停让位给 ↗）。强调来自位置、形态与文字，从不来自更大的预览，也从不来自任何标签——
  * UI 上没有「primary」这个词。

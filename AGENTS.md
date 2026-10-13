@@ -137,9 +137,9 @@
 
 > **上游形态说明**：本节「手机远控连接桌面已有 Host attachment」与「外部 relay」两条描述的是**上游产品**的形态，不是本仓库现状 —— 它们是「如果要做，按这个边界做」的约束；判断某条链路是否存在时以源码与实测为准，不要按这两句推定。
 >
-> 上游实测（`zai-org/ZCode` 的 `v3.14.3` = `29628c9`，其**唯一父提交**即开源提交 `872ad96 feat: open source`）：官方开源版移除的是**产品面**（云 relay 服务、配对/扫码服务器、移动壳/PWA/推送），**协议与传输层接缝自基线起就存在**（`872ad96:packages/shared/src/task-realtime-core.ts:102-103` 的 `relay_owner` / `relay_bridge` 枚举）；云 relay 从未进入开源版（`relayWsUrl` / `mid=` / 配对码 全仓 0 命中）。`v3.14.3` 的「移动端远程控制」入口是 **Bot Channel（IM 机器人）** 的渠道选择器，不是中继。
+> 上游实测（`zai-org/ZCode` 的 `v3.14.3` = `29628c9`，其**唯一父提交**即开源提交 `872ad96 feat: open source`）：官方开源版移除的是**产品面**（云 relay 服务、配对/扫码服务器、移动壳/PWA/推送），**协议与传输层接缝自基线起就存在**（`872ad96:packages/shared/src/task-realtime-core.ts:102-103` 的 `relay_owner` / `relay_bridge` 枚举）；云 relay 从未进入开源版（`relayWsUrl` / `mid=` / 配对码 全仓 0 命中）。`v3.14.3` 的「移动端远程控制」入口是 **Bot Channel（IM 机器人）** 的渠道选择器，不是中继。上游 tag 现状：`v3.15.1` = `aac47556`（2026-10-12 官方公告 11 功能 + 12 修复），本轮 3.15.1-ce.1 已整轮跟进，四档台账（已跟进 / 部分跟进 / 未跟进（有意） / 不适用）见 `docs/development/upstream-sync.md` v3.15.1 节。
 >
-> 本仓库现状（按源码）：远控是**自托管**形态（桌面端 spawn 服务端进程，浏览器经 `?token` 连它，见 `packages/desktop/src/main/web-service/`），**不引入中继**。IM 机器人（Bot Channel）**与官方同步、默认关闭、用户同意后即可使用**（`packages/services/src/bots/`、`packages/shared/src/bots.ts`，入站路由自研 `/bot/**` 默认不注册，`ff544f2`）；与上游的**有意偏离在形态**（我们做自托管 Web 控制，不把 IM 机器人当工作台），**不在「做不做」**；两条路径标签页共存，Web 控制默认开、Chat bot 默认关。**桌面端 UI 已接线**（`BotsDialog.tsx` + 4 子组件 + `botsUi.ts`，宿主层注入 `imBot` 通道；spec `docs/development/135-bot-management-ui.md`）。注意「桌面端没有任何入站服务」**对上游成立、对本仓库不成立**（CE 的 web-service 会 spawn 并监听）。
+> 本仓库现状（按源码）：远控是**自托管**形态（桌面端 spawn 服务端进程，浏览器经 `?token` 连它，见 `packages/desktop/src/main/web-service/`），**不引入中继**。IM 机器人（Bot Channel）**与官方同步、默认关闭、用户同意后即可使用**（`packages/services/src/bots/`、`packages/shared/src/bots.ts`，入站路由自研 `/bot/**` 默认不注册，`ff544f2`）；与上游的**有意偏离在形态**（我们做自托管 Web 控制，不把 IM 机器人当工作台），**不在「做不做」**；两条路径标签页共存，Web 控制默认开、Chat bot 默认关。**桌面端 UI 已接线**（`BotsDialog.tsx` + 4 子组件 + `botsUi.ts`，宿主层注入 `imBot` 通道；spec `docs/development/135-bot-management-ui.md`）。**F8 群/话题整链已落地**（3.15.1-ce.1：群/话题服务与 6 个状态机 `c104623a`、UI 接线 `c5d5687f`，许可登记见 `third-party/copied-components.json`）。注意「桌面端没有任何入站服务」**对上游成立、对本仓库不成立**（CE 的 web-service 会 spawn 并监听）。
 
 ## Workspace Identity
 

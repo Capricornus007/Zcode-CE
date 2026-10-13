@@ -1,3 +1,5 @@
+// Modified by ZCode: F4/F5: 三方合并上游 3.15.1 —— ToolCallBlockRenderContext 增加 pluginUi?: PluginUiToolBinding 字段。
+import type { PluginUiToolBinding } from "@/plugin-ui/contract.js";
 import type { ReactNode } from "react";
 import type { WorkflowRunState } from "@zcode/shared/zcode-protocol-v4";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
@@ -146,15 +148,15 @@ export interface RawToolCallFileSummary {
 /**
  * 聊天区工具卡渲染 run 态所需的全部 workflow run 事实。宿主按 `toolCallId` 联接 `workflowRuns` 投影时一并算好。
  *
- * 刻意只有这四个字段：卡片承担的是**入口与摘要**，预算、事件日志、结果与失败面板都归详情页。
+ * 刻意只有这四个字段：卡片承担的是入口与摘要，预算、事件日志、结果与失败面板都归详情页。
  */
 export interface WorkflowRunCardSummary {
   runId: string;
   /**
-   * 发起这个 run 的 **CreateWorkflow 行** id（投影 `run.toolCallId`）。打开侧栏 run 视图的
+   * 发起这个 run 的 CreateWorkflow 行 id（投影 `run.toolCallId`）。打开侧栏 run 视图的
    * 请求必须带它——`WorkflowRunSidePane` 用这个 id 去行窗口找发起行（causalityGraph 与脚本
    * 原文都挂在那条行上）。只在 byRunId 联接表里填充（byToolCallId 表的键即该值）；
-   * resume 行自己的 toolCallId **不是**这个值（resume 行的 display 里没有图）。
+   * resume 行自己的 toolCallId 不是这个值（resume 行的 display 里没有图）。
    */
   toolCallId?: string;
   status: WorkflowRunState["status"];
@@ -163,7 +165,7 @@ export interface WorkflowRunCardSummary {
   /** 已结算（`phase === "settled"`）的节点数。 */
   nodesSettled: number;
   /**
-   * 已排程（observed）节点数，**不是**全程总数——动态工作流的节点数由脚本在运行时决定，
+   * 已排程（observed）节点数，不是全程总数——动态工作流的节点数由脚本在运行时决定，
    * 静态总数不存在。所以进度读作「已排程的里结算了几个」，绝不冒充完成百分比。
    */
   nodesTotal: number;
@@ -242,7 +244,7 @@ export interface ToolCallBlockRenderContext {
   /**
    * CreateWorkflow 运行详情入口。
    *
-   * 卡片只发展示名——`toolCallId`、`runId` 与会话身份全部由宿主绑定。**它的存在本身就是门控**：
+   * 卡片只发展示名——`toolCallId`、`runId` 与会话身份全部由宿主绑定。它的存在本身就是门控：
    * 宿主只在该工具调用确实有一个可打开的 run 时才注入它（run 身份来自 `workflowRuns` 投影，
    * 见 `workflowRunSchema.toolCallId` 那条注释：它就是「工具卡 → 详情页的关联键」）。
    * 刻意不从工具输出里读 `backgroundTaskId`：v4 行的 `output.text` 只有
@@ -280,7 +282,7 @@ export interface ToolCallBlockRenderContext {
    * 该工具调用已联接到的 workflow run 摘要；存在即卡片进入 run 态（紧凑可点卡）。
    *
    * 卡片不自己去翻 `workflowRuns` 投影：联接（按 `toolCallId`）与计数都在宿主侧一次算完
-   * （`workflowRunCardJoin.ts`），renderer 只读。`nodesTotal` 是**已排程**（observed）节点数——
+   * （`workflowRunCardJoin.ts`），renderer 只读。`nodesTotal` 是已排程（observed）节点数——
    * 动态工作流没有静态总数，所以进度读作「已排程的里结算了几个」，不是全程百分比。
    */
   workflowRun?: WorkflowRunCardSummary;
@@ -295,6 +297,11 @@ export interface ToolCallBlockRenderContext {
   /** 定时任务工具卡片跳转到管理页；automationId 存在时直接打开详情。 */
   onOpenAutomationsMain?: (automationId?: string) => void;
   onLoadFullToolCallFields?: (toolId: string) => Promise<boolean | void> | boolean | void;
+  /**
+   * 插件 UI：scope 是沙箱登记需要的 session 范围，onOpenSidePane 是"在侧栏打开"回调；
+   * 由 PluginUiSessionProvider 在边界注入。缺省表示宿主不提供，带 ui:// 资源的工具回退普通 MCP 卡片。
+   */
+  pluginUi?: PluginUiToolBinding;
 }
 
 export interface EditKindSource {

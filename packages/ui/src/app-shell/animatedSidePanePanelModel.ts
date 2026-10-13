@@ -1,4 +1,5 @@
-const MIN_PREVIEW_PANE_HEAVY_CONTENT_VISIBLE_INLINE_SIZE_PX = 96;
+// Modified by ZCode: F5: 三方合并上游 3.15.1 —— MIN_PREVIEW export + shouldOffer/resolve/shouldRender 的 mobileOverlay 签名扩展。
+export const MIN_PREVIEW_PANE_HEAVY_CONTENT_VISIBLE_INLINE_SIZE_PX = 96;
 
 export type OpenTabLauncherItemId =
   | "selection-side-conversation"
@@ -43,13 +44,27 @@ export function resolveOpenTabLauncherItemIds({
 
 export function shouldOfferSelectionSideConversation({
   activeTaskId,
+  isMobileTextInputViewport,
+  mobileOverlay,
 }: {
   activeTaskId: string | null;
+  isMobileTextInputViewport: boolean;
+  mobileOverlay: boolean;
 }): boolean {
-  return Boolean(activeTaskId);
+  return Boolean(activeTaskId && !mobileOverlay && !isMobileTextInputViewport);
 }
 
-export function resolveAnimatedSidePanePanelLayout() {
+export function resolveAnimatedSidePanePanelLayout({ mobileOverlay }: { mobileOverlay: boolean }) {
+  if (mobileOverlay) {
+    return {
+      collapsedSize: "0px",
+      defaultSize: "100%",
+      maxSize: "100%",
+      minSize: "0px",
+      useResizablePanel: false,
+    };
+  }
+
   return {
     collapsedSize: "0px",
     defaultSize: "0px",
@@ -62,6 +77,7 @@ export function resolveAnimatedSidePanePanelLayout() {
 export function shouldRenderPreviewPaneHeavyContent({
   isActiveTab,
   isMediaPreview = false,
+  isMobileOverlay = false,
   isResizeSettling = false,
   isSidePaneVisible,
   minVisibleInlineSizePx = MIN_PREVIEW_PANE_HEAVY_CONTENT_VISIBLE_INLINE_SIZE_PX,
@@ -69,11 +85,16 @@ export function shouldRenderPreviewPaneHeavyContent({
 }: {
   isActiveTab: boolean;
   isMediaPreview?: boolean;
+  isMobileOverlay?: boolean;
   isResizeSettling?: boolean;
   isSidePaneVisible: boolean;
   minVisibleInlineSizePx?: number;
   visibleInlineSizePx: number | null;
 }) {
+  if (isMobileOverlay) {
+    return true;
+  }
+
   if (!isSidePaneVisible || !isActiveTab) {
     return false;
   }

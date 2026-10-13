@@ -1,3 +1,4 @@
+// Modified by ZCode: F5: 增加 compactForRemoteControl prop 并透传 SessionPane(上游 compactForRemoteControl)。
 import { memo, useMemo } from "react";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
@@ -13,6 +14,8 @@ import { V4PaneConversationProvider } from "@/v4/V4ConversationContext.js";
 export const SubagentSessionSidePane = memo(function SubagentSessionSidePane({
   tab,
   focused,
+  // F5 plugin-ui 提取带入的上游 prop: 远控紧凑态
+  compactForRemoteControl = false,
   onOpenBrowserUrl,
   onOpenCodeViewer,
   onOpenFileLink,
@@ -21,6 +24,7 @@ export const SubagentSessionSidePane = memo(function SubagentSessionSidePane({
 }: {
   tab: SubagentSessionSidePaneTab;
   focused: boolean;
+  compactForRemoteControl?: boolean;
   onOpenBrowserUrl?: (url: string) => void;
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
@@ -45,6 +49,7 @@ export const SubagentSessionSidePane = memo(function SubagentSessionSidePane({
         readOnly
         allowWorkspaceFileRewind
         focused={focused}
+        compactForRemoteControl={compactForRemoteControl}
         workspacePath={tab.workspacePath}
         workspaceIdentity={tab.workspaceIdentity}
         remoteSessionId={tab.remoteSessionId}

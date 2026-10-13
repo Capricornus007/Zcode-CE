@@ -28,7 +28,13 @@ import type {
   DesktopCommandId,
   DesktopTitleBarTheme,
   DockerContainerInfo,
+  DesktopCloseToTrayCapability,
   EmbeddedBrowserOpenUrlRequest,
+  EmbeddedBrowserPermissionPromptEvent,
+  EmbeddedBrowserPermissionResolveRequest,
+  EmbeddedBrowserSitePermissionResetRequest,
+  EmbeddedBrowserSitePermissionUpdateRequest,
+  EmbeddedBrowserSitePermissionsSnapshot,
   EditorInfo,
   CreateTempTextAttachmentRequest,
   CreateTempTextAttachmentResult,
@@ -100,6 +106,10 @@ export const ServiceChannels = {
   ProviderProvisioningTarget: "provider-provisioning-target",
   /** 本地 usage 统计服务 */
   UsageStats: "usage-stats",
+  // Modified by ZCode: 增量自上游 aac47556——plugin-ui 桥服务通道（F4/F5）。
+  PluginUiBridge: "plugin-ui-bridge",
+  PluginUiSampling: "plugin-ui-sampling",
+  PluginUiAppTools: "plugin-ui-app-tools",
   /** Coding Plan 订阅购买服务 */
   CodingPlanSubscription: "coding-plan-subscription",
   ClientConfig: "client-config",
@@ -149,6 +159,14 @@ export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceCh
 
 /** Electron IPC 频道名。仅在 preload ↔ main 之间使用。 */
 export const PlatformChannels = {
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):插件 UI 沙箱 renderer ↔ main 通道。
+  /** renderer → main：释放插件 UI 沙箱（关闭 ports、撤 protocol handler、清 partition） */
+  PluginSandboxDispose: "zcode:plugin-sandbox-dispose",
+  PluginSandboxCopyImage: "zcode:plugin-sandbox-copy-image",
+  /** renderer → main：一次性消费插件 UI 沙箱 guest 的用户手势 token */
+  PluginSandboxConsumeUserGesture: "zcode:plugin-sandbox-consume-user-gesture",
+  /** renderer → main：查询自身 webContents id，作为沙箱登记的 owner */
+  PluginSandboxOwnerWebContentsId: "zcode:plugin-sandbox-owner-web-contents-id",
   /** 打开系统目录选择框 */
   SelectDirectory: "zcode:select-directory",
   /** 打开系统文件选择框 */
@@ -241,6 +259,10 @@ export const PlatformChannels = {
   CloseActiveContextRequest: "zcode:close-active-context-request",
   /** Main → Renderer：内置 webview 请求打开新的浏览器 tab */
   OpenBrowserUrl: "zcode:open-browser-url",
+  /** Main → Renderer：内置浏览器网页权限/屏幕共享源/设备选择弹窗请求（F9，AAC47556） */
+  EmbeddedBrowserPermissionPrompt: "zcode:embedded-browser-permission-prompt",
+  /** Renderer → Main：用户对内置浏览器权限弹窗的决策回传（F9） */
+  EmbeddedBrowserPermissionResolve: "zcode:embedded-browser-permission-resolve",
   /** Main → Renderer：agent 首次 browser 命令建好受控 view，通知 renderer 自动开 browser-use tab */
   BrowserViewReady: "zcode:browser-view-ready",
   /** Main → Renderer：agent 正在操作某个 browser-use tab，renderer 临时显示状态图标 */
@@ -302,6 +324,8 @@ export const PlatformChannels = {
   OpenExternal: "zcode:open-external",
   /** Renderer → Main：查询当前语言下是否存在可用的用户社群入口 */
   CanOpenCommunity: "zcode:can-open-community",
+  /** Renderer → Main:查询「关闭驻留托盘」能力(Linux 置灰判断;F10,aac47556) */
+  GetCloseToTrayCapability: "zcode:get-close-to-tray-capability",
   /** Renderer → Main：在系统文件管理器中打开路径 */
   OpenInFileManager: "zcode:open-in-file-manager",
   /** Renderer → Main：使用系统默认应用打开本地文件 */
@@ -378,6 +402,14 @@ export const PlatformChannels = {
   ImportChromeBrowserData: "zcode:import-chrome-browser-data",
   /** Renderer → Main：清理内置浏览器缓存或全部站点数据。 */
   ClearEmbeddedBrowserData: "zcode:clear-embedded-browser-data",
+  /** Renderer → Main：读取内置浏览器站点权限记录（设置页「网站权限」，F9） */
+  GetEmbeddedBrowserSitePermissions: "zcode:get-embedded-browser-site-permissions",
+  /** Renderer → Main：修改/删除单条站点权限（state="ask" 表示删除，F9） */
+  SetEmbeddedBrowserSitePermission: "zcode:set-embedded-browser-site-permission",
+  /** Renderer → Main：清空全部站点权限记录（F9） */
+  ClearEmbeddedBrowserSitePermissions: "zcode:clear-embedded-browser-site-permissions",
+  /** Renderer → Main：重置单个站点的全部权限记录（站点权限设置标签页「重置」，F9） */
+  ResetEmbeddedBrowserSitePermission: "zcode:reset-embedded-browser-site-permission",
   /** Main → Renderer：通知有新版本已下载完毕，可以重启安装 */
   UpdateReady: "zcode:update-ready",
   /** Main → Renderer：用户手动点击"检查更新"后的结果反馈（toast 用） */
@@ -503,6 +535,18 @@ export const InternalChannels = {
   ScopedServicePortReady: "zcode:scoped-service-port-ready",
   /** preload → renderer：主进程已确认系统通知展示，renderer 可播放提示音 */
   TaskNotificationSound: "zcode:task-notification-sound",
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
+  /** main → 宿主 renderer：插件 UI 沙箱的 MessagePort 组（port2[]），payload { sandboxId, initId, names } */
+  PluginSandboxPorts: "zcode:plugin-sandbox-ports",
+} as const;
+
+/**
+ * 插件 UI 沙箱 guest（partition=plugin-sandbox:<id>）的 main → guest preload 频道。
+ * preload 只把 MessagePort 组经 window.postMessage 转交给受信 shell，不暴露任何 contextBridge API。
+ */
+export const PluginSandboxChannels = {
+  /** main → guest：{ sandboxId, initId, names } + port1[]，shell 据此建立宿主端口 */
+  Init: "zcode:plugin-sandbox-init",
 } as const;
 
 /** @deprecated `/ws` 已忽略该头；保留常量仅供旧客户端兼容。 */
@@ -565,8 +609,14 @@ export const HostMessageTypes = {
   BrowserExecuteResult: "browser-execute-result",
   /** main → host：本地视频 canonical path 授权结果 */
   LocalMediaPreviewPathAuthorizeResult: "local-media-preview-path-authorize-result",
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
+  /** main → host：插件 UI 沙箱登记结果（PluginSandboxRegisterResultPayload） */
+  PluginSandboxRegisterResult: "plugin-sandbox-register-result",
   /** Main → Host：全局前台 ZCode 窗口派生的 producer focus fact。 */
   CuaPipFocusChanged: "cua-pip-focus-changed",
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
+  /** host → main：登记已校验的插件 UI HTML 与 CSP，换取 sandbox 句柄（PluginSandboxRegisterRequestPayload） */
+  PluginSandboxRegisterRequest: "plugin-sandbox-register-request",
   /** main → host：要求 Host 现读本地 Source，并同步指定 Remote Environment。 */
   ProviderProvisioningExecute: "provider-provisioning-execute",
   /** main → host：资源管理器请求 Host 采样其后代进程（Agent / MCP / 终端）的 CPU 与内存 */
@@ -815,6 +865,31 @@ export interface PlatformChannelMap {
     request: EmbeddedBrowserOpenUrlRequest;
     response: void;
   };
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F9)。
+  [PlatformChannels.EmbeddedBrowserPermissionPrompt]: {
+    request: EmbeddedBrowserPermissionPromptEvent;
+    response: void;
+  };
+  [PlatformChannels.EmbeddedBrowserPermissionResolve]: {
+    request: EmbeddedBrowserPermissionResolveRequest;
+    response: void;
+  };
+  [PlatformChannels.GetEmbeddedBrowserSitePermissions]: {
+    request: void;
+    response: EmbeddedBrowserSitePermissionsSnapshot;
+  };
+  [PlatformChannels.SetEmbeddedBrowserSitePermission]: {
+    request: EmbeddedBrowserSitePermissionUpdateRequest;
+    response: EmbeddedBrowserSitePermissionsSnapshot;
+  };
+  [PlatformChannels.ClearEmbeddedBrowserSitePermissions]: {
+    request: void;
+    response: EmbeddedBrowserSitePermissionsSnapshot;
+  };
+  [PlatformChannels.ResetEmbeddedBrowserSitePermission]: {
+    request: EmbeddedBrowserSitePermissionResetRequest;
+    response: EmbeddedBrowserSitePermissionsSnapshot;
+  };
   [PlatformChannels.BrowserViewReady]: {
     request: {
       workspaceKey: string;
@@ -869,6 +944,11 @@ export interface PlatformChannelMap {
   [PlatformChannels.CanOpenCommunity]: {
     request: Locale;
     response: boolean;
+  };
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10)。
+  [PlatformChannels.GetCloseToTrayCapability]: {
+    request: void;
+    response: DesktopCloseToTrayCapability;
   };
   [PlatformChannels.OpenInFileManager]: {
     request: string;

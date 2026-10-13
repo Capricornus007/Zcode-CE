@@ -4,6 +4,7 @@ import {
   sessionDebugSnapshotSchema,
   type LocalTtftFacts,
 } from "@zcode/shared";
+import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
 /* oxlint-disable eslint(max-lines) -- ZCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
 import { randomUUID } from "node:crypto";
 import { ensureIndependentPlanSupport } from "./independentPlanSupport.js";
@@ -43,6 +44,21 @@ import {
   type ZCodeProcessChildProcess,
   zcodeSkillsReferenceCatalogResultSchema,
   zcodeWorkflowsDeleteResultSchema,
+  zcodeMcpUiOpenInstanceResultSchema,
+  zcodeMcpUiCloseInstanceResultSchema,
+  zcodeMcpReadResourceResultSchema,
+  zcodeMcpUiSamplingResultSchema,
+  zcodeMcpUiCancelCallResultSchema,
+  zcodeMcpUiCallToolResultSchema,
+  zcodeMcpUiReadResourceResultSchema,
+  zcodeMcpUiListResourcesResultSchema,
+  zcodeMcpUiListResourceTemplatesResultSchema,
+  zcodeMcpUiResourceSubscriptionResultSchema,
+  zcodeMcpUiRegisterAppToolsResultSchema,
+  zcodeMcpUiUnregisterAppToolsResultSchema,
+  zcodeMcpUiAppToolAcceptedResultSchema,
+  zcodePluginsListUiSurfacesResultSchema,
+  zcodeMcpUiResourceSubscriptionResultSchema as mcpUiEmptyResultSchema,
   zcodeWorkflowsForRunResultSchema,
   zcodeWorkflowsSaveResultSchema,
   zcodeWorkflowsGetResultSchema,
@@ -187,6 +203,16 @@ import type {
   ZCodeAgentGetSavedWorkflowParams,
   ZCodeAgentListSavedWorkflowRunsParams,
   ZCodeAgentListSavedWorkflowsParams,
+  ZCodeAgentReadMcpResourceParams,
+  ZCodeAgentReadMcpResourceForUiParams,
+  ZCodeAgentCallMcpToolForUiParams,
+  ZCodeAgentCancelMcpToolCallForUiParams,
+  ZCodeAgentListMcpResourcesForUiParams,
+  ZCodeAgentMcpResourceSubscriptionForUiParams,
+  ZCodeAgentRegisterAppToolsForUiParams,
+  ZCodeAgentAppToolInstanceForUiParams,
+  ZCodeAgentAppToolCallForUiParams,
+  ZCodeAgentResolveAppToolCallForUiParams,
   ZCodeAgentMoveSavedWorkflowParams,
   ZCodeAgentSaveSavedWorkflowFromRunParams,
   ZCodeAgentFindSavedWorkflowForRunParams,
@@ -4298,6 +4324,324 @@ export function createZCodeAgentService(
     // Modified by ZCode: 增量自上游 aac47556——完成卡的「直接保存」：必须打到这次 run 所属
     // workspace 的 agent client——脚本从那个进程的 journal 里读，全局档也一样（落点由 agent
     // 按 scope 算，与载体无关）。因此走 getReadOnlyClient 直通，不经全局载体选择。
+    // Modified by ZCode: 增量自上游 aac47556——插件 UI（plugin-ui）服务族的 agent 通道：
+    // host 只做归属转发与登记，catalog / 权限 / mimeType 白名单 / 信箱都在 session 所在的
+    // workspace agent 进程 fail closed。
+    async openMcpUiInstance(params) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiOpenInstance,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          accountContext: params.accountContext,
+          resourceUri: params.resourceUri,
+          ownerWebContentsId: params.ownerWebContentsId,
+        },
+        zcodeMcpUiOpenInstanceResultSchema,
+      );
+    },
+    async validateMcpUiInstance(params) {
+      const client = await getReadOnlyClient(params);
+      await client.request(
+        zcodeProtocolMethods.mcpUiValidateInstance,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          instance: params.instance,
+        },
+        mcpUiEmptyResultSchema,
+      );
+    },
+    async recycleMcpUiInstance(params) {
+      const client = await getReadOnlyClient(params);
+      const result = await client.request(
+        zcodeProtocolMethods.mcpUiCloseInstance,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          instance: params.instance,
+          onlyIfIdle: true,
+        },
+        zcodeMcpUiCloseInstanceResultSchema,
+      );
+      return result.closed;
+    },
+    async closeMcpUiInstance(params) {
+      const client = await getReadOnlyClient(params);
+      await client.request(
+        zcodeProtocolMethods.mcpUiCloseInstance,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          instance: params.instance,
+        },
+        zcodeMcpUiCloseInstanceResultSchema,
+      );
+    },
+    async readMcpResource(params: ZCodeAgentReadMcpResourceParams) {
+      // 与 Skill / Plugin 引用一样，session 冻结 catalog 只存在于 workspace agent 进程。
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpReadResource,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          uri: params.uri,
+        },
+        zcodeMcpReadResourceResultSchema,
+      );
+    },
+
+    async sampleMcpApp(params) {
+      const client = await getReadOnlyClient(params, "existing-only");
+      const { workspacePath: _path, workspaceIdentity: _identity, ...bound } = params;
+      const wire = { ...bound, workspace: buildWorkspaceRef(params) };
+      try {
+        return await client.request(
+          zcodeProtocolMethods.mcpUiSampling,
+          wire,
+          zcodeMcpUiSamplingResultSchema,
+          { timeoutMs: MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS },
+        );
+      } catch (error) {
+        // 超时/通道失败只取消原调用，不能恢复 Agent 并重新发起采样。
+        const { request: _request, ...cancelParams } = wire;
+        void client
+          .request(
+            zcodeProtocolMethods.mcpUiCancelSampling,
+            cancelParams,
+            zcodeMcpUiCancelCallResultSchema,
+          )
+          .catch(() => undefined);
+        throw error;
+      }
+    },
+    async cancelMcpAppSampling(params) {
+      const client = await getReadOnlyClient(params, "existing-only");
+      const { workspacePath: _path, workspaceIdentity: _identity, ...bound } = params;
+      return client.request(
+        zcodeProtocolMethods.mcpUiCancelSampling,
+        { ...bound, workspace: buildWorkspaceRef(params) },
+        zcodeMcpUiCancelCallResultSchema,
+      );
+    },
+    async callMcpToolForUi(params: ZCodeAgentCallMcpToolForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiCallTool,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          toolName: params.toolName,
+          ...(params.arguments ? { arguments: params.arguments } : {}),
+          callId: params.callId,
+        },
+        zcodeMcpUiCallToolResultSchema,
+      );
+    },
+
+    async cancelMcpToolCallForUi(params: ZCodeAgentCancelMcpToolCallForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiCancelCall,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          callId: params.callId,
+        },
+        zcodeMcpUiCancelCallResultSchema,
+      );
+    },
+
+    async readMcpResourceForUi(params: ZCodeAgentReadMcpResourceForUiParams) {
+      // 与 callMcpToolForUi 同一进程：归属（pluginId ↔ serverName）、mimeType 白名单与 8 MiB 上限都在 agent 侧 fail closed。
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiReadResource,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          uri: params.uri,
+        },
+        zcodeMcpUiReadResourceResultSchema,
+      );
+    },
+
+    async listMcpResourcesForUi(params: ZCodeAgentListMcpResourcesForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiListResources,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          ...(params.cursor ? { cursor: params.cursor } : {}),
+        },
+        zcodeMcpUiListResourcesResultSchema,
+      );
+    },
+
+    async listMcpResourceTemplatesForUi(params: ZCodeAgentListMcpResourcesForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiListResourceTemplates,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          ...(params.cursor ? { cursor: params.cursor } : {}),
+        },
+        zcodeMcpUiListResourceTemplatesResultSchema,
+      );
+    },
+
+    async subscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams) {
+      // 订阅登记在 agent 侧（按 server / uri 引用计数并随重连重放）；host 只转发身份三元组。
+      const client = await getReadOnlyClient(params);
+      await client.request(
+        zcodeProtocolMethods.mcpUiSubscribeResource,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+          uri: params.uri,
+        },
+        zcodeMcpUiResourceSubscriptionResultSchema,
+      );
+    },
+
+    async unsubscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams) {
+      const client = await getReadOnlyClient(params);
+      await client.request(
+        zcodeProtocolMethods.mcpUiUnsubscribeResource,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+          uri: params.uri,
+        },
+        zcodeMcpUiResourceSubscriptionResultSchema,
+      );
+    },
+
+    async registerAppToolsForUi(params: ZCodeAgentRegisterAppToolsForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiRegisterAppTools,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+          tools: params.tools,
+        },
+        zcodeMcpUiRegisterAppToolsResultSchema,
+      );
+    },
+
+    async unregisterAppToolsForUi(params: ZCodeAgentAppToolInstanceForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiUnregisterAppTools,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+        },
+        zcodeMcpUiUnregisterAppToolsResultSchema,
+      );
+    },
+
+    async claimAppToolCallForUi(params: ZCodeAgentAppToolCallForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiClaimAppToolCall,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+          callId: params.callId,
+        },
+        zcodeMcpUiAppToolAcceptedResultSchema,
+      );
+    },
+
+    async resolveAppToolCallForUi(params: ZCodeAgentResolveAppToolCallForUiParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.mcpUiResolveAppToolCall,
+        {
+          workspace: buildWorkspaceRef(params),
+          sessionId: params.sessionId,
+          instance: params.instance,
+          pluginId: params.pluginId,
+          serverName: params.serverName,
+          scopeId: params.scopeId,
+          generation: params.generation,
+          callId: params.callId,
+          ...(params.result ? { result: params.result } : {}),
+          ...(params.error ? { error: params.error } : {}),
+        },
+        zcodeMcpUiAppToolAcceptedResultSchema,
+      );
+    },
+
+    async listPluginUiSurfaces(params: ZCodeAgentWorkspaceTarget) {
+      // 面板只在已有会话时可打开，此时 workspace agent 必然存在；走 read-only client 读它解析好的清单，
+      // 不用独立插件管理进程（那边没有本 workspace 的启停状态上下文，与 mcp/readResource 同理）。
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.pluginsListUiSurfaces,
+        { workspace: buildWorkspaceRef(params) },
+        zcodePluginsListUiSurfacesResultSchema,
+      );
+    },
+
     async saveSavedWorkflowFromRun(params: ZCodeAgentSaveSavedWorkflowFromRunParams) {
       const client = await getReadOnlyClient(params);
       return client.request(

@@ -410,6 +410,13 @@ import { createClientScenesService } from "./client-scenes/clientScenesService.j
 import { createSkillsService } from "./skills/skillsService.js";
 import type { PluginSandboxHandle, PluginSandboxRegisterInput } from "@zcode/shared/mcp-apps";
 import { IGenUiService } from "./gen-ui/contract.js";
+import { createPluginUiAccountBindings } from "./plugin-ui-bridge/instanceAccounts.js";
+import { createPluginUiBridgeService } from "./plugin-ui-bridge/pluginUiBridgeService.js";
+import { createPluginUiSamplingService } from "./plugin-ui-bridge/pluginUiSamplingService.js";
+import { createPluginUiAppToolsService } from "./plugin-ui-bridge/pluginUiAppToolsService.js";
+import { IPluginUiBridgeService } from "./plugin-ui-bridge/contract.js";
+import { IPluginUiSamplingService } from "./plugin-ui-bridge/samplingContract.js";
+import { IPluginUiAppToolsService } from "./plugin-ui-bridge/appToolsContract.js";
 import { createGenUiService } from "./gen-ui/adapters/service.js";
 import { createSkillSyncService } from "./skill-sync/skillSyncService.js";
 import { createMcpSyncService } from "./mcp-sync/mcpSyncService.js";
@@ -1444,9 +1451,16 @@ export function createLocalServices(options: {
     resolveRuntimeZCodeEndpointOrigin(process.env, {
       overrideOrigin: (await settingService.get()).zcodeEndpointOrigin,
     });
+  // Modified by ZCode: 增量自上游 aac47556——账号切换时失效 plugin-ui 实例绑定的回调槽。
+  let invalidatePluginUiAccounts: (() => void) | undefined;
   const provisioningOAuthKeys = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS);
   const credentialService = createCredentialService({
     onDidMutate: ({ key }) => {
+      // Modified by ZCode: 增量自上游 aac47556——账号切换时让 plugin-ui 实例绑定失效，
+      // 防止旧 OAuth 凭据的实例句柄存活到新账号会话。
+      if (key === "oauth:active_provider" || /^oauth:[^:]+:user_info$/.test(key)) {
+        invalidatePluginUiAccounts?.();
+      }
       if (provisioningOAuthKeys.has(key) || isProviderProvisioningAccountCredentialKey(key)) {
         options.onProviderProvisioningSourceChanged?.("credential");
       }
@@ -1724,6 +1738,46 @@ export function createLocalServices(options: {
     listMcpServerStatuses: (params) => zcodeAgentService.listMcpServerStatuses(params),
   });
   const pluginSyncService = createPluginSyncService();
+  // Modified by ZCode: 增量自上游 aac47556——plugin-ui 桥服务族装配。
+  const pluginUiAccounts = createPluginUiAccountBindings({
+    async readAccount() {
+      const provider = await oauthCredentialRepo.loadActiveProvider();
+      const profile = provider ? await oauthCredentialRepo.loadUserProfile(provider) : null;
+      return [provider, profile?.id ?? null];
+    },
+    open: (params) => zcodeAgentService.openMcpUiInstance(params),
+    close: (params) => zcodeAgentService.closeMcpUiInstance(params),
+  });
+  invalidatePluginUiAccounts = () => pluginUiAccounts.invalidate();
+  const pluginUiBridgeService = createPluginUiBridgeService({
+    openInstance: (params) => pluginUiAccounts.open(params),
+    closeInstance: (params) => pluginUiAccounts.close(params),
+    validateInstance: (params) => zcodeAgentService.validateMcpUiInstance(params),
+    recycleInstance: (params) => zcodeAgentService.recycleMcpUiInstance(params),
+    // 插件 UI：资源读取与 UI 工具调用都发生在 session 所在的 agent 进程；host 只做校验与登记。
+    readMcpResource: (params) => zcodeAgentService.readMcpResource(params),
+    callMcpToolForUi: (params) => zcodeAgentService.callMcpToolForUi(params),
+    cancelMcpToolCallForUi: (params) => zcodeAgentService.cancelMcpToolCallForUi(params),
+    readMcpResourceForUi: (params) => zcodeAgentService.readMcpResourceForUi(params),
+    listMcpResourcesForUi: (params) => zcodeAgentService.listMcpResourcesForUi(params),
+    listMcpResourceTemplatesForUi: (params) =>
+      zcodeAgentService.listMcpResourceTemplatesForUi(params),
+    subscribeMcpResourceForUi: (params) => zcodeAgentService.subscribeMcpResourceForUi(params),
+    unsubscribeMcpResourceForUi: (params) => zcodeAgentService.unsubscribeMcpResourceForUi(params),
+    listPluginUiSurfaces: (params) => zcodeAgentService.listPluginUiSurfaces(params),
+    registerSandbox: options?.registerPluginSandbox,
+  });
+  // App-Provided Tools：页面工具登记与模型调用的认领 / 回传都发生在 session 所在的 agent 进程。
+  const pluginUiSamplingService = createPluginUiSamplingService({
+    sample: (params) => zcodeAgentService.sampleMcpApp(params),
+    cancelSampling: (params) => zcodeAgentService.cancelMcpAppSampling(params),
+  });
+  const pluginUiAppToolsService = createPluginUiAppToolsService({
+    registerAppToolsForUi: (params) => zcodeAgentService.registerAppToolsForUi(params),
+    unregisterAppToolsForUi: (params) => zcodeAgentService.unregisterAppToolsForUi(params),
+    claimAppToolCallForUi: (params) => zcodeAgentService.claimAppToolCallForUi(params),
+    resolveAppToolCallForUi: (params) => zcodeAgentService.resolveAppToolCallForUi(params),
+  });
   const subagentsService = createSubagentsService({
     isDesktopRuntime: true,
   });
@@ -2648,6 +2702,9 @@ export function createLocalServices(options: {
       IGenUiService,
       createGenUiService({ registerSandbox: options?.registerPluginSandbox }),
     )
+    .register(IPluginUiBridgeService, pluginUiBridgeService)
+    .register(IPluginUiSamplingService, pluginUiSamplingService)
+    .register(IPluginUiAppToolsService, pluginUiAppToolsService)
     // 合并 MCP/Plugin Management 服务装配时误删了 plugin-sync 注册，
     // RemoteServiceAccess 仍会请求该频道，导致本地候选枚举超时、远端同步无法开始。
     .register(IPluginSyncService, pluginSyncService)

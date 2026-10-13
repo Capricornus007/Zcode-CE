@@ -312,6 +312,34 @@ export type {
   FeedbackTicketSummary,
   FeedbackTicketType,
 } from "@zcode/shared";
+export {
+  IPluginUiAppToolsService,
+  type PluginUiAppToolCallParams,
+  type PluginUiAppToolAcceptedResult,
+  type PluginUiRegisterAppToolsParams,
+  type PluginUiRegisterAppToolsResult,
+  type PluginUiResolveAppToolCallParams,
+} from "./plugin-ui-bridge/index.js";
+export {
+  IPluginUiBridgeService,
+  type PluginUiCallToolParams,
+  type PluginUiCallToolResult,
+  type PluginUiPrepareSandboxParams,
+  type PluginUiReadResourceParams,
+  type PluginUiReadResourceResult,
+  type PluginUiPluginScope,
+  type PluginUiListResourcesParams,
+  type PluginUiListResourcesResult,
+  type PluginUiListResourceTemplatesResult,
+  type PluginUiResourceSubscriptionParams,
+  type PluginUiSurfaceEntry,
+  type PluginUiWorkspaceTarget,
+} from "./plugin-ui-bridge/contract.js";
+export {
+  IPluginUiSamplingService,
+  type PluginUiSamplingParams,
+  type PluginUiCancelSamplingParams,
+} from "./plugin-ui-bridge/samplingContract.js";
 export { IClientConfigService } from "./client-config/clientConfig.js";
 
 // Bots service — IBotsService is both a type (interface) and value (descriptor).

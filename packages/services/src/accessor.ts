@@ -92,6 +92,9 @@ export interface IServiceAccessor {
   readonly mcpSyncService: IMcpSyncService;
   /** 插件 UI 桥；web 或旧 host 可不提供，UI 据此回退普通 MCP 卡片。 */
   readonly genUiService?: IGenUiService;
+  readonly pluginUiBridgeService?: import("./plugin-ui-bridge/contract.js").IPluginUiBridgeService;
+  readonly pluginUiSamplingService?: import("./plugin-ui-bridge/samplingContract.js").IPluginUiSamplingService;
+  readonly pluginUiAppToolsService?: import("./plugin-ui-bridge/appToolsContract.js").IPluginUiAppToolsService;
   readonly pluginSyncService: IPluginSyncService;
   readonly pluginsService: IPluginsService;
   /** 设置页插件管理（UI 不再直触 zcodeAgentService 的 plugins/* 面） */

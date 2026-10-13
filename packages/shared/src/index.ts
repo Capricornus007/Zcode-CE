@@ -314,6 +314,12 @@ export * from "./session-debug.js";
 export * from "./highspeed.js";
 export * from "./attachment-source.js";
 export * from "./channel-mention.js";
+
+export {
+  requestSecuritySensitiveHeaders,
+  isRequestSecurityFailure,
+} from "./request-security-edition/policy.js";
+export * from "./request-security-edition/verification-policy.js";
 export * from "./conversationSelection.js";
 export * from "./subagent-runtime-config.js";
 export * from "./subagent-profile.js";

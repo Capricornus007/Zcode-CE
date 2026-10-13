@@ -144,6 +144,27 @@ export {
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
 } from "./platform.js";
+// ---- CE 线增量：桌面窗口装饰面（DesktopZoomState 等定义在 platform.ts 中段，desktop preload 消费）----
+export type {
+  BrowserViewSurfaceScaleMode,
+  DesktopZoomState,
+  WindowControlsOverlayMetrics,
+  WindowControlsOverlayReadyPayload,
+} from "./platform.js";
+// ---- CE 线增量：Web 服务/远程控制面（类型定义在 platform.ts 尾段）----
+export type {
+  WebServiceStatusState,
+  WebServiceStatusStaleReason,
+  WebServiceStatusErrorCode,
+  WebServiceStatusPayload,
+  WebServiceConnectionInfoPayload,
+  RemoteControlConnectionRole,
+  RemoteControlConnection,
+  RemoteControlConnectionsPayload,
+  RemoteControlRevokeRequest,
+  RemoteControlRevokeResult,
+  RemoteControlRotateTokenResult,
+} from "./platform.js";
 export type {
   ArmsCustomEventPayload,
   ConfigureFinalArmsCustomEventE2ERequest,

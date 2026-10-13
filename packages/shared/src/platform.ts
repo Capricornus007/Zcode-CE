@@ -1174,6 +1174,25 @@ export interface IPlatformService {
    *   抗浏览器/网络/语言/时区变化，换手机才会变
    */
   getDeviceId(): string;
+
+  // ---- CE 线增量方法（ce.3 远程控制面；桌面 preload/主进程已实现，此处补齐声明）----
+
+  /** 读取本地 Web 服务的对外状态（契约 §5）。 */
+  getWebServiceStatus(): Promise<WebServiceStatusPayload>;
+  /** 启动本地 Web 服务；同步等到最终态才返回，中间态没有出口。 */
+  startWebService(options: { scope: "loopback" | "lan"; port?: number }): Promise<WebServiceStatusPayload>;
+  /** 停止本地 Web 服务，返回停后状态。 */
+  stopWebService(): Promise<WebServiceStatusPayload>;
+  /** 取带令牌的连接信息（契约 §5：带令牌的链接只走这一条通道）；服务未在跑时为 null。 */
+  getWebServiceConnectionInfo(): Promise<WebServiceConnectionInfoPayload | null>;
+  /** 订阅服务状态变化广播；返回退订函数。 */
+  onWebServiceChanged(callback: (status: WebServiceStatusPayload) => void): () => void;
+  /** 已建立连接列表快照（spec §6.4）；null = 不知道（服务没在跑/读失败/鉴权失败）。 */
+  getWebServiceConnections?(): Promise<RemoteControlConnectionsPayload | null>;
+  /** 断开连接（按 id 或全部）；幂等。 */
+  revokeWebServiceConnection?(input: RemoteControlRevokeRequest): Promise<RemoteControlRevokeResult>;
+  /** 轮换 Web 服务令牌；旧令牌立即失效。 */
+  rotateWebServiceToken?(): Promise<RemoteControlRotateTokenResult>;
 }
 
 // ---- CE 线增量（整版升级移植：官方 3.15.1 基底 + CE WebService/RemoteControl 面）----

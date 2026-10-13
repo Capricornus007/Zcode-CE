@@ -28,6 +28,14 @@ import { toMcpToolName, toModelVisibleMcpNamePart } from "./name.js";
 import { isMcpToolDisabled } from "./tool-disabled.js";
 
 export { toMcpToolName } from "./name.js";
+// Modified by ZCode:F5 mcp-ui 消费侧：把页面提供的工具包成 core ToolEntry，
+// bootstrap 的实例信箱（appToolsProtocol）经 @zcode/core 取这里的定义与执行闭包。
+export {
+  MCP_APP_PROVIDED_TOOL_ENTRY_TIMEOUT_MS,
+  type McpAppProvidedToolDefinition,
+  type McpAppProvidedToolExecutor,
+  createMcpAppProvidedToolEntry,
+} from "./app-tools.js";
 
 export {
   HOST_NODE_REPL_IMAGE_MAX_DIMENSION,
@@ -130,7 +138,8 @@ function toRegisteredMcpToolName(
   return toMcpToolName(descriptor);
 }
 
-function createMcpToolEntry(
+// Modified by ZCode:F5 mcp-ui 消费侧：bootstrap 的 UI 工具调用在未登记时按需构造同一条目。
+export function createMcpToolEntry(
   name: string,
   descriptor: McpToolDescriptor,
   mcpPort: McpPort,
@@ -396,7 +405,7 @@ function hasInformativeStructuredContent(value: unknown): boolean {
   return true;
 }
 
-function formatMcpToolResult(output: unknown): ModelMessageContent {
+export function formatMcpToolResult(output: unknown): ModelMessageContent {
   if (!isMcpToolCallResult(output)) {
     return stringify(output);
   }

@@ -654,6 +654,11 @@ export interface AgentRuntime {
     traceContext?: TraceContext;
     commitAfterApply?: () => Promise<void>;
   }): Promise<WorkspaceFileRewindApplyResult>;
+  // Modified by ZCode:F5 mcp-ui 消费侧：MCP App sampling（页面发起的独立模型调用）。
+  sampleModel(
+    input: import("./methods/sample-model.js").SampleModelInput,
+    options: { abortSignal: AbortSignal; traceContext?: TraceContext },
+  ): Promise<import("@zcode/shared/mcp-apps").McpAppsSamplingResult>;
   generateWorkspaceText(
     input: WorkspaceGenerateTextInput,
     options?: { abortSignal?: AbortSignal; traceContext?: TraceContext },

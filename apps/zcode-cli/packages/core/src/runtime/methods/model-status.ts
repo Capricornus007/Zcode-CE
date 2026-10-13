@@ -9,6 +9,8 @@ import type {
 import type { AgentRuntimeInternal } from "../internal.js";
 
 interface ModelStatusSinkOptions {
+  /** Modified by ZCode:F5 mcp-ui 消费侧。Sampling 不投影到主会话；保留网络日志和内存用量事件。 */
+  persist?: boolean;
   onStatus?: (event: ModelNetworkStatusEvent) => void;
   streamRecovery?: ModelStreamRecoveryStatus;
 }
@@ -31,7 +33,9 @@ export function createModelStatusSink(
         eventPayload,
         traceContext,
       );
-      await this.appendEvent(event, traceContext);
+      // Modified by ZCode:F5 mcp-ui：persist === false 时只收集到内存事件数组，
+      // 不进会话事件存储（App sampling 不该变成会话消息）。
+      if (options.persist !== false) await this.appendEvent(event, traceContext);
       events.push(event);
     },
   };

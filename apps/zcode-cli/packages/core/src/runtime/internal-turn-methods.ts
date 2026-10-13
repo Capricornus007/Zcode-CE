@@ -300,6 +300,8 @@ export interface AgentRuntimeTurnMethods {
     traceContext: TraceContext,
     events: SessionEvent[],
     options?: {
+      /** Modified by ZCode:F5 mcp-ui：persist === false 不进会话事件存储（App sampling）。 */
+      persist?: boolean;
       onStatus?: (event: ModelNetworkStatusEvent) => void;
       streamRecovery?: ModelStreamRecoveryStatus;
     },

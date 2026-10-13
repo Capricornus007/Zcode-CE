@@ -318,6 +318,8 @@ export interface ConversationEditTarget {
     mode?: TurnInputIntentMetadata["mode"];
     planEnabled?: boolean;
     provenance?: CanonicalUserIntentFact["provenance"];
+    // Modified by ZCode:X1。纯引用编辑放行后，新输入的引用快照在此继承到新 canonical intent。
+    conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
   };
 }
 
@@ -3868,6 +3870,11 @@ export class ProductProjection {
             return true;
           }
           break;
+        // Modified by ZCode:mcp-ui（F5）的非行增量与 subagent 行投影无交集，与 workflowRuns 同规。
+        case "pluginUi.resourceUpdated":
+        case "pluginUi.resourceListChanged":
+        case "pluginUi.instanceClosed":
+        case "pluginUi.appToolCall":
         // 非行 op：只动 workflowRuns 状态键，与 subagent 行投影的输入没有交集。
         case "workflowRun.updated":
         case "workflowRun.removed":
@@ -4015,6 +4022,11 @@ export class ProductProjection {
       switch (delta.op) {
         case "row.appended":
         case "state.updated":
+        // Modified by ZCode:mcp-ui（F5）的非行增量改不了这一行的 prospective 形态。
+        case "pluginUi.resourceUpdated":
+        case "pluginUi.resourceListChanged":
+        case "pluginUi.instanceClosed":
+        case "pluginUi.appToolCall":
         // 非行 op：改不了这一行的 prospective 形态。
         case "workflowRun.updated":
         case "workflowRun.removed":

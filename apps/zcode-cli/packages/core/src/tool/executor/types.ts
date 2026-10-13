@@ -143,6 +143,16 @@ export interface ToolExecutorOptions {
 }
 
 export interface ToolExecutor {
+  /**
+   * Modified by ZCode:F5 mcp-ui。同一权限链供 MCP App 使用；
+   * 返回审批后的输入，不执行 handler / 不做模型结果投影。
+   */
+  authorizeAppTool?(
+    toolCall: ExecutableToolCall,
+    entry: import("../types.js").ToolEntry,
+    options?: ToolExecuteOptions,
+  ): Promise<unknown>;
+
   execute(toolCall: ExecutableToolCall, options?: ToolExecuteOptions): Promise<ToolExecutionResult>;
   executeBatch(
     toolCalls: ExecutableToolCall[],

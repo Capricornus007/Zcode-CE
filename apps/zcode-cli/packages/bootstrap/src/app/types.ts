@@ -91,7 +91,17 @@ import type {
   WorkflowRunListItem,
   ExecutionShellSelection,
   SessionTitleSource,
+  // Modified by ZCode:F5 mcp-ui 消费侧方法签名所需类型。
+  McpReadResourceResult,
+  McpToolCallResult,
+  McpListResourcesResult,
+  McpListResourceTemplatesResult,
 } from "@zcode/contracts";
+import type {
+  McpAppProvidedToolDefinition,
+  McpAppProvidedToolExecutor,
+} from "@zcode/core";
+import type { McpAppsToolVisibility } from "@zcode/shared/mcp-apps";
 import type { NodeReplBrowserBroker } from "./node-repl-browser-broker.js";
 import type { SessionTranscriptMessage } from "../session-transcript.js";
 import type { WorkspaceHookReviewCommandResult } from "./workspace-hook-review-controller.js";
@@ -240,6 +250,8 @@ export type SendInputOptions = SubmitPromptOptions & {
   /** sendText 的产品 guide/queue 意图；是否 busy 仍由 Core admission 判断。 */
   queueDelivery?: "guide" | "queue";
   requireIdle?: boolean;
+  // Modified by ZCode:X1。编辑重发要求 Core admission 只能入队成未来独立 turn。
+  requireQueue?: boolean;
   expectedTurnId?: TurnId;
   commandKind?: "sendText" | "sendGoalCommand" | "compact";
 };
@@ -399,6 +411,70 @@ export interface ZCodeApp {
   getSkillCatalog(): Promise<SkillLoadOutcome>;
   listMcpServers(): Promise<Record<string, McpServerStatus>>;
   connectMcpServer(name: string): Promise<McpServerStatus>;
+  /**
+   * Modified by ZCode:F5 mcp-ui。读 MCP 资源（插件 UI 的 `ui://` HTML）。
+   * 走 session 自己的 mcpPort；归属校验在 mcp-ui 处理器完成，这里不重复。
+   */
+  readMcpResource(
+    serverName: string,
+    uri: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<McpReadResourceResult>;
+  onMcpAppConnectionInvalidated(serverName: string, listener: () => void): () => void;
+  getMcpAppConnectionSnapshot(serverName: string): { identity: string; generation: number } | null;
+  callMcpToolForUi(
+    serverName: string,
+    toolName: string,
+    args: Record<string, unknown> | undefined,
+    options?: { signal?: AbortSignal },
+  ): Promise<McpToolCallResult>;
+  /**
+   * Modified by ZCode:F5 mcp-ui。按 tools/list 的 descriptor 给出工具可见性；工具不存在返回 null。
+   * mcp-ui 用它拒绝 model-only 工具的 UI 调用。
+   */
+  getMcpToolVisibility(
+    serverName: string,
+    toolName: string,
+  ): Promise<readonly McpAppsToolVisibility[] | null>;
+  /**
+   * Modified by ZCode:F5 mcp-ui。App-Provided Tools：用给定集合整体替换本会话的 App 工具，失效工具缓存让下一次模型请求可见。
+   * 与非 App 工具重名的定义跳过。返回实际登记的模型侧名字。
+   */
+  replaceMcpAppProvidedTools(
+    definitions: readonly McpAppProvidedToolDefinition[],
+    execute: McpAppProvidedToolExecutor,
+  ): string[];
+  /** Modified by ZCode:F5 mcp-ui。页面发起的 resources/list、resources/templates/list 与订阅（订阅者身份由调用方给出）。 */
+  listMcpResourcesForUi(
+    serverName: string,
+    cursor?: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<McpListResourcesResult>;
+  listMcpResourceTemplatesForUi(
+    serverName: string,
+    cursor?: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<McpListResourceTemplatesResult>;
+  subscribeMcpResourceForUi(
+    serverName: string,
+    uri: string,
+    subscriberKey: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<void>;
+  unsubscribeMcpResourceForUi(
+    serverName: string,
+    uri: string,
+    subscriberKey: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<void>;
+  /** Modified by ZCode:F5 mcp-ui。会话关闭：清掉本会话（subscriberKey 前缀）的全部订阅。 */
+  unsubscribeMcpResourcesForUi(subscriberKeyPrefix: string): Promise<number>;
+  /** Modified by ZCode:F5 mcp-ui。插件页面发起的 resources/read；与 readMcpResource 同一端口，独立入口便于审计与限流。 */
+  readMcpResourceForUi(
+    serverName: string,
+    uri: string,
+    options?: { signal?: AbortSignal },
+  ): Promise<McpReadResourceResult>;
   readBackgroundBashOutput(workId: string, sessionId?: string): Promise<BackgroundBashOutputResult>;
   cancelBackgroundTask?(
     taskId: string,
@@ -538,6 +614,11 @@ export interface ZCodeApp {
     input: { selection: ModelSelection },
     options?: { abortSignal?: AbortSignal; traceContext?: TraceContext },
   ): Promise<void>;
+  /** Modified by ZCode:F5 mcp-ui。页面发起的独立模型采样（不开 turn、不写会话消息）。 */
+  sampleModel(
+    input: Parameters<AgentRuntime["sampleModel"]>[0],
+    options: Parameters<AgentRuntime["sampleModel"]>[1],
+  ): ReturnType<AgentRuntime["sampleModel"]>;
   expertWorkflowStatus(options?: {
     abortSignal?: AbortSignal;
     definitionId?: string;

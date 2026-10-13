@@ -51,6 +51,8 @@ export {
   serializeSavedWorkflow,
   validateWorkflowArgs,
 } from "./tool/handlers/saved-workflows/index.js";
+// Modified by ZCode:F5 mcp-ui 消费侧（保存与启动共用同一解析，避免「存得下来跑不起来」）。
+export { analyzeScript } from "./tool/handlers/workflow-script-analysis.js";
 export type {
   ResolvedSavedWorkflow,
   SavedWorkflowListResult,

@@ -144,6 +144,12 @@ export const SessionEventType = {
   PermissionRequested: "permission_requested",
   PermissionResolved: "permission_resolved",
   PermissionDenied: "permission_denied",
+  // Modified by ZCode:F5 mcp-ui。插件 UI 订阅的 MCP 资源变化。只进 live 投影（v4Gateway.ingest，seq 0），不落盘、不进冷恢复。
+  PluginUiResourceUpdated: "plugin_ui_resource_updated",
+  PluginUiResourceListChanged: "plugin_ui_resource_list_changed",
+  /** Modified by ZCode:F5。App-Provided Tools：模型发起的页面工具调用，只进 live 投影（实例信箱），不落盘。 */
+  PluginUiInstanceClosed: "plugin_ui_instance_closed",
+  PluginUiAppToolCallRequested: "plugin_ui_app_tool_call_requested",
   UserInputAutoResolutionUpdated: "user_input_auto_resolution_updated",
   WorkspaceHookReviewRequested: "workspace_hook_review_requested",
   WorkspaceHookReviewSettled: "workspace_hook_review_settled",
@@ -277,6 +283,24 @@ export type WorkflowNotificationMeta =
       question: string;
       context?: string;
       askedAt?: number;
+    }
+  /**
+   * 脚本到达一处留白（docs/dynamic-workflow/transcript-and-notifications.md 的 `hole` 载荷）：
+   * 主代理欠这个 run 一段代码。`prompt` ≤4000（与升级问题同界）；`before` / `after` 是留白前后
+   * 的阶段名，`draftPath` / `line` 指向 run 草稿里的那一行。每个 `hole-reached` 恰好一条。
+   */
+  | {
+      kind: "hole";
+      siteId: string;
+      ordinal: number;
+      name: string;
+      type: string;
+      prompt?: string;
+      draftPath?: string;
+      line?: number;
+      before?: string;
+      after?: string;
+      reachedAt?: number;
     }
   /** run 级停滞：每个 stall 段一条，不是终态。 */
   | {
@@ -982,6 +1006,36 @@ export interface PermissionDeniedPayload {
   inputSummary?: unknown;
 }
 
+// Modified by ZCode:F5 mcp-ui。插件 UI 资源/工具调用事件的载荷。
+/** 订阅者以 (scopeId, generation) 标识沙箱实例；renderer 只投递给 generation 一致的实例。 */
+export interface PluginUiResourceSubscriberRef {
+  instance: import("@zcode/shared/mcp-apps").McpAppInstance;
+  scopeId: string;
+  generation: number;
+}
+export interface PluginUiResourceUpdatedPayload {
+  pluginId: string;
+  serverName: string;
+  uri: string;
+  subscribers: PluginUiResourceSubscriberRef[];
+}
+export interface PluginUiResourceListChangedPayload {
+  pluginId: string;
+  serverName: string;
+  subscribers: PluginUiResourceSubscriberRef[];
+}
+/** App-Provided Tools：一次待执行的页面工具调用，投递给 subscribers 里唯一的实例。 */
+export interface PluginUiAppToolCallRequestedPayload {
+  activity?: boolean;
+  cancelled?: boolean;
+  pluginId: string;
+  serverName: string;
+  subscribers: PluginUiResourceSubscriberRef[];
+  callId: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+}
+
 export type UserInputAutoResolutionState =
   | {
       state: "hiddenGrace" | "visibleCountdown";
@@ -1221,6 +1275,10 @@ export type SessionEventPayload =
   | PermissionRequestedPayload
   | PermissionResolvedPayload
   | PermissionDeniedPayload
+  // Modified by ZCode:F5 mcp-ui（live-only）。
+  | PluginUiResourceUpdatedPayload
+  | PluginUiResourceListChangedPayload
+  | PluginUiAppToolCallRequestedPayload
   | UserInputAutoResolutionUpdatedPayload
   | WorkspaceHookReviewRequestedPayload
   | WorkspaceHookReviewSettledPayload

@@ -143,6 +143,12 @@ export const resolveBuildAliases = ({
   // plugin-host 启动只需这些独立入口，不能经通用 alias 重新求值 shared 总入口。
   "@zcode/shared/runtime-env": resolve(rootDirectory, "../../packages/shared/src/runtimeEnv.ts"),
   "@zcode/shared/mcp": resolve(rootDirectory, "../../packages/shared/src/mcp.ts"),
+  // Modified by ZCode:F5 mcp-ui 消费侧：MCP Apps 的 contract/instance/sampling 独立入口，
+  // agent bundle（core app-tools、bootstrap session-facade 等）直接 import 该子路径。
+  "@zcode/shared/mcp-apps": resolve(
+    rootDirectory,
+    "../../packages/shared/src/mcp-apps/index.ts",
+  ),
   "@zcode/shared/runtime-tool-runtime": resolve(
     rootDirectory,
     "../../packages/shared/src/runtime-tool-runtime.ts",

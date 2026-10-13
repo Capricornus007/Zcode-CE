@@ -28,6 +28,8 @@ import { startSavedWorkflowRun } from "./dynamic-workflow-run-start.js";
 import { amendWorkflowRunSettings } from "./dynamic-workflow-run-settings.js";
 import { getProjection } from "./config.js";
 import { getSessionId } from "./config.js";
+// Modified by ZCode:F5 mcp-ui 消费侧：MCP App sampling（独立模型调用，不开 turn）。
+import { sampleModel } from "./sample-model.js";
 import { enqueueDeferredInput } from "./steering.js";
 import { steerTurn } from "./steering.js";
 import { beginActiveTurn } from "./steering.js";
@@ -206,6 +208,8 @@ export function installAgentRuntimeMethods(ctor: AgentRuntimeConstructor): void 
   proto.getMode = getMode;
   proto.getPlanEnabled = getPlanEnabled;
   proto.getSessionModelSelection = getSessionModelSelection;
+// Modified by ZCode:F5 mcp-ui 消费侧。
+proto.sampleModel = sampleModel;
   proto.setSessionModelSelection = setSessionModelSelection;
   proto.getProjectId = getProjectId;
   proto.setWorkingDirectory = setWorkingDirectory;

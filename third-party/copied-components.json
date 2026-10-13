@@ -1164,8 +1164,29 @@
       "packages/ui/src/v4/ConversationRowView.tsx",
       "packages/ui/src/v4/workflowRunCardJoin.ts"
     ],
-    "scope": "Task-22 F6 A-prime render layer (commits 5047446f + d447d008). Lead-verified: the spine trio and timeline files are fork-point snapshots (the only post-fork touches 9487ed83/2907feba were same-line transports of older upstream versions), so the correct treatment is adopting upstream 3.15.1 wholesale: timeline-model.ts adopted (holes/station/fill/unlisted), station-observation.ts and timeline-holes.ts byte-identical, 12 workflow-timeline render files + 4 app-shell render files (FillFrames/HoleParts/PaneSaveSlots/PhasePills) + the createWorkflowHoleInput renderer, the spine trio (workflowRunSpine / WorkflowRunSpineParts / WorkflowRunPhaseList) adopted wholesale with consumer reconciliation (workflowRunSettingsCeiling renamed to workflowRunDefaultConcurrency, clamp 2 to 1), plus shared unlistedByPhase/holes wiring. Measured against the aac47556 worktree: 12 files byte-identical; 41 files carry only this repo's copyFormatGuard comment de-emphasis (** pairs removed — comment style only, logic unchanged, as disclosed for the plugin-ui domain entry); 21 files carry CE-side comment rewrites plus small code-level reconciliations (stationRoster rename, ReactNode type, prop renames) and will be upgraded to modifiedFiles once their Modified-by markers land (requested from ui-features-port). ConversationRowView.tsx is registered under the ZCode UI adapted fragments entry. webRemoteNavigationLayout was intentionally not touched (out of task scope).",
+    "scope": "Task-22 F6 A-prime render layer (commits 5047446f + d447d008). Lead-verified: the spine trio and timeline files are fork-point snapshots (the only post-fork touches 9487ed83/2907feba were same-line transports of older upstream versions), so the correct treatment is adopting upstream 3.15.1 wholesale: timeline-model.ts adopted (holes/station/fill/unlisted), station-observation.ts and timeline-holes.ts byte-identical, 12 workflow-timeline render files + 4 app-shell render files (FillFrames/HoleParts/PaneSaveSlots/PhasePills) + the createWorkflowHoleInput renderer, the spine trio (workflowRunSpine / WorkflowRunSpineParts / WorkflowRunPhaseList) adopted wholesale with consumer reconciliation (workflowRunSettingsCeiling renamed to workflowRunDefaultConcurrency, clamp 2 to 1), plus shared unlistedByPhase/holes wiring. Measured against the aac47556 worktree: 12 files byte-identical; 41 files carry only this repo's copyFormatGuard comment de-emphasis (** pairs removed — comment style only, logic unchanged, as disclosed for the plugin-ui domain entry); 21 files carry CE-side comment rewrites plus small code-level reconciliations (stationRoster rename, ReactNode type, prop renames) — the 21 such files carry first-line Modified-by declarations (added in 506694f3) and are registered as modifiedFiles. The 41 comment-ratchet files stay root-only (disclosed in this scope, same standing as the plugin-ui domain entry). ConversationRowView.tsx is registered under the ZCode UI adapted fragments entry. webRemoteNavigationLayout was intentionally not touched (out of task scope).",
     "license": "Apache-2.0",
-    "modifiedFiles": []
+    "modifiedFiles": [
+      "packages/ui/src/app-shell/WorkflowActorSessionSidePane.tsx",
+      "packages/ui/src/app-shell/WorkflowArtifactSidePane.tsx",
+      "packages/ui/src/app-shell/workflowRunPanel.ts",
+      "packages/ui/src/app-shell/WorkflowRunPhasePills.tsx",
+      "packages/ui/src/app-shell/WorkflowRunSidePaneSections.tsx",
+      "packages/ui/src/app-shell/WorkflowRunSidePane.tsx",
+      "packages/ui/src/app-shell/workflowRunThrottle.ts",
+      "packages/ui/src/app-shell/workflowWorkspaceLogbook.ts",
+      "packages/ui/src/app-shell/workflowWorkspaceTranscript.ts",
+      "packages/ui/src/app-shell/WorkspaceShellLayout.tsx",
+      "packages/ui/src/components/workflow-timeline/timeline-cache.ts",
+      "packages/ui/src/components/workflow-timeline/timeline-summary.ts",
+      "packages/ui/src/components/workflow-timeline/WorkflowCardChrome.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowCompletionCard.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowRunDigest.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowTimelineArcs.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowTimelineLedge.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowTimelineTracks.tsx",
+      "packages/ui/src/components/workflow-timeline/WorkflowTimeline.tsx",
+      "packages/ui/src/ToolCallBlocks/renderers/createWorkflowInput.ts"
+    ]
   }
 ]

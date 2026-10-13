@@ -5,6 +5,7 @@
  */
 export { acquireFileLock } from "./node/atomicFileLock.js";
 export {
+// Modified by ZCode: 增量自上游 aac47556——gen-ui 输出根路径（node 侧）导出。
   GEN_UI_OUTPUT_ROOT_ENV,
   GEN_UI_OUTPUT_DIRECTORY,
   getGenUiOutputDirectory,

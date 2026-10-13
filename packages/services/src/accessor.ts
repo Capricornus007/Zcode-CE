@@ -91,6 +91,7 @@ export interface IServiceAccessor {
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
   /** 插件 UI 桥；web 或旧 host 可不提供，UI 据此回退普通 MCP 卡片。 */
+  // Modified by ZCode: 增量自上游 aac47556——UI 桥接入位（gen-ui + plugin-ui，web/旧 host 可不提供）。
   readonly genUiService?: IGenUiService;
   readonly pluginUiBridgeService?: import("./plugin-ui-bridge/contract.js").IPluginUiBridgeService;
   readonly pluginUiSamplingService?: import("./plugin-ui-bridge/samplingContract.js").IPluginUiSamplingService;

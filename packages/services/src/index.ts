@@ -273,6 +273,7 @@ export {
 } from "./cua-permission-broker/cuaPipSession.js";
 
 // Plugins service — IPluginsService is both a type (interface) and value (descriptor)
+// Modified by ZCode: 增量自上游 aac47556（同上）。
 export { IGenUiService } from "./gen-ui/contract.js";
 export { IPluginsService } from "./plugins/plugins.js";
 // 设置页插件管理薄服务（UI 平台能力面不再直触 zcodeAgentService）
@@ -312,6 +313,7 @@ export type {
   FeedbackTicketSummary,
   FeedbackTicketType,
 } from "@zcode/shared";
+// Modified by ZCode: 增量自上游 aac47556——gen-ui 与 plugin-ui 桥契约导出。
 export {
   IPluginUiAppToolsService,
   type PluginUiAppToolCallParams,

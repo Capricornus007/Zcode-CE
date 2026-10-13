@@ -2604,6 +2604,8 @@ The original import revisions of copied components are not recorded in the curre
 
 - ZCode bots group/topic service wave v3.15.1 (Z.ai) (Apache-2.0): packages/services/src/bots/groupSessions.ts, packages/services/src/bots/groupAdminAttention.ts, packages/services/src/bots/groupDeliveryThrottle.ts, packages/services/src/bots/groupQueueCard.ts, packages/services/src/bots/groupReply.ts, packages/services/src/bots/groupResultDelivery.ts, packages/services/src/bots/topicContinuation.ts, packages/services/src/bots/topicHistory.ts, packages/services/src/bots/topicHistoryAttachment.ts, packages/services/src/bots/topicPreparationState.ts, packages/services/src/bots/topicResource.ts, packages/services/src/bots/channelMentionResolver.ts, packages/services/src/bots/taskStreamHub.ts, packages/services/src/bots/channelReply.ts, packages/services/src/bots/providers/feishuGroupMessages.ts, packages/services/src/bots/providers/groupInputReaction.ts, packages/services/src/bots/providers/groupMemberDirectory.ts, packages/services/src/bots/providers/types.ts, packages/services/src/zcode-agent/botTopicAdmission.ts, packages/services/src/zcode-agent/groupRuntimeSnapshot.ts, packages/services/src/zcode-agent/groupAttachmentUpload.ts, packages/services/src/bots/bots.ts, packages/services/src/bots/messages.ts, packages/services/src/bots/feishuChannelRuntime.ts, packages/services/src/bots/providers/feishuProvider.ts, packages/services/src/bots/botsService.ts, packages/services/src/session/zcodeTaskService.ts, packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
 
+- ZCode request-security-edition contract v3.15.1 (Z.ai) (Apache-2.0): packages/shared/src/request-security-edition/index.ts, packages/shared/src/request-security-edition/policy.ts, packages/shared/src/request-security-edition/verification-policy.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
 Fig autocomplete source carries the repository's MIT license; the generated registry records npm @withfig/autocomplete@2.692.3 metadata as ISC. The original source MIT notice is retained below.
 
 ## Embedded native and WASM components
@@ -40933,6 +40935,8 @@ SOFTWARE.
 - ZCode workflow save-and-rerun chain v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
 
 - ZCode bots group/topic service wave v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode request-security-edition contract v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
 
 
 

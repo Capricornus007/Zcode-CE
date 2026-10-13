@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "119e4400fb7037a96375a5f9299fa1c28a692547ad86c68b5f32df84bd693c6e",
+  "noticesSha256": "487009b89126be81e36538f7873476efcb56e3a771f5922d9b2339c7c88ce995",
   "inputs": {
     ".agents/skills/agent-browser/references/authentication.md": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b",
     ".agents/skills/agent-browser/references/commands.md": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909",
@@ -1719,6 +1719,9 @@
     "packages/shared/src/node/genUiPaths.ts": "9fe594b8a77cc74114d09146ee2a2f55e9ac2730fad7bfcacdaea82be63b7675",
     "packages/shared/src/platform.ts": "9f9ee5cc33535d2e4ad8eb9164fcd0e0a1b83b5de19febb52bd2927c2cf29c8d",
     "packages/shared/src/protocol.ts": "da3f710bfa28b1b48b6e1ae8c76924e3c6fd6088f2cc963d053a7e8762a3a377",
+    "packages/shared/src/request-security-edition/index.ts": "12735d8622bfd0b1b4e566cb5bf773e530805c976880fab37d85a9cbfb8941e4",
+    "packages/shared/src/request-security-edition/policy.ts": "b3c87d9f01bf3c9477188399d841dd8f63a6e6a02737f78777bce0a6c4201c42",
+    "packages/shared/src/request-security-edition/verification-policy.ts": "8cc61deede90d2456e1bd077b885ac600692efa8e62baf6beaa984f76f59d7b5",
     "packages/shared/src/subagent-profile.ts": "18cc59f19f9cb016b12d8a78543bd283c937b5cfde53ea7a06c574805c7b09d7",
     "packages/shared/src/subagent-runtime-config.ts": "82cee4df76835bb37f934ca8a922ffbf32b539e200127c0d288ffb6d2b75eba2",
     "packages/shared/src/task-realtime-core.ts": "0915d0969491e237a384d5bcfd689733409ce69ac35dace9d336beaaa40952bf",
@@ -1808,6 +1811,8 @@
     "packages/ui/src/assets/highspeed/zai-logo.png": "63d482066b87a832367e95ffe771710ac0b5c88eaace1d374bb23ee922623106",
     "packages/ui/src/BotsDialog.tsx": "f10a443b66f3dfd2ee038561dbe16e59a00ca2a48314f3c5ab8256ac2ca2c153",
     "packages/ui/src/BotsDialog/BotSummaryCard.tsx": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d",
+    "packages/ui/src/BotsDialog/BoundGroupsCard.tsx": "5810929801733b2fda0e70eca2af2cfe4b1989123c5227052568ba4b740bf86d",
+    "packages/ui/src/BotsDialog/PrivateDeliveryRetry.tsx": "4155b4c6b2c955281df720e1e219bc5441e1ae415e071cdcee449374bac1892b",
     "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx": "1a6a756dccc89776cbbf9dd27cb3589b81b58c92c6f7f8df6dffd3aa8984b6b6",
     "packages/ui/src/BotsDialog/shared.tsx": "579f732a289b46b6e2ca59676db75e24335cc7472bd9250d038b02a0cc3d4827",
     "packages/ui/src/BotsDialog/WorkspaceAccessCard.tsx": "d4999d83d94b394b096b0cbfe0e1423f0462f5a4f2ae3fc1171310cf5ad94904",
@@ -3217,7 +3222,7 @@
     "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
     "scripts/native-search-tools-config.mjs": "281d368464f61363fa2d8ab74f416962fe730dd0a0572db5564475f876bb65aa",
     "scripts/remote-native-search-tools-config.mjs": "472322a66f84c7452f96aa9e16e9c4e0600f7c2588a03dc6bc869229161b1cb2",
-    "third-party/copied-components.json": "cfbbc8eb1a7fa13fe75cf572aa0fce69111680d68c5546e133aba2c7d4ac8b43",
+    "third-party/copied-components.json": "8265889c85c3468f8bdc29434d70231f260cfbf09f2a1012306188dae3dafe01",
     "third-party/embedded-components.json": "1160d4b37e297584099e640998b75599a9ac237dc39dc29d49f2a538e514bb4e",
     "third-party/native-search/licenses/00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce.txt": "00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce",
     "third-party/native-search/licenses/01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f.txt": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f",
@@ -31701,6 +31706,14 @@
           "sha256": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d"
         },
         {
+          "file": "packages/ui/src/BotsDialog/BoundGroupsCard.tsx",
+          "sha256": "5810929801733b2fda0e70eca2af2cfe4b1989123c5227052568ba4b740bf86d"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/PrivateDeliveryRetry.tsx",
+          "sha256": "4155b4c6b2c955281df720e1e219bc5441e1ae415e071cdcee449374bac1892b"
+        },
+        {
           "file": "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx",
           "sha256": "1a6a756dccc89776cbbf9dd27cb3589b81b58c92c6f7f8df6dffd3aa8984b6b6"
         },
@@ -34127,6 +34140,37 @@
         {
           "file": "packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts",
           "sha256": "c4b4d37afc67faf95ae20b1c664eecb65b9e48fddfd6c76a0df3a9999b2f434c"
+        }
+      ]
+    },
+    {
+      "id": "ZCode request-security-edition contract v3.15.1 (Z.ai)",
+      "referenceRevision": "aac4755666d09fdcd70272fcf063c077a639015f",
+      "source": "https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE",
+      "file": "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt",
+      "sha256": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
+      "importRevision": "aac4755666d09fdcd70272fcf063c077a639015f",
+      "provenance": "Copied from the official open-source checkout zai-org/ZCode at revision aac47556 (tag v3.15.1, commit \"feat: update to v3.15.1\") as part of the 3.15.1-ce.1 upstream sync. Upstream declares license Apache-2.0 in package.json; the pinned LICENSE snapshot is byte-identical to the earlier ZCode entries (Apache-2.0 text unchanged since 29628c9, sha256 verified). Verified via the shared read-only worktree .reverse/91-upstream-checkout/zai-org-ZCode-3151 (detached @ aac47556); no re-download or re-extraction of any distribution package was performed.",
+      "roots": [
+        "packages/shared/src/request-security-edition/index.ts",
+        "packages/shared/src/request-security-edition/policy.ts",
+        "packages/shared/src/request-security-edition/verification-policy.ts"
+      ],
+      "scope": "Task-21: X10 zcodeSessionRestore restore-tolerance prerequisite — the request-security-edition contract (index re-exports, policy, and verification-policy carrying RequestVerificationProof). Byte-identical to upstream (verified against the aac47556 worktree, 3/8/47 lines exact match); consumed by packages/ui/src/request-security-edition/ (ui X10, landed 29c33ced). The 2-line re-export appended to shared/src/index.ts is the same upstream snippet splice, registered under the ZCode shared platform & channels entry (marked file).",
+      "license": "Apache-2.0",
+      "modifiedFiles": [],
+      "files": [
+        {
+          "file": "packages/shared/src/request-security-edition/index.ts",
+          "sha256": "12735d8622bfd0b1b4e566cb5bf773e530805c976880fab37d85a9cbfb8941e4"
+        },
+        {
+          "file": "packages/shared/src/request-security-edition/policy.ts",
+          "sha256": "b3c87d9f01bf3c9477188399d841dd8f63a6e6a02737f78777bce0a6c4201c42"
+        },
+        {
+          "file": "packages/shared/src/request-security-edition/verification-policy.ts",
+          "sha256": "8cc61deede90d2456e1bd077b885ac600692efa8e62baf6beaa984f76f59d7b5"
         }
       ]
     }

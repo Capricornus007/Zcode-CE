@@ -1056,5 +1056,22 @@
       "packages/services/src/session/zcodeTaskService.ts",
       "packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts"
     ]
+  },
+  {
+    "id": "ZCode request-security-edition contract v3.15.1 (Z.ai)",
+    "referenceRevision": "aac4755666d09fdcd70272fcf063c077a639015f",
+    "source": "https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE",
+    "file": "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt",
+    "sha256": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
+    "importRevision": "aac4755666d09fdcd70272fcf063c077a639015f",
+    "provenance": "Copied from the official open-source checkout zai-org/ZCode at revision aac47556 (tag v3.15.1, commit \"feat: update to v3.15.1\") as part of the 3.15.1-ce.1 upstream sync. Upstream declares license Apache-2.0 in package.json; the pinned LICENSE snapshot is byte-identical to the earlier ZCode entries (Apache-2.0 text unchanged since 29628c9, sha256 verified). Verified via the shared read-only worktree .reverse/91-upstream-checkout/zai-org-ZCode-3151 (detached @ aac47556); no re-download or re-extraction of any distribution package was performed.",
+    "roots": [
+      "packages/shared/src/request-security-edition/index.ts",
+      "packages/shared/src/request-security-edition/policy.ts",
+      "packages/shared/src/request-security-edition/verification-policy.ts"
+    ],
+    "scope": "Task-21: X10 zcodeSessionRestore restore-tolerance prerequisite — the request-security-edition contract (index re-exports, policy, and verification-policy carrying RequestVerificationProof). Byte-identical to upstream (verified against the aac47556 worktree, 3/8/47 lines exact match); consumed by packages/ui/src/request-security-edition/ (ui X10, landed 29c33ced). The 2-line re-export appended to shared/src/index.ts is the same upstream snippet splice, registered under the ZCode shared platform & channels entry (marked file).",
+    "license": "Apache-2.0",
+    "modifiedFiles": []
   }
 ]

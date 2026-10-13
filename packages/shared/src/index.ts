@@ -338,7 +338,6 @@ export type {
   CloudContentPayload,
   CloudContentBundle,
 } from "./cloudContent.js";
-export { resolveSafeTelemetryHostname } from "./telemetry.js";
 export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
 export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
 export {
@@ -351,4 +350,17 @@ export {
   type ProjectAccessTokenMaterial,
 } from "./project-access-token-client.js";
 export { ZCODE_TELEMETRY_REPORT_ENDPOINT } from "./env.js";
-export { sanitizeTelemetryEventDetail, type TelemetryEventPayload } from "./telemetry.js";
+export {
+  type FinalArmsCustomEventE2EEntry,
+  type FinalArmsCustomEventPayload,
+  type RendererTelemetryEventPayload,
+  type TelemetryEventPayload,
+  type TelemetryRendererContext,
+} from "./telemetry.js";
+export {
+  collectTelemetryRendererContext,
+  resolveSafeTelemetryHostname,
+  sanitizeTelemetryErrorMessage,
+  sanitizeTelemetryEventDetail,
+} from "./telemetry.js";
+export { getCapturedZCodeAgentTelemetryEnv } from "./runtimeEnv.js";

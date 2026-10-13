@@ -103,9 +103,15 @@ export {
   LoggingChannelClient,
 } from "./logging-middleware.js";
 
-// 遥测移除（P1）：network-telemetry-middleware 的网络观测出口
-// （setNetworkTelemetrySink / emitNetworkTelemetryObservation /
-// NetworkTelemetryChannelServer / NetworkTelemetryChannelClient 及配套类型）已整体删除。
+export {
+  type NetworkTransportKind,
+  type NetworkObservation,
+  type NetworkTelemetrySink,
+  setNetworkTelemetrySink,
+  emitNetworkTelemetryObservation,
+  NetworkTelemetryChannelServer,
+  NetworkTelemetryChannelClient,
+} from "./network-telemetry-middleware.js";
 
 // Layer 6: Remote
 export {

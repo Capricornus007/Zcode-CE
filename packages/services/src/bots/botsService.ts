@@ -1990,6 +1990,7 @@ export function createBotsService(
       case "elicitation.respond":
         return { type: "elicitation.respond", value: option.id };
     }
+    return null;
   }
 
   function shouldUseTransientInteractionCard(bot: BotConfig, user: BotConfig): boolean {
@@ -5489,6 +5490,21 @@ export function createBotsService(
           return weixinActivationReply;
         }
         switch (command.type) {
+          case "group.enable":
+          case "group.disable":
+          case "group.history":
+          case "topic.leave":
+            // CE 裁剪：群/话题运行面不在本发行线（官方 3.15.1 有，未移植）。
+            return [
+              createOutbound(
+                message.actor,
+                "This build does not include group/topic command support.",
+              ),
+            ];
+          case "queue.cancel":
+            return [
+              createOutbound(message.actor, "No active queue to cancel in this build."),
+            ];
           case "selection.cancel":
             return handleSelectionCancel(message);
           case "bind":

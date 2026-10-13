@@ -3,6 +3,8 @@ import { localTtftContextSchema, localTtftClockSchema } from "../localTtft.js";
 // conversation rewind 无独立命令（裁决：= editUserQuery 的 UI 入口）；
 // workspace-only 文件撤销走 applyFileRewind，不截断聊天历史。
 import { z } from "zod";
+import { botGroupInputSourceSchema } from "../bots.js";
+import { conversationQuotesSchema } from "../conversationSelection.js";
 import { conversationRowTargetSchema, timestampSchema } from "./core.js";
 import { attachmentRefSchema } from "./attachment-ref.js";
 import { v4ConversationFileRewindPreviewResultSchema } from "./transport.js";
@@ -106,6 +108,9 @@ export const commandPayloadSchemas = {
       offPeakRunType: z.enum(["init", "resume"]).optional(),
       // Bot 来源只由 Host 注入，用于 CronCreate 在当前 turn 内读取并持久化回推地址。
       botDeliveryTarget: zcodeAutomationBotDeliveryTargetSchema.optional(),
+      inputOrigin: z.enum(["desktop", "mobile"]).optional(),
+      botGroupSource: botGroupInputSourceSchema.optional(),
+      conversationQuotes: conversationQuotesSchema.optional(),
       // 定时任务会话的后续用户输入也必须保持 turn-scoped 工具面隔离；不能借用
       // automationId，否则会把普通用户输入误标成一次 automation 派发。
       toolDisallowlist: z.array(z.string().min(1)).optional(),
@@ -213,7 +218,7 @@ export const commandPayloadSchemas = {
   // additive（冻结面按黄金测试背书演进）：agent 协作模式切换。
   // 值域 = core CollaborationMode 的可切换子集（auto 非用户可切，不进 UI 命令面）。
   switchCollaborationMode: z.object({
-    mode: z.enum(["build", "edit", "plan", "yolo"]),
+    mode: z.enum(["build", "edit", "plan", "yolo", "guarded"]),
   }),
   setFollowupMode: z.object({ mode: z.enum(["queue", "guide"]) }),
   pauseGoal: z.object({}),

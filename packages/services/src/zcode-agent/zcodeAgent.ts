@@ -34,6 +34,8 @@ import type {
   ZCodeWorkflowsDeleteResult,
   ZCodeWorkflowsGetResult,
   ZCodeWorkflowsListResult,
+  ZCodeWorkflowsForRunResult,
+  ZCodeWorkflowsSaveResult,
   ZCodeWorkflowsMoveResult,
   ZCodeWorkflowsRunsResult,
   ZCodeWorkflowsUpdateMetaResult,
@@ -136,10 +138,12 @@ import type {
 } from "./zcodeAgentPluginParams.js";
 import type {
   ZCodeAgentDeleteSavedWorkflowParams,
+  ZCodeAgentFindSavedWorkflowForRunParams,
   ZCodeAgentGetSavedWorkflowParams,
   ZCodeAgentListSavedWorkflowRunsParams,
   ZCodeAgentListSavedWorkflowsParams,
   ZCodeAgentMoveSavedWorkflowParams,
+  ZCodeAgentSaveSavedWorkflowFromRunParams,
   ZCodeAgentUpdateSavedWorkflowMetaParams,
 } from "./zcodeAgentWorkflowParams.js";
 
@@ -693,6 +697,16 @@ export interface IZCodeAgentService {
   // 在项目档 / 全局档之间移动同名文件：
   // `workspace` 是载体（移到项目传目标项目、移到全局传源项目），`to` 是落点档；不覆盖已存在的目标。
   moveSavedWorkflow(params: ZCodeAgentMoveSavedWorkflowParams): Promise<ZCodeWorkflowsMoveResult>;
+
+  // Modified by ZCode: 增量自上游 aac47556——完成卡的「直接保存」（按 runId 从 journal 取
+  // 这次 run 实际跑过的脚本落盘，不经模型回合；两者都必带 workspace，journal 在那里）。
+  saveSavedWorkflowFromRun(
+    params: ZCodeAgentSaveSavedWorkflowFromRunParams,
+  ): Promise<ZCodeWorkflowsSaveResult>;
+  /** 这次 run 对应哪个已保存工作流（推导，不记忆）；顺带回 run 的实参供「再次运行」预填。 */
+  findSavedWorkflowForRun(
+    params: ZCodeAgentFindSavedWorkflowForRunParams,
+  ): Promise<ZCodeWorkflowsForRunResult>;
   resolveSuggestedPluginReference(
     params: ZCodeAgentResolveSuggestedPluginReferenceParams,
   ): Promise<import("@zcode/shared").ZCodePluginsResolveSuggestedReferenceResult>;

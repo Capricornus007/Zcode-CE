@@ -43,6 +43,8 @@ import {
   type ZCodeProcessChildProcess,
   zcodeSkillsReferenceCatalogResultSchema,
   zcodeWorkflowsDeleteResultSchema,
+  zcodeWorkflowsForRunResultSchema,
+  zcodeWorkflowsSaveResultSchema,
   zcodeWorkflowsGetResultSchema,
   zcodeWorkflowsListResultSchema,
   zcodeWorkflowsMoveResultSchema,
@@ -186,6 +188,8 @@ import type {
   ZCodeAgentListSavedWorkflowRunsParams,
   ZCodeAgentListSavedWorkflowsParams,
   ZCodeAgentMoveSavedWorkflowParams,
+  ZCodeAgentSaveSavedWorkflowFromRunParams,
+  ZCodeAgentFindSavedWorkflowForRunParams,
   ZCodeAgentSavedWorkflowTarget,
   ZCodeAgentUpdateSavedWorkflowMetaParams,
   ZCodeAgentResolveSuggestedPluginReferenceParams,
@@ -4288,6 +4292,38 @@ export function createZCodeAgentService(
         zcodeProtocolMethods.workflowsMove,
         { workspace: buildWorkspaceRef(params), name: params.name },
         zcodeWorkflowsMoveResultSchema,
+      );
+    },
+
+    // Modified by ZCode: 增量自上游 aac47556——完成卡的「直接保存」：必须打到这次 run 所属
+    // workspace 的 agent client——脚本从那个进程的 journal 里读，全局档也一样（落点由 agent
+    // 按 scope 算，与载体无关）。因此走 getReadOnlyClient 直通，不经全局载体选择。
+    async saveSavedWorkflowFromRun(params: ZCodeAgentSaveSavedWorkflowFromRunParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.workflowsSave,
+        {
+          workspace: buildWorkspaceRef(params),
+          runId: params.runId,
+          name: params.name,
+          meta: params.meta,
+          ...(params.scope === undefined ? {} : { scope: params.scope }),
+          ...(params.overwrite === undefined ? {} : { overwrite: params.overwrite }),
+        },
+        zcodeWorkflowsSaveResultSchema,
+      );
+    },
+
+    async findSavedWorkflowForRun(params: ZCodeAgentFindSavedWorkflowForRunParams) {
+      const client = await getReadOnlyClient(params);
+      return client.request(
+        zcodeProtocolMethods.workflowsForRun,
+        {
+          workspace: buildWorkspaceRef(params),
+          runId: params.runId,
+          ...(params.candidates === undefined ? {} : { candidates: [...params.candidates] }),
+        },
+        zcodeWorkflowsForRunResultSchema,
       );
     },
 

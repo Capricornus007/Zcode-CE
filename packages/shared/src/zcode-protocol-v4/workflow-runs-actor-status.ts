@@ -1,9 +1,10 @@
 // ============================================================
-// actor 三态的派生（workflowRuns 归约的一条规则）
+// actor 三态的**派生**（workflowRuns 归约的一条规则）
 // ============================================================
-// 纯函数，只从节点与 run 状态推导，不读取时钟或执行 I/O。
+// 住在归约主文件之外，与 workflow-runs-concurrency.ts / -phases.ts / -started.ts / -caps.ts
+// 同一个理由（主文件的 max-lines 门），也同一条纪律：纯函数、无时钟、无 I/O。
 //
-// 为什么必须派生：引擎的 Boundary C 除了 `actor-created` 之外不发任何 actor 生命周期事件，
+// 为什么必须派生：引擎的 Boundary C 除了 `actor-created` 之外**不发任何 actor 生命周期事件**，
 // 所以「这个子代理在动吗、在等吗、干完了吗」没有事件可搬，只能由它名下节点的相位与 run 的
 // 终态推出来。每一条改动了 nodes 或 run.status 的事件之后都要重跑一遍这个函数。
 
@@ -19,7 +20,7 @@ function actorKey(siteId: string, ordinal: number): string {
 }
 
 /**
- * 三态推导：
+ * 三态推导（docs/dynamic-workflow/concurrency.md「Protocol state」）：
  *   running   有节点在 executing / repairing / nudged（模型请求已发出、正在跑）
  *   waiting   有 live 节点（queued / dispatched / waiting），或尚无任何节点且 run 未终态
  *   completed 其余：全部节点已结算，或 run 已终态（终态压过一切：一个终态 run 里没有任何人
@@ -27,7 +28,7 @@ function actorKey(siteId: string, ordinal: number): string {
  * `dispatched` 归 waiting 而不是 running：它是「会话就绪、首个请求尚未准入」的短暂相位，
  * 真正在跑由 node-executing 说。
  *
- * 状态没变的 actor 保持引用不变——键级增量按引用先判一遍"这条变了吗"，这里每次都造新对象
+ * 状态没变的 actor 保持**引用不变**——键级增量按引用先判一遍"这条变了吗"，这里每次都造新对象
  * 会让每条节点事件都把整张 actors 表搬上线。
  */
 export function withDerivedWorkflowActorStatuses(run: WorkflowRunState): WorkflowRunState {

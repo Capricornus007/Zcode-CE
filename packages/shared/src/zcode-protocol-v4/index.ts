@@ -12,6 +12,7 @@ export * from "./workflow-observation-display.js";
 export * from "./snapshot.js";
 export * from "./workflow-runs.js";
 export * from "./workflow-runs-reducer.js";
+export * from "./workflow-runs-holes.js";
 // workflowRuns 的键级增量（diff / apply / 规范键序）；op 本身在 delta.js。
 export * from "./workflow-runs-delta.js";
 // 界留下的痕迹：被拒实例计数、条目预算、步数读法；表满时的腾位；以及给旧消费者的裁剪。
@@ -36,9 +37,6 @@ export * from "./wire.js";
 export * from "./wire-codec.js";
 export * from "./wire-reassembly.js";
 export * from "./wire-assembler.js";
-// 帧组装 fault 的分类（内容确定性失败 vs 瞬态）：常量 + 谓词 + 客户端终态 code。
-// 本地保留（上游同一行无注释）：它解释了为什么「内容拒收」不能走瞬态重订阅阶梯 ——
-// 那是 fce07b1 那次修复留下的可读性资产。
 export * from "./wire-fault.js";
 export * from "./sessions-index.js";
 export * from "./sessions-index-workflow-activity.js";

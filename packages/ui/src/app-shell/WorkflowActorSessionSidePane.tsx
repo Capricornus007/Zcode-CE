@@ -45,11 +45,11 @@ function WorkflowActorNotStarted() {
 /**
  * 门 + 嵌套只读 SessionPane。
  *
- * 门的输入是**父会话**的 `workflowRuns` 投影（照 `WorkflowRunSidePane`：运行态是父会话的
+ * 门的输入是父会话的 `workflowRuns` 投影（照 `WorkflowRunSidePane`：运行态是父会话的
  * 权威投影，不是这个面板的本地缓存）。租约是引用计数的，父会话通常已经被主面板订阅着，
  * 所以这一份读取不额外建连。
  *
- * `notStarted` 时**整棵 SessionPane 不挂载**——不是渲染一个隐藏的它。订阅发生在
+ * `notStarted` 时整棵 SessionPane 不挂载——不是渲染一个隐藏的它。订阅发生在
  * SessionPane 内部的 `layer.acquire(actorSessionId)` 上，只有不挂载才真的没有失败订阅，
  * 也就没有那个停在 error 只等手动 retry 的投影 store。
  */
@@ -62,8 +62,8 @@ const WorkflowActorSessionContent = memo(function WorkflowActorSessionContent({
 }: WorkflowActorSessionSidePaneProps) {
   const { layer } = useV4Conversation();
 
-  // 父会话租约走**渲染期同步建连**（`useMemo`，同 `ReadyV4PaneConversationProvider`），
-  // 不是 `WorkflowRunSidePane` 的 `useEffect` + `setLease`。区别是要紧的：effect 版的**首帧**
+  // 父会话租约走渲染期同步建连（`useMemo`，同 `ReadyV4PaneConversationProvider`），
+  // 不是 `WorkflowRunSidePane` 的 `useEffect` + `setLease`。区别是要紧的：effect 版的首帧
   // 没有投影，门只能判 unknown，SessionPane 于是挂上一帧、对着还不存在的会话订阅一次并失败。
   // 而失败的 store 会带着 status:"error" 在 SessionDataLayer 的 keep-warm 里活满 30 秒，
   // 门后来放行时的 acquire 直接复用它（refCount++，不再 connect）——那正是本要修掉的死面板。
@@ -110,11 +110,11 @@ const WorkflowActorSessionContent = memo(function WorkflowActorSessionContent({
 /**
  * 一个 dwf actor 实例的 transcript。
  *
- * 组合方式照 `SubagentSessionSidePane`：pane scope + 嵌套**只读** `SessionPane`。除了未启动
+ * 组合方式照 `SubagentSessionSidePane`：pane scope + 嵌套只读 `SessionPane`。除了未启动
  * 门之外这里没有任何自己的取数逻辑，而这正是把 actor 会话落成真实持久会话换来的东西——
  * 实时流、冷恢复、run 结束之后的回看，全部由既有 SessionPane 链路负责。
  *
- * 与 subagent 面板的两处**刻意**不同：
+ * 与 subagent 面板的两处刻意不同：
  *
  * - 不传 `onOpenSubagentSession`：actor 的工具面里 subagent 是关掉的（引擎 spec 的
  *   「Actor tool surface」），没有嵌套下钻可点，也就不该摆一个入口。

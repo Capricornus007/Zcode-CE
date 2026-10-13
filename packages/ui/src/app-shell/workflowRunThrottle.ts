@@ -1,7 +1,7 @@
 /**
  * workflow run 详情页的自适应并发观察面：
  * run 头的并发/冷却读数，以及事件日志里 `node-waiting` / `node-executing` / `concurrency-changed` 三条
- * 事件的行。子代理徽标**不在**这里：它只有三态一个词，直接由协议 actor 状态渲染。
+ * 事件的行。子代理徽标不在这里：它只有三态一个词，直接由协议 actor 状态渲染。
  *
  * 与 workflowRunPanel.ts 同族的纯规则（拆出来是为了守住 max-lines 门），加一件事：**收到时刻
  * 登记**。协议只带相对量（`cooldownMs`——引擎无时钟），deadline 只能由 UI 按
@@ -53,7 +53,7 @@ function stamp<T extends object>(registry: WeakMap<T, number>, subject: T, now: 
 
 interface WorkflowRunConcurrencyView {
   /**
-   * 芯片上那个数：**实际**并发 `min(cap, limit)`——共享桶的 cap 与本 run 自己的 limit 取小。用户看到的是这次 run
+   * 芯片上那个数：实际并发 `min(cap, limit)`——共享桶的 cap 与本 run 自己的 limit 取小。用户看到的是这次 run
    * 此刻真能有几个子代理在飞，两条界里哪一条在起作用不是读数要回答的问题。
    */
   cap: number;
@@ -63,7 +63,7 @@ interface WorkflowRunConcurrencyView {
 }
 
 /**
- * run 头的并发读数。只在**实际并发 < ceiling** 时在场：跑在天花板上的 run 没有可说的。
+ * run 头的并发读数。只在实际并发 < ceiling 时在场：跑在天花板上的 run 没有可说的。
  * 冷却按收到时刻 + `cooldownMs` 推 deadline，过期即缺席——UI 不显示一个已经过去的时间。
  */
 export function workflowRunConcurrencyView(

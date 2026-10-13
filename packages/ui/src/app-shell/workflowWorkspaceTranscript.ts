@@ -4,7 +4,7 @@
 // 一行 journal 节点 → 一张工具卡的素材：种类（Read / Search / Git / Terminal）、主文本、命令行、
 // 所属阶段与轮次、状态词、页脚数字。无 React、无 DOM、无取数。
 //
-// 种类按 **op** 分派，不按 kind：`kind` 只分 world-read / world-run，而卡片要的是「读文件」
+// 种类按 op 分派，不按 kind：`kind` 只分 world-read / world-run，而卡片要的是「读文件」
 // 「找东西」「git」「跑命令」四个动词——它们正是 files / git / world 三个 facade 容器的分法。
 // 升级前的历史行没有 op（`input_json` 为 NULL），退回静态图上的步标签，种类是通用的「步骤」。
 

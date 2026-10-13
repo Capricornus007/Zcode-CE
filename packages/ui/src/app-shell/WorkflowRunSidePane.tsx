@@ -55,7 +55,7 @@ import { useConversationProjection } from "@/v4/useConversationProjection.js";
 import { useV4Conversation, V4PaneConversationProvider } from "@/v4/V4ConversationContext.js";
 
 /**
- * 稳定引用的空列表：pendingQuestions 键会**来回**进出（问题一被作答就整键消失），
+ * 稳定引用的空列表：pendingQuestions 键会来回进出（问题一被作答就整键消失），
  * 空引用要稳定，否则 memo 化的子组件每次渲染都白重渲染一遍。
  */
 const EMPTY_QUESTIONS: readonly WorkflowRunPendingQuestion[] = [];
@@ -81,7 +81,7 @@ const WorkflowRunContent = memo(function WorkflowRunContent({
   const { layer, sendCommand } = useV4Conversation();
   const [lease, setLease] = useState<SessionLease | null>(null);
 
-  // 详情页重新订阅**父会话**的投影（照 PlanDetailSidePane）：运行态是父会话的权威投影，
+  // 详情页重新订阅父会话的投影（照 PlanDetailSidePane）：运行态是父会话的权威投影，
   // 不是这个面板的本地查询缓存。
   useEffect(() => {
     const nextLease = layer.acquire(tab.parentSessionId);
@@ -120,7 +120,7 @@ const WorkflowRunContent = memo(function WorkflowRunContent({
     });
   }, [onOpenWorkflowRun, successor, tab.parentSessionId, tab.workflowName, tabScope]);
 
-  // 静态图按**发起 toolCallId** 取：与轮尾 run 卡、
+  // 静态图按发起 toolCallId 取：与轮尾 run 卡、
   // 脚本 transcript 同一张表——CreateWorkflow 工具行或直接启动轮的元数据，谁挂着图都一样。行窗口是
   // 有界的，老对话里翻不到发起行是正常情况，不是错误——此时没有图可给。
   // 「配置」修订出来的 run 在设置轮落地之前借前驱的图（规则与理由见 resolveWorkflowRunGraph）。
@@ -315,7 +315,7 @@ const WorkflowRunContent = memo(function WorkflowRunContent({
   const handleOpenArtifact = useCallback(
     (artifactId: string) => {
       // 卡片只发意图（哪个产物），会话与 workspace 身份由这里补齐——与 actor transcript
-      // 同一条论证：卡片不感知 scope。**不带版本号**：打开即最新版。
+      // 同一条论证：卡片不感知 scope。不带版本号：打开即最新版。
       //
       // 这份清单是活投影 + journal 的合并视图，所以 `contentType` 与 `sourcePath` 两个键都在：
       // 前者让宿主把 html 产物直接开成浏览器 tab，后者省掉宿主再查一次 journal
@@ -410,7 +410,7 @@ const WorkflowRunContent = memo(function WorkflowRunContent({
       )}
 
       {/*
-       * Artifacts 区：脚本用 `artifact.*` 交付给**用户**的产出。面板的最后一节、默认展开——它是
+       * Artifacts 区：脚本用 `artifact.*` 交付给用户的产出。面板的最后一节、默认展开——它是
        *           这次运行的交付物，也是用户打开这块面板最常见的目的。零件时整区缺席；失败与取消的
        *           run 一样渲染（一个死在第 12 步的 run 仍然可能已经交付了一份 pdf）。`report` 条目、
        *           事件日志与脚本原文三节已撤走：技术细节，读者是模型与 CLI。
@@ -431,10 +431,10 @@ const WorkflowRunContent = memo(function WorkflowRunContent({
  * workflow run 的详情页。
  *
  * 详情页承担用量、控制与交付物；图本身回到了聊天区的工具卡上，这里画的是同一个时间线模型的
- * 纵向清单。它**不复刻**卡片的有界 display——图之外的一切都读 `workflowRuns` 的权威投影，
+ * 纵向清单。它不复刻卡片的有界 display——图之外的一切都读 `workflowRuns` 的权威投影，
  * 产物清单则直接读 journal。
  *
- * 面板只呈现**用户**要看的东西。`report` 条目、事件日志与脚本原文
+ * 面板只呈现用户要看的东西。`report` 条目、事件日志与脚本原文
  * 三节已经撤走——它们是技术细节，读者是模型与 CLI，不是坐在这块面板前的人。
  * journal 的读面一个没动（事件查询、report 行仍在），撤掉的只是它们在这里的显示。
  */

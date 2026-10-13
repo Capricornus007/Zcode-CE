@@ -29,11 +29,11 @@ import {
  * 一条对话的 workflow run 目录。三步形状与 subagent 目录逐字同构：任务列表页脚行 → 这一页 → `workflow-run`
  * 详情页。
  *
- * **行只渲染 journal 摘要**：发现查询本来就返回 `pending`/
+ * 行只渲染 journal 摘要：发现查询本来就返回 `pending`/
  * `running`，所以两段都齐；活 run 的步数与时长在任务列表上（就在你点的那行上方）和详情页里，
  * 这一页不重复那份实时状态。
  *
- * 但它**确实**订一份投影——只当新鲜度触发器。第一版按
+ * 但它确实订一份投影——只当新鲜度触发器。第一版按
  * 「不租会话、不订投影」实现，于是页面一个信号都没有：hook 首答即收口，跑完的 run 永远留在
  * 「运行中」。租约 + 投影这套接线与 `SubagentDirectorySidePane` 逐字相同，那边靠的是
  * `subagents.revision`；这里的键要更挑（见 `workflowRunDirectoryRefreshKey`），因为 dwf 的
@@ -166,7 +166,7 @@ const WorkflowRunDirectoryContents = memo(function WorkflowRunDirectoryContents(
   // pane 是从一条活着的对话里点开的，所以 `live: true` 是实话；`limit` 与任务列表计数共用
   // 同一个常量，两处深度一旦不同就等于两套口径。
   //
-  // `refreshKey` 是这一页会不会自己更新的**全部**依据（实测 bug：跑完的 run 不会挪到
+  // `refreshKey` 是这一页会不会自己更新的全部依据（实测 bug：跑完的 run 不会挪到
   // 「已结束」，因为这里当初一个信号都没接）。投影在这里只是触发器，不是信源：行仍然只渲染
   // journal 摘要，活 run 的步数与时长仍然只在任务列表和详情页。键的形状（run 数 + 已结算数）
   // 让「多一个 run / 跑完一个 run」重取一次，而节点级进度不重取——见模型里那段注释。

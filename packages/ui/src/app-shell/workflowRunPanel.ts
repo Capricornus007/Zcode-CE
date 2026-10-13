@@ -27,8 +27,8 @@ export function isWorkflowRunCancellable(run: WorkflowRunState | undefined): boo
 }
 
 /**
- * Resume 可用性。**一个信源**：投影 run 的 `resumable` 状态位——由 CLI 在 `run-settled`
- * 载荷上按 resume 门的**同一个谓词**算好（live 与冷回放同一条铸造链），UI 绝不自行按
+ * Resume 可用性。一个信源：投影 run 的 `resumable` 状态位——由 CLI 在 `run-settled`
+ * 载荷上按 resume 门的同一个谓词算好（live 与冷回放同一条铸造链），UI 绝不自行按
  * status + failureCode 推导（两处谓词会漂移：按钮亮着但命令被拒）。
  *
  * 投影缺席（被 8-run 上限淘汰）一律不可恢复：宁可少一个按钮，不给出一个点下去必被拒的控件。
@@ -43,7 +43,7 @@ type WorkflowRunResultView =
   /** pending / running：还没有结果面板。 */
   | { kind: "none" }
   /**
-   * 完成。`preview` 本阶段**恒缺席**——脚本产物只在 `RunSettlement.artifact` 里，既不在
+   * 完成。`preview` 本阶段恒缺席——脚本产物只在 `RunSettlement.artifact` 里，既不在
    * `run-settled` 事件上（它只携 status 与 error），也不在 journal 里。所以完成态只能指向
    * 会话里那条后台结果轮，绝不编造一个结果视图。schema 保留了该字段，真填上时如实展示。
    */
@@ -130,7 +130,7 @@ function truncate(text: string, max: number): string {
 }
 
 /**
- * 事件日志里一条 report 条目的**短摘要**（不是 Results 区那份完整预览）。
+ * 事件日志里一条 report 条目的短摘要（不是 Results 区那份完整预览）。
  *
  * 刻意在这里就地压成一行：事件日志是等宽的一行一条，多行 JSON 会把日志撑开成第二个
  * 产物视图。完整形态（string 原样 / object pretty JSON）由 CLI 侧算好放在
@@ -168,7 +168,7 @@ const EVENT_KEY_PREFIX = "chat.toolCall.workflow.run.event.";
 /**
  * 引擎事件 → 可读一行。
  *
- * 词汇表按**引擎实际发出的**种类写：run-started / actor-created / node-queued /
+ * 词汇表按引擎实际发出的种类写：run-started / actor-created / node-queued /
  * node-dispatched / node-repairing / node-nudged / node-settled / usage-updated / log /
  * import-cache-closed / report / escalation-raised / escalation-resolved / run-settled，以及自适应并发的
  * node-waiting / node-executing / concurrency-changed（default 分支先交给同族模块）。后两个由 driver 在执行 ask
@@ -314,7 +314,7 @@ export function workflowRunEventLines(
       }
 
       /**
-       * report 与 log 都是 fire-and-forget，但 report **有 site 身份**（`report#N@k` 进 journal），
+       * report 与 log 都是 fire-and-forget，但 report 有 site 身份（`report#N@k` 进 journal），
        * 所以这一行带实例。条目正文另有主场（Results 区的完整预览），这里只给一个短摘要——
        * 事件日志的职责是"引擎发过什么、什么时候"，不是第二个产物视图。
        */
@@ -332,7 +332,7 @@ export function workflowRunEventLines(
        * 升级问答：actor 撞上真阻塞，把问题升级给主代理，
        * 停在自己那次 ask 里等答案；主代理按 qid 作答后它就地继续。
        *
-       * 两行都以 **qid 打头**，尽管 raised 那一行的主角是"谁问了什么"：qid 是这两条事件之间
+       * 两行都以 qid 打头，尽管 raised 那一行的主角是"谁问了什么"：qid 是这两条事件之间
        * 唯一的关联键，而它们在日志里通常隔着几十行（等待就是这个特性的全部内容）。少了它，
        * 一条 "已作答" 就无从知道答的是上面哪一问。
        *
@@ -415,7 +415,7 @@ export function workflowRunEventLines(
  * `siteId` + `ordinal` 是身份（journal 的键），`name` 只是展示；`sessionId` 是那条真实持久
  * 会话的 id，也是嵌套只读 SessionPane 唯一需要的东西。
  *
- * `sessionId` **可缺席**（schema-optional）：进度事件可能先于 actor 会话落库到达，老 run
+ * `sessionId` 可缺席（schema-optional）：进度事件可能先于 actor 会话落库到达，老 run
  * 也可能根本没有；还没启动的槽位
  * 更是从来没有。缺席的实例照样开 tab——tab 的身份是 (runId, siteId, ordinal)，会话 id 只是
  * 随行的订阅目标，缺席时 tab 里是「尚未启动」占位。
@@ -433,7 +433,7 @@ export interface WorkflowActorInstance {
 /**
  * 一个 actor transcript tab 相对「会话是否已经存在」的三种处境。
  *
- * `unknown` 不是错误分支，而是**最常见的长期态**：tab 刻意没有 GC，比 8-run 投影淘汰活得久。
+ * `unknown` 不是错误分支，而是最常见的长期态：tab 刻意没有 GC，比 8-run 投影淘汰活得久。
  */
 type WorkflowActorStartState = "notStarted" | "started" | "unknown";
 
@@ -454,22 +454,22 @@ interface WorkflowActorGate {
 /**
  * 槽位 → 该 actor 是否已经启动，以及该订阅哪条会话。
  *
- * actor 会话是**懒创建**的：引擎在首个 ask 派发时才 `createActorSession`，所以在那之前
+ * actor 会话是懒创建的：引擎在首个 ask 派发时才 `createActorSession`，所以在那之前
  * 订阅这条会话必然 `fault.subscribe.sessionNotFound`，而投影 store 失败后停在 `error`
  * 只等手动 retry——一个死面板。这个选择器就是那道门。
  *
  * 判定免竞态：`createActorSession` 在首个派发前就 `await` 完了会话落库（`workflow-driver.ts`
- * 的时序由测试钉住），所以**投影里见到 dispatched ⇒ 会话行已存在 ⇒ 订阅必然命中**。
+ * 的时序由测试钉住），所以投影里见到 dispatched ⇒ 会话行已存在 ⇒ 订阅必然命中。
  * 反过来 `queued` 不算启动：持久化顺序的保证挂在派发前，队列里的节点不构成会话存在的证据。
  *
- * 查找按 **(runId, siteId, ordinal)**：tab 可以在 actor 出现之前就开
+ * 查找按 (runId, siteId, ordinal)：tab 可以在 actor 出现之前就开
  * （未启动的药丸），那时没有会话 id 可反查。三值里 `unknown` 与 `notStarted` 的分界仍是要紧
  * 的那条：
  *
- * - actor 不在投影里、tab **有**会话 id → `unknown`，**绝不拦**。run 被 8-run 上限淘汰、
+ * - actor 不在投影里、tab 有会话 id → `unknown`，绝不拦。run 被 8-run 上限淘汰、
  *   冷恢复后投影为空时，直接订阅是 transcript 唯一的路；拦住它等于把已完结 run 的唯一持久
  *   视图关死。
- * - actor 不在投影里、tab **没有**会话 id → `notStarted`：没有可订阅的东西，占位是诚实的
+ * - actor 不在投影里、tab 没有会话 id → `notStarted`：没有可订阅的东西，占位是诚实的
  *   （脚本还没走到 `agent()`；run 若已被淘汰，这个槽位也确实从未启动过）。
  * - actor 在、一个非 `queued` 节点都没有 → `notStarted`；有 → `started`，订阅目标取投影里的
  *   会话 id，tab 打开时带的作兜底。门读的就是实时投影，首个节点派发即自愈。
@@ -497,7 +497,7 @@ export function workflowActorStartState(
     (node) =>
       node.actorSiteId === actor.siteId &&
       node.actorOrdinal === actor.ordinal &&
-      // `queued` 是唯一**不**证明会话存在的相位。取补集而不是列举 dispatched/repairing/
+      // `queued` 是唯一不证明会话存在的相位。取补集而不是列举 dispatched/repairing/
       // nudged/settled，是为了让将来新增的相位默认开门——与 `unknown` 不拦同一个取向。
       node.phase !== "queued",
   );

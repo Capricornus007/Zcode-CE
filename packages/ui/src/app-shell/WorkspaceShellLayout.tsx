@@ -470,7 +470,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
     id: "workspaceSidebar.resizeSidebar",
   });
   // 引导式授权（ENH-2）：命令块 → 集成终端的投递实现。
-  // 目标固定为**侧栏终端**：它是唯一有稳定写入句柄的一条（sidePaneTerminalSessionRegistry），
+  // 目标固定为侧栏终端：它是唯一有稳定写入句柄的一条（sidePaneTerminalSessionRegistry），
   // 底部终端的面板状态是组件内 useState、未暴露写入 API。这里不为了"对称"去改底部终端。
   const handleSendCommandToTerminal = useGuidedTerminalSend({
     workspaceKey,

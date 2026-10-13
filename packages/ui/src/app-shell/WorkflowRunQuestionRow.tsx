@@ -7,7 +7,7 @@ import { workflowRunQuestionWaitedLabel } from "@/app-shell/workflowRunQuestions
 /**
  * 一条升级问题：挂在提问者那一行下面。
  *
- * **只读，v1 没有应答框**：应答者是主代理，不是用户——它拿不准时本就可经 AskUserQuestion
+ * 只读，v1 没有应答框：应答者是主代理，不是用户——它拿不准时本就可经 AskUserQuestion
  * 转询用户。qid 是主代理作答时要用的那个 token；用户自己答不了，但把它显示出来，就能指着
  * 某一个问题让主代理去答——这是只读面里唯一可被转达的抓手。
  */

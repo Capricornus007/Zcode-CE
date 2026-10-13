@@ -974,6 +974,12 @@
     "importRevision": "aac4755666d09fdcd70272fcf063c077a639015f",
     "provenance": "Copied from the official open-source checkout zai-org/ZCode at revision aac47556 (tag v3.15.1, commit \"feat: update to v3.15.1\") as part of the 3.15.1-ce.1 upstream sync. Upstream declares license Apache-2.0 in package.json; the pinned LICENSE snapshot is byte-identical to the earlier ZCode entries (Apache-2.0 text unchanged since 29628c9, sha256 verified). Verified via the shared read-only worktree .reverse/91-upstream-checkout/zai-org-ZCode-3151 (detached @ aac47556); no re-download or re-extraction of any distribution package was performed.",
     "roots": [
+      "packages/ui/src/BotsDialog/BoundGroupsCard.tsx",
+      "packages/ui/src/BotsDialog/PrivateDeliveryRetry.tsx",
+      "packages/ui/src/hooks/useBotBoundGroups.ts",
+      "packages/ui/src/hooks/useBotGroupMemberNames.ts",
+      "packages/ui/src/hooks/useBotGroupTask.ts",
+      "packages/ui/src/hooks/useBotPrivateDeliveryRetry.ts",
       "packages/ui/src/root/botsTaskBroadcast.ts",
       "packages/ui/src/root/botsTaskStreamBroadcast.ts",
       "packages/ui/src/root/useBotBroadcastEffects.ts",
@@ -981,7 +987,7 @@
       "packages/ui/src/lib/taskListMetaSync.ts",
       "packages/ui/src/store/taskQueryCacheStore.ts"
     ],
-    "scope": "F8 staging infrastructure kept inert after a rollback to zero-partial-integration: the group/topic broadcast effects and their lib/store dependencies (the BoundGroupsCard and PrivateDeliveryRetry components and the four useBot* hooks were rolled back to avoid shipping half-integrated UI; the F8 service wave — IBotsService group/topic/private-delivery methods and state machine — is deferred to the next round, see the upstream-sync v3.15.1 ledger). Files byte-identical to upstream; taskListMetaSync and taskQueryCacheStore carry upstream bug fixes.",
+    "scope": "F8 staging infrastructure kept inert after a rollback to zero-partial-integration: the group/topic broadcast effects and their lib/store dependencies. The six consumer files (BoundGroupsCard, PrivateDeliveryRetry and the four useBot* hooks) were rolled back from the first F8 slice to avoid half-integrated UI, then re-landed wired up in c5d5687f (byte-identical to upstream — verified against the aac47556 worktree), after the F8 service wave landed under the services entry. Files byte-identical to upstream; taskListMetaSync and taskQueryCacheStore carry upstream bug fixes. The two wiring host files (BotsDialog.tsx, BotsDialog/ProviderSettingsCard.tsx) are CE-side integration edits, registered only if they are found to contain verbatim upstream fragments.",
     "license": "Apache-2.0",
     "modifiedFiles": []
   },

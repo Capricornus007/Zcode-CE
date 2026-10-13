@@ -106,7 +106,10 @@ async function withBotsService(
       handle: (payload) => service.handleProviderCallbackResponse("webhook", payload),
       logLines,
     });
-    service.disposeAll();
+    // 修复 ENOTEMPTY 竞态（task-23）：disposeAll 是 sync 派发，其内部的 readState 惰性
+    // v3 写入完成于 teardown 之后。teardown 必须等待 disposeAllAndWait 返回，
+    // 让仓库的在途写全部落盘后再删目录。
+    await service.disposeAllAndWait();
   } finally {
     console.log = originalLog;
     setDataBaseDir(null);

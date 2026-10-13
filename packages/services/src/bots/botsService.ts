@@ -9913,8 +9913,12 @@ export function createBotsService(
       inboundProcessingQueuesByContext.clear();
       // Bugfix：host 的异步资源回收会优先调用 disposeAllAndWait。保留统一 Promise，确保并发关闭
       // 只执行一次，并在返回前等三类 Provider runtime 的请求、WebSocket 和跨进程锁全部收口。
+      // 修复 ENOTEMPTY 竞态（task-23 / release 门禁）：disposeAll 是 sync 且派发 detached 的
+      // disposeAllAndWait，调用方不 await 时 readState 的惰性 v3 写入会在 teardown 后落盘。
+      // shutdownPromise 收口前必须排空串行写链（stateWriteTail），保证返回时仓库已无在途写。
       shutdownPromise = Promise.allSettled([
         cancelUploads,
+        stateWriteTail.catch(() => undefined),
         telegramRuntime.dispose(),
         weixinRuntime.dispose(),
         feishuRuntime.dispose(),

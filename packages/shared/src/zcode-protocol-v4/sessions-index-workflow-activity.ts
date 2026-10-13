@@ -1,9 +1,10 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 // ============================================================
 // sessions-index 的工作流运行摘要
 // ============================================================
 // 侧栏要在会话标题下画一条「Workflow 图标 + 迷你轨道灯 + 当前 phase 名」，却不能为此订阅整个
 // workflowRuns（那是 conversation 权威投影，按 run 进度高频变化）。这里把同一 snapshot 的
-// `workflowRuns` + `backgroundWorks` 派生成一份**有界、只装侧栏真正读的字段**的摘要：
+// `workflowRuns` + `backgroundWorks` 派生成一份有界、只装侧栏真正读的字段的摘要：
 // 纯函数、无时钟——「已结束的行何时折叠」由渲染端的已确认集合决定，不在这里记时间。
 
 import { z } from "zod";
@@ -25,7 +26,7 @@ export const SESSION_WORKFLOW_ACTIVITY_MAX_RUNS = 4;
  * running、已进入 done、其余 pending；completed 已进入 done；errored 当前 failed；stopped 当前 pending。
  *
  * 成员节点再补一条：run 在跑时，
- * **出生在这一站**且此刻真在跑的节点把它点亮。并行阶段因此能同时烧——控制流只记得最后一个标记，
+ * 出生在这一站且此刻真在跑的节点把它点亮。并行阶段因此能同时烧——控制流只记得最后一个标记，
  * 而 A 的子代理在 B 的标记之后仍在干活。节点只会说「还在跑」，绝不把 done / failed / pending
  * 改成别的：失败词留给控制流。
  */
@@ -36,11 +37,17 @@ export const sessionWorkflowPhaseSummarySchema = z.object({
   name: z.string().min(1).max(WORKFLOW_RUNS_LIMITS.maxPhaseNameLength),
   status: sessionWorkflowPhaseStatusSchema,
   /**
-   * 进入本站时仍在跑的其他站的**下标**（下标落在本 `phases` 数组上），来自
+   * 进入本站时仍在跑的其他站的下标（下标落在本 `phases` 数组上），来自
    * `run.phaseAlongside`。侧栏据此把并行的两站之间画成双线段。只有声明表那条路有这个事实——
    * 退化路（已进入的 phase）是按进入序拼出来的，没有并行可言，所以那时整个键缺席。
    */
   alongside: z.array(z.number().int().nonnegative()).max(WORKFLOW_RUNS_LIMITS.maxPhases).optional(),
+  /**
+   * 这一站是一处还开着的留白（docs/dynamic-workflow/presentation.md「Holes on the timeline」）：
+   * `open` = 还没走到，`waiting` = run 停在这里等主代理补全。侧栏据此把灯画成虚线（等待时警示色）。
+   * 补全之后它就是一个普通的站，键缺席。只有声明表那条路有这个事实（`run.phaseHoles`）。
+   */
+  hole: z.enum(["open", "waiting"]).optional(),
 });
 export type SessionWorkflowPhaseSummary = z.infer<typeof sessionWorkflowPhaseSummarySchema>;
 
@@ -62,6 +69,12 @@ export const sessionWorkflowRunSummarySchema = z.object({
   currentPhase: z.string().min(1).max(WORKFLOW_RUNS_LIMITS.maxPhaseNameLength).optional(),
   /** status === "running" 的子代理数（tooltip 的「{n} agents working」）。 */
   agentsWorking: z.number().int().nonnegative(),
+  /**
+   * 正在等主代理补全的留白名（`run.holes` 里第一条 waiting 的 `name`）：侧栏运行行写
+   * 「{name} · 等待补全」（docs/dynamic-workflow/presentation.md「Holes on the timeline」的「The sidebar」）。
+   * 没有停驻的留白时缺席。
+   */
+  waitingHole: z.string().min(1).max(WORKFLOW_RUNS_LIMITS.maxPhaseNameLength).optional(),
 });
 export type SessionWorkflowRunSummary = z.infer<typeof sessionWorkflowRunSummarySchema>;
 
@@ -88,7 +101,7 @@ function isRunNodeRunning(node: WorkflowRunNode): boolean {
 
 /**
  * 站名 ↔ 实例出生戳的关联规则。与 packages/ui 的 `phaseNameMatches`（workflow-graph/phase-name.ts）
- * 逐条相同：精确匹配，站名**恰好顶到上界**时才按前缀兜底——前缀只在截断真的发生过时才开，
+ * 逐条相同：精确匹配，站名恰好顶到上界时才按前缀兜底——前缀只在截断真的发生过时才开，
  * 否则「计划」会误认「计划修复」。那个 helper 在 ui 层，shared 不能反向依赖，所以这里内联同一条规则。
  */
 function phaseNameMatches(stationName: string, stamp: string): boolean {
@@ -98,16 +111,26 @@ function phaseNameMatches(stationName: string, stamp: string): boolean {
   );
 }
 
-function derivePhases(run: WorkflowRunState): SessionWorkflowPhaseSummary[] {
+/**
+ * 站点表的唯一推导。侧栏运行行（经 `summarizeRun`）与任务岛的 run 行都读它，所以两处的灯
+ * 永远对同一件事说同一句话；任务岛不另写第二套。
+ */
+export function deriveSessionWorkflowPhases(run: WorkflowRunState): SessionWorkflowPhaseSummary[] {
   const entered = new Set((run.phases ?? []).map((phase) => phase.name));
   const current = run.currentPhase;
   let names: string[];
-  // 「同时在跑」的下标说的是**声明表**里的位置，所以只有走声明表这条路时它才有意义；退化路
+  // 「同时在跑」的下标说的是声明表里的位置，所以只有走声明表这条路时它才有意义；退化路
   // （已进入的 phase + 当前 phase）是另一个下标空间，那时整张表不带。
   let alongside: readonly (readonly number[])[] | undefined;
+  // 还开着的留白（声明表的下标）；等待中的按名字从 `run.holes` 认——留白名按规则 9012 唯一。
+  let holeIndexes: ReadonlySet<number> = new Set();
+  const waitingNames = new Set(
+    (run.holes ?? []).filter((hole) => hole.state === "waiting").map((hole) => hole.name),
+  );
   if (run.phaseNames !== undefined && run.phaseNames.length > 0) {
     names = run.phaseNames;
     alongside = run.phaseAlongside;
+    holeIndexes = new Set(run.phaseHoles ?? []);
   } else {
     names = (run.phases ?? []).map((phase) => phase.name);
     if (current !== undefined && !entered.has(current)) names = [...names, current];
@@ -139,7 +162,14 @@ function derivePhases(run: WorkflowRunState): SessionWorkflowPhaseSummary[] {
     const beside = (alongside?.[index] ?? []).filter(
       (other) => Number.isInteger(other) && other >= 0 && other < emitted && other !== index,
     );
-    return { name, status, ...(beside.length === 0 ? {} : { alongside: beside }) };
+    // 留白站：等待中的按 `run.holes` 认（名字唯一），其余下标表点名的是还没走到的留白。
+    const hole = waitingNames.has(name) ? "waiting" : holeIndexes.has(index) ? "open" : undefined;
+    return {
+      name,
+      status,
+      ...(beside.length === 0 ? {} : { alongside: beside }),
+      ...(hole === undefined ? {} : { hole }),
+    };
   });
 }
 
@@ -148,6 +178,10 @@ function summarizeRun(
   work: BackgroundWorkSummary | undefined,
 ): SessionWorkflowRunSummary {
   const name = work?.title.trim();
+  // 在跑的 run 才有「等补全」可言：终态 run 的 waiting 记录已被 reducer 剥掉，这里再守一道。
+  const waitingHole = isSessionWorkflowRunLive(run.status)
+    ? (run.holes ?? []).find((hole) => hole.state === "waiting")?.name
+    : undefined;
   return {
     runId: run.runId,
     ...(run.toolCallId === undefined ? {} : { toolCallId: run.toolCallId }),
@@ -155,9 +189,10 @@ function summarizeRun(
     status: run.status,
     ...(run.stopReason === undefined ? {} : { stopReason: run.stopReason }),
     ...(work === undefined ? {} : { startedAt: work.startedAt }),
-    phases: derivePhases(run),
+    phases: deriveSessionWorkflowPhases(run),
     ...(run.currentPhase === undefined ? {} : { currentPhase: run.currentPhase }),
     agentsWorking: run.actors.filter((actor) => actor.status === "running").length,
+    ...(waitingHole === undefined ? {} : { waitingHole }),
   };
 }
 

@@ -248,9 +248,17 @@ function normalizeCronAutomationMode(
       return undefined;
     case "plan":
     case "edit":
+    // Modified by ZCode: 增量自上游 aac47556——guarded 模式（自主模式危险命令执行前征求确认）；
+    // dontAsk / bypassPermissions 并入 yolo、default / acceptEdits 并入 build，union 扩容后 switch 须穷尽。
+    case "guarded":
     case "yolo":
     case "build":
       return mode;
+    case "dontAsk":
+    case "bypassPermissions":
+      return "yolo";
+    case "default":
+    case "acceptEdits":
     case "auto":
     case "autoEdit":
       return "build";

@@ -1,3 +1,4 @@
+// Modified by ZCode: 自上游 zai-org/ZCode aac47556 (Apache-2.0) 增量并入：legacyZCodeProviderSchema 与 provider/source 归一化助手（task-realtime-core 消费）；未跟随上游删除 zcodeAgentProviderSchema——其消费者 validation.ts 尚未整体搬运（+486 行漂移），删除会级联。
 import { z } from "zod";
 import type { CommandAgentSource } from "./command-types.js";
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
@@ -22,4 +23,28 @@ export function isZCodeAgentProvider(
   provider: ZCodeProvider | null | undefined,
 ): provider is typeof ZCODE_AGENT_PROVIDER {
   return provider === ZCODE_AGENT_PROVIDER;
+}
+
+/**
+ * 解析持久化/relay 数据时的 provider 归一 schema：
+ * 已移除的第三方 provider 历史值仅作为归一化输入保留，统一收敛为 glm；
+ * 其它非法值保持拒绝，与收窄前的校验边界一致。
+ */
+export const legacyZCodeProviderSchema = z
+  .enum(["claude", "opencode", "gemini", "codex", "glm"])
+  .transform((): typeof ZCODE_AGENT_PROVIDER => ZCODE_AGENT_PROVIDER);
+
+export const ZCODE_ENABLED_AGENT_PROVIDERS = [
+  ZCODE_AGENT_PROVIDER,
+] as const satisfies readonly ZCodeProvider[];
+export function normalizeAgentProvidersToZCodeAgent(
+  _providers?: ReadonlyArray<ZCodeProvider[]> | null,
+): ZCodeProvider[] {
+  return [...ZCODE_ENABLED_AGENT_PROVIDERS];
+}
+
+export function normalizeCommandAgentSourceToZCodeAgent(
+  _agentSource?: CommandAgentSource | null,
+): CommandAgentSource {
+  return ZCODE_COMMAND_AGENT_SOURCE;
 }

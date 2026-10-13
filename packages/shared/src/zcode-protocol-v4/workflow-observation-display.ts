@@ -1,3 +1,4 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 // ============================================================
 // 观察类工作流工具（GetWorkflowRun / ListWorkflowRuns / EvalWorkflowSnippet /
 // ListSavedWorkflows / ListModels）的工具卡 display 载荷
@@ -47,7 +48,7 @@ const actorSchema = z
   .strict();
 
 // 情势截面（阶段 / 子代理 / 健康）的卡面载荷。与 CLI 侧
-// getWorkflowRunToolResultDisplayPayloadSchema 的对应成员**逐字段同步**，枚举集闭合且同词表——
+// getWorkflowRunToolResultDisplayPayloadSchema 的对应成员逐字段同步，枚举集闭合且同词表——
 // 两侧都是 strict，少一个字段或多一个枚举值，整条 row/display 校验失败、工具卡退化成文本。
 // 数字界与 CLI 侧常量一一对应（32 阶段 / 64 子代理 / 240 指令头 / 400 摘要）。
 const workflowRunPhaseViewSchema = z

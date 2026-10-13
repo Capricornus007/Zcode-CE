@@ -1485,13 +1485,25 @@ export function createLocalServices(options: {
     hasExistingLocalTask: async () => (await hasExistingLocalTaskRef.current?.()) ?? false,
   });
   let handleOAuthProviderLogout: ReturnType<typeof createOAuthProviderLogoutHandler> | null = null;
+  // 独立日志域：损坏 OAuth 会话清理后派生 provider 刷新失败的可观测入口（A2 容错）。
+  const oauthCredentialRecoveryLogger = createServiceLogger("oauth-credential-recovery");
   const oauthCredentialRepo = new OAuthCredentialRepo(credentialService, {
     onCorruptOAuthSessionCleared: async (providers) => {
       // telemetry 之外的后台路径可能先读到损坏 OAuth 凭据。
       // 这类恢复也必须等价于 logout，复用同一 handler 清理派生模型 provider key。
       await Promise.all(
         providers.map((provider) => handleOAuthProviderLogout?.(provider) ?? Promise.resolve()),
-      );
+      ).catch((error) => {
+        // Modified by ZCode: 容错对齐上游 3.15.3（闭源修复 A2）。原写法在任一派生 provider
+        // 刷新失败时整体 reject；回调本身又挂在清理流程上，会把「清理损坏 OAuth 会话」一起拽失败，
+        // 用户面表现为连接套餐失败、必须重新登录。现把派生刷新的失败收敛到独立日志域，
+        // 清理照常完成；repo 层的 try/catch 兜底仍在（两层语义不同：repo 层保证清理不被阻断，
+        // 回调层留下可定位的失败日志）。不加重试：派生凭据随下次账号同步自然重建。
+        oauthCredentialRecoveryLogger.warn(
+          "refresh derived providers after corrupt OAuth cleanup failed",
+          { error },
+        );
+      });
     },
   });
   const accountProviderApiKeyRemoteClient = new AccountProviderApiClient(apiClient);

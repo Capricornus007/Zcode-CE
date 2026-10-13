@@ -1,14 +1,16 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 import {
   WORKFLOW_RUNS_LIMITS,
   type WorkflowRunPhase,
   type WorkflowRunState,
 } from "./workflow-runs.js";
+import { readPhaseHoles } from "./workflow-runs-holes.js";
 
 /**
  * `phase-entered` 的归约：控制流经过了
  * 一个 `phase("…")` 标记。住在 reducer 主文件之外与并发观察同一个理由——主文件的 max-lines 门。
  *
- * 不碰 nodes / actors——标记不是一步工作。`rounds` 取 **max** 而不是 +1：引擎在 resume 重跑时会
+ * 不碰 nodes / actors——标记不是一步工作。`rounds` 取 max 而不是 +1：引擎在 resume 重跑时会
  * 把前缀再发一遍（标记没有 journal 行可去重），单调归约让重放逐条无变化；ordinal 缺席（旧 CLI /
  * 残缺载荷）按 1 记。触界语义与 actors / nodes 同族：拒绝新条目、已有条目照常更新，超界事实仍在
  * journal 里；`currentPhase` 不受上限约束——「控制流在哪」是事实，进不了表也要说。
@@ -37,13 +39,21 @@ export function reduceRunLaunched(
   }
   if (phaseNames.length === 0) return run;
   const phaseAlongside = readPhaseAlongside(payload.phaseAlongside, phaseNames.length);
-  return { ...run, phaseNames, ...(phaseAlongside === undefined ? {} : { phaseAlongside }) };
+  // 留白下标表（docs/dynamic-workflow/presentation.md「Holes on the timeline」）与「同时在跑」表同一姿态：
+  // 搭声明表的车，下标按被接受的那张表裁。
+  const phaseHoles = readPhaseHoles(payload.holes, phaseNames.length);
+  return {
+    ...run,
+    phaseNames,
+    ...(phaseAlongside === undefined ? {} : { phaseAlongside }),
+    ...(phaseHoles === undefined ? {} : { phaseHoles }),
+  };
 }
 
 /**
  * 「同时在跑」表的搬运，只在 `phaseNames` 被接受之后调用。
  *
- * 下标指向的是**被接受的**那张名字表，所以整张表按它的长度裁齐（载荷更短时补空数组），逐项再
+ * 下标指向的是被接受的那张名字表，所以整张表按它的长度裁齐（载荷更短时补空数组），逐项再
  * 过一遍：整数、落在 `[0, count)`、不是自己（一个阶段不与自己并行）、去重保序、条数同界。越界
  * 的下标会让侧栏把双线段连到一个不存在的站上，所以宁可少画。
  *

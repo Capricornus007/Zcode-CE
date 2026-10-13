@@ -1,3 +1,4 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 // ============================================================
 // 工作区 transcript 的协议词汇表
 // ============================================================
@@ -6,7 +7,7 @@
 // （迁移 0030）给出 op 与实参，`result_json` 给出正文。
 //
 // 两条 v4 查询，照用户面产物的 ①/③ 拆法：
-//   Workspace  轻行清单（op / args / 状态 / 摘要 / 时刻），**不带正文**；
+//   Workspace  轻行清单（op / args / 状态 / 摘要 / 时刻），不带正文；
 //              活投影的 `lastEventSequence` 抬升时重查
 //   NodeResult 一个节点的正文，按 maxBytes 保形有界化；展开时才取，按 tab 缓存
 //
@@ -109,7 +110,7 @@ export type V4ConversationWorkflowRunWorkspaceResult = z.infer<
 
 // ── v4 query ②：workflowRunNodeResult（一个节点的正文）──
 // 授权在 CLI 侧（端口实现）：sessionId 必须是该 run 的 parentSessionId，否则与「无此节点」
-// 同一个答案。正文按 maxBytes **保形**有界化：字符串切尾、数组去尾、run 的 stdout / stderr
+// 同一个答案。正文按 maxBytes 保形有界化：字符串切尾、数组去尾、run 的 stdout / stderr
 // 各自切尾——一张卡片要的是「跑了什么、前几百行是什么」，不是脚本那种全有或全无。
 export const v4ConversationWorkflowRunNodeResultParamsSchema = z
   .object({

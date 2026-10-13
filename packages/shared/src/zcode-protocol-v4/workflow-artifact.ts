@@ -1,5 +1,6 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 /**
- * workflow run 里**任意脚本值**（顶层返回的产物、`report(item)` 的条目）→ 给模型或读者看的
+ * workflow run 里任意脚本值（顶层返回的产物、`report(item)` 的条目）→ 给模型或读者看的
  * 文本。规则：string 原样；其余 `JSON.stringify(v, null, 2)`；stringify 回 undefined 或抛错
  * 时退 `String(v)`；`undefined` 回 `undefined`（调用方据此让整个字段缺席）。
  *

@@ -1,3 +1,4 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调；并保留 fce07b1 留下的 wire-fault 三行中文注释（上游同一行无注释）。
 // ZCode Protocol v4 —— 数据模型草稿。
 //
 // 本包纪律：只放 schema 类型 + 纯函数
@@ -12,6 +13,7 @@ export * from "./workflow-observation-display.js";
 export * from "./snapshot.js";
 export * from "./workflow-runs.js";
 export * from "./workflow-runs-reducer.js";
+export * from "./workflow-runs-holes.js";
 // workflowRuns 的键级增量（diff / apply / 规范键序）；op 本身在 delta.js。
 export * from "./workflow-runs-delta.js";
 // 界留下的痕迹：被拒实例计数、条目预算、步数读法；表满时的腾位；以及给旧消费者的裁剪。

@@ -1,3 +1,4 @@
+// Modified by ZCode: 搬自上游 zai-org/ZCode aac47556 (Apache-2.0)；按本仓 docs/development/copy-and-format.md §3 去掉注释里的 markdown 强调，其余与上游一致。
 /* oxlint-disable max-lines -- v4 snapshot schema is a frozen cross-process contract; additions stay grouped here. */
 // ConversationSnapshot A 区。
 // A 区更新语义 = 字段级整体替换（state.updated），绝不深合并——深合并是错乱之母。
@@ -60,6 +61,7 @@ export const activeWorkSummarySchema = z.object({
     "turnSteer",
   ]),
   foregroundExecutionId: z.string().min(1).optional(),
+  sourceCommandId: z.string().min(1).optional(),
   startedAt: timestampSchema,
 });
 export type ActiveWorkSummary = z.infer<typeof activeWorkSummarySchema>;
@@ -361,7 +363,7 @@ export type CommandStateSummary = z.infer<typeof commandStateSummarySchema>;
 
 export const backgroundWorkSummarySchema = z.object({
   workId: z.string(),
-  // workflow = workflow run（CreateWorkflow）。**闭集加值的偏斜代价**：
+  // workflow = workflow run（CreateWorkflow）。闭集加值的偏斜代价：
   // 旧桌面收到未知值时整个 state.updated patch 解析失败（已知键的非法值是错误，不是剥离），
   // 于是整帧被 assembler 拒收，且 resync 的 snapshot 携带同一个值、同样失败——不能优雅降级。
   // CLI 与桌面同批发布才使它可接受。
@@ -503,6 +505,8 @@ export const conversationSnapshotSchema = z.object({
   // 旧快照/旧发送端不携带此字段 → 解析得 null,不破坏兼容性(遵守冻结规则)。
   // pendingCount === 0 时投影层置 null(提示条消失)。
   workspaceHookAdmission: workspaceHookAdmissionStateSchema.nullable().default(null),
+  // （2026-09-12）：原 additive 字段 pluginUiSurfaces 已删除，插件面板 widgetState 只留在
+  // 宿主 renderer 内存。
   // B 区
   rows: rowsWindowSchema,
 });

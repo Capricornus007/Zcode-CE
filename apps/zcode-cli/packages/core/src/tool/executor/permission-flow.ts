@@ -29,13 +29,45 @@ import {
 } from "./permission-capability.js";
 import { buildDefaultPermissionUpdates } from "./permission-suggestions.js";
 import { recheckPermissionHookModifiedInput } from "./permission-input-recheck.js";
+// Modified by ZCode:F6：确认窗里批准前的调整落进入参（授权之后、handler 之前）。
+import { applyPermissionInputAdjustments } from "./permission-input-adjustments.js";
 import type { ToolExecutorDeps } from "./types.js";
 import { summarizeInput } from "./utils.js";
 import { validateInput } from "./validation.js";
 import { applyMemoryFilePermission } from "./memory-file-permission.js";
 
+// Modified by ZCode:F3（自上游 permission-response.ts 合并）：guarded 的 user-once 应答形状校验。
+// 单次确认不能被任何规则持久化（permissionUpdates / sessionPermissionUpdates 必须为空），
+// modify 必须带 modifiedInput；越界形状直接抛 InvalidInput，而不是替用户做决定。
+function validatePermissionResponse(response: PermissionBrokerResult, once: boolean): void {
+  if (
+    !response ||
+    !["allow", "deny", "modify", ...(once ? [] : ["escalate"])].includes(response.decision) ||
+    (response.reason !== undefined && typeof response.reason !== "string") ||
+    (response.permissionUpdates !== undefined &&
+      (!Array.isArray(response.permissionUpdates) ||
+        (once && response.permissionUpdates.length > 0))) ||
+    (response.decision === "modify" && response.modifiedInput === undefined) ||
+    (response.sessionPermissionUpdates !== undefined &&
+      (!Array.isArray(response.sessionPermissionUpdates) ||
+        (once && response.sessionPermissionUpdates.length > 0)))
+  ) {
+    throw createCoreError(
+      CoreErrorType.InvalidInput,
+      "Invalid permission response; single-use requests cannot persist project rules",
+      { recoverable: true },
+    );
+  }
+}
+
 type ToolPermissionFlowResult =
-  | { allowed: true; executionInput: unknown; permissionWaitMs?: number }
+  | {
+      allowed: true;
+      executionInput: unknown;
+      permissionWaitMs?: number;
+      // Modified by ZCode:F6：确认窗调整中实际生效的那部分（applyInputAdjustments 的 applied）。
+      inputAdjustments?: Readonly<Record<string, unknown>>;
+    }
   | { allowed: false; result: ToolExecutionResult };
 
 export async function resolveToolPermission(
@@ -219,6 +251,10 @@ export async function resolveToolPermission(
             sideEffectScope: permissionDecision.sideEffectScope,
             suggestedPermissionUpdates,
             ...(approval.optionsPolicy ? { optionsPolicy: approval.optionsPolicy } : {}),
+            // Modified by ZCode:F3：user-once 单次确认随请求下发，broker 不得改成持久规则。
+            ...(permissionDecision.approvalMode
+              ? { approvalMode: permissionDecision.approvalMode }
+              : {}),
             toolCallId: toolCall.id as PermissionBrokerRequest["toolCallId"],
             toolName: toolCall.name,
             traceId: traceContext.traceId,
@@ -295,6 +331,12 @@ export async function resolveToolPermission(
       traceContext,
     );
     return { allowed: false, result: createErrorResult(toolCall, coreError) };
+  }
+
+  // Modified by ZCode:F3：guarded 的单次确认（user-once）要求 broker 应答形状合法：
+  // 不得携带任何持久/会话规则更新（不可绕过的确认不能被规则化），modify 必须带 modifiedInput。
+  if (mode === "guarded") {
+    validatePermissionResponse(brokerResult, permissionDecision.approvalMode === "user-once");
   }
 
   const resolvedPermission = {
@@ -414,10 +456,23 @@ export async function resolveToolPermission(
 
   telemetry?.setPermissionDecision("granted");
   if (resolvedPermission.decision !== "modify") {
+    // Modified by ZCode:F6：确认窗的调整落进入参（声明了 applyInputAdjustments 的工具才应用）。
+    const adjusted = applyPermissionInputAdjustments({
+      deps,
+      entry,
+      toolCall,
+      executionInput: useNormalizedHookModifiedInput
+        ? normalizedHookModifiedInput
+        : executionInput,
+      adjustments: resolvedPermission.inputAdjustments,
+      traceContext,
+    });
+    if (!adjusted.ok) return { allowed: false, result: adjusted.result };
     return {
       allowed: true,
-      executionInput: useNormalizedHookModifiedInput ? normalizedHookModifiedInput : executionInput,
+      executionInput: adjusted.executionInput,
       permissionWaitMs,
+      ...(adjusted.applied === undefined ? {} : { inputAdjustments: adjusted.applied }),
     };
   }
 
@@ -436,5 +491,20 @@ export async function resolveToolPermission(
       result: createErrorResult(toolCall, modifiedInputValidation),
     };
   }
-  return { allowed: true, executionInput: modifiedInput, permissionWaitMs };
+  // Modified by ZCode:F6：modify 与调整叠加时先走 schema 校验，再把调整落在最终入参上。
+  const adjustedModify = applyPermissionInputAdjustments({
+    deps,
+    entry,
+    toolCall,
+    executionInput: modifiedInput,
+    adjustments: resolvedPermission.inputAdjustments,
+    traceContext,
+  });
+  if (!adjustedModify.ok) return { allowed: false, result: adjustedModify.result };
+  return {
+    allowed: true,
+    executionInput: adjustedModify.executionInput,
+    permissionWaitMs,
+    ...(adjustedModify.applied === undefined ? {} : { inputAdjustments: adjustedModify.applied }),
+  };
 }

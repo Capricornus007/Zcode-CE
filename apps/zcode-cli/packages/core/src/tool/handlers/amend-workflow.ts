@@ -39,6 +39,13 @@ import {
   resolveTraceContext,
 } from "./create-workflow.js";
 import { describeWorkflowSubagentModel, parseWorkflowSubagentModel } from "./model-reference.js";
+// Modified by ZCode:F6 确认窗调参链（与 CreateWorkflow 共用同一套三态语义与文案）。
+import {
+  applyWorkflowSettingsAdjustments,
+  describeWorkflowRunSettings,
+  readAppliedWorkflowSettings,
+  withWorkflowAdjustableSettings,
+} from "./workflow-settings-adjustment.js";
 import { boundGraphOfAnalysis, displayOfAnalysis } from "./workflow-analysis-display.js";
 import { resolveWorkflowDraftName, writeWorkflowDraft } from "./workflow-drafts.js";
 import {
@@ -223,12 +230,20 @@ const amendWorkflowHandler: ToolHandler = async (input, context) => {
     parsed.predecessor?.script_inherited === true
       ? `The script of run ${parsed.run_id} started unchanged in the background as run ${amended.runId}.`
       : `The revised script started in the background as run ${amended.runId}.`;
+  // Modified by ZCode:F6：确认窗里的调整先说，未被调整的那半句照旧（与 CreateWorkflow 同一段文案）。
+  const settingsSentences = describeWorkflowRunSettings({
+    applied: readAppliedWorkflowSettings(context.inputAdjustments),
+    defaultConcurrency: port.defaultConcurrency?.(),
+    describeLimit: () =>
+      describeWorkflowConcurrencyLimit(parsed.max_concurrency ?? undefined, port.concurrencyCeiling?.()),
+    describeModel: () => describeWorkflowSubagentModel(parsed.subagent_model ?? undefined),
+  });
   return {
     diagnostics,
     ok,
     // 文案照 CreateWorkflow 的 backgrounded 引导：给出 id、说明仍在跑、结果以通知形式回来、
     // 显式劝阻默认轮询。
-    response: `${superseded} ${started} It is still running — you will be notified with the final output when it completes. Do not wait for it or poll it with TaskOutput; continue with other work unless the user asked you to wait.${describeWorkflowConcurrencyLimit(parsed.max_concurrency ?? undefined, port.concurrencyCeiling?.())}${describeWorkflowSubagentModel(parsed.subagent_model ?? undefined)}${location === undefined ? "" : workflowAmendedScriptSentence(location)}`,
+    response: `${superseded} ${started} It is still running — you will be notified with the final output when it completes. Do not wait for it or poll it with TaskOutput; continue with other work unless the user asked you to wait.${settingsSentences}${location === undefined ? "" : workflowAmendedScriptSentence(location)}`,
     status: "backgrounded",
     backgroundTaskId: amended.runId,
     ...(causalityGraph === undefined ? {} : { causalityGraph }),
@@ -271,12 +286,22 @@ export const amendWorkflowToolEntry: ToolEntry = {
   validateInput: (input) => validateAmendWorkflowSource(input),
   resolveInput: (input, context) => {
     // 技能门先于前驱解析：带 path / script 的修订是在写脚本；只改设定的调用沿用前驱脚本，放行。
+    // 门必须保持同步拒绝（与 CreateWorkflow 同一条理由）。
     if (amendWorkflowNeedsSkill(input)) {
       const refused = requireDynamicWorkflowSkill(context, AMEND_WORKFLOW_TOOL_NAME);
       if (refused) return refused;
     }
-    return resolveAmendWorkflowInput(input, context);
+    // Modified by ZCode:F6：回填块只给会开窗的形状——就地调并发的归一化结果没有脚本，也就没有确认窗。
+    return resolveAmendWorkflowInput(input, context).then((resolution) =>
+      withWorkflowAdjustableSettings(resolution, context, (resolved) => resolved.script !== undefined),
+    );
   },
+  // Modified by ZCode:F6：确认窗批准后的调整落进入参（与 CreateWorkflow 同一套三态语义）。
+  applyInputAdjustments: (input, adjustments, context) =>
+    applyWorkflowSettingsAdjustments(input, adjustments, context, {
+      errorCode: AMEND_WORKFLOW_ERROR_CODE.SUBAGENT_MODEL,
+      schema: AmendWorkflowInputSchema,
+    }),
   prepareApproval: prepareAmendWorkflowApproval,
   inputSchema: AmendWorkflowInputJsonSchema,
   outputSchema: CreateWorkflowOutputJsonSchema,

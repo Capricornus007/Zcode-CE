@@ -323,6 +323,8 @@ async function executeToolCallImpl(
   }
   executionInput = permissionResult.executionInput;
   const permissionWaitMs = permissionResult.permissionWaitMs;
+  // Modified by ZCode:F6：确认窗里实际生效的调整交给 handler（结果文案据此告诉模型「用户改过设置」）。
+  const inputAdjustments = permissionResult.inputAdjustments;
 
   const startTime = Date.now();
   // 按**执行入参**解析一次副作用旗标（Bash 的只读命令判定就在这里落定），随 ToolCallStarted 发出：
@@ -438,6 +440,8 @@ async function executeToolCallImpl(
         .filter((name) => deps.registry.getMetadata(name)?.providerVisible !== false),
       sessionId: deps.sessionId,
       turnId,
+      // Modified by ZCode:F6：确认窗里实际生效的调整（无调整时缺席）。
+      ...(inputAdjustments === undefined ? {} : { inputAdjustments }),
     };
 
     const output = await executeWithTimeout(

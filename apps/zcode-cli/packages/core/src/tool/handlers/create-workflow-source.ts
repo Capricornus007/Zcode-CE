@@ -26,7 +26,8 @@ import { writeWorkflowDraft } from "./workflow-drafts.js";
 import { readWorkflowScriptFile } from "./workflow-path-source.js";
 
 /** 业务失败的错误码，与既有 handler failure 惯例同一形状。 */
-const CREATE_WORKFLOW_FAILURE_CODE = 400;
+// Modified by ZCode:F6：导出给确认窗调整链路复用（调整非法即同一业务失败码）。
+export const CREATE_WORKFLOW_FAILURE_CODE = 400;
 
 function failure(message: string): ToolHandlerFailure {
   return { result: false, errorCode: CREATE_WORKFLOW_FAILURE_CODE, message };
@@ -71,6 +72,14 @@ export function clampWorkflowMaxConcurrency(value: number, ceiling: number | und
   // 也不该让 0 或负数穿过去。
   const atLeastOne = Math.max(1, value);
   return ceiling === undefined ? atLeastOne : Math.min(atLeastOne, Math.max(1, ceiling));
+}
+
+// Modified by ZCode:F6（自上游合并）：确认窗调整路径的并发归一——向下取整、至少 1、没有上限。
+// 与上面的 clampWorkflowMaxConcurrency 的差别是有意的：上游 F6 把默认并发 D 从天花板改为起点
+// （用户在确认窗里要 40 个就是 40 个，真正替 provider 把关的是进程级治理器的 429 反馈），
+// 而 CE 既有工具入参路径仍按 ceiling 钳制。两条路各自不变，避免一次调参改动裹挟既有行为。
+export function normalizeWorkflowMaxConcurrency(value: number): number {
+  return Math.max(1, Math.floor(value));
 }
 
 /**

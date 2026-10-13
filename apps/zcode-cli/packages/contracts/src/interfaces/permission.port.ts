@@ -50,6 +50,8 @@ export type PermissionBrokerReasonSource = "plan_approval_feedback" | "workflow_
 export type PermissionOptionsPolicy = "no-always-allow" | "session-always-allow";
 
 export interface PermissionBrokerRequest {
+  // Modified by ZCode:F3/F6。user-once：单次执行的不可绕过确认（guarded 危险命令）。
+  approvalMode?: "user-once";
   requestId: string;
   sessionId: SessionId;
   turnId?: TurnId;
@@ -82,6 +84,12 @@ export interface PermissionBrokerResult {
    * by the broker on the answer side because the wire option schema is strict.
    */
   sessionPermissionUpdates?: PermissionUpdate[];
+  /**
+   * Modified by ZCode:F6。用户在确认窗里批准前改过的字段，键取工具自己的入参字段名；
+   * null = 回到该字段默认。只在 allow 上携带，只有声明了 applyInputAdjustments 的工具
+   * 才应用（CreateWorkflow / AmendWorkflow）。
+   */
+  inputAdjustments?: Readonly<Record<string, unknown>>;
   resolvedAt?: Date;
 }
 

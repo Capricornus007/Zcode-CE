@@ -31,6 +31,7 @@ import { CREATE_WORKFLOW_TOOL_DESCRIPTION } from "./create-workflow-description.
 import { recordAuthoredWorkflowDraft } from "./workflow-draft-read-state.js";
 import { createWorkflowNeedsSkill, requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 import {
+  CREATE_WORKFLOW_FAILURE_CODE,
   resolveCreateWorkflowInput,
   validateCreateWorkflowSource,
 } from "./create-workflow-source.js";
@@ -45,6 +46,13 @@ import {
   type WorkflowScriptLocation,
 } from "./workflow-script-notes.js";
 import { analyzeScript } from "./workflow-script-analysis.js";
+// Modified by ZCode:F6 确认窗调参链（docs/dynamic-workflow/launch.md「Adjusting the settings in the window」）。
+import {
+  applyWorkflowSettingsAdjustments,
+  describeWorkflowRunSettings,
+  readAppliedWorkflowSettings,
+  withWorkflowAdjustableSettings,
+} from "./workflow-settings-adjustment.js";
 import { describeWorkflowScriptPath } from "./workflow-script-path.js";
 
 const CREATE_WORKFLOW_TOOL_NAME = "CreateWorkflow";
@@ -183,6 +191,13 @@ const createWorkflowHandler: ToolHandler = async (input, context) => {
   );
 
   const { runId } = submitted;
+  // Modified by ZCode:F6：确认窗里的调整先于既有文案说出（模型的 tool_use 块还留着它自己传的那一份）。
+  const settingsSentences = describeWorkflowRunSettings({
+    applied: readAppliedWorkflowSettings(context.inputAdjustments),
+    defaultConcurrency: port.defaultConcurrency?.(),
+    describeLimit: () => describeWorkflowConcurrencyLimit(parsed.max_concurrency, port.concurrencyCeiling?.()),
+    describeModel: () => describeWorkflowSubagentModel(parsed.subagent_model),
+  });
 
   return {
     diagnostics,
@@ -192,7 +207,7 @@ const createWorkflowHandler: ToolHandler = async (input, context) => {
     // 模型拿到 backgrounded 输出后立刻用 TaskOutput 阻塞等待，
     // 把异步 run 变成了同步等待——文案必须显式劝阻默认轮询（用户显式要求等待时
     // TaskOutput 仍然可用，这里只改默认引导，不改工具语义）。
-    response: `The workflow script compiled cleanly and the run started in the background with ID: ${runId}. It is still running — you will be notified with the final output when it completes. Do not wait for it or poll it with TaskOutput; continue with other work unless the user asked you to wait.${describeWorkflowConcurrencyLimit(parsed.max_concurrency, port.concurrencyCeiling?.())}${describeWorkflowSubagentModel(parsed.subagent_model)}${location === undefined ? "" : workflowLaunchedScriptSentence(location)}`,
+    response: `The workflow script compiled cleanly and the run started in the background with ID: ${runId}. It is still running — you will be notified with the final output when it completes. Do not wait for it or poll it with TaskOutput; continue with other work unless the user asked you to wait.${settingsSentences}${location === undefined ? "" : workflowLaunchedScriptSentence(location)}`,
     status: "backgrounded",
     backgroundTaskId: runId,
     ...(causalityGraph === undefined ? {} : { causalityGraph }),
@@ -337,6 +352,7 @@ export const createWorkflowToolEntry: ToolEntry = {
   // 还没被认出来的名字，而解不出来的调用会在批准之后才失败。
   resolveInput: (input, context) => {
     // 技能门先于一切解析：没读过 dynamic-workflows 就拒绝提交脚本（saved 来源例外，见 gate 模块）。
+    // 门必须保持同步拒绝：executor 与现有测试都依赖「拒绝当场返回」而不是一个 Promise。
     if (createWorkflowNeedsSkill(input)) {
       const refused = requireDynamicWorkflowSkill(context, CREATE_WORKFLOW_TOOL_NAME);
       if (refused) return refused;
@@ -346,8 +362,14 @@ export const createWorkflowToolEntry: ToolEntry = {
       context.workingDirectory ?? ".",
       context.dynamicWorkflowRunPort?.concurrencyCeiling?.(),
       context.modelCatalogPort,
-    );
+    ).then((resolution) => withWorkflowAdjustableSettings(resolution, context));
   },
+  // Modified by ZCode:F6：确认窗批准后的调整落进入参（失败则整次失败，不启动）。
+  applyInputAdjustments: (input, adjustments, context) =>
+    applyWorkflowSettingsAdjustments(input, adjustments, context, {
+      errorCode: CREATE_WORKFLOW_FAILURE_CODE,
+      schema: CreateWorkflowInputSchema,
+    }),
   prepareApproval: prepareCreateWorkflowApproval,
   inputSchema: CreateWorkflowInputJsonSchema,
   outputSchema: CreateWorkflowOutputJsonSchema,

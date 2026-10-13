@@ -19,6 +19,17 @@ import type {
 } from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
 import type { StorageCleanRequest, StorageCleanResult, StorageUsageSnapshot } from "./storage.js";
+import type {
+  ArmsCustomEventPayload,
+  ConfigureFinalArmsCustomEventE2ERequest,
+  FinalArmsCustomEventE2EEntry,
+  RendererTelemetryEventPayload,
+  TelemetryRendererContext,
+} from "./telemetry.js";
+import type {
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
+} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CancelPendingRemoteConnectionRequest,
@@ -164,7 +175,7 @@ export const ServiceChannels = {
   HighspeedCard: "highspeed-card",
   /** Onboarding 完成记录服务（本地持久化，后续上传服务器） */
   OnboardingRecord: "onboarding-record",
-  /** 工作区注册表（M1.3）：可见工作区集合的唯一真相源，只读面 */
+  /** 工作区注册表（M1.3·CE 线增量）：可见工作区集合的唯一真相源，只读面 */
   WorkspaceRegistry: "workspace-registry",
 } as const;
 
@@ -230,39 +241,21 @@ export const PlatformChannels = {
   ListDockerContainers: "zcode:list-docker-containers",
   /** Renderer → Main：列出 SSH config 里可用于快速填表的 alias */
   ListSSHConfigAliases: "zcode:list-ssh-config-aliases",
-  /**
-   * 远程控制（本地 Web 服务）四条 handle 通道 + 一条广播（契约 §5）。
-   *
-   * 为什么集中在这里而不是留在 `packages/desktop/src/main/web-service/ipc.ts`：
-   * preload 需要同一份字符串才能订阅，而 preload 属于 shared 的消费方 —— 两处各写一份
-   * 字符串迟早漂移（改一处忘一处 ⇒ 通道名对不上，且**静默**：渲染进程永远收不到广播）。
-   * `web-service/ipc.ts` 的 `WEB_SERVICE_CHANNELS` 现在从这里取，保持单一来源。
-   */
+  // ---- CE 线增量：远程控制（本地 Web 服务）四条 handle 通道 + 一条广播（契约 §5）。
+  // 集中在 shared 而不是留在 web-service/ipc.ts：preload 需要同一份字符串才能订阅，
+  // 两处各写一份迟早漂移（改一处忘一处 ⇒ 通道名对不上且静默）。
   WebServiceStatus: "webService:status",
   WebServiceStart: "webService:start",
   WebServiceStop: "webService:stop",
   WebServiceConnectionInfo: "webService:connectionInfo",
-  /** Main → Renderer：探活结论变化时的广播（入口据此回显，**不轮询**）。 */
+  /** Main → Renderer：探活结论变化时的广播（入口据此回显，不轮询）。 */
   WebServiceChanged: "webService:changed",
-  /**
-   * 连接面（谁连着）三条通道（spec §6.4）。读一条、写两条。
-   *
-   * 与上面五条的差别：那五条描述的是服务面（进程/监听/端口/令牌），
-   * 这三条描述的是连接面（哪些客户端连在这个服务上）。spec §3.5 把两面分给不同渲染面
-   * （Web 面板只看连接面，桌面面板两面都有），所以通道也分开 —— 合成一条会让
-   * "Web 面板不提供令牌轮换"这条决策失去可断言的边界。
-   *
-   * 令牌不变式对本组同样成立：WebServiceConnections 的载荷是服务端连接清单，
-   * 不含令牌；main 侧为了请求服务端会在进程内部带上令牌，但它不跨 IPC 边界。
-   */
+  // 连接面（谁连着）三条通道（spec §6.4）。读一条、写两条。令牌不变式对本组同样成立：
+  // WebServiceConnections 的载荷是服务端连接清单，不含令牌；main 侧请求服务端在进程内带令牌，不跨 IPC。
   WebServiceConnections: "webService:connections",
   /** Renderer → Main：断开连接。载荷恰好是 { id } 或 { all: true } 之一（spec §6.4）。 */
   WebServiceRevokeConnection: "webService:revokeConnection",
-  /**
-   * Renderer → Main：轮换服务端令牌（spec §6.4 的桌面面板专属写动作，决策④）。
-   *
-   * 轮换会让所有已连设备立即失效，所以它只由桌面面板触发；Web 面板不暴露该入口。
-   */
+  /** Renderer → Main：轮换服务端令牌（spec §6.4 桌面面板专属写动作）：轮换让所有已连设备立即失效。 */
   WebServiceRotateToken: "webService:rotateToken",
   /** Renderer → Main：从用户目录加载 CLI MCP 配置 */
   LoadMcpFromUserDirectory: "zcode:load-mcp-from-user-directory",
@@ -397,13 +390,27 @@ export const PlatformChannels = {
   OAuthCallbackHandled: "zcode:oauth-callback-handled",
   /** Renderer → Main：renderer 已就绪，可接收缓存的 deep link */
   RendererReady: "zcode:renderer-ready",
-  // 遥测已全部移除（P1）：SyncTelemetryContext / ReportTelemetryEvent / ReportArmsCustomEvent /
-  // GetRendererActionTraceConfig / RendererActionTraceConfigChanged / ReportRendererActionTraceBatch /
-  // ReportLocalTtftBatch / ReadFinalArmsCustomEventsE2E / ClearFinalArmsCustomEventsE2E /
-  // ConfigureFinalArmsCustomEventsE2E 十个 channel 均已删除。
-  // 保留 ReportRendererHeapSample（本地内存诊断，非上报）。
+  /** Renderer → Main：同步当前 renderer 的 telemetry 上下文 */
+  SyncTelemetryContext: "zcode:sync-telemetry-context",
+  /** Renderer → Main：通过统一 telemetry 层上报业务事件 */
+  ReportTelemetryEvent: "zcode:report-telemetry-event",
+  /** Renderer → Main：上报 ARMS 自定义事件 */
+  ReportArmsCustomEvent: "zcode:report-arms-custom-event",
+  /** Renderer → Main：读取 Renderer 用户操作 Trace 灰度配置。 */
+  GetRendererActionTraceConfig: "zcode:get-renderer-action-trace-config",
+  /** Main → Renderer：Renderer 用户操作 Trace 灰度配置变化。 */
+  RendererActionTraceConfigChanged: "zcode:renderer-action-trace-config-changed",
+  /** Renderer → Main：发送已结束的 ui_action batch。 */
+  ReportRendererActionTraceBatch: "zcode:report-renderer-action-trace-batch",
   /** Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，单向 send，不需要回执。 */
   ReportRendererHeapSample: "zcode:report-renderer-heap-sample",
+  ReportLocalTtftBatch: "zcode:report-local-ttft-batch",
+  /** E2E preload → Main：读取 sendCustom 最终参数的内存 ring。 */
+  ReadFinalArmsCustomEventsE2E: "zcode:e2e:read-final-arms-custom-events",
+  /** E2E preload → Main：清空 sendCustom 最终参数的内存 ring。 */
+  ClearFinalArmsCustomEventsE2E: "zcode:e2e:clear-final-arms-custom-events",
+  /** E2E preload → Main：配置只针对目标 event name 的真实网络抑制。 */
+  ConfigureFinalArmsCustomEventsE2E: "zcode:e2e:configure-final-arms-custom-events",
   /** Renderer → Main：触发任务完成/失败的系统通知 */
   ShowTaskNotification: "zcode:show-task-notification",
   /** Main → Preload：通知 renderer 播放任务通知提示音 */
@@ -683,11 +690,12 @@ export const HostResponseTypes = {
   AgentResourceSample: "agent-resource-sample",
   /** host → main：Host 进程自身每 60 秒自采的 CPU / RSS / heap（资源遥测 host 角色的 heap 来源） */
   HostResourceSample: "host-resource-sample",
-  // 遥测已全部移除（P1）：McpTelemetry / SessionCreateTelemetry 已删除。
-  // 保留 McpResourceSamples / ToolExecResource —— 它们服务资源管理器窗口与 Bash 生命周期，
-  // 不是上报通道（消费方是 desktopHostProcess 的本地聚合）。
+  /** host → main：CLI 内 MCP 进程生命周期与内存遥测 */
+  McpTelemetry: "mcp-telemetry",
   McpResourceSamples: "mcp-resource-samples",
   ToolExecResource: "tool-exec-resource",
+  /** 自动化 Host 首次输入 accepted 后报告新建 Session。 */
+  SessionCreateTelemetry: "session-create-telemetry",
   /** host → main：资源管理器采样结果（按 requestId 关联） */
   ResourceUsageSnapshotResult: "resource-usage-snapshot-result",
   NetworkCaptureBatch: "network-capture-batch",
@@ -1073,10 +1081,45 @@ export interface PlatformChannelMap {
     request: void;
     response: void;
   };
-  // 遥测已全部移除（P1）：10 个上报 channel 的 request/response 映射已删除。
-  // 单向 send（不是 invoke）：60 秒一条的本地内存诊断样本，renderer 不等 main 回执。
+  [PlatformChannels.SyncTelemetryContext]: {
+    request: TelemetryRendererContext;
+    response: void;
+  };
+  [PlatformChannels.ReportTelemetryEvent]: {
+    request: RendererTelemetryEventPayload;
+    response: void;
+  };
+  [PlatformChannels.ReportArmsCustomEvent]: {
+    request: ArmsCustomEventPayload;
+    response: void;
+  };
+  [PlatformChannels.GetRendererActionTraceConfig]: {
+    request: void;
+    response: RendererActionTraceConfigV1;
+  };
+  [PlatformChannels.RendererActionTraceConfigChanged]: {
+    request: RendererActionTraceConfigV1;
+    response: void;
+  };
+  [PlatformChannels.ReportRendererActionTraceBatch]: {
+    request: RendererActionTraceBatchV1;
+    response: void;
+  };
+  // 单向 send（不是 invoke）：60 秒一条的旁路遥测样本，renderer 不等 main 回执。
   [PlatformChannels.ReportRendererHeapSample]: {
     request: RendererHeapSample;
+    response: void;
+  };
+  [PlatformChannels.ReadFinalArmsCustomEventsE2E]: {
+    request: void;
+    response: FinalArmsCustomEventE2EEntry[];
+  };
+  [PlatformChannels.ClearFinalArmsCustomEventsE2E]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.ConfigureFinalArmsCustomEventsE2E]: {
+    request: ConfigureFinalArmsCustomEventE2ERequest;
     response: void;
   };
   [PlatformChannels.ShowTaskNotification]: {

@@ -244,6 +244,8 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
   onCreateConversationTask,
   onOpenFolderFromWorkspaceMenu,
   onOpenRemoteWorkspace,
+  isWebRemoteControl = false,
+  webRemoteControlWorkspaceSwitcher,
   theme,
   onConnectRemote: _onConnectRemote,
   onSelectRemoteProject: _onSelectRemoteProject,
@@ -292,6 +294,12 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
   onCreateConversationTask: () => void;
   onOpenFolderFromWorkspaceMenu: () => void;
   onOpenRemoteWorkspace?: () => void;
+  isWebRemoteControl?: boolean;
+  /** 官方 3.15.1 壳层传入的 Web 远控任务面接线；CE 侧栏内部暂不消费，保留形参兼容官方 ShellLayout。 */
+  onWebRemoteTaskOpen?: (options: { crossWorkspace: boolean }) => void;
+  onWebRemoteTaskSwitchingChange?: (switching: boolean) => void;
+  /** 官方 3.15.1 壳层传入的 Web 远控工作区切换 API；CE 侧栏当前不消费，保留形参兼容官方 ShellLayout。 */
+  webRemoteControlWorkspaceSwitcher?: import("@/root/types.js").WebRemoteControlWorkspaceSwitcherApi;
   theme: Theme;
   onConnectRemote: (options: RemoteTarget, requestId?: string) => Promise<string>;
   onSelectRemoteProject: (
@@ -630,11 +638,15 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
       setWorkspaceTaskOrganizeBy(taskOrganizeBy);
     }
   }, [taskOrganizeBy]);
+  const isWebRemoteControlSidebar = Boolean(
+    webRemoteControlWorkspaceSwitcher || isWebRemoteControl,
+  );
   const taskViewMode = resolveSidebarTaskViewMode({
     showArchivedTasks,
     taskOrganizeBy,
   });
-  const effectiveTaskViewMode = taskViewMode;
+  const effectiveTaskViewMode =
+    isWebRemoteControlSidebar && taskViewMode === "grouped" ? "workspace" : taskViewMode;
   const visibleWorkspaceTaskKeys = useMemo(
     () =>
       resolveVisibleWorkspaceTaskKeys({
@@ -1666,11 +1678,6 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                                             }
                                             onReconnectRemoteWorkspace={onReconnectRemoteWorkspace}
                                             onOpenFileTree={handleOpenWorkspaceFileTree}
-                                            runtimeState={
-                                              runtimeStates.get(row.workspaceKey) ?? "unknown"
-                                            }
-                                            persistedSessionCount={row.persistedSessionCount}
-                                            lastActivityAt={row.lastActivityAt}
                                           />
                                         ) : (
                                           <WorkspaceSidebarItem
@@ -1695,12 +1702,6 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                                             onShowMoreTasks={() =>
                                               handleShowMoreWorkspaceTasks(row.workspaceKey)
                                             }
-                                            isRegistryDerived
-                                            runtimeState={
-                                              runtimeStates.get(row.workspaceKey) ?? "unknown"
-                                            }
-                                            persistedSessionCount={row.persistedSessionCount}
-                                            lastActivityAt={row.lastActivityAt}
                                             reconnectingRemoteWorkspaceKeys={
                                               reconnectingRemoteWorkspaceKeys
                                             }

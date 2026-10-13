@@ -61,6 +61,7 @@ export function ChatPromptEditor({
   isDraggingOver = false,
   dragAttachmentHint,
   topContent,
+  inputLeadingContent,
   leadingActions,
   attachmentAction,
   betweenCancelAndSubmitAction,
@@ -74,6 +75,7 @@ export function ChatPromptEditor({
   promptHistory,
   className,
   shellClassName,
+  avoidIosInputFocusZoom = false,
   compactPlaceholder = false,
   onChange,
   onSubmit,
@@ -112,6 +114,8 @@ export function ChatPromptEditor({
   isDraggingOver?: boolean;
   dragAttachmentHint?: string;
   topContent?: ReactNode;
+  /** 与输入正文同一行的前置内容；Highspeed 使用紧凑 Fast 标签。 */
+  inputLeadingContent?: ReactNode;
   leadingActions?: ReactNode;
   attachmentAction?: {
     label: string;
@@ -131,6 +135,7 @@ export function ChatPromptEditor({
   promptHistory?: readonly string[];
   className?: string;
   shellClassName?: string;
+  avoidIosInputFocusZoom?: boolean;
   compactPlaceholder?: boolean;
   onChange?: (value: string) => void;
   // 适配：返回 false 表示业务层拒绝/延迟本次提交，Lexical 不自行 reset（草稿保留）。
@@ -331,6 +336,35 @@ export function ChatPromptEditor({
       ? dragAttachmentHint
       : undefined;
 
+  const editorNode = (
+    <LexicalChatInput
+      placeholder={placeholder}
+      disabled={disabled}
+      submitDisabled={submitDisabled}
+      allowSubmitWhenEmpty={allowSubmitWhenEmpty}
+          enterSubmits={enterSubmits}
+          onSubmit={handleEditorSubmit}
+          onModifiedSubmit={onModifiedSubmit}
+      onChange={handleTextChange}
+      onFocus={onFocus}
+      triggerPanelContainer={resolvedTriggerPanelContainer}
+      workspacePath={workspacePath}
+      workspaceIdentity={workspaceIdentity}
+      taskId={taskId}
+      skillCatalogSessionId={skillCatalogSessionId}
+      inputTestId={inputTestId}
+      editorApiRef={resolvedInputApiRef}
+      promptHistory={promptHistory}
+      avoidIosInputFocusZoom={avoidIosInputFocusZoom}
+      compactPlaceholder={compactPlaceholder}
+      onWhiteboardMentionSelected={onWhiteboardMentionSelected}
+      onPaste={onPaste}
+      excludedSlashCommandNames={excludedSlashCommandNames}
+      appSlashCommands={appSlashCommands}
+      enableMentionPanel={enableMentionPanel}
+    />
+  );
+
   return (
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={cn("relative", className)}>
       {triggerPanelContainer ? null : (
@@ -360,39 +394,15 @@ export function ChatPromptEditor({
         ) : null}
 
         {topContent}
-        <LexicalChatInput
-          placeholder={placeholder}
-          disabled={disabled}
-          submitDisabled={submitDisabled}
-          allowSubmitWhenEmpty={allowSubmitWhenEmpty}
-          enterSubmits={enterSubmits}
-          onSubmit={handleEditorSubmit}
-          onModifiedSubmit={onModifiedSubmit}
-          onChange={handleTextChange}
-          onFocus={onFocus}
-          triggerPanelContainer={resolvedTriggerPanelContainer}
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          taskId={taskId}
-          skillCatalogSessionId={skillCatalogSessionId}
-          inputTestId={inputTestId}
-          editorApiRef={resolvedInputApiRef}
-          promptHistory={promptHistory}
-          compactPlaceholder={compactPlaceholder}
-          onWhiteboardMentionSelected={onWhiteboardMentionSelected}
-          onPaste={onPaste}
-          excludedSlashCommandNames={excludedSlashCommandNames}
-          appSlashCommands={appSlashCommands}
-          enableMentionPanel={enableMentionPanel}
-        />
-        <div
-          ref={toolbarRef}
-          // 触屏（手机）上把底部动作条的命中区补到 44×44：icon-md 实测只有 28×28，而拇指命中区
-          // 约 44px，相邻按钮中心距仅 32px 时必然误触（task-22 审计 §2.4：发送/停止 23–30px）。
-          // 用 min-* 而不是 size-*：带文字的档位（模型/思考档）在触屏平板上仍需按内容占宽。
-          // 桌面鼠标路径（pointer: fine）逐项不变。
-          className="group/toolbar flex items-end gap-3 [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11"
-        >
+        {inputLeadingContent ? (
+          <div className="flex min-w-0 items-start gap-2">
+            <div className="shrink-0">{inputLeadingContent}</div>
+            <div className="min-w-0 flex-1">{editorNode}</div>
+          </div>
+        ) : (
+          editorNode
+        )}
+        <div ref={toolbarRef} className="group/toolbar flex items-end gap-3">
           <div className="flex min-w-0 flex-1 items-center" data-composer-leading-actions>
             <div className="flex shrink-0 items-center gap-1" data-composer-leading-content>
               {hasActionMenu ? (
@@ -410,7 +420,7 @@ export function ChatPromptEditor({
                   showPlugins={enableMentionPanel !== false}
                 />
               ) : null}
-              {/* 权限/模式选择曾作为 leadingActions 先于动作菜单渲染，导致常驻顺序与产品规范相反。*/}
+              {/* Bugfix：权限/模式选择曾作为 leadingActions 先于动作菜单渲染，导致常驻顺序与产品规范相反。 */}
               {leadingActions}
               {onModeSwitchContainerChange ? (
                 <span ref={onModeSwitchContainerChange} className="flex shrink-0 items-center" />

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  CLAUDE_PLUGINS_OFFICIAL_MARKETPLACE_ID,
+  CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
   DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS,
   DEFAULT_PLUGIN_MARKETPLACES,
   PUBLIC_STORE_MARKETPLACE_IDS,
@@ -18,19 +18,19 @@ test("默认市场包含官方市场与社区目录两个条目", () => {
   const ids = DEFAULT_PLUGIN_MARKETPLACES.map((marketplace) => marketplace.id);
   assert.deepEqual(ids, [
     ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
-    CLAUDE_PLUGINS_OFFICIAL_MARKETPLACE_ID,
+    CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
   ]);
 });
 
 test("社区目录指向 anthropics/claude-plugins-official", () => {
   const community = DEFAULT_PLUGIN_MARKETPLACES.find(
-    (marketplace) => marketplace.id === CLAUDE_PLUGINS_OFFICIAL_MARKETPLACE_ID,
+    (marketplace) => marketplace.id === CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
   );
   assert.ok(community, "社区目录必须存在");
   // source 用 owner/repo 简写形式，与官方发行版一致。
   assert.equal(community.source, "anthropics/claude-plugins-official");
   // name 必须等于 canonical id，否则市场 manifest 校验会失配。
-  assert.equal(community.name, CLAUDE_PLUGINS_OFFICIAL_MARKETPLACE_ID);
+  assert.equal(community.name, CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID);
 });
 
 test("公开商店分段只含官方市场，社区目录不进该分段", () => {
@@ -38,7 +38,7 @@ test("公开商店分段只含官方市场，社区目录不进该分段", () =>
   // 因此它不会被当成 ZCode 自己的市场展示。
   assert.deepEqual([...PUBLIC_STORE_MARKETPLACE_IDS], [ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID]);
   assert.equal(isPublicStoreMarketplaceId(ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID), true);
-  assert.equal(isPublicStoreMarketplaceId(CLAUDE_PLUGINS_OFFICIAL_MARKETPLACE_ID), false);
+  assert.equal(isPublicStoreMarketplaceId(CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID), false);
 });
 
 test("默认启用集合与官方发行版逐项一致", () => {

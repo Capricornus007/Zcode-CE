@@ -9,6 +9,7 @@ import { ServiceChannels } from "@zcode/shared";
 import type { AppUsageRange, AppUsageSnapshot, ZCodeTaskTokenUsageResult } from "@zcode/shared";
 import type { DynamicWorkflowMode } from "@zcode/shared";
 import type { ZCodeAutomation, ZCodeAutomationRun } from "@zcode/shared";
+import type { ZCodeWorkspaceRef } from "@zcode/shared";
 import type {
   ZCodeStorageStartupState,
   ZCodeDeliveryKind,
@@ -366,6 +367,8 @@ export type ProviderRuntimeHeadersUiResponse =
 export interface ZCodeAgentRespondProviderRuntimeHeadersParams extends ZCodeAgentSessionTarget {
   requestId: string;
   response: ProviderRuntimeHeadersUiResponse;
+  /** CE 验证码附件回传时携带的目标工作区引用；宿主按 sessionTarget 路由，可忽略。 */
+  workspace?: ZCodeWorkspaceRef;
 }
 
 export interface ZCodeAgentSessionRuntimePreferencesRequest extends ZCodeSessionRequestRuntimePreferencesParams {
@@ -851,6 +854,14 @@ export interface IZCodeAgentService {
   ): Event<ZCodeProviderRuntimeHeadersCancelled>;
   onDynamicSessionRuntimePreferencesRequest(): Event<ZCodeAgentSessionRuntimePreferencesRequest>;
   /**
+   * CE 验证码附件（provider runtime headers 面）：订阅「动态会话验证码能力」声明通道。
+   * 宿主侧当前未实现（诚实可选成员）：能力缺席 ⇒ UI 侧不订阅 ⇒ 验证码附件不激活，
+   * 而不是整链崩溃。返回可 dispose 的订阅句柄。
+   */
+  onDynamicSessionCaptchaCapability?(
+    target: ZCodeAgentSessionCaptchaCapabilityParams,
+  ): Event<void>;
+  /**
    * CLI 进程级资源样本，带 services 打的 lane 标签（CLI 自己不知道 lane）。
    * 使用 dynamic event 避免 RPC 服务在无人订阅时缓冲周期事件；
    * 该事件不属于 session/conversation continuous 或 replayable 状态。
@@ -1006,7 +1017,6 @@ export interface IZCodeAgentService {
 export const IZCodeAgentService = createServiceDescriptor<IZCodeAgentService>(
   ServiceChannels.ZCodeAgent,
 );
-
 // ---- CE 线增量回植（整版升级 2b·2）：bots/taskFailureMessage 依赖 ----
 export const ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING_CODE =
   "ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING";
@@ -1015,3 +1025,6 @@ export const ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE =
 
 export interface ZCodeAgentSessionCaptchaCapabilityParams extends ZCodeAgentSessionTarget {}
 
+// ---- CE 线增量（provider runtime headers 验证码面·声明补齐）----
+// 宿主侧当前未实现该事件通道（诚实可选成员）：UI 侧以可选调用订阅，
+// 能力缺席 ⇒ 不订阅 ⇒ 验证码附件不激活，而不是整链崩溃。

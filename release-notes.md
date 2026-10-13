@@ -19,6 +19,8 @@
 - **工作流支持运行中改并发、保存复跑，子代理可单独指定模型**：运行中的工作流可以在确认窗里调整并发上限与单个子代理使用的模型（向下取整、回到默认与会话模型三态语义），保存后的工作流可直接复跑；工作流记录里也会如实呈现每个子代理实际使用的模型。创建前的参数配置界面与部分工作流渲染的判别仍在跟进（见维护者台账）。
 - **GLM HighSpeed 加速卡界面（客户端面）**：命中加速时本轮消息出现紫色流光卡片与激活动效，带到期时钟与剩余时长（节省时长标签）；卡片可分享。加速上下文在切走再切回时从「恢复」态继续，不重播扩散动画；卡过期后不再把普通输出染成加速样式。发卡与抽奖逻辑属官方服务端，本版只包含客户端展示与交互。
 
+- **飞书群里可以开独立话题协作**：群里的机器人交互自动归入话题上下文——话题的准备态、历史、续接、附件与资源都在话题内隔离，互不串线；群成员名册可查，投递有节流与队列卡防刷屏；@提及与反向回复走严格解析。与 CE 既有形态一致：IM 机器人（Bot Channel）默认关闭、用户同意后开启，Web 自托管控制默认开。
+
 ## 体验优化
 
 - **更新下载失败后自动复查**：下载失败或下载完成（发现已下载版本被更高版本取代）时自动发起新一轮检查，而不是停在原地等手动点；检查进行中的复查会收口后补一次，不会丢。轮询节奏改为无目标 15 分钟、有可见更新目标 2 分钟；已发现的更新目标不会被中间态闪掉或清掉。
@@ -64,6 +66,8 @@ This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2
 - **The account menu shows your plan and copies your user ID**: the account menu footer shows the current plan badge and user ID; a one-click copy for support tickets (failures are reported clearly).
 - **Workflows support in-run concurrency adjustment, save-and-rerun, and per-subagent models**: the confirmation pane adjusts a running workflow's concurrency cap and the model used by individual subagents (floor / back to default / session model, three-state semantics); saved workflows can be rerun directly; the per-run record honestly shows which model each subagent actually used. The pre-create settings UI and the discrimination of some workflow rendering are still being followed up (see the maintainer ledger).
 - **GLM HighSpeed card UI (client side)**: an accelerated turn shows a purple animated card with activation effect, expiry clock and remaining time saved; the card is shareable. Acceleration context resumes (not replays) when switching away and back; once a card expires, ordinary output is no longer styled as accelerated. Issuance and the lottery are official server-side; this release contains only the client presentation and interaction.
+
+- **Standalone topic collaboration in Feishu groups**: bot interactions in a group are scoped to their own topic context — preparation state, history, continuation, attachments and resources are all isolated per topic and never cross wires; the group member directory is queryable, delivery is throttled with queue cards to prevent flooding, and @mentions and reverse replies use the strict parser. Consistent with CE's existing posture: the IM bot channel (Bot Channel) is off by default and enabled only with your consent, while the self-hosted Web console stays on by default.
 
 ## Improvements
 

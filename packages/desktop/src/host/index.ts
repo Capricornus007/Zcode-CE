@@ -1,3 +1,4 @@
+// Modified by ZCode: X12 注释与上游同值对齐(启动 warmup 限制为 active workspace 1 个);自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 /* eslint-disable max-lines -- Host 入口集中编排 local/remote service wiring，本次退出保护需要在同一处桥接 host 上报。 */
 /* eslint-disable max-lines -- host process 入口集中维护 local/remote 初始化和资源回收，realtime bridge 接入后先保持同文件收口。 */
 /**
@@ -2853,8 +2854,9 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
                   },
                 ]
               : [];
-        // Main 已按最近使用顺序把启动预热限制为 3 个；Host 必须显式消费这份
-        // 固定名单，不能让后续 task-list observer 再隐式扩大，也不能因单个失败扫描补位。
+        // Main 已把启动预热限制为 active workspace 1 个(STARTUP_AGENT_WARMUP_LIMIT);
+        // Host 必须显式消费这份固定名单，不能让后续 task-list observer 再隐式扩大，
+        // 也不能因单个失败扫描补位。
         agentWarmupTargets.forEach((target, index) => {
           warmUpZCodeAgent(
             services,

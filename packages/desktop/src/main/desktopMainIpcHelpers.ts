@@ -1,6 +1,8 @@
+// Modified by ZCode: X5 file: URL 本地文件经系统默认应用打开(openFileUrlInDefaultApp);自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 import { execFile } from "node:child_process";
 import { realpath } from "node:fs/promises";
 import { normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { BrowserWindow } from "electron";
 import { shell } from "electron";
 
@@ -8,6 +10,27 @@ type DesktopIpcLogger = {
   info?: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
 };
+
+/**
+ * 修复(X5,照搬上游 v3.15.1):shell.openExternal 对 file: 协议在多数平台实现上失败或无效,
+ * 内置浏览器「用默认应用打开本地文件」的入口因此打不开。file URL 先转成本地路径,
+ * 再复用平台的 openPathInDefaultApp(realpath + shell.openPath)。
+ * 解析/打开失败只 warn,不向调用方抛——renderer 侧 openExternal 为 fire-and-forget。
+ */
+export async function openFileUrlInDefaultApp(
+  url: string,
+  logger: DesktopIpcLogger,
+): Promise<void> {
+  try {
+    const filePath = fileURLToPath(url);
+    await openPathInDefaultApp(filePath, logger);
+  } catch (error) {
+    logger.warn("[open-external] file URL 打开失败", {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
 
 export async function openPathInDefaultApp(
   rawPath: string,

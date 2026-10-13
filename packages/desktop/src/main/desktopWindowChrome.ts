@@ -31,6 +31,11 @@ import {
   resolveDesktopZoomLevelFromFactor,
 } from "./desktopZoom.js";
 import { resolveDesktopWindowChromeState } from "./desktopWindowChromeState.js";
+// F9(上游 aac47556):did-attach-webview 上为 browser guest 安装蓝牙设备选择守卫。
+import { installEmbeddedBrowserBluetoothDeviceGuard } from "./embeddedBrowserBluetoothGuard.js";
+import { getEmbeddedBrowserDevicePicker } from "./embeddedBrowserPermissionUiBridge.js";
+// F5(上游 aac47556):will/did-attach-webview 的插件 UI 沙箱分支。
+import { getPluginSandboxHost, isPluginSandboxSrc } from "./pluginSandbox/index.js";
 import {
   MIN_DESKTOP_WINDOW_HEIGHT,
   MIN_DESKTOP_WINDOW_WIDTH,
@@ -612,7 +617,11 @@ export function createBrowserWindow(options: {
   win.on("maximize", () => syncDesktopWindowChromeState(win));
   win.on("unmaximize", () => syncDesktopWindowChromeState(win));
   attachWindowsWindowRepaint(win);
-  const pendingWebviewCodingPlanGuestFlags: boolean[] = [];
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):guest 种类队列(含插件 UI 沙箱)。
+  // will-attach 与 did-attach 按顺序配对;did-attach 据此分派 guest 策略。
+  const pendingWebviewGuestKinds: Array<
+    { kind: "browser" | "codingPlan" } | { kind: "pluginSandbox"; sandboxId: string }
+  > = [];
 
   win.webContents.once("did-finish-load", () => {
     // 生产包使用 loadFile(file://...) 导航时，Chromium 可能在页面加载完成后重放
@@ -645,6 +654,24 @@ export function createBrowserWindow(options: {
     // Coding Plan 官网页例外：它需要 window.zcodeBridge 回传购买完成信号，
     // 改用专用 preload（codingPlanWebview.ts），其余 webview 保持原生 Dialog 桥。
     const targetUrl = params.src ?? "about:blank";
+    // F5(上游 aac47556):插件 UI 沙箱 guest——独立分支,不走内置浏览器的 preload / allowpopups / 协议白名单。
+    if (isPluginSandboxSrc(targetUrl)) {
+      const host = getPluginSandboxHost();
+      const decision = host?.configureGuest({
+        webPreferences,
+        params,
+        ownerWebContentsId: win.webContents.id,
+      });
+      if (!decision?.ok) {
+        options.logger.warn(
+          `[plugin-sandbox] blocked webview attach: ${decision ? decision.reason : "host-not-installed"}`,
+        );
+        event.preventDefault();
+        return;
+      }
+      pendingWebviewGuestKinds.push({ kind: "pluginSandbox", sandboxId: decision.sandboxId });
+      return;
+    }
     const isCodingPlanWebview = isCodingPlanEmbeddedWebviewSrc(targetUrl);
     webPreferences.preload = isCodingPlanWebview
       ? codingPlanWebviewPreloadPath
@@ -675,19 +702,38 @@ export function createBrowserWindow(options: {
       return;
     }
 
-    pendingWebviewCodingPlanGuestFlags.push(isCodingPlanWebview);
+    pendingWebviewGuestKinds.push({ kind: isCodingPlanWebview ? "codingPlan" : "browser" });
   });
 
   win.webContents.on("did-attach-webview", (_event, guestWebContents) => {
+    const guestKind = pendingWebviewGuestKinds.shift() ?? { kind: "browser" as const };
+    // F5(上游 aac47556):沙箱 guest 交给沙箱 host 的 attach(端口/导航策略独立)。
+    if (guestKind.kind === "pluginSandbox") {
+      getPluginSandboxHost()?.attachGuest({
+        guest: guestWebContents,
+        hostWebContents: win.webContents,
+        sandboxId: guestKind.sandboxId,
+      });
+      return;
+    }
     attachEmbeddedBrowserWindowOpenHandler({
       guestWebContents,
       hostWebContents: win.webContents,
       resolveBrowserViewOwner: options.resolveBrowserViewOwner,
       // PayPal/relay 的 30x 重定向不保证逐跳触发 will-navigate。
       // Coding Plan guest 身份必须按初始 src 粘住，不能由当前 URL 解防护。
-      isCodingPlanGuest: pendingWebviewCodingPlanGuestFlags.shift() ?? false,
+      isCodingPlanGuest: guestKind.kind === "codingPlan",
       logger: options.logger,
     });
+    // F9(上游 aac47556):蓝牙设备选择事件挂在 guest WebContents 上(Session 只覆盖
+    // hid/usb/serial);仅内置浏览器 guest 安装守卫,阻断 Electron 未监听时静默授权
+    // 第一个设备的默认行为。设备选择器在桥未装配时缺省取消请求(安全默认)。
+    if (guestKind.kind === "browser") {
+      installEmbeddedBrowserBluetoothDeviceGuard(guestWebContents, options.logger.warn, {
+        devicePicker: getEmbeddedBrowserDevicePicker(),
+        hostWebContentsId: win.webContents.id,
+      });
+    }
   });
 
   win.webContents.on("context-menu", (_event, params) => {

@@ -1,4 +1,5 @@
 /* oxlint-disable eslint(max-lines) -- footer 聚合账户、主题、模式和快捷键菜单。 */
+// Modified by ZCode: F11(账户菜单): 增加套餐 badge(profile-menu-plan)与复制用户 ID(copy-user-id)入口;不引入 rewards。
 import type { Locale, UserInfo } from "@zcode/shared";
 import { memo, useCallback, useEffect, useState } from "react";
 import {
@@ -13,6 +14,8 @@ import { RemoteControlEntryButton, type RemoteControlEntry } from "@/RemoteContr
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
+// F11: 复制用户 ID 的结果提示(自上游 3.15.1 搬运, Apache-2.0)。
+import { toast } from "@/components/ui/toast.js";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.js";
 import {
+  Copy,
   PencilRuler,
   Globe,
   Loader2,
@@ -123,7 +127,7 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   activeTaskId?: string | null;
   isDesktop?: boolean;
   /**
-   * 远控入口（ce.3 · 切片 1）：状态与打开动作**由调用方注入**，footer 不自己取状态。
+   * 远控入口（ce.3 · 切片 1）：状态与打开动作由调用方注入，footer 不自己取状态。
    * 不传则不渲染入口（Settings 等复用 footer 的场景无需知道远控）。
    * 切片 4 会把它接到后端的 webService:status 上，并把 onOpen 指向面板。
    */
@@ -147,6 +151,16 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
     workspaceIdentity,
     workspacePath,
   });
+  // F11: 复制用户 ID —— 排障/报障时用户需要提供自己的身份标识。失败 toast 明示, 不静默。
+  const copyUserId = async () => {
+    if (!user?.id) return;
+    try {
+      await navigator.clipboard.writeText(user.id);
+      toast(intl.formatMessage({ id: "sidebar.profile.userIdCopied" }));
+    } catch {
+      toast(intl.formatMessage({ id: "sidebar.profile.userIdCopyFailed" }));
+    }
+  };
   const profileContent = (
     <>
       <Avatar key={avatarKey} size="default">
@@ -172,7 +186,6 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
           <span className="min-w-0 truncate text-ui-base font-semibold text-foreground">
             {profileBadge}
           </span>
-          {user ? <WorkspaceSidebarFooterPlanBadge state={usageSummaryState} /> : null}
         </div>
       </div>
     </>
@@ -243,6 +256,69 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
           </DropdownMenuTrigger>
           {/* 菜单内容保持挂载，避免每次点击头像菜单都重建 footer 内部状态。*/}
           <DropdownMenuContent align="start" className="w-max min-w-50" forceMount>
+            {user ? (
+              <>
+                {/* F11: 账户菜单头部 —— 姓名 + 套餐 badge + 用户 ID(可复制)。
+                    套餐展示从 footer 触发器移到此处, 与上游 3.15.1 口径一致(Apache-2.0)。 */}
+                <div
+                  data-testid="profile-menu-header"
+                  className="flex max-w-80 items-center gap-2 px-2 py-1.5"
+                >
+                  <Avatar key={avatarKey} size="default">
+                    {user.avatarUrl ? (
+                      <AvatarImage src={user.avatarUrl} alt={profileBadge} />
+                    ) : null}
+                    <AvatarFallback className="bg-background text-foreground">
+                      {avatarFallbackText}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        data-testid="profile-menu-name"
+                        className="truncate text-ui-base font-medium"
+                      >
+                        {profileBadge}
+                      </span>
+                      <span
+                        data-testid="profile-menu-plan"
+                        className="flex shrink-0 [&>span]:border-border/50 [&>span]:bg-transparent [&>span]:font-normal"
+                      >
+                        <WorkspaceSidebarFooterPlanBadge state={usageSummaryState} />
+                      </span>
+                    </div>
+                    {user.id ? (
+                      <div className="flex min-w-0 items-center gap-1 text-ui-sm text-foreground-subtle">
+                        <span data-testid="profile-menu-id" className="min-w-0 truncate">
+                          {intl.formatMessage({ id: "sidebar.profile.accountId" }, { id: user.id })}
+                        </span>
+                        <DropdownMenuItem
+                          asChild
+                          className="data-[highlighted]:bg-transparent data-[highlighted]:hover:bg-menu-hover data-[highlighted]:focus-visible:bg-menu-hover"
+                          onSelect={(event) => {
+                            event.preventDefault();
+                            void copyUserId();
+                          }}
+                        >
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            data-testid="copy-user-id"
+                            className="min-h-0 p-0 text-foreground-subtle"
+                            aria-label={intl.formatMessage({ id: "sidebar.profile.copyUserId" })}
+                            title={intl.formatMessage({ id: "sidebar.profile.copyUserId" })}
+                          >
+                            <Copy className="size-3" />
+                          </Button>
+                        </DropdownMenuItem>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Globe className="size-4" />

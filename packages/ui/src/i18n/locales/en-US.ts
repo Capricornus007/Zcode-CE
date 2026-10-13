@@ -1,3 +1,4 @@
+// Modified by ZCode: X8/F11/hole/F2_*: 新增 i18n 键(quota-reset/account-menu/workflow hole/highspeed 等),其余与上游键合并。
 /** English translations */
 const enUS: Record<string, string> = {
   "startPlan.recommendation.subagentDescription":
@@ -605,6 +606,11 @@ const enUS: Record<string, string> = {
   "logout.confirm.ok": "Disconnect and restart",
   "logout.confirm.cancel": "Cancel",
   "sidebar.profile.notLoggedIn": "Connect",
+  // F11: account menu header — user ID display and copy feedback (from upstream 3.15.1, Apache-2.0).
+  "sidebar.profile.accountId": "ID: {id}",
+  "sidebar.profile.copyUserId": "Click to copy user ID",
+  "sidebar.profile.userIdCopied": "User ID copied",
+  "sidebar.profile.userIdCopyFailed": "Copy failed. Please try again",
   "app.selectFile": "Select a file to get started",
   "app.workspace": "Workspace",
   "browser.title": "Browser",
@@ -5300,6 +5306,9 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.resolveQuestion.outcome": "Outcome",
   "chat.toolCall.workflow.resolveQuestion.fallbackName": "Answer",
   "chat.toolCall.workflow.openRunDetails": "Open run details",
+  // Workflow hole row (F6 hole variant, from upstream 3.15.1, Apache-2.0).
+  "chat.toolCall.workflow.hole.draftPath": "Draft",
+  "chat.toolCall.workflow.hole.waited": "Waiting · {time}",
   "chat.toolCall.workflow.run.status.pending": "Pending",
   "chat.toolCall.workflow.run.status.running": "Running",
   "chat.toolCall.workflow.run.status.completed": "Completed",

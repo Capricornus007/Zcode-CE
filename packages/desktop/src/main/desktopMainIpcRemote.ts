@@ -1,3 +1,4 @@
+// Modified by ZCode: X5 file: 协议分流(open-external 在 URL 校验后转本地打开);自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 /* eslint-disable max-lines -- 远程连接、OAuth 回调和通知 IPC 共用窗口级上下文，集中注册避免跨文件状态漂移。 */
 import { app, BrowserWindow, ipcMain, shell } from "electron";
 import {
@@ -17,7 +18,7 @@ import {
   parseOAuthStateRegistration,
   registerOAuthState,
 } from "./desktopOAuthDeepLink.js";
-import { openPathInDefaultApp } from "./desktopMainIpcHelpers.js";
+import { openFileUrlInDefaultApp, openPathInDefaultApp } from "./desktopMainIpcHelpers.js";
 
 function isAllowedExternalOpenUrl(value: string): boolean {
   try {
@@ -195,6 +196,12 @@ export function registerRemoteIpcHandlers(options: {
     const { url } = request;
     if (!isAllowedExternalOpenUrl(url)) {
       options.logger.warn("[open-external] blocked unsupported url", url);
+      return;
+    }
+    // 修复(X5):file: 协议交给 openFileUrlInDefaultApp(转路径 + openPath),
+    // shell.openExternal 处理不了本地文件 URL。
+    if (new URL(url).protocol === "file:") {
+      void openFileUrlInDefaultApp(url, options.logger);
       return;
     }
     const sender = event.sender;

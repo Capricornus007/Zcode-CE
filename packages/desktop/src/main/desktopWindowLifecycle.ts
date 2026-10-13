@@ -367,11 +367,18 @@ export function configureDockMenu(getLabel: () => string, onShowCurrentWindow: (
   app.dock.setMenu(dockMenu);
 }
 
+// Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10):closeToTray 语义扩展到 Linux。
 export function handleDesktopWindowCloseRequest(options: {
   platform: NodeJS.Platform;
   forceQuit: boolean;
   explicitQuitRequested?: boolean;
-  closeToTrayOnWindows?: boolean;
+  closeToTray?: boolean;
+  /**
+   * Linux 关闭驻留的托盘能力(spec:docs/development/151-linux-close-to-tray.md)。
+   * GNOME 等无 StatusNotifierWatcher 的桌面托盘不渲染且不报错,必须在隐藏前显式确认能力;
+   * 空值按不可用安全默认,走确认退出路径,避免窗口隐藏后失联。
+   */
+  closeToTraySupported?: boolean;
   isLastWindow: boolean;
   label: string;
   logger: { info: (...args: unknown[]) => void };
@@ -380,9 +387,14 @@ export function handleDesktopWindowCloseRequest(options: {
   requestQuit: () => void;
   hideWindow?: () => void;
 }) {
+  // win32 不能短路丢弃 closeToTraySupported——它承载合并裁决(Windows = 托盘实例创建成功)。
+  // 托盘创建失败时隐藏窗口即失联,与 spec「关窗分支与设置页能力查询都读同一合并结果」一致。
+  const canHideToTray =
+    (options.platform === "win32" || options.platform === "linux") &&
+    options.closeToTraySupported === true;
   if (
-    options.platform === "win32" &&
-    options.closeToTrayOnWindows &&
+    canHideToTray &&
+    options.closeToTray &&
     !options.forceQuit &&
     !options.explicitQuitRequested
   ) {

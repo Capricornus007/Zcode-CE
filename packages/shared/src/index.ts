@@ -1,3 +1,4 @@
+// Modified by ZCode: 自上游 zai-org/ZCode aac47556 (Apache-2.0) 增量并入(F9/F10/F5):platform/channels 新类型与通道的导出 splice 点。
 export type {
   FileBinaryPreview,
   FileEntry,

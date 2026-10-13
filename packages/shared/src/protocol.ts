@@ -289,6 +289,9 @@ export interface AppSettings {
   keepAwakeWhileRunning?: boolean;
   /** Windows 关闭到托盘默认值是否已执行过一次性迁移；只用于设置迁移，不参与业务判断。 */
   closeToTrayOnWindowsMigrationInitialized?: boolean;
+  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10):closeToTray 语义扩展到 Linux。
+  /** Linux 关闭到托盘默认值是否已执行过归位迁移(默认关)；只用于设置迁移，不参与业务判断。 */
+  closeToTrayLinuxMigrationInitialized?: boolean;
   /** 桌面端全局页面缩放档位；用于重启后恢复界面缩放，Web/手机端忽略。 */
   desktopZoomLevel?: number;
   /** 桌面主窗口最近一次非最大化宽高及最大化状态；Web/手机端忽略。 */

@@ -1,3 +1,4 @@
+// Modified by ZCode: X8/F11/hole/F2_*: 新增 i18n 键(quota-reset/account-menu/workflow hole/highspeed 等),其余与上游键合并。
 /** 中文翻译 */
 const zhCN: Record<string, string> = {
   "startPlan.recommendation.subagentDescription":
@@ -551,6 +552,11 @@ const zhCN: Record<string, string> = {
   "logout.confirm.ok": "断开连接并重启",
   "logout.confirm.cancel": "取消",
   "sidebar.profile.notLoggedIn": "连接使用",
+  // F11: 账户菜单头部 —— 用户 ID 展示与复制结果提示(自上游 3.15.1 搬运, Apache-2.0)。
+  "sidebar.profile.accountId": "ID: {id}",
+  "sidebar.profile.copyUserId": "点击复制用户 ID",
+  "sidebar.profile.userIdCopied": "用户 ID 已复制",
+  "sidebar.profile.userIdCopyFailed": "复制失败，请重试",
   "app.selectFile": "选择文件以开始",
   "app.workspace": "工作区",
   "browser.title": "浏览器",
@@ -5016,6 +5022,9 @@ const zhCN: Record<string, string> = {
   "chat.toolCall.workflow.resolveQuestion.fallbackName": "回答",
   // ── workflow run 详情页──
   "chat.toolCall.workflow.openRunDetails": "查看实例详情",
+  // 工作流留白行(F6 hole 变体, 自上游 3.15.1 搬运, Apache-2.0)。
+  "chat.toolCall.workflow.hole.draftPath": "草稿",
+  "chat.toolCall.workflow.hole.waited": "等待中 · {time}",
   "chat.toolCall.workflow.run.status.pending": "待启动",
   "chat.toolCall.workflow.run.status.running": "运行中",
   "chat.toolCall.workflow.run.status.completed": "已完成",

@@ -1,3 +1,4 @@
+// Modified by ZCode: X8(额度重置入口): 手工合并上游 3.15.1 —— 保留 CE 自研 planProductId/ManualClaimPlanCard, 移除 quotaFull 门禁, 接入 quota-reset 机会徽标。
 import { CodingPlanEntryButton } from "@/settings/CodingPlanEntryButton.js";
 /* eslint-disable max-lines -- Coding Plan/Start Plan 状态卡集中编排状态、动作和套餐区块，当前先保持同一文件避免拆散状态语义。 */
 import {
@@ -20,13 +21,10 @@ import { CodingPlanQuotaResetOpportunity } from "@/components/coding-plan-quota-
 import { buildCodingPlanQuotaResetDialogConfig } from "@/components/coding-plan-quota-reset/buildCodingPlanQuotaResetDialogConfig.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useCodingPlanQuotaResetUi } from "@/hooks/useCodingPlanQuotaResetUi.js";
-import {
-  formatQuotaResetTime,
-  isCodingPlanQuotaLimitFull,
-  isSameLimitCategory,
-} from "@/lib/codingPlanQuotaPresentation.js";
+import { formatQuotaResetTime, isSameLimitCategory } from "@/lib/codingPlanQuotaPresentation.js";
 import {
   mergeCodingPlanQuotaResetOpportunityBadges,
+  resolveCodingPlanQuotaResetActionCompletedAt,
   resolveCodingPlanQuotaResetLimit,
 } from "@/lib/codingPlanQuotaResetUi.js";
 import {
@@ -761,9 +759,6 @@ function CodingPlanUsageSummaryCards({
     findUsageLimit(limits, "TOKENS_LIMIT", 6),
     resetUi.week.entry,
   );
-  // 额度剩余 100% 时重置没有收益:隐藏重置按钮与机会徽标(纯展示,不影响发放与轮询)。
-  const fiveHourQuotaFull = isCodingPlanQuotaLimitFull(fiveHourLimit);
-  const weeklyQuotaFull = isCodingPlanQuotaLimitFull(weeklyLimit);
   const standardCards = [
     createCodingPlanUsageSummaryCard({
       key: "fiveHour",
@@ -822,21 +817,22 @@ function CodingPlanUsageSummaryCards({
   const fiveHourCardVisible = cards.some((card) => card.key === "fiveHour");
   const weeklyCardVisible = cards.some((card) => card.key === "weekly");
   // 五小时与周机会合并为一个徽标,次数累加,倒计时取最早到期的一档。
+  // Bugfix(X8):曾用「剩余 100% 则重置无收益」隐藏徽标与按钮。核销会把剩余改写成 100%,
+  // 同类型余下的机会随即被藏掉,用户以为卡丢了。只要额度卡在且有可用机会就展示。
   const opportunityBadge = mergeCodingPlanQuotaResetOpportunityBadges([
     {
       count: resetUi.entry?.opportunityCount ?? 0,
       expiresAt: resetUi.entry?.opportunityExpiresAt ?? null,
-      visible: fiveHourCardVisible && resetUi.opportunityVisible && !fiveHourQuotaFull,
+      visible: fiveHourCardVisible && resetUi.opportunityVisible,
     },
     {
       count: resetUi.week.entry?.opportunityCount ?? 0,
       expiresAt: resetUi.week.entry?.opportunityExpiresAt ?? null,
-      visible: weeklyCardVisible && resetUi.week.opportunityVisible && !weeklyQuotaFull,
+      visible: weeklyCardVisible && resetUi.week.opportunityVisible,
     },
   ]);
   const quotaResetDialog = buildCodingPlanQuotaResetDialogConfig({
     fiveHourEnabled: Boolean(fiveHourLimit),
-    fiveHourQuotaFull,
     resetUi,
     usageItems: cards.map((card) => {
       const percentage = resolveLimitRemainingPercentage(card.limit);
@@ -855,7 +851,6 @@ function CodingPlanUsageSummaryCards({
       };
     }),
     weekEnabled: Boolean(weeklyLimit),
-    weekQuotaFull: weeklyQuotaFull,
   });
 
   return (
@@ -882,25 +877,25 @@ function CodingPlanUsageSummaryCards({
             key={card.key}
             action={
               // 额度标题旁入口只打开统一弹窗；真正核销由弹窗内对应类型按钮触发。
+              // Bugfix(X8):曾额外要求 opportunityBadge.count <= 1,多张机会时反而把卡上的
+              // 重置入口藏掉。与 Usage 页口径对齐:有可用机会就展示,不因满额或多张隐藏。
               card.key === "fiveHour" &&
               resetUi.entry &&
-              ((resetUi.opportunityVisible && !fiveHourQuotaFull && opportunityBadge.count <= 1) ||
+              (resetUi.opportunityVisible ||
                 resetUi.processing ||
                 resetUi.entry.status === "completed") ? (
                 <LocalizedCodingPlanQuotaResetAction
-                  completedAt={resetUi.entry.completedAt}
+                  completedAt={resolveCodingPlanQuotaResetActionCompletedAt(resetUi)}
                   processing={resetUi.processing}
                   onOpenDialog={() => setQuotaResetDialogOpen(true)}
                 />
               ) : card.key === "weekly" &&
                 resetUi.week.entry &&
-                ((resetUi.week.opportunityVisible &&
-                  !weeklyQuotaFull &&
-                  opportunityBadge.count <= 1) ||
+                (resetUi.week.opportunityVisible ||
                   resetUi.week.processing ||
                   resetUi.week.entry.status === "completed") ? (
                 <LocalizedCodingPlanQuotaResetAction
-                  completedAt={resetUi.week.entry.completedAt}
+                  completedAt={resolveCodingPlanQuotaResetActionCompletedAt(resetUi.week)}
                   processing={resetUi.week.processing}
                   resetType="WEEK"
                   onOpenDialog={() => setQuotaResetDialogOpen(true)}

@@ -1,3 +1,4 @@
+// Modified by ZCode: X12 STARTUP_AGENT_WARMUP_LIMIT=1(上游同值)与 resolveStartupAgentWarmupTargets 导出;自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 import { constants } from "node:fs";
 import { access, mkdir, readFile, stat } from "node:fs/promises";
 import {
@@ -37,7 +38,10 @@ export interface StartupWorkspaceWarmupTarget {
   workspaceIdentity?: string;
 }
 
-const STARTUP_AGENT_WARMUP_LIMIT = 3;
+// 修复(X12,照搬上游 v3.15.1):会话 CLI 没有 idle 回收,启动预热 3 个会让每个窗口
+// 常驻 3 份 Agent 进程内存;切到最近项目的冷启动收益抵不上常驻成本,收敛为只预热
+// active workspace(与协议 init-local 的 agentWarmupTargets 上限 1 保持一致)。
+export const STARTUP_AGENT_WARMUP_LIMIT = 1;
 
 export interface StartupWindowBootstrap {
   restoreSession?: boolean;
@@ -71,7 +75,7 @@ function resolvePersistedActiveSession(
   return sessions[activeIndex];
 }
 
-function resolveStartupAgentWarmupTargets(
+export function resolveStartupAgentWarmupTargets(
   settings: Pick<ReturnType<typeof appSettingsSchema.parse>, "recentProjects">,
   activeTarget: StartupWorkspaceWarmupTarget,
 ): StartupWorkspaceWarmupTarget[] {
@@ -145,9 +149,9 @@ export async function resolveStartupWindowBootstrap({
     const activeSession =
       localActiveSessionIndex == null ? undefined : sessions[localActiveSessionIndex];
     if (activeSession?.kind === "local") {
-      // 被动 sessions-index 全量恢复不能再启动全部 workspace，但只预热当前一个又让
-      // 用户在最近项目间切换重新承担完整冷启动。Main 在唯一启动边界固定选出最近 3 个，
-      // Host 仍走原 initializeWorkspace 路径；失败不继续扫描第 4 个补位。
+      // 被动 sessions-index 全量恢复不能启动全部 workspace；Main 在唯一启动边界固定只选
+      // active workspace(STARTUP_AGENT_WARMUP_LIMIT),Host 走原 initializeWorkspace 路径;
+      // recentProjects 保持 dormant,预热失败也不扫描其它 workspace 补位。
       const agentWarmupTargets = resolveStartupAgentWarmupTargets(settings, {
         workspacePath: activeSession.workspacePath,
       });

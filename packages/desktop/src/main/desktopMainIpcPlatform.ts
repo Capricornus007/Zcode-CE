@@ -12,6 +12,8 @@ import {
   stringArraySchema,
   type DesktopCommandId,
   type ApplicationIconRequest,
+  // F10(aac47556):关闭驻留托盘能力查询的返回类型。
+  type DesktopCloseToTrayCapability,
   type Locale,
   type LoadCliMcpFromUserDirectoryRequest,
   type MigrateLegacyCommonMcpRequest,
@@ -106,6 +108,8 @@ export function registerPlatformIpcHandlers(options: {
   reportBrowserScreenshotSurfaceReady?: ReportBrowserScreenshotSurfaceReady;
   /** Browser tab 关闭、挂起、恢复与跨重启 shell IPC。 */
   browserViewResidencyHandlers?: BrowserViewResidencyIpcHandlers;
+  /** F10(aac47556):查询「关闭驻留托盘」能力;设置页据此决定 Linux 开关是否置灰。 */
+  getCloseToTrayCapability?: () => Promise<DesktopCloseToTrayCapability>;
 }) {
   ipcMain.handle(PlatformChannels.SelectDirectory, async () => {
     const result = await dialog.showOpenDialog({
@@ -327,6 +331,14 @@ export function registerPlatformIpcHandlers(options: {
     logger: options.logger,
     currentApplicationLocale: options.currentApplicationLocale,
   });
+
+  // F10(aac47556):无桥平台不实现,缺省返回不可用,renderer 按置灰处理。
+  ipcMain.handle(
+    PlatformChannels.GetCloseToTrayCapability,
+    () =>
+      options.getCloseToTrayCapability?.() ??
+      Promise.resolve({ supported: false, gnomeLikeWithoutTray: false }),
+  );
 
   ipcMain.handle(PlatformChannels.CanOpenCommunity, async (_event, locale: unknown) => {
     const result = localeSchema.safeParse(locale);

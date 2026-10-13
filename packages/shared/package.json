@@ -23,7 +23,8 @@
     "./workspace-hook-mutation": "./src/workspace-hook-mutation.ts",
     "./workspace-hook-review-monotonicity": "./src/workspace-hook-review-monotonicity.ts",
     "./workspace-hook-trust-store-file": "./src/workspace-hook-trust-store-file.ts",
-    "./mcp-apps": "./src/mcp-apps/index.ts"
+    "./mcp-apps": "./src/mcp-apps/index.ts",
+    "./gen-ui": "./src/gen-ui/index.ts"
   },
   "scripts": {
     "lint": "oxlint",

@@ -6,8 +6,6 @@
  * 测试文件自身的静态导入不需要桩（node:test / assert 等真实模块即可）；只有被测的
  * autoUpdater.ts 链路需要，故 register 在其 import 之前完成即可命中（ESM 先 link 后 evaluate）。
  */
-import { pathToFileURL } from "node:url";
-
 const STUBS = {
   electron: new URL("./electronStub.mjs", import.meta.url).href,
   "electron-updater": new URL("./electronUpdaterStub.mjs", import.meta.url).href,

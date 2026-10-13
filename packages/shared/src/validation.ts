@@ -1,4 +1,6 @@
 import { databaseStartupControlSchema, databaseStartupStateSchema } from "./database-startup.js";
+// Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):沙箱登记契约用到 mcpAppInstanceSchema。
+import { mcpAppInstanceSchema } from "./mcp-apps/instance.js";
 /* eslint-disable max-lines -- 运行时 schema 当前集中在共享包入口，外部 relay payload 校验加入后先保持单一导出面。 */
 import { z } from "zod";
 import { zcodeProcessDiagnosticSchema } from "./process-diagnostic.js";
@@ -431,6 +433,88 @@ export const hostLocalMediaPreviewPathAuthorizeResultMessageSchema = z
   })
   .strict();
 
+// Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):插件 UI 沙箱 HostIPC 契约。
+/** main → host：插件 UI 沙箱登记结果（PluginSandboxRegisterResultPayload）。 */
+export const hostPluginSandboxRegisterResultMessageSchema = z
+  .object({
+    type: z.literal("plugin-sandbox-register-result"),
+    requestId: nonEmptyStringSchema,
+    ok: z.boolean(),
+    instance: mcpAppInstanceSchema.optional(),
+    sandboxId: nonEmptyStringSchema.optional(),
+    initId: z.number().int().nonnegative().optional(),
+    shellUrl: nonEmptyStringSchema.optional(),
+    partition: nonEmptyStringSchema.optional(),
+    // 登记时生效的呈现字段（资源级优先合并后的值），回 renderer 定初始高度 / 边框。
+    // Bugfix：这条 schema 是 strict 的——句柄多带一个未声明字段，整条回包会被 host 拒收，桥永远等不到句柄，
+    // 卡片卡在 preparing（2026-09-12 inline e2e 复现）。改 PluginSandboxHandle 必须同步这里。
+    resourceMeta: z
+      .object({
+        prefersBorder: z.boolean().optional(),
+        heightHint: z.number().int().positive().optional(),
+        minFrameHeight: z.number().int().positive().optional(),
+        showInline: z.boolean().optional(),
+        // 资源声明的浏览器权限随句柄回 renderer（进 hostContext.permissions）；与登记请求的 permissions 同一枚举。
+        permissions: z
+          .array(z.enum(["camera", "microphone", "geolocation", "clipboardWrite"]))
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    error: z.string().optional(),
+  })
+  .strict();
+
+/** host → main：登记已校验的插件 UI HTML。 */
+export const hostPluginSandboxRegisterRequestResponseSchema = z
+  .object({
+    type: z.literal("plugin-sandbox-register-request"),
+    instance: mcpAppInstanceSchema,
+    requestId: nonEmptyStringSchema,
+    workspacePath: z.string().optional(),
+    workspaceIdentity: z.string().optional(),
+    ownerWebContentsId: z.number().int().nonnegative(),
+    sessionId: nonEmptyStringSchema,
+    contentKind: z.literal("gen-ui").optional(),
+    pluginId: nonEmptyStringSchema.optional(),
+    // 资源所属 MCP server 运行时名：沙箱 partition 按它派生。
+    serverName: nonEmptyStringSchema.optional(),
+    // 沙箱作用域 id（`tool:<toolCallId>` / `surface:<surfaceId>`），main 只当不透明字符串。
+    scopeId: nonEmptyStringSchema,
+    html: z.string(),
+    // MCP Apps 资源级 CSP 的四类域；与 mcp-apps 的 mcpToolUiCspSchema 同步。
+    csp: z
+      .object({
+        connectDomains: z.array(z.string()).optional(),
+        resourceDomains: z.array(z.string()).optional(),
+        frameDomains: z.array(z.string()).optional(),
+        baseUriDomains: z.array(z.string()).optional(),
+      })
+      .strict()
+      .optional(),
+    // 资源级 `_meta["zcode/csp"]` 放宽项；与 mcp-apps 的 mcpAppCspRelaxationsSchema 同步。
+    cspRelaxations: z
+      .object({ unsafeEval: z.boolean().optional(), wasmUnsafeEval: z.boolean().optional() })
+      .strict()
+      .optional(),
+    // 资源级 `_meta.ui.permissions`（规范四键）；与 mcp-apps 的 MCP_APPS_RESOURCE_PERMISSIONS 同步。
+    permissions: z
+      .array(z.enum(["camera", "microphone", "geolocation", "clipboardWrite"]))
+      .optional(),
+    prefersBorder: z.boolean().optional(),
+    // 资源级尺寸提示，main 原样放进句柄的 resourceMeta。strict schema：改 PluginSandboxRegisterRequestPayload 必须同步这里。
+    heightHint: z.number().int().positive().optional(),
+    minFrameHeight: z.number().int().positive().optional(),
+    showInline: z.boolean().optional(),
+  })
+  .strict()
+  .refine(
+    (value) =>
+      value.contentKind === "gen-ui"
+        ? !value.pluginId && !value.serverName && !value.permissions?.length
+        : Boolean(value.pluginId && value.serverName),
+    "Invalid sandbox provenance",
+  );
 export const hostCuaPipFocusChangedMessageSchema = z
   .object({
     type: z.literal("cua-pip-focus-changed"),

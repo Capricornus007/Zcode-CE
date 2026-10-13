@@ -1,3 +1,4 @@
+// Modified by ZCode: X11 Windows argv 终止符 ["--"] 硬化(默认协议注册与单实例回传两处);自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 /* oxlint-disable eslint(max-lines) -- Deep Link 路由必须在同一模块内保持协议校验和投递原子性。 */
 import { statSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
@@ -406,7 +407,11 @@ export function registerDeepLinkProtocol(
 
   if (process.defaultApp && process.argv.length >= 2) {
     const entry = resolve(process.argv[1]!);
-    const ok = app.setAsDefaultProtocolClient(scheme, process.execPath, [entry]);
+    // 修复(X11,照搬上游 v3.15.1):外部 URL 必须位于 -- 之后;Windows 引号拆分可把 URL
+    // 内容变成 Electron 启动参数(inspector 等开关早于应用 JS 与单实例锁启动,
+    // 不能依赖后续 handleDeepLink 校验拦截)。非 win32 无此拆分问题。
+    const args = process.platform === "win32" ? [entry, "--"] : [entry];
+    const ok = app.setAsDefaultProtocolClient(scheme, process.execPath, args);
     if (!ok) {
       logger.warn("[deep-link] 注册协议失败（defaultApp）", {
         scheme,
@@ -423,7 +428,11 @@ export function registerDeepLinkProtocol(
     return;
   }
 
-  const ok = app.setAsDefaultProtocolClient(scheme);
+  // 同上:打包态注册把 URL 固定在 -- 之后,阻断参数注入。
+  const ok =
+    process.platform === "win32"
+      ? app.setAsDefaultProtocolClient(scheme, process.execPath, ["--"])
+      : app.setAsDefaultProtocolClient(scheme);
   if (!ok) {
     logger.warn("[deep-link] 注册协议失败", { scheme });
   } else {

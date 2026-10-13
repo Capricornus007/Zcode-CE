@@ -194,6 +194,8 @@ export default defineConfig([
       "preload/index": "src/preload/index.ts",
       "preload/resourceManager": "src/preload/resourceManager.ts",
       "preload/cuaPermissionPanel": "src/preload/cuaPermissionPanel.ts",
+      // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):插件 UI 沙箱 guest preload。
+      "preload/pluginSandbox": "src/preload/pluginSandbox/index.ts",
     },
     outDir: "out",
     format: "cjs",

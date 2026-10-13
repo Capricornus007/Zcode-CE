@@ -225,10 +225,13 @@ export default defineConfig(({ mode }) => {
       sourcemap: mode === "production" ? "hidden" : true,
       rollupOptions: {
         // 多入口：主窗口 + 进程监控 + CUA 权限拖拽浮窗
+        // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):插件 UI 沙箱的受信 shell。
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
           "resource-manager": resolve(__dirname, "src/renderer/resource-manager.html"),
           "cua-permission-panel": resolve(__dirname, "src/renderer/cua-permission-panel.html"),
+          // 插件 UI 沙箱的受信 shell，经 zcode-sandbox:// 提供
+          "plugin-sandbox": resolve(__dirname, "src/renderer/plugin-sandbox.html"),
         },
       },
     },

@@ -3533,6 +3533,9 @@ function isZCodeSessionMode(
     value === "build" ||
     value === "edit" ||
     value === "yolo" ||
+    // Modified by ZCode:F3（Lead 单独授权的一行补丁）：guarded 会话可持久化与恢复，
+    // 白名单缺它会让 resume 时落回默认模式，绕过 guarded 的逐次危险命令确认。
+    value === "guarded" ||
     value === "auto"
   );
 }

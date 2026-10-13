@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- subagent runtime wiring 集中衔接 child runtime、tool pool、权限、MCP 与 activity watchdog，拆分需单独迁移。 */
-import { RESPOND_TO_COORDINATOR_TOOL_NAME } from "@zcode/contracts";
+import { RESPOND_TO_COORDINATOR_TOOL_NAME, inheritPermissionMode } from "@zcode/contracts";
 import type { SubagentRunOptions } from "@zcode/contracts";
 import {
   defaultScheduler,
@@ -482,7 +482,9 @@ function resolveSubagentPermissionMode(
     case "plan":
       return "plan";
     case undefined:
-      return builtInExplore ? "yolo" : parentMode;
+      // Modified by ZCode:F3 guarded 向子会话传播——父 guarded 时内置 explore 的 yolo 派生
+      // 归一为 guarded，子代理的危险命令同样逐次确认（与主会话对齐）。
+      return inheritPermissionMode(parentMode, builtInExplore ? "yolo" : parentMode);
     default:
       return parentMode;
   }

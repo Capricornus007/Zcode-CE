@@ -44,6 +44,8 @@ export interface PermissionContext {
 }
 
 export interface PermissionToolCapability {
+  /** Modified by ZCode:guarded 模式命中的危险工具确认规则（F3）；allow 覆盖不能抹掉它。 */
+  userApprovalRule?: string;
   allowedInPlanMode?: boolean;
   alwaysAsk?: boolean;
   readOnly?: boolean;
@@ -59,6 +61,8 @@ export interface PermissionToolCapability {
 export type PermissionBehavior = "allow" | "ask" | "deny";
 
 export interface PermissionDecisionResult {
+  /** Modified by ZCode:F3 guarded 危险命令的逐次确认（user-once），与持久 allow 规则区分。 */
+  approvalMode?: "user-once";
   decision: PermissionBehavior;
   allowed: boolean;
   reason?: string;
@@ -127,13 +131,28 @@ export class PermissionService {
       );
     }
 
+    // Modified by ZCode:F3 guarded 语义——独立 Plan 优先于 Guarded 的 YOLO 基础策略，
+    // 审批不能解除 Plan 的执行限制；guarded ≈ yolo，但命中危险规则（userApprovalRule）的
+    // 工具逐次 ask，不被会话 allow 规则或 alwaysAsk 的其它路径绕过。
+    const planEnabled = context.planEnabled ?? context.mode === "plan";
+    if (!planEnabled && context.mode === "guarded" && toolCapability?.userApprovalRule) {
+      return {
+        ...this.ask(
+          context,
+          capability,
+          toolCapability.userApprovalRule,
+          "Dangerous command requires your approval for this execution",
+        ),
+        approvalMode: "user-once",
+      };
+    }
+
     // 声明 alwaysAsk 的工具必须经过用户确认，不能被权限模式的放行分支绕过。
     if (capability.alwaysAsk) {
       return this.checkAlwaysAsk(context, capability, projectRules, rulePolicy);
     }
 
-    const planEnabled = context.planEnabled ?? context.mode === "plan";
-    if (context.mode === "yolo" && !planEnabled) {
+    if ((context.mode === "yolo" || context.mode === "guarded") && !planEnabled) {
       return this.allow(context, capability, "mode.yolo", "Yolo mode bypasses permission prompts");
     }
 

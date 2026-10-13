@@ -45,6 +45,12 @@ export function resolveRuntimePermissionContext(
     runtimeScope: deps.runtimeScope,
     workingDirectory: deps.getWorkingDirectory(),
     workspaceRoot: deps.getWorkspaceRoot(),
+    // Modified by ZCode:F3 guarded 语义的注入点——模式与 shell 文法随上下文下发，
+    // resolvePermissionCapability 的签名只收 (input, context)。getMode 缺席（TUI 之外的
+    // 注入点未提供）时 context.mode 为 undefined，guarded 分支自然不触发，等于退到旧行为。
+    mode: deps.getMode?.(),
+    // 与 bash.ts 的 GUARDED_DEFAULT_DIALECT 配合：selection 缺席按 posix，不静默退回 YOLO。
+    bashShellSelection: deps.getBashShellSelection?.() ?? deps.bashShellSelection,
     // 危险命令策略随上下文下发，而不是让 handler 自己去读 deps：
     // resolvePermissionRulePolicy 的签名只收 (input, context)，这是它唯一的注入点。
     // 缺席即严格（resolveDangerousCommandPolicy(undefined)）—— TUI / headless /

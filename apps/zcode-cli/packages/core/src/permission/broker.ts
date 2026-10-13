@@ -23,6 +23,15 @@ interface PendingBrokerRecord {
 
 export class DenyPermissionBroker implements PermissionBrokerPort {
   async requestPermission(request: PermissionBrokerRequest): Promise<PermissionBrokerResult> {
+    // Modified by ZCode:F3 guarded 模式必须有真实客户端可问——静默 deny 会把
+    // 「无客户端」伪装成「用户拒绝」，调用方无法区分，故抛可恢复的配置错误。
+    if (request.mode === "guarded") {
+      throw createCoreError(
+        CoreErrorType.ConfigurationError,
+        `No permission client configured for ${request.toolName}`,
+        { recoverable: true },
+      );
+    }
     return {
       decision: "deny",
       reason: `No permission client configured for ${request.toolName}`,

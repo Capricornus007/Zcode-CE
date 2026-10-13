@@ -29,7 +29,15 @@ import type { ModelSelection } from "../model/model.js";
 // Collaboration Mode and Risk Level
 // -----------------------------------------------
 
-export type CollaborationMode = "plan" | "build" | "edit" | "yolo" | "auto";
+export type CollaborationMode = "plan" | "build" | "edit" | "yolo" | "guarded" | "auto";
+
+/** 父 guarded 只收紧内部 YOLO 派生；显式的其它子模式保留各自策略。 */
+export function inheritPermissionMode<T extends CollaborationMode | undefined>(
+  parent: CollaborationMode | undefined,
+  resolved: T,
+): T | "guarded" {
+  return parent === "guarded" && resolved === "yolo" ? "guarded" : resolved;
+}
 export type SessionStatus = "idle" | "running" | "waiting" | "paused" | "completed" | "error";
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type InputDelivery = "auto" | "start_turn" | "steer_active_turn";
@@ -277,9 +285,38 @@ export type TurnSteerSource = "plan_approval_feedback" | "workflow_refine_feedba
  */
 export type TurnSteerDeliveryMode = "guide" | "queue";
 
+// Modified by ZCode:X1/F2。message.data metadata.highspeed 的持久化契约；不包含运行时凭据。
+export interface HighspeedMessageMetadata {
+  schemaVersion: 1;
+  cardId: string;
+  taskId: string;
+  provider: string;
+  model: string;
+  issuedAt: number;
+  expiresAt: number;
+  regularTps?: number;
+  outputTokens?: number;
+  durationMs?: number;
+  savedDurationMs?: number;
+  modelDurationMs?: number;
+  toolDurationMs?: number;
+  otherDurationMs?: number;
+  fallbackAt?: number;
+  fallbackReason?: "highspeed_card_expired" | "highspeed_request_failed";
+}
+
 /** 协议无关的输入 intent metadata；bootstrap v4 在事件边界组装为 ConversationInputIntent。 */
 export interface TurnInputIntentMetadata {
   planEnabled?: boolean;
+  // Modified by ZCode:X1。纯引用编辑：编辑后的输入可以只含对话引用而正文为空，intent 必须携带引用快照。
+  conversationQuotes?: Array<{
+    text: string;
+    path?: string;
+    senderName?: string;
+    senderId?: string;
+    messageId?: string;
+    sentAt?: string;
+  }>;
   sourceCommandId: string;
   queueItemId: string;
   clientId: string;
@@ -289,7 +326,7 @@ export interface TurnInputIntentMetadata {
   /** Admission 时固定；Queue/Guide 后续不得重新读取 Composer 或 Session 最新选择。 */
   modelSelection?: ModelSelection;
   /** 与本次用户 Submission 一起固定的协作模式。 */
-  mode?: "build" | "edit" | "plan" | "yolo";
+  mode?: "build" | "edit" | "plan" | "yolo" | "guarded";
   admissionSeq: number;
   admittedAt: number;
   requestedDelivery: "auto" | "startNow" | "queue" | "guide";
@@ -303,6 +340,8 @@ export interface TurnInputIntentMetadata {
     bytes: number;
     previewRef?: string;
   }>;
+  // Modified by ZCode:X1/F2。加速卡的持久化元数据（不含凭据）；编辑重发时据此判定卡片是否本次重新抽取。
+  highspeed?: HighspeedMessageMetadata;
   sharedContextRefs?: Array<{
     kind: "shared_context_import";
     context_id: string;

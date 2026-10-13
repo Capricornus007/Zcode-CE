@@ -30,6 +30,9 @@ export * from "./read-session-context.js";
 export * from "./submit-result.js";
 export * from "./websearch.js";
 export * from "./workflow.js";
+// 确认窗调参的两个 schema（CreateWorkflow / AmendWorkflow 共用）；core 的 handler 与
+// executor 的 input-adjustments 链读它，漏掉这行消费方拿不到回填块与应答解析。
+export * from "./workflow-settings.js";
 export * from "./create-workflow.js";
 // 修订入口：名字常量被 core 的
 // 分派、权限服务的 owner 规则、bootstrap 的 actor 禁用名单与 TUI/headless 旁路读走。

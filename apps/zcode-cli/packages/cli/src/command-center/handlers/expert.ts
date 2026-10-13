@@ -62,7 +62,9 @@ export async function handleExpertCommand(
         response: "Expert workflow is not available in this client.",
       };
     }
-    if (deps.setMode) {
+    // guarded 下不切回 yolo：用户选择了「危险命令逐次确认」，专家工作流若是绕过它直接
+    // yolo，恰会在无人值守处执行危险命令——守卫与 F3 的 guarded 语义同源。
+    if (deps.setMode && (deps.getMode?.() ?? app.getMode?.()) !== "guarded") {
       await deps.setMode("yolo");
     }
     const result = await app.resumeExpertWorkflow({
@@ -83,7 +85,8 @@ export async function handleExpertCommand(
       response: "Expert workflow is not available in this client.",
     };
   }
-  if (deps.setMode) {
+  // 同上：guarded 下保持 guarded，避免专家工作流静默解除危险命令确认。
+  if (deps.setMode && (deps.getMode?.() ?? app.getMode?.()) !== "guarded") {
     await deps.setMode("yolo");
   }
   const task = parsed.action === "start" ? parsed.task : "";

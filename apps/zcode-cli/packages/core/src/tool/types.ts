@@ -3,6 +3,7 @@
 // ============================================================
 
 import type {
+  CollaborationMode,
   ExecutionShellSelection,
   AutomationPort,
   OffPeakPort,
@@ -37,6 +38,8 @@ import type {
   WorkflowEscalatePort,
   WorkflowSubmitPort,
 } from "@zcode/contracts";
+// Modified by ZCode:F5 mcp-ui 消费侧类型（契约定义在 @zcode/shared/mcp-apps）。
+import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 import type {
   JsonSchema,
   ModelToolSideEffectScope,
@@ -95,6 +98,10 @@ export interface ToolMetadata {
     description?: string;
     /** 来自声明 zcode_official 鉴权的 MCP server；仅用于信任其结果里的结构化标识。 */
     official?: boolean;
+    /** Modified by ZCode:F5 mcp-ui。该 server 所属插件的稳定 id（`${name}@${marketplace}`）；非插件 MCP 为空。 */
+    pluginId?: string;
+    /** Modified by ZCode:F5 mcp-ui。工具 `_meta` 归一化后的 MCP App 描述；存在即投影 display.ui（pluginId 缺省时用 serverName 顶替）。 */
+    ui?: McpToolUiDescriptor;
   };
 }
 
@@ -197,6 +204,12 @@ export interface ToolExecutionContext {
   providerVisibleToolNames?: readonly string[];
   sessionId: SessionId;
   turnId?: TurnId;
+  /**
+   * Modified by ZCode:F6 确认窗调参。用户在确认窗里调整过、且已应用到本次入参的字段
+   * （ToolEntry.applyInputAdjustments 的 `applied`）；handler 据它告诉模型
+   * 「实际跑的不是你传的那个值」，缺席即没有调整。
+   */
+  inputAdjustments?: Readonly<Record<string, unknown>>;
 }
 
 export interface ToolEmbeddedSearchContext {
@@ -268,6 +281,14 @@ export interface ToolInputResolutionContext {
 
 export type ToolInputResolutionResult = { result: true; input: unknown } | ToolHandlerFailure;
 
+/**
+ * Modified by ZCode:F6。ToolEntry.applyInputAdjustments 的结果：调整后的入参，与
+ * 实际生效的那部分调整（键同入参字段名；与入参原值相同的改动不算）。applied 缺席即什么都没变。
+ */
+export type ToolInputAdjustmentResult =
+  | { result: true; input: unknown; applied?: Readonly<Record<string, unknown>> }
+  | ToolHandlerFailure;
+
 export type ToolHandler<TInput = unknown, TOutput = unknown> = (
   input: TInput,
   context: ToolExecutionContext,
@@ -330,6 +351,17 @@ export interface ToolEntry extends ToolContractDeclaration {
     input: unknown,
     context: ToolInputResolutionContext,
   ) => Promise<ToolInputResolutionResult> | ToolInputResolutionResult;
+  /**
+   * Modified by ZCode:F6。应用用户在确认窗里对入参做的调整。executor 在授权之后、handler 之前调用，
+   * adjustments 是 broker 结果的 inputAdjustments。返回的入参必须仍是 resolveInput 产出的
+   * 那种形状——handler 不为调整另开一条路；失败即工具失败，handler 不跑。同步：只读上下文里已有的
+   * 端口，不做 I/O。不声明的工具忽略一切调整。
+   */
+  applyInputAdjustments?: (
+    input: unknown,
+    adjustments: Readonly<Record<string, unknown>>,
+    context: ToolInputResolutionContext,
+  ) => ToolInputAdjustmentResult;
   formatModelContent?: (output: unknown) => ModelMessageContent;
   formatPersistedModelContent?: (
     input: ToolPersistedModelContentInput,
@@ -396,6 +428,9 @@ export interface ToolPersistedModelContentInput {
 }
 
 export interface ToolRuntimePermissionCapability {
+  /** Modified by ZCode: guarded 模式下危险工具命中的确认规则（F3）；结构化标记，
+   * 权限服务据此识别「不可被会话 allow 规则抹掉的逐次确认」，不匹配 ruleId 字符串。 */
+  userApprovalRule?: string;
   allowedInPlanMode?: boolean;
   destructive?: boolean;
   needsApproval?: boolean;
@@ -407,6 +442,10 @@ export interface ToolRuntimePermissionCapability {
 }
 
 export interface ToolRuntimePermissionCapabilityContext {
+  /** Modified by ZCode: guarded 模式 = F3 的逐次确认语义开关（guarded ≈ yolo，危险命令 ask）。 */
+  mode?: CollaborationMode;
+  /** Modified by ZCode: guarded 危险匹配按 shell 文法判（posix/cmd/git-bash）；缺失按 POSIX。 */
+  bashShellSelection?: ExecutionShellSelection;
   runtimeScope?: ToolRuntimeScope;
   workingDirectory?: string;
   workspaceRoot?: string;

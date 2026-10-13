@@ -20,6 +20,7 @@ import {
   type ExecutionRequest,
   type ExecutionResult,
   type ExecutionRunOptions,
+  type ExecutionShellSelection,
   type TraceContext,
 } from "@zcode/contracts";
 import {
@@ -54,6 +55,7 @@ import {
 import { createBashProviderDescription } from "./bash-prompt.js";
 import { applyBashReadFileStateEffects } from "./bash-read-file-state.js";
 import { isRuntimeReadOnlyBashCommand } from "./bash-semantics.js";
+import { matchDangerousCommand } from "./guarded/command.js";
 import {
   attachToolExecutionTelemetry,
   classifyCommand,
@@ -69,6 +71,10 @@ export {
 
 const MAX_INLINE_OUTPUT_BYTES = 30_000;
 const MAX_RUNTIME_PERSISTED_OUTPUT_BYTES = 5 * 1024 * 1024 * 1024;
+// Modified by ZCode: guarded 模式缺省 dialect——selection 缺失是基础设施状态而非语法边界，
+// 与 isRuntimeReadOnlyBashCommand 一致按 POSIX 文法匹配，避免 guarded 在 selection 尚未
+// 初始化时静默退回 YOLO。显式 legacy-shell 仍由 matchDangerousCommand 判为 unsupported。
+const GUARDED_DEFAULT_DIALECT: ExecutionShellSelection["dialect"] = "posix";
 const BASH_PROVIDER_DESCRIPTION = createBashProviderDescription({
   defaultTimeoutMs: DEFAULT_BASH_TIMEOUT_POLICY.defaultTimeoutMs,
   maxTimeoutMs: DEFAULT_BASH_TIMEOUT_POLICY.maxTimeoutMs,
@@ -79,6 +85,13 @@ function resolveBashPermissionCapability(
   context?: ToolRuntimePermissionCapabilityContext,
 ): ToolRuntimePermissionCapability | undefined {
   const command = readStringProperty(input, "command");
+  if (command && context?.mode === "guarded") {
+    const match = matchDangerousCommand(
+      command,
+      context.bashShellSelection?.dialect ?? GUARDED_DEFAULT_DIALECT,
+    );
+    if (match.status === "matched") return { userApprovalRule: match.ruleId };
+  }
   if (!command || !isRuntimeReadOnlyBashCommand(command, context)) return undefined;
   return {
     destructive: false,

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { SettingsGroupCard, SettingsRow } from "@/settings/SettingsPageParts.js";
+import { PrivateDeliveryRetry } from "@/BotsDialog/PrivateDeliveryRetry.js";
 import { cn } from "@/components/lib/utils.js";
 import { logger } from "@/logger.js";
 import type { BindCodeState, FeishuRegistrationState, WeixinRegistrationState } from "./shared.js";
@@ -460,6 +461,14 @@ export function ProviderSettingsCard({
                   <div className="whitespace-pre-wrap break-all text-foreground-subtle">
                     {runtime.deliveryError}
                   </div>
+                  {runtime.deliveryRetryId ? (
+                    // F8 消费侧: 投递失败时的重试入口(服务面 IBotsService 7 个 Bot 方法就绪后接线)
+                    <PrivateDeliveryRetry
+                      key={runtime.deliveryRetryId}
+                      botId={bot.id}
+                      deliveryId={runtime.deliveryRetryId}
+                    />
+                  ) : null}
                 </div>
               </DetailPanel>
               {detail}

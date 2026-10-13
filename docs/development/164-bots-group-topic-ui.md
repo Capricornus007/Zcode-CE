@@ -1,6 +1,6 @@
 # 164 · F8 bots 群/话题 UI 增量(CE 形态有意偏离上游)
 
-> 状态:**第一切片回退,保留基础设施**。判别:已搬的 4 hooks + 2 组件经实证为 inert(零入口,见下),但因依赖延期的 IBotsService 6 方法(task-10 重立为 F8 服务波次)产生 14 处 TS 错误,已**回退 6 文件**保持零半集成。保留 root 3 文件(botsTaskBroadcast/botsTaskStreamBroadcast/useBotBroadcastEffects,类型干净的广播基础设施)+ lib 3 文件(zcodeTaskUsageFallback/taskListMetaSync/taskQueryCacheStore,均为通用基础设施)。v4 群/话题 8 文件未动。覆盖公告「飞书群 + 独立话题协作」的 **UI 侧**;CE 形态按 AGENTS.md 上游形态说明:自托管 Web 控制,只增 IM 机器人 UI 能力。
+> 状态:**已跟进(消费侧接线完成)**。服务面(task-17, c104623a)就位后, 重搬 4 hooks + 2 组件并接线两个活入口: BotsDialog.tsx 的飞书 bot 详情区渲染 BoundGroupsCard(isFeishuBotProvider 条件, 上游同位置), ProviderSettingsCard.tsx 的投递失败 DetailPanel 渲染 PrivateDeliveryRetry(deliveryRetryId 条件, 2 hunk 纯增量)。断言计数: 6 文件合计 14 处真实服务方法引用(setGroupEnabled 3 / resendGroupResult 2 / reconcileGroupResult 2 / retryPrivateDelivery 2 / getBotStates 2 / getConfig 1 / onMessage 2), 零 inert; retryPrivateDelivery 带运行时能力探测(缺失即 throw, 不静默降级)。判别:已搬的 4 hooks + 2 组件经实证为 inert(零入口,见下),但因依赖延期的 IBotsService 6 方法(task-10 重立为 F8 服务波次)产生 14 处 TS 错误,已**回退 6 文件**保持零半集成。保留 root 3 文件(botsTaskBroadcast/botsTaskStreamBroadcast/useBotBroadcastEffects,类型干净的广播基础设施)+ lib 3 文件(zcodeTaskUsageFallback/taskListMetaSync/taskQueryCacheStore,均为通用基础设施)。v4 群/话题 8 文件未动。覆盖公告「飞书群 + 独立话题协作」的 **UI 侧**;CE 形态按 AGENTS.md 上游形态说明:自托管 Web 控制,只增 IM 机器人 UI 能力。
 
 ## 0. 读了什么 / 结论一致性
 

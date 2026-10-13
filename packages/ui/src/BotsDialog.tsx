@@ -46,6 +46,7 @@ import {
   BotSummaryCard,
 } from "@/BotsDialog/BotSummaryCard.js";
 import { ProviderSettingsCard } from "@/BotsDialog/ProviderSettingsCard.js";
+import { BoundGroupsCard } from "@/BotsDialog/BoundGroupsCard.js";
 import { WorkspaceAccessCard } from "@/BotsDialog/WorkspaceAccessCard.js";
 import { SettingsGroupCard } from "@/settings/SettingsPageParts.js";
 import {
@@ -1244,6 +1245,14 @@ export function BotsDialog({
                     onToggleWorkspaceAccess={toggleWorkspaceAccess}
                   />
                 </SettingsGroupCard>
+
+                {isFeishuBotProvider(selectedBot.provider) && (
+                  // F8 消费侧入口: 飞书 bot 的群绑定卡片(服务面 IBotsService 群/话题方法就绪后接线)
+                  <BoundGroupsCard
+                    key={selectedBot.id + ":" + selectedBot.providerUserId}
+                    bot={selectedBot}
+                  />
+                )}
 
                 <BotDangerCard onDelete={() => void handleDelete()} />
               </div>

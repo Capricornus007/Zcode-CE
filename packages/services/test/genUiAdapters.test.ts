@@ -49,19 +49,14 @@ test("读取会话产物不写回工作区，且 fork 与跨身份都能读", as
   assert.ok(other.html.includes("Hello"));
   const ident = await fixture("ssh:executor:/workspace");
   await writeFile(ident.target.path, '<div id="chart">Hello</div>');
-  assert.ok(
-    (await readGenUiDocument(ident.target, ident.outputRoot)).html.includes("Hello"),
-  );
+  assert.ok((await readGenUiDocument(ident.target, ident.outputRoot)).html.includes("Hello"));
 });
 
 test("工作区包含输出根时仍按固定目录读取", async () => {
   for (const identity of [undefined, "ssh:executor:/home/dev"] as const) {
     const { outputRoot, target } = await fixture(identity, true);
     await writeFile(target.path, "<div>Home workspace</div>");
-    assert.equal(
-      (await readGenUiDocument(target, outputRoot)).html,
-      "<div>Home workspace</div>",
-    );
+    assert.equal((await readGenUiDocument(target, outputRoot)).html, "<div>Home workspace</div>");
     assert.equal(
       (await readGenUiDocument({ ...target, sessionId: "forked" }, outputRoot)).html,
       "<div>Home workspace</div>",
@@ -78,16 +73,10 @@ test("拒绝输出根之外的路径与其下的符号链接", async () => {
     /host output directory/,
   );
   await symlink(oldPath, target.path);
-  await assert.rejects(
-    () => readGenUiDocument(target, outputRoot),
-    /symbolic links/,
-  );
+  await assert.rejects(() => readGenUiDocument(target, outputRoot), /symbolic links/);
   await rm(directory, { recursive: true });
   await symlink(target.workspacePath, directory, "junction");
-  await assert.rejects(
-    () => readGenUiDocument(target, outputRoot),
-    /symbolic links/,
-  );
+  await assert.rejects(() => readGenUiDocument(target, outputRoot), /symbolic links/);
 });
 
 test("Host 根别名真实路径在工作区内也可读", async () => {
@@ -111,7 +100,10 @@ test("Host 根别名真实路径在工作区内也可读", async () => {
 
 test("拒绝根穿越、兄弟前缀与目录", async () => {
   const { outputRoot, directory, target } = await fixture();
-  for (const path of [join(outputRoot, "..", "chart.html"), join(`${outputRoot}-other`, "chart.html")]) {
+  for (const path of [
+    join(outputRoot, "..", "chart.html"),
+    join(`${outputRoot}-other`, "chart.html"),
+  ]) {
     await assert.rejects(
       () => readGenUiDocument({ ...target, path }, outputRoot),
       /host output directory/,

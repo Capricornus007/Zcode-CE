@@ -70,16 +70,19 @@ test("app tool 模型名前缀 app__ 与消毒函数", () => {
 });
 
 test("normalizeMcpAppsAppTools 丢掉非法描述符而保留合法的", () => {
-  const ok = { name: "ok", title: "OK", description: "d", inputSchema: { type: "object", properties: {} } };
+  const ok = {
+    name: "ok",
+    title: "OK",
+    description: "d",
+    inputSchema: { type: "object", properties: {} },
+  };
   const res = normalizeMcpAppsAppTools([ok, { bogus: true }]);
   assert.equal(res.tools.length, 1);
   assert.equal(res.tools[0]?.name, "ok");
 });
 
 test("sampling 参数是 strict，超长请求被拒", () => {
-  assert.throws(() =>
-    mcpAppsSamplingParamsSchema.parse({ unknown: 1 }),
-  );
+  assert.throws(() => mcpAppsSamplingParamsSchema.parse({ unknown: 1 }));
 });
 
 test("UI 资源读取：8 MiB 上界与 MIME 白名单判据", () => {

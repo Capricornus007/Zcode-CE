@@ -744,11 +744,9 @@ export class BigModelUsageQuotaProvider {
     });
   }
 
-    // Modified by ZCode: 增量自上游 aac47556——Highspeed 常规 TPS 健康检查。只取 monitor 的
+  // Modified by ZCode: 增量自上游 aac47556——Highspeed 常规 TPS 健康检查。只取 monitor 的
   // Pro/Max decode speed 最后一个有效点，失败时带 HTTP 状态与诊断头告警再抛。
-  async getCodingPlanRegularTps(
-    request: CodingPlanRegularTpsRequest,
-  ): Promise<number | undefined> {
+  async getCodingPlanRegularTps(request: CodingPlanRegularTpsRequest): Promise<number | undefined> {
     const startedAt = Date.now();
     let requestUrl: string | undefined;
     let responseHeaders: Record<string, string> = {};
@@ -812,9 +810,7 @@ export class BigModelUsageQuotaProvider {
         EMPTY_MODEL_PERFORMANCE_PAYLOAD,
         { allowMissingData: true },
       );
-      return data.proMaxDecodeSpeed?.findLast(
-        (value) => Number.isFinite(value) && value > 0,
-      );
+      return data.proMaxDecodeSpeed?.findLast((value) => Number.isFinite(value) && value > 0);
     } catch (error) {
       // Bug 原因：Highspeed 仅在 Renderer 记录了 TPS 读取失败文案，Host 层丢失了
       // monitor 的 HTTP status 和 request id，无法与后端日志对账。只输出 ApiError 中的安全诊断头。
@@ -833,7 +829,7 @@ export class BigModelUsageQuotaProvider {
     }
   }
 
-private async resolveAuthorization(
+  private async resolveAuthorization(
     request: {
       preferredProviderId?: string;
       accountAccess?: UsageEntitlementRequest["accountAccess"];

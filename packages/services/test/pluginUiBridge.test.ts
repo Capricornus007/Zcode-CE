@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ServiceChannels, hostPluginSandboxRegisterResultMessageSchema } from "@zcode/shared";
 import type { PluginSandboxHandle, PluginSandboxRegisterInput } from "@zcode/shared/mcp-apps";
-import { createPluginUiBridgeService, PluginUiBridgeError } from "../src/plugin-ui-bridge/pluginUiBridgeService.js";
+import {
+  createPluginUiBridgeService,
+  PluginUiBridgeError,
+} from "../src/plugin-ui-bridge/pluginUiBridgeService.js";
 import { IPluginUiBridgeService } from "../src/plugin-ui-bridge/contract.js";
 import { createPluginUiSamplingService } from "../src/plugin-ui-bridge/pluginUiSamplingService.js";
 import { createPluginUiAppToolsService } from "../src/plugin-ui-bridge/pluginUiAppToolsService.js";
@@ -93,7 +96,10 @@ test("prepareSandbox 合并同键初始化但隔离 server / workspace / resourc
     readMcpResource: read,
     registerSandbox: register,
   });
-  const first = await Promise.all([bridge.prepareSandbox(params), bridge.prepareSandbox({ ...params })]);
+  const first = await Promise.all([
+    bridge.prepareSandbox(params),
+    bridge.prepareSandbox({ ...params }),
+  ]);
   assert.deepEqual(first[0], first[1]);
   assert.equal(opened.length, 2);
   assert.equal(readCalls.length, 1);
@@ -136,20 +142,32 @@ test("资源读取失败时回收已开的实例凭据", async () => {
 
 test("sampling 缺省时抛 unavailable，cancelSampling 回退 cancelled:false", async () => {
   const service = createPluginUiSamplingService();
-  await assert.rejects(() => service.sample({ ...params, operationId: "op", request: {} as never }), (e: unknown) =>
-    e instanceof PluginUiBridgeError && e.code === "unavailable",
+  await assert.rejects(
+    () => service.sample({ ...params, operationId: "op", request: {} as never }),
+    (e: unknown) => e instanceof PluginUiBridgeError && e.code === "unavailable",
   );
-  assert.deepEqual(await service.cancelSampling({ ...params, operationId: "op" }), { cancelled: false });
+  assert.deepEqual(await service.cancelSampling({ ...params, operationId: "op" }), {
+    cancelled: false,
+  });
 });
 
 test("appTools 缺省时登记抛 unavailable、注销静默回 0；有依赖则透传", async () => {
   const service = createPluginUiAppToolsService();
-  await assert.rejects(() => service.registerAppTools({ ...params, scopeId: "s", generation: 1, tools: [] }), (e: unknown) =>
-    e instanceof PluginUiBridgeError && e.code === "unavailable",
+  await assert.rejects(
+    () => service.registerAppTools({ ...params, scopeId: "s", generation: 1, tools: [] }),
+    (e: unknown) => e instanceof PluginUiBridgeError && e.code === "unavailable",
   );
-  assert.deepEqual(await service.unregisterAppTools({ ...params, scopeId: "s", generation: 1 }), { removed: 0 });
-  await assert.rejects(() => service.claimAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }), /unavailable/);
-  await assert.rejects(() => service.resolveAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }), /unavailable/);
+  assert.deepEqual(await service.unregisterAppTools({ ...params, scopeId: "s", generation: 1 }), {
+    removed: 0,
+  });
+  await assert.rejects(
+    () => service.claimAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }),
+    /unavailable/,
+  );
+  await assert.rejects(
+    () => service.resolveAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }),
+    /unavailable/,
+  );
   const passed: string[] = [];
   const wired = createPluginUiAppToolsService({
     registerAppToolsForUi: async (p) => {
@@ -160,11 +178,24 @@ test("appTools 缺省时登记抛 unavailable、注销静默回 0；有依赖则
     claimAppToolCallForUi: async () => ({ accepted: true }),
     resolveAppToolCallForUi: async () => ({ accepted: true }),
   });
-  const result = await wired.registerAppTools({ ...params, scopeId: "s", generation: 1, tools: [{ name: "t" }] as never });
+  const result = await wired.registerAppTools({
+    ...params,
+    scopeId: "s",
+    generation: 1,
+    tools: [{ name: "t" }] as never,
+  });
   assert.deepEqual(result, { tools: [{ name: "t", modelName: "t" }] });
-  assert.deepEqual(await wired.unregisterAppTools({ ...params, scopeId: "s", generation: 1 }), { removed: 1 });
-  assert.deepEqual(await wired.claimAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }), { accepted: true });
-  assert.deepEqual(await wired.resolveAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }), { accepted: true });
+  assert.deepEqual(await wired.unregisterAppTools({ ...params, scopeId: "s", generation: 1 }), {
+    removed: 1,
+  });
+  assert.deepEqual(
+    await wired.claimAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }),
+    { accepted: true },
+  );
+  assert.deepEqual(
+    await wired.resolveAppToolCall({ ...params, scopeId: "s", generation: 1, callId: "c" }),
+    { accepted: true },
+  );
   assert.deepEqual(passed, ["register"]);
 });
 

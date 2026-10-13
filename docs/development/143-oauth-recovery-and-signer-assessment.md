@@ -18,7 +18,7 @@
 - 复现命令（供 Lead 复核）：
   - cd /home/sixiao/aicode/fix/ZCode-CE && pnpm -r exec grep -l "ClientRequestSigningV4Manager" src 2>/dev/null || true
   - 或 ripgrep 口径：rg -c "SigningV4|resolveSigner" packages/ apps/ → 0 命中
-- CE 全仓（packages + apps）无 ClientRequestSigningV4Manager / resolveSigner（2026-10-13 实测 0 命中）。请求签名 V4 逻辑只存在于闭源 glm 网关（.reverse/104-v3151/unpack/*/extracted/opt/ZCode/resources/glm/zcode.cjs），CE 不随包分发该二进制，也没有自研 V4 签名器。无可守卫对象 ⇒ 不照搬闭源补丁。
+- CE 全仓（packages + apps）无 ClientRequestSigningV4Manager / resolveSigner（2026-10-13 实测 0 命中）。请求签名 V4 逻辑只存在于闭源 glm 网关（.reverse/104-v3151/unpack/\*/extracted/opt/ZCode/resources/glm/zcode.cjs），CE 不随包分发该二进制，也没有自研 V4 签名器。无可守卫对象 ⇒ 不照搬闭源补丁。
 
 ## 验收
 

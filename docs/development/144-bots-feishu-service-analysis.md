@@ -10,7 +10,7 @@ CE 与上游的**有意偏离在形态**：CE 是自托管 Web 控制（桌面 s
 
 ## 上游 3.15.1 bots 域增量（探针）
 
-- shared：channel-mention.ts（142 已搬）、bots.ts 的 zcodeAutomationBotDeliveryTarget 等键、topic resource 协议（zcodeTopicResourceRead/Cancel + TOPIC_RESOURCE_RELAY_*）。
+- shared：channel-mention.ts（142 已搬）、bots.ts 的 zcodeAutomationBotDeliveryTarget 等键、topic resource 协议（zcodeTopicResourceRead/Cancel + TOPIC*RESOURCE_RELAY*\*）。
 - services：botsService.ts（群/话题路由）、channelReply.ts（反向回复投递）、zcode-agent/topicResourceRelayChannel.ts（话题资源中继）。
 - bootstrap：topic-resource-port.ts（端口契约）；core：reply-to-channel 工具 + permission/service 适配。
 

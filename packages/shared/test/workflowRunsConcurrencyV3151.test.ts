@@ -57,10 +57,13 @@ test("run-started 在 limit 不等于 D 时记 limit（高于或低于都记）"
 });
 
 test("concurrency-changed 优先取 run.concurrencyCeiling，而非 previous/next 水位", () => {
-  const run = reduceRunStartedConcurrency(baseRun({ concurrency: { cap: 5, ceiling: 6, limit: 2 } }), {
-    caps: { maxConcurrency: 2 },
-    concurrencyCeiling: 13,
-  });
+  const run = reduceRunStartedConcurrency(
+    baseRun({ concurrency: { cap: 5, ceiling: 6, limit: 2 } }),
+    {
+      caps: { maxConcurrency: 2 },
+      concurrencyCeiling: 13,
+    },
+  );
   const changed = reduceConcurrencyChanged(run, { previous: 6, next: 26 });
   // 若按旧的 Math.max 推导会得 26；3.15.1 一律取 run-started 记下的 D = 13。
   assert.equal(changed.concurrency?.ceiling, 13);

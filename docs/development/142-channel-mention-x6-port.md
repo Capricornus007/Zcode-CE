@@ -7,7 +7,7 @@
 ## 范围
 
 - 新增 packages/shared/src/channel-mention.ts：
-  - channelMentionSchema（type=channelMention，refId/name/channel=feishu|lark/targetId 形如 ou_ 前缀的 open_id/idType/entityType），channelContentPartsSchema（≤200 段），channelReplyPartsSchema（text/mention/mentionName ≤50 段）。
+  - channelMentionSchema（type=channelMention，refId/name/channel=feishu|lark/targetId 形如 ou\_ 前缀的 open_id/idType/entityType），channelContentPartsSchema（≤200 段），channelReplyPartsSchema（text/mention/mentionName ≤50 段）。
   - channelReplyRequestSchema / channelReplyResultSchema（sent/failed/unknown/invalidated 或 needs_clarification：歧义/未找到/不可用/选择过期，候选 ≤10）。
   - channelContentText 与 resolveChannelReplyParts：只从 Host 已验证的会话输入解析 ref；模型不得直接提供平台 ID；mentionName 必须由 Host 解析；正文 1–2000 字；同名冲突抛错。
   - channelReplyHostRequestSchema：在请求上加 trace / workspacePath / workspaceIdentity / remoteSessionId（身份 key 统一 workspaceIdentity?.trim() || workspacePath）。

@@ -72,21 +72,23 @@ test("resolveChannelReplyParts 拒绝对同一 refId 的冲突描述", () => {
 });
 
 test("resolveChannelReplyParts 拒绝空正文与超长正文", () => {
-  assert.throws(() => resolveChannelReplyParts(channelReplyPartsSchema.parse([{ type: "text", text: "   " }]), []));
+  assert.throws(() =>
+    resolveChannelReplyParts(channelReplyPartsSchema.parse([{ type: "text", text: "   " }]), []),
+  );
   const long = "x".repeat(2001);
-  assert.throws(() => resolveChannelReplyParts(channelReplyPartsSchema.parse([{ type: "text", text: long }]), []));
+  assert.throws(() =>
+    resolveChannelReplyParts(channelReplyPartsSchema.parse([{ type: "text", text: long }]), []),
+  );
 });
 
 test("channelReplyResultSchema 接受投递结果与待澄清两种形态", () => {
-  assert.deepEqual(
-    channelReplyResultSchema.parse({ status: "sent", deliveryId: "d1" }),
-    { status: "sent", deliveryId: "d1" },
-  );
+  assert.deepEqual(channelReplyResultSchema.parse({ status: "sent", deliveryId: "d1" }), {
+    status: "sent",
+    deliveryId: "d1",
+  });
   const clarification = channelReplyResultSchema.parse({
     status: "needs_clarification",
-    unresolved: [
-      { name: "alice", reason: "ambiguous", candidates: [], truncated: false },
-    ],
+    unresolved: [{ name: "alice", reason: "ambiguous", candidates: [], truncated: false }],
   });
   assert.equal(clarification.status, "needs_clarification");
 });

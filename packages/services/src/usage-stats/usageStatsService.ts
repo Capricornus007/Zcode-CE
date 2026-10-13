@@ -71,10 +71,7 @@ export function createUsageStatsService(
 
   // Modified by ZCode: 增量自上游 aac47556——Highspeed 常规 TPS 的短缓存 + in-flight 去重，
   // 避免同一 provider/账号在面板刷新时重复打 monitor。
-  const regularTpsCache = new Map<
-    string,
-    { expiresAt: number; value: number | undefined }
-  >();
+  const regularTpsCache = new Map<string, { expiresAt: number; value: number | undefined }>();
   const regularTpsInFlight = new Map<string, Promise<number | undefined>>();
 
   function regularTpsCacheKey(request: CodingPlanRegularTpsRequest): string {

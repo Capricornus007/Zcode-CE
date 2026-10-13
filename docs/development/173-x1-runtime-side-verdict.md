@@ -4,12 +4,12 @@
 
 ## 0. 读了什么 / 结论一致性
 
-| 材料 | 结论 |
-| --- | --- |
-| ui-features 166 spec | 166 已判别：上游 `messageEdit|editMessage|editedMessage` 在 UI 侧 **0 命中**，矩阵「16 vs 6」口径不可复用；X1 的"编辑"更可能是 composer 草稿/用户输入气泡在**加速（HighSpeed）回合提交路径**上的丢失；并设计了两分法：「丢失发生在 CommandInbox/transport 提交前 → 运行时（cli-runtime-port）；渲染投影 → UI」。**一致**：我的复核支持该两分法，且补运行时侧证据。 |
+| 材料                         | 结论                                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ui-features 166 spec         | 166 已判别：上游 `messageEdit                                                                                                                                                                                                                                                                            | editMessage | editedMessage` 在 UI 侧 **0 命中**，矩阵「16 vs 6」口径不可复用；X1 的"编辑"更可能是 composer 草稿/用户输入气泡在**加速（HighSpeed）回合提交路径**上的丢失；并设计了两分法：「丢失发生在 CommandInbox/transport 提交前 → 运行时（cli-runtime-port）；渲染投影 → UI」。**一致**：我的复核支持该两分法，且补运行时侧证据。 |
 | CE core 输入提交路径 vs 上游 | `runtime/command-queue.ts`：两树逐字节一致。**`prompt-admission.ts` 的 `requireQueue` 分支正是 X1 修复的一半**（临时 provider 只能在独立 turn 的提升边界安装；编辑重发不能依据 busy 快照决定直接启动），已于 2026-10-13 移植（消费方：v4 editUserQuery 的编辑重发链）。旧判「与编辑/消息丢失无关」作废。 |
-| 上游 3.15.1 中的 X1 修复点 | **未在 core 定位到 X1 专属修复**（上游为单 squash 提交 `aac47556`，无法按 commit 拆分）。core 内与"提交中编辑"相关的机制（`command-queue.ts`、`prompt-admission.ts`、`enqueueDeferredInput`、`InputDelivery: auto/start_turn/steer_active_turn`）两树对齐。 |
-| CE 的 HighSpeed 路径 | CE 无 F2 HighSpeed 能力（矩阵 F2 行：CE 仅 2 处 selection 残留）。**X1 若与 HighSpeed 加速路径耦合，在 CE 可能不可复现**（166 spec 已提出该假设，我这里给运行时侧的佐证：`requireQueue` 的调用方在 CE 不存在）。 |
+| 上游 3.15.1 中的 X1 修复点   | **未在 core 定位到 X1 专属修复**（上游为单 squash 提交 `aac47556`，无法按 commit 拆分）。core 内与"提交中编辑"相关的机制（`command-queue.ts`、`prompt-admission.ts`、`enqueueDeferredInput`、`InputDelivery: auto/start_turn/steer_active_turn`）两树对齐。                                              |
+| CE 的 HighSpeed 路径         | CE 无 F2 HighSpeed 能力（矩阵 F2 行：CE 仅 2 处 selection 残留）。**X1 若与 HighSpeed 加速路径耦合，在 CE 可能不可复现**（166 spec 已提出该假设，我这里给运行时侧的佐证：`requireQueue` 的调用方在 CE 不存在）。                                                                                         |
 
 ## 1. 判别结论（运行时侧）
 
@@ -31,15 +31,18 @@
 X1 主体按 166 §3 移交结论移植；上游 ref `aac47556`（Apache-2.0），工作树 `.reverse/91-upstream-checkout/zai-org-ZCode-3151`。
 
 **搬运（Apache-2.0，文件内带 Modified by ZCode 标记）**：
+
 - `bootstrap/src/zcode-protocol-v4/commands/handlers/fork-edit-retry.ts`：整文件替换（389 行）。① 编辑重发只认本次重新 prepare 的卡（`highspeedMeta.taskId === record.app.sessionId`、未过期、Selection 真指向加速 Provider），避免旧凭据/跨会话卡；② `preemptActiveTurnAndWait` 纳入 runtime-owned active turn（`getActiveTurnInfo`/`getActiveForegroundExecutionId`）；③ conversationQuotes 纯引用编辑放行；④ admission 竞态（`V4PromptRejectedError("activePrompt")`）时原子入队（`requireQueue`），堵住「旧消息已截断而新消息随异常丢失」的另一条路径。
 - `bootstrap/src/zcode-protocol-v4/commands/handlers/canonical-intent-replay.ts`（新，131 行）：edit/retry 的 canonical intent 重发原语。
 - `core/src/runtime/methods/prompt-admission.ts`：`requireQueue` 早返分支（上游同文件同形）。
 
 **CE 偏离（登记为本地修改）**：
+
 - 上游 `commands/input-admission.ts` 未整体移植：CE 的等价件（`hasPromptInput`/`V4InputAdmissionRejectedError`/`resolveSubmittedExecutionState`/`applyHeldQueueDisposition`）已在 `handlers/session-flow.ts`；`resolveSessionFallbackModelSelection` 在 canonical-intent-replay 内以 session-flow 解析器实现（见该模块头注释）。
 - 上游 `handlers/highspeed-metrics.ts`（46 行，highspeed 指标）未移植：本链不消费。
 
 **跟随扩展（实现搬运所必需的契约/类型，均小改）**：
+
 - contracts：`HighspeedMessageMetadata` 接口 + `TurnInputIntentMetadata.conversationQuotes`/`highspeed` 字段；core `PromptAdmissionOptions.requireQueue`；bootstrap `SendInputOptions.requireQueue`。
 - v4：`V4QueuedTurnExecution` + 宿主 `retain/read/delete/clearQueuedTurnExecutions` 内存凭据暂存口（可选方法；宿主实现仍缺，`canRetainQueuedHighspeed=false` 时退回会话常驻 Selection——与上游降级路径等价）；`prompt-turn` 的 `requireQueue` 参数；`input-intent` 三处 `conversationQuotes` 透传；`ConversationEditTarget.intent.conversationQuotes`。
 - `ProductProjection` 的 conversationQuotes 投影透传（上游在 event-normalizer/projection-rows/transcript-hydration 等 8 处消费）未移植：X1 运行时链不依赖，引用快照在投影层的完整透传属 F2 UI 范围。

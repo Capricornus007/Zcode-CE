@@ -12,15 +12,15 @@
 
 ## 范围
 
-| 项 | 内容 |
-| --- | --- |
-| F6 并发重构 | workflow-runs-concurrency.ts：run-started 载荷记 concurrencyCeiling（默认并发 D）；「两条界」——ceiling（共享桶水位，可自动增长到 2D）与 limit（run 自己的界，amendWorkflowRunSettings 改它）；ceiling 计算优先 run.concurrencyCeiling，旧 CLI 不发时退回 Math.max 推导 |
-| F6 创建前调参 | command.ts 拆出 create-session-config.ts（createSessionRequestedConfigSchema：请求覆盖字段，不复用 snapshot 的 partial——后者会把「没传 mode」误变成「切回 build」） |
-| F6 拒绝词表 | workflow-command-rejections.ts：startSavedWorkflow / resumeWorkflowRun 的 fault 前缀与 reason 枚举 |
-| F7 子代理模型 | WorkflowRunActor 新增 model 字段（persona 点名模型时宿主解析的规范串 providerId/modelId[$level]，缺席 = 跑在 run 的子代理模型上）；amendWorkflowRunSettings 的 subagentModel 三态（省略 = 沿用，null = 回会话模型，值 = 设定） |
-| X2 | workflow-runs-actor-session.ts：actor sessionId 跟随「转录此刻在哪」——缓存命中结算的 sourceSessionId / 派发后回本 run 会话；修复恢复/修订后转录面板指向不存在会话只剩 error+retry |
-| holes | workflow-runs-holes.ts（新）+ row-meta 的 hole kind / fill / phaseStreams 等：上游工作流留白（脚本留白与补全行）。非公告功能，随原子单元搬运 |
-| 其它漂移 | workflow-runs.ts / reducer / entries / started / eviction / phases / delta / caps / actor-status / tables / unlisted / legacy / row-meta / coalesce / transport 等：全部取上游 3.15.1 形态 |
+| 项            | 内容                                                                                                                                                                                                                                                                   |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F6 并发重构   | workflow-runs-concurrency.ts：run-started 载荷记 concurrencyCeiling（默认并发 D）；「两条界」——ceiling（共享桶水位，可自动增长到 2D）与 limit（run 自己的界，amendWorkflowRunSettings 改它）；ceiling 计算优先 run.concurrencyCeiling，旧 CLI 不发时退回 Math.max 推导 |
+| F6 创建前调参 | command.ts 拆出 create-session-config.ts（createSessionRequestedConfigSchema：请求覆盖字段，不复用 snapshot 的 partial——后者会把「没传 mode」误变成「切回 build」）                                                                                                    |
+| F6 拒绝词表   | workflow-command-rejections.ts：startSavedWorkflow / resumeWorkflowRun 的 fault 前缀与 reason 枚举                                                                                                                                                                     |
+| F7 子代理模型 | WorkflowRunActor 新增 model 字段（persona 点名模型时宿主解析的规范串 providerId/modelId[$level]，缺席 = 跑在 run 的子代理模型上）；amendWorkflowRunSettings 的 subagentModel 三态（省略 = 沿用，null = 回会话模型，值 = 设定）                                         |
+| X2            | workflow-runs-actor-session.ts：actor sessionId 跟随「转录此刻在哪」——缓存命中结算的 sourceSessionId / 派发后回本 run 会话；修复恢复/修订后转录面板指向不存在会话只剩 error+retry                                                                                      |
+| holes         | workflow-runs-holes.ts（新）+ row-meta 的 hole kind / fill / phaseStreams 等：上游工作流留白（脚本留白与补全行）。非公告功能，随原子单元搬运                                                                                                                           |
+| 其它漂移      | workflow-runs.ts / reducer / entries / started / eviction / phases / delta / caps / actor-status / tables / unlisted / legacy / row-meta / coalesce / transport 等：全部取上游 3.15.1 形态                                                                             |
 
 ## 状态所有者
 

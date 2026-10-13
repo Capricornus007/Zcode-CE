@@ -83,10 +83,16 @@ test("gen-ui model context:转义状态分隔符,且只剥离合法的末尾上�
       },
     },
   ]);
-  assert.equal((context.match(/<\/untrusted_gen_ui_state>/g) ?? []).length, 1, "注入的闭合标记必须被转义");
+  assert.equal(
+    (context.match(/<\/untrusted_gen_ui_state>/g) ?? []).length,
+    1,
+    "注入的闭合标记必须被转义",
+  );
   assert.equal(stripGenUiModelContext(`Question\n\n${context}`), "Question");
   assert.ok(
-    stripGenUiModelContext("Keep <untrusted_gen_ui_state>bad</untrusted_gen_ui_state>").includes("bad"),
+    stripGenUiModelContext("Keep <untrusted_gen_ui_state>bad</untrusted_gen_ui_state>").includes(
+      "bad",
+    ),
   );
 });
 

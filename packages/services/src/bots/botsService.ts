@@ -1990,6 +1990,10 @@ export function createBotsService(
       case "elicitation.respond":
         return { type: "elicitation.respond", value: option.id };
     }
+    // 修复 TS2366：SelectionPrompt["action"] 是模板字面量联合（`${string}.set` 一类），
+    // switch 无法穷尽；未覆盖的 action 与「无 pending 可解析」同语义（调用方以 ?? 回退到原命令），
+    // 运行期行为与此前隐式返回 undefined 完全一致，仅让类型闭合成 null。
+    return null;
   }
 
   function shouldUseTransientInteractionCard(bot: BotConfig, user: BotConfig): boolean {
@@ -6348,6 +6352,22 @@ export function createBotsService(
             startTyping(auth.bot, message.actor, auth.context.activeTaskId);
             return [createOutbound(message.actor, msg(auth.locale, "permissionDenied"))];
           }
+          // 修复 TS2322（返回类型混入 undefined）：shared 的 BotCommand 联合在 3.15.1 并入
+          // F8 群/队列/话题命令（group.enable / group.disable / group.history /
+          // queue.cancel / topic.leave），本 CE 构建的服务侧群机器人实现按
+          // docs/development/144-bots-feishu-service-analysis.md 延后， 先按「未开放」回复，
+          // 让 switch 对联合保持穷尽（未覆盖成员会让函数隐式返回 undefined）。
+          case "group.enable":
+          case "group.disable":
+          case "group.history":
+          case "queue.cancel":
+          case "topic.leave":
+            return [
+              createOutbound(
+                message.actor,
+                msg(await readMessageLocale(), "commandNotSupportedInCe"),
+              ),
+            ];
           case "unknown":
             return [
               createOutbound(

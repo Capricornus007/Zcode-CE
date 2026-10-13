@@ -1515,13 +1515,13 @@
     "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
     "packages/services/src/bots/botRemoteWorkspaceBridge.ts": "740b0cf99acc93d3d901919d4ef2652ebf06279ae445d2476c88a106286a1ae7",
     "packages/services/src/bots/bots.ts": "01764678a4aff2c3fcc8732ae7cf4fa945ea639cf5cd23c331a4d0ac08750fcc",
-    "packages/services/src/bots/botsService.ts": "8041ba62d1da58a89f117d8b180df7d0346a3cf15755856473613ce57bb5b16d",
+    "packages/services/src/bots/botsService.ts": "fbdbe0bdf81a68dc0bce1504d9bdbe23bcb47492c42d1ef3b42e24dea4719fbc",
     "packages/services/src/bots/channelRuntime.ts": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74",
     "packages/services/src/bots/commandOrder.ts": "5bd3200e30f1458351b355d97328763496c798f4959326c27e581b7fba5f0a72",
     "packages/services/src/bots/commandParser.ts": "bc592f34c14b6f73d5b1ab2c913c0c77c99138f1e043cdb18187143fd069b8ff",
     "packages/services/src/bots/config.ts": "be93598984c0e73e129a0f1135d9baf490d6207ffa91dd804df58d6afa3fc542",
     "packages/services/src/bots/feishuChannelRuntime.ts": "aab47c1a41c7e2e921cc6d5374ac56bdac2ef2d1d989710b7ed00fd3fd9bd111",
-    "packages/services/src/bots/messages.ts": "9ccb13a86ed74e78ee34de7a0408be1eeb40c937e887e03676c082033a1989fd",
+    "packages/services/src/bots/messages.ts": "539ceff11efcceff6e7cf4146fcff8b09a47d8364687365882f078ab5c540f75",
     "packages/services/src/bots/modelSelectionHelpers.ts": "1b8279ecc7e2ee11980346cadc088eaa3f38d2ac3b51c283bb9a709dbe70b051",
     "packages/services/src/bots/providers/feishuAppRegistration.ts": "7a6a1919de4d0f9f862e4755f25a9383f4f3e73b80d0e86f1727930b77486978",
     "packages/services/src/bots/providers/feishuDisplayNameCache.ts": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf",
@@ -1540,7 +1540,7 @@
     "packages/services/src/bots/telegramChannelRuntime.ts": "92936b803880362960acbfbcc78b3bed8e85dee7c6a95ef49a49a306c7075028",
     "packages/services/src/bots/weixinChannelRuntime.ts": "701c2482365fabb20503a4681dd7cfa560b9137e7f8678077cc0e4b6516cd876",
     "packages/services/src/bots/workspaceHelpers.ts": "2681a2c8cb2a7c11d44920060bb60af3d45a1fb28389bf5079940898fade0871",
-    "packages/shared/package.json": "28c4227cc240dae00c40849fff3696baeafa96b0d8210faf77a24c2d250e9d1b",
+    "packages/shared/package.json": "59f1e5042444293a322716c10babd37ebebb222281fdddc8fe6c0cae98074495",
     "packages/shared/src/bots.ts": "c9ae67d700e4f744118348e3cb4517968393d9f86fa7d0e8cbf5c957b3ba315d",
     "packages/shared/src/zcode-protocol-v4/wire-codec.ts": "ac2494a3acc795c809c94ee9393f50271a9c2a0fd33813459e5ab93842ceef75",
     "packages/ui/package.json": "220e916077604008bb6ffea19d6bdf7148c4b09472bea251248a230ba3c69bf5",
@@ -1553,6 +1553,8 @@
     "packages/ui/src/assets/channel-icons/index.ts": "680b3668b05d2ebffc79ee0b0b0921222f2f1c148eb583fab821a50d45ef15fa",
     "packages/ui/src/BotsDialog.tsx": "f10a443b66f3dfd2ee038561dbe16e59a00ca2a48314f3c5ab8256ac2ca2c153",
     "packages/ui/src/BotsDialog/BotSummaryCard.tsx": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d",
+    "packages/ui/src/BotsDialog/BoundGroupsCard.tsx": "5810929801733b2fda0e70eca2af2cfe4b1989123c5227052568ba4b740bf86d",
+    "packages/ui/src/BotsDialog/PrivateDeliveryRetry.tsx": "4155b4c6b2c955281df720e1e219bc5441e1ae415e071cdcee449374bac1892b",
     "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx": "1a6a756dccc89776cbbf9dd27cb3589b81b58c92c6f7f8df6dffd3aa8984b6b6",
     "packages/ui/src/BotsDialog/shared.tsx": "579f732a289b46b6e2ca59676db75e24335cc7472bd9250d038b02a0cc3d4827",
     "packages/ui/src/BotsDialog/WorkspaceAccessCard.tsx": "d4999d83d94b394b096b0cbfe0e1423f0462f5a4f2ae3fc1171310cf5ad94904",
@@ -1621,6 +1623,7 @@
     "packages/ui/src/components/ui/diff-viewer.tsx": "f02208b316e6dc4043ed1794455422bc74cdd521285fcac5a2c0d589c2eb9af2",
     "packages/ui/src/components/ui/dropdown-menu.tsx": "34c5b79489756aa3467ec26d2b44587f3d47eafcb2cb16402686aac15e4debdb",
     "packages/ui/src/components/ui/flip-metric-value.tsx": "ce2d6cf063003e1023191b0fa4e3eb9b365e04a14eb0d498b897326600bf4071",
+    "packages/ui/src/components/ui/floating-particles.tsx": "88250e9104721c35f6119e9ffadac4c9795c798976cf06c0e4f4e584e8195fd2",
     "packages/ui/src/components/ui/GlmMonochromeIcon.tsx": "f1691224d23be4359e1a79bcd81b9dd5ee19c0177b3a4bf750332c620b98ae5c",
     "packages/ui/src/components/ui/highlighted-lightweight-diff-preview.tsx": "c04bb6009683ab74cb72ff8f1e1157ffbdd06be4a46dc3c725c63e0bc43fea72",
     "packages/ui/src/components/ui/hover-card.tsx": "28e49fb55a3fd4f5bfc5d61f336854304bc92c5a7098305b208274913b226f3d",
@@ -2801,7 +2804,7 @@
     "packages/zcode-server-cli/package.json": "6e294c4409cb90863d85b2e3d60f92766b156ccee577ebfeaffcb85e94194004",
     "patches/@ai-sdk__anthropic@3.0.81.patch": "d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18",
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
-    "pnpm-lock.yaml": "fd7f0b85bf33e46eba0f184b3d5592c12d1690275b853a2256901c0de7116e21",
+    "pnpm-lock.yaml": "da5d184d53917fbc2316db9a1bfd54fac1a0146d557bd6dd786109476fc6c527",
     "pnpm-workspace.yaml": "f18a18233e82cda1dc40be61bf2ad1bc99de25de63ad0be64bc652761a638372",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
@@ -19823,6 +19826,10 @@
           "sha256": "ce2d6cf063003e1023191b0fa4e3eb9b365e04a14eb0d498b897326600bf4071"
         },
         {
+          "file": "packages/ui/src/components/ui/floating-particles.tsx",
+          "sha256": "88250e9104721c35f6119e9ffadac4c9795c798976cf06c0e4f4e584e8195fd2"
+        },
+        {
           "file": "packages/ui/src/components/ui/highlighted-lightweight-diff-preview.tsx",
           "sha256": "c04bb6009683ab74cb72ff8f1e1157ffbdd06be4a46dc3c725c63e0bc43fea72"
         },
@@ -31077,7 +31084,7 @@
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "8041ba62d1da58a89f117d8b180df7d0346a3cf15755856473613ce57bb5b16d"
+          "sha256": "fbdbe0bdf81a68dc0bce1504d9bdbe23bcb47492c42d1ef3b42e24dea4719fbc"
         },
         {
           "file": "packages/services/src/bots/channelRuntime.ts",
@@ -31101,7 +31108,7 @@
         },
         {
           "file": "packages/services/src/bots/messages.ts",
-          "sha256": "9ccb13a86ed74e78ee34de7a0408be1eeb40c937e887e03676c082033a1989fd"
+          "sha256": "539ceff11efcceff6e7cf4146fcff8b09a47d8364687365882f078ab5c540f75"
         },
         {
           "file": "packages/services/src/bots/modelSelectionHelpers.ts",
@@ -31205,6 +31212,14 @@
         {
           "file": "packages/ui/src/BotsDialog/BotSummaryCard.tsx",
           "sha256": "2f816010375d3efc2d07c01f4c3793d31d4786d2d2cb938ad857f13f6a1bed9d"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/BoundGroupsCard.tsx",
+          "sha256": "5810929801733b2fda0e70eca2af2cfe4b1989123c5227052568ba4b740bf86d"
+        },
+        {
+          "file": "packages/ui/src/BotsDialog/PrivateDeliveryRetry.tsx",
+          "sha256": "4155b4c6b2c955281df720e1e219bc5441e1ae415e071cdcee449374bac1892b"
         },
         {
           "file": "packages/ui/src/BotsDialog/ProviderSettingsCard.tsx",

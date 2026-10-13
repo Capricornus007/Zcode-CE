@@ -13,6 +13,9 @@ const messages = {
     bindPrivateOnly: "Bots 只允许在私聊中绑定。",
     userNotBound: "当前 bot 未绑定。请先在 zcode UI 生成绑定码，然后发送 **/bind <code>**。",
     commandNotAllowed: "当前 bot 未启用这个命令。",
+    // F8 群/队列/话题命令的协议面已并入 shared schema，服务侧实现按 docs/development/144 延后，先回这句话。
+    commandNotSupportedInCe: "该命令在本构建中尚未开放。",
+
     noWorkspaceAllowed: "没有可用 workspace，请先在 Bots 设置里允许 workspace。",
     workspaceOutOfScope: "当前聊天上下文的 workspace 已不在授权范围内，请重新选择 **/项目**。",
     bindCodeInvalid: "绑定码无效或已过期，请在 zcode UI 重新生成。",
@@ -137,6 +140,8 @@ const messages = {
     userNotBound:
       "This bot is not bound. Generate a bind code in the zcode UI, then send **/bind <code>**.",
     commandNotAllowed: "This command is disabled for the current bot.",
+    commandNotSupportedInCe: "This command is not available in this build yet.",
+
     noWorkspaceAllowed: "No workspace is available. Allow a workspace in Bots settings first.",
     workspaceOutOfScope:
       "The workspace in this chat is no longer authorized. Please select **/workspace** again.",

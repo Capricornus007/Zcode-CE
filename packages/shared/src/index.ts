@@ -186,8 +186,16 @@ export type {
   ApplicationIconRequest,
   BrowserGuestAttachRejectReason,
   BrowserGuestAttachResult,
+  DesktopCloseToTrayCapability,
   EmbeddedBrowserDataClearResult,
   EmbeddedBrowserOpenUrlRequest,
+  EmbeddedBrowserPermissionDeviceOption,
+  EmbeddedBrowserPermissionPromptEvent,
+  EmbeddedBrowserPermissionResolveRequest,
+  EmbeddedBrowserPermissionResolution,
+  EmbeddedBrowserSitePermissionResetRequest,
+  EmbeddedBrowserSitePermissionUpdateRequest,
+  EmbeddedBrowserSitePermissionsSnapshot,
   IPlatformService,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
@@ -303,4 +311,9 @@ export * from "./clientConfig.js";
 export * from "./pluginStoreOrdering.js";
 export * from "./session-debug.js";
 export * from "./highspeed.js";
+export * from "./attachment-source.js";
+export * from "./channel-mention.js";
+export * from "./conversationSelection.js";
+export * from "./subagent-runtime-config.js";
+export * from "./subagent-profile.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";

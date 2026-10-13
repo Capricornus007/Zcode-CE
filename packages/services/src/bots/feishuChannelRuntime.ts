@@ -24,6 +24,9 @@ import {
 } from "./channelRuntime.js";
 
 interface FeishuChannelRuntimeDeps {
+  // Modified by ZCode: 增量自上游 aac47556——连接失效（token 过期/重连）回调，
+  // X7：失效时让上层作废历史快照 epoch，避免群任务路由读到过期授权下的旧状态。
+  onConnectionInvalidated?(botId: string): void;
   runBackgroundTasks?: boolean;
   credentialService: ICredentialService;
   logger: BotRuntimeLogger;
@@ -103,10 +106,12 @@ export function createFeishuChannelRuntime(deps: FeishuChannelRuntimeDeps) {
           messageId: "bots.runtime.feishuWebSocketConnecting",
           message: "Feishu WebSocket is connecting.",
         });
+        deps.onConnectionInvalidated?.(bot.id);
         client = await startFeishuBotWebSocket({
           bot,
           signal,
           onConnectionStateChange: (state) => {
+            if (state === "reconnecting") deps.onConnectionInvalidated?.(bot.id);
             deps.statusSink.setRuntimeStatus({
               botId: bot.id,
               provider: bot.provider,

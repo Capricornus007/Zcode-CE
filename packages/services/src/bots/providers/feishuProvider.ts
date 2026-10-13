@@ -1058,7 +1058,7 @@ export function splitFeishuStreamingCardStates(
   }));
 }
 
-function splitFeishuText(text: string): string[] {
+export function splitFeishuText(text: string): string[] {
   const limit = 1900;
   const chunks: string[] = [];
   for (let index = 0; index < text.length; index += limit) {

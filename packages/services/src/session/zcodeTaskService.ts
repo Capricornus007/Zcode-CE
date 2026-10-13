@@ -239,6 +239,68 @@ export interface IZCodeTaskService {
     v4Create?: boolean;
   }): Promise<ZCodeTaskCreateResult>;
 
+
+  // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题输入与执行的 task service 契约。
+
+  // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题输入与执行的 task service 契约。
+  readBotTopicSummaries?(params: {
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+  }): Promise<Array<{ checkpoint: string; text: string }>>;
+
+  invalidateBotTopicInputs?(params: {
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+  }): Promise<void>;
+  readBotTopicExecution?(params: {
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+  }): Promise<{ executionId: string; sourceCommandId?: string } | undefined>;
+  stopBotTopicExecution?(params: {
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+    remoteSessionId?: string;
+    executionId: string;
+  }): Promise<void>;
+
+  /** 从 CLI 权威快照读取群任务切换的阻塞原因；空闲时返回 null。 */
+  getBotGroupTaskBlockReason?(params: {
+    taskId: string;
+    remoteSessionId?: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }): Promise<"running" | "queued" | "interaction" | null>;
+  cancelBotGroupInput?(params: {
+    workspacePath?: string;
+    workspaceIdentity?: string;
+    taskId: string;
+    remoteSessionId?: string;
+    commandId: string;
+    sourceCommandId: string;
+    actorId: string;
+    ownerId: string;
+    botId: string;
+    chatId: string;
+  }): Promise<import("@zcode/shared/zcode-protocol-v4").CommandAck>;
+  submitBotGroupInput?(params: {
+    workspacePath?: string;
+    workspaceIdentity?: string;
+    taskId: string;
+    remoteSessionId?: string;
+    commandId: string;
+    content: string;
+    conversationQuotes?: import("@zcode/shared").ConversationSelectionText[];
+    attachments?: ZCodePromptAttachment[];
+    source: import("@zcode/shared").BotGroupInputSource;
+  }): Promise<import("@zcode/shared/zcode-protocol-v4").CommandAck>;
+
   /** 发送 prompt 到指定 task */
   sendPrompt(
     params: {

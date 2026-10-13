@@ -1,4 +1,7 @@
 // Modified by ZCode: F8 群会话/话题准备状态机等本地增量（本地修改，合规声明）。
+import { resolveAllowedAttachmentLocalPath } from "./attachmentPathGuard.js";
+import { assertAllowedAttachmentUrl, fetchBotAttachmentFromUrl } from "./attachmentUrlGuard.js";
+import { formatBotTaskFailureMessage } from "./taskFailureMessage.js";
 import { replyToBotChannel } from "./channelReply.js";
 import {
   BotAdminRequiredError,
@@ -24,7 +27,7 @@ import {
 } from "./groupSessions.js";
 /* eslint-disable max-lines -- Bots 服务仍复用原 RPC 文件名，先把鉴权、命令路由、ZCode Agent 桥接收口集中在同一服务内。 */
 import { Buffer } from "node:buffer";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { IDisposable } from "@zcode/rpc";
@@ -740,6 +743,15 @@ const BOT_ELICITATION_CUSTOM_OPTION_ID = "__custom__";
 const BOT_ELICITATION_SUBMIT_OPTION_ID = "__submit__";
 const BOT_ELICITATION_SKIP_OPTION_ID = "__skip__";
 const BOT_ELICITATION_FORM_VALUE_PREFIX = "__form__:";
+
+function isConstantTimeEqual(actual: string | undefined, expected: string): boolean {
+  const actualBytes = Buffer.from(actual ?? "", "utf8");
+  const expectedBytes = Buffer.from(expected, "utf8");
+  if (actualBytes.length !== expectedBytes.length) {
+    return false;
+  }
+  return timingSafeEqual(actualBytes, expectedBytes);
+}
 
 export function createBotsService(
   deps: BotsServiceDeps,
@@ -1956,13 +1968,14 @@ export function createBotsService(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), BOT_ATTACHMENT_DOWNLOAD_TIMEOUT_MS);
     try {
-      const response = await fetch(attachment.downloadUrl, {
+      // Modified by ZCode: 原实现对入站可控的 downloadUrl 直接 fetch，等于把「任意 URL
+      // 取回内容」暴露给能打到入站面的人（内网探测 / 云元数据 / 回环服务）。
+      // 改为走 attachmentUrlGuard：只允许解析后全部落在公网地址的 http(s) URL，
+      // 且 DNS 结果 pin 到连接阶段、不跟随重定向。
+      const { bytes } = await fetchBotAttachmentFromUrl(attachment.downloadUrl, {
         signal: controller.signal,
       });
-      if (!response.ok) {
-        throw new Error(`download ${attachment.filename} failed: HTTP ${response.status}`);
-      }
-      return new Uint8Array(await response.arrayBuffer());
+      return bytes;
     } catch (error) {
       if ((error as { name?: unknown })?.name === "AbortError") {
         // Bugfix: 附件下载卡住时必须尽快失败并回复用户，不能让 bot 回调一直悬挂。
@@ -1986,10 +1999,24 @@ export function createBotsService(
       };
     }
     if (attachment.localPath) {
+      // Modified by ZCode: 原实现对入站 payload 提供的 localPath 直接 readFile，
+      // 没有任何路径校验 —— 能打到入站面的人可读本机任意文件。改为只允许 bot 附件
+      // 缓存目录（见 attachmentPathGuard.ts 的「允许目录定义与依据」），越权抛可操作错误。
+      const allowedPath = await resolveAllowedAttachmentLocalPath(attachment.localPath);
       return {
         attachment,
-        data: await readFile(attachment.localPath),
+        data: await readFile(allowedPath),
       };
+    }
+    // 修复原因（S1）：downloadUrl 是入站 payload 里唯一由请求方控制的 URL 字段
+    // （webhook 透传 payload、微信从 download_url 读取）。原实现先调用 provider
+    // 的 downloadAttachment 再回退到通用 guarded 路径，而 provider 各自的下载实现
+    // 没有统一判据——微信渠道曾是裸 fetch，入站 downloadUrl 指向回环 / 内网 /
+    // 云元数据时会被真实请求（SSRF，判别实验已复现）。统一在 provider 路径之前
+    // 校验：任何 provider（含未来新增）的下载都先过同一道判据；通用 URL 路径
+    // 内部的 fetchBotAttachmentFromUrl 仍会再校验一次（幂等，纵深而非冗余）。
+    if (attachment.downloadUrl) {
+      await assertAllowedAttachmentUrl(attachment.downloadUrl);
     }
     const provider = providers[bot.provider];
     const downloaded = await provider?.downloadAttachment?.(bot, attachment, actor);
@@ -3825,10 +3852,23 @@ export function createBotsService(
         : undefined;
     for (const inbound of parsedInboundMessages) {
       const bot = findBot(config, inbound.botId);
-      if (bot?.provider === "webhook" && bot.webhookSecretRef) {
-        const expectedSecret = await deps.credentialService.load(bot.webhookSecretRef);
-        if (expectedSecret && expectedSecret !== inboundSecret) {
+      if (bot?.provider === "webhook") {
+        // Modified by ZCode: 原实现是 `if (bot.webhookSecretRef) { const expected = await load(...);
+        // if (expected && expected !== inboundSecret) { 拒绝 } }` —— 两处条件式叠加造成真实的 fail-open：
+        //   ① `webhookSecretRef` 未配 ⇒ 整段跳过 ⇒ 不校验就放行；
+        //   ② ref 配了但凭据库读不到（load 返回 null）⇒ `expected &&` 短路 ⇒ 同样放行。
+        // 实测（未修复时）：上述两种情形下，攻击者不带/乱带 secret 都能执行 /help。
+        // 且比较是普通 !==（非常量时间）。现改为 fail-closed + 常量时间：
+        // 「拿不到期望值」与「值不匹配」一律拒绝，不再有「跳过校验」这条路径。
+        // 这是纵深第二层：路由层（packages/server 的 /bot/** gate）也会独立拦一次。
+        const expectedSecret = bot.webhookSecretRef
+          ? await deps.credentialService.load(bot.webhookSecretRef)
+          : null;
+        if (!expectedSecret || !isConstantTimeEqual(inboundSecret, expectedSecret)) {
           replies.push(createOutbound(inbound.actor, msg(locale, "webhookSecretInvalid")));
+          // 凭据失败必须体现为「本次投递未成功」：否则 provider 会把失败当成功提交消费游标，
+          // 与 /api/bots 路由层「业务失败透传 503」是同一条理由（见 BOT-INGRESS-SPEC §7）。
+          hadBusinessFailure = true;
           continue;
         }
       }
@@ -3877,11 +3917,16 @@ export function createBotsService(
         );
         continue;
       }
-      botsLogger.debug(
+      // Modified by ZCode: 这里原本打 `text=${inboundMessage.text}`，把用户发来的消息正文
+      // 整条写进 info 级日志。host 的 console 钩子会把 info 落到 ~/.zcode/v2/logs/*.log
+      // （desktop/src/host/index.ts → hostLogRelay → main/logger.ts 的 appendFileSync），
+      // 直接违反根 AGENTS.md「不在日志、示例或提交中写入凭据、真实用户数据和内部服务地址」。
+      // 排障需要的只是「谁、在什么时候、发了多长的消息」，故改为长度与是否含附件，
+      // 不再落正文。displayName 是第三方平台侧的显示名，同样属用户数据，一并去掉。
+      botsLogger.info(
         undefined,
-        `provider callback provider=${provider} bot=${inboundMessage.botId} messageId=${inboundMessage.actor.providerMessageId ?? ""}`,
+        `provider callback provider=${provider} bot=${inboundMessage.botId} user=${inboundMessage.actor.providerUserId} textLen=${inboundMessage.text.length} attachments=${inboundMessage.attachments?.length ?? 0}`,
       );
-      // 回调失败和重连也走相同的话题提醒规则，保留 Provider 核验的提及事实。
       inboundMessage = {
         ...inboundMessage,
         actor: { ...inboundMessage.actor, mentionedBot: inboundMessage.mentionedBot === true },
@@ -5430,7 +5475,7 @@ export function createBotsService(
           if (resultSourceCommandId && event.inputId && resultSourceCommandId !== event.inputId)
             return;
         }
-        if (event.type === "task_complete" || event.type === "task_error") {
+      if (event.type === "task_complete" || event.type === "task_error") {
           if (runId) terminalRuns.add(runId);
           // continuous 不重放旧轮；有界保留重复终态保护。
           if (terminalRuns.size > 128) terminalRuns.delete(terminalRuns.values().next().value!);
@@ -5767,9 +5812,7 @@ export function createBotsService(
               : createOutbound(
                   actor,
                   event.type === "task_error"
-                    ? msg(await readMessageLocale(), "taskFailed", {
-                        message: event.error,
-                      })
+                    ? formatBotTaskFailureMessage(await readMessageLocale(), event.error)
                     : msg(await readMessageLocale(), "received"),
                 ),
           );
@@ -5798,9 +5841,7 @@ export function createBotsService(
             streamingCardStatus = "error";
             if (!hasStreamingCardMessageText()) {
               appendStreamingCardMessages([
-                msg(await readMessageLocale(), "taskFailed", {
-                  message: event.error,
-                }),
+                formatBotTaskFailureMessage(await readMessageLocale(), event.error),
               ]);
             }
             await syncStreamingCardReply(event.type, true);
@@ -5810,9 +5851,7 @@ export function createBotsService(
             bot,
             createOutbound(
               actor,
-              msg(await readMessageLocale(), "taskFailed", {
-                message: event.error,
-              }),
+              formatBotTaskFailureMessage(await readMessageLocale(), event.error),
             ),
           );
           return;

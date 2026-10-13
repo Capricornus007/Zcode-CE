@@ -1,3 +1,4 @@
+// Modified by ZCode: 逐字节搬运自上游 aac47556；#src 别名按 CE 布局改写为相对路径（local modification，仅路径重写）。
 import type {
   BotActor,
   BotConfig,
@@ -49,10 +50,36 @@ export interface BotProviderAcknowledgeResult {
 }
 
 export interface BotProviderAdapter {
+  readTopicResourceMessage?(
+    bot: BotConfig,
+    target: { messageId: string; chatId: string; threadId: string },
+    signal?: AbortSignal,
+  ): Promise<import("../topicResource.js").TopicResourceMessage>;
+  resolveTopic?(
+    bot: BotConfig,
+    actor: BotActor,
+  ): Promise<{ threadId: string; rootMessageId: string; topicTitle: string; topicUrl?: string }>;
+  readTopicHistory?(
+    bot: BotConfig,
+    request: import("@zcode/shared").BotTopicHistoryRequest,
+  ): Promise<import("@zcode/shared").BotTopicHistoryBatch>;
+  getGroupMemberNames?(bot: BotConfig, chatId: string): Promise<Record<string, string>>;
+  getGroupInfo?(
+    bot: BotConfig,
+    chatId: string,
+  ): Promise<{ name: string; chatMode?: "group" | "topic" }>;
   test(bot: BotConfig): Promise<{ ok: boolean; message: string }>;
   resolveName?(bot: BotConfig): Promise<string | null>;
   syncCommands?(bot: BotConfig): Promise<void>;
-  send(bot: BotConfig, message: BotOutboundMessage): Promise<void>;
+  send(
+    bot: BotConfig,
+    message: BotOutboundMessage,
+  ): Promise<void | BotTransientInteractionCardHandle>;
+  updateInputReaction?(
+    bot: BotConfig,
+    messageId: string,
+    state: import("../providers/groupInputReaction.js").GroupInputReaction,
+  ): Promise<void>;
   sendTyping?(bot: BotConfig, target: BotTypingTarget): Promise<void>;
   startTyping?(bot: BotConfig, target: BotTypingTarget): Promise<void>;
   stopTyping?(bot: BotConfig, target: BotTypingTarget): Promise<void>;
@@ -98,6 +125,7 @@ export interface BotProviderAdapter {
     bot: BotConfig,
     attachment: BotInboundAttachment,
     actor?: BotActor,
+    signal?: AbortSignal,
   ): Promise<BotProviderDownloadedAttachment | null>;
   parseCallback(payload: unknown): BotInboundMessage[];
 }

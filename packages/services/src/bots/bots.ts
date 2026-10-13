@@ -51,6 +51,8 @@ export interface BotUserConfigOptionsParams {
 }
 
 export interface BotAutomationRunWatchParams {
+  /** 与该次 sendPrompt.traceId 一致，避免排队期间污染其他轮次。 */
+  runId?: string;
   target: ZCodeAutomationBotDeliveryTarget;
   taskId: string;
   workspacePath: string;
@@ -150,6 +152,56 @@ export interface IBotsService {
   deleteBot(botId: string): Promise<void>;
   testBot(botId: string): Promise<BotTestResult>;
   createBindCode(params: BotCreateBindCodeParams): Promise<BotBindCodeResult>;
+  // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题服务契约 10 方法（F8）。
+  replyToChannel?(
+    params: import("@zcode/shared").ChannelReplyHostRequest,
+  ): Promise<import("@zcode/shared").ChannelReplyResult>;
+  validateTopicResource?(
+    params: import("./topicResource.js").TopicResourceRequest,
+  ): Promise<void>;
+  readTopicResource?(
+    params: import("./topicResource.js").TopicResourceRequest,
+  ): Promise<import("@zcode/shared").ZCodePromptAttachment>;
+  getGroupMemberNames?(params: { botId: string; chatId: string }): Promise<Record<string, string>>;
+  retryTopicPreparation?(params: {
+    botId: string;
+    chatId: string;
+    threadId: string;
+    messageId: string;
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }): Promise<void>;
+  getTopicDetails?(params: {
+    botId: string;
+    chatId: string;
+    threadId?: string;
+    taskId: string;
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }): Promise<{
+    messageCount: number;
+    hasGap: boolean;
+    historyEnabled: boolean;
+    summaries: Array<{ checkpoint: string; text: string }>;
+  }>;
+
+  setGroupEnabled?(params: { botId: string; chatId: string; enabled: boolean }): Promise<void>;
+  reconcileGroupResult?(params: {
+    botId: string;
+    chatId: string;
+    deliveryId: string;
+    threadId?: string;
+    received: boolean;
+  }): Promise<import("@zcode/shared").BotGroupDelivery>;
+  resendGroupResult?(params: {
+    botId: string;
+    chatId: string;
+    deliveryId: string;
+    threadId?: string;
+  }): Promise<import("@zcode/shared").BotGroupDelivery>;
+  retryPrivateDelivery?(params: { botId: string; deliveryId: string }): Promise<void>;
+  getBotStates(): Promise<BotContextState[]>;
   getBotStates(): Promise<BotContextState[]>;
   resetBotState(contextKey: string): Promise<void>;
   /** 在 automation prompt 派发前订阅终态，并把结果回推到创建它的 Bot 会话。 */

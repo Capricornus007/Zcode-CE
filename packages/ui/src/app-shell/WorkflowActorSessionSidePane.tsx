@@ -1,3 +1,4 @@
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { memo, useEffect, useMemo } from "react";
 import { HourglassIcon } from "lucide-react";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";

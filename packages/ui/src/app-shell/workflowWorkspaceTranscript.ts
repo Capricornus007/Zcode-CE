@@ -8,6 +8,7 @@
 // 「找东西」「git」「跑命令」四个动词——它们正是 files / git / world 三个 facade 容器的分法。
 // 升级前的历史行没有 op（`input_json` 为 NULL），退回静态图上的步标签，种类是通用的「步骤」。
 
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import type { WorkflowRunState, WorkflowRunWorkspaceNode } from "@zcode/shared/zcode-protocol-v4";
 import type { WorkflowCausalityGraphData } from "@/components/workflow-graph/types.js";
 import type { PhaseNaming } from "@/components/workflow-graph/phase-name.js";

@@ -5,6 +5,7 @@
 // 数据装配与交互接线，本文件承载纯展示分区。props 全是烹熟的视图值——不接触
 // 投影、lease 或命令通道。
 
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { workflowRunStopReasonMessageId } from "@/components/workflow-graph/run-status-presentation.js";
 import { memo, type ReactNode } from "react";
 import {

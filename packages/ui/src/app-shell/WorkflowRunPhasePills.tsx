@@ -1,3 +1,4 @@
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import type { WorkflowRunPendingQuestion, WorkflowRunState } from "@zcode/shared/zcode-protocol-v4";
 import type { ReactNode } from "react";
 import { laneDisplayName } from "@/components/workflow-graph/lane-name.js";

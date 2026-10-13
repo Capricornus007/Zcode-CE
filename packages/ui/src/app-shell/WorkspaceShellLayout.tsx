@@ -1,4 +1,5 @@
 /* eslint-disable max-lines -- workspace shell 当前集中编排 sidebar、chat、terminal 和 browser pane 的布局联动，先保持单文件收口，避免为满足行数限制打散关键布局状态。*/
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CSSProperties,

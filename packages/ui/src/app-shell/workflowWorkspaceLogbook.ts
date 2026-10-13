@@ -5,6 +5,7 @@
 // 章节按执行顺序切：连续同一阶段的卡是一章，再次进入同一阶段是新的一章、轮次 +1——
 // 与侧板脊线的 ⟳n 同一口径（进入次数），而不是某个站点被调用的次数。
 
+// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import type { PhaseNaming } from "@/components/workflow-graph/phase-name.js";
 import type { WorkspaceCardModel } from "@/app-shell/workflowWorkspaceTranscript.js";
 

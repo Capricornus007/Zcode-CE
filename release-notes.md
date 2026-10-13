@@ -1,59 +1,93 @@
 # ZCode-CE
 
+<!-- 草稿：未发版，发版前删除本行 -->
+
+## 与官方 3.15.1 的关系（本版基线）
+
+本版从上游 `zai-org/ZCode` `v3.15.1`（`aac47556`，Apache-2.0，官方公告 2026-10-12：11 项新功能 + 12 项修复）移植。公告条目与本仓库的逐条对照（已跟进 / 部分跟进 / 未跟进（有意） / 不适用四档）见 `docs/development/upstream-sync.md` 的 v3.15.1 节。
+
+- **已落地**：F2（HighSpeed 客户端面）、F3（危险命令确认）、F4（可视化交互界面）、F5（UI 插件 / MCP App，契约 + 桌面宿主 + 界面 + 服务桥）、F6/F7（工作流运行中改并发、保存复跑链、子代理单独指定模型）、F9（内置浏览器权限治理）、F10（Linux 托盘驻留）、F11（账户菜单套餐与复制用户 ID）、X1/X2/X3/X4/X5/X6/X8/X9/X11/X12，以及上游 3.15.3 闭源修复中的 OAuth 损坏会话清理容错（A2）。
+- **部分跟进（延期到下一轮）**：F6 的渲染层判别（station-observation 取舍）与创建前调参界面；F8 的服务波次（飞书群/话题服务方法与状态机，UI 已零半集成回退保留）。
+- **有意不搬**：F1「邀请好友·免费蹬蹬」是官方服务端运营活动（开源仓库零载荷）；F2 与 F8 的服务端部分（抽卡权重、群消息广播状态机）；上游 3.15.3 闭源的更新退出状态机与签名器守卫（经评估 CE 无对应链路与组件，依据见 upstream-sync v3.15.1 节）。
+
 ## 新增功能
 
-- **macOS 安装包已就绪但本版未产出**：构建矩阵与 ad-hoc 签名配置都已上线，但本版发布时 GitHub 的 macOS runner 排队超时，两个 mac 构建被取消——**本版 Release 里没有 macOS 安装包**。macOS 用户请从源码构建（`docs/development/`），或等下一个版本附上 .dmg/.zip（届时首次打开需在 Gatekeeper 提示里选「仍要打开」，或执行 `xattr -dr com.apple.quarantine <应用>`；自动更新在 macOS 上仍会保持关闭）。
-- **内网探测改为你点头才探**：工作台里「探测局域网服务」（TCP 目标）现在会对每一个目标弹确认（显示真实 host 与端口），确认后才开始连接；同一会话内重复探测同一目标无需再确认。服务端不再对未经确认的内网地址发起任何请求。
+- **自主模式执行危险命令前会先征求确认**：危险命令（如删除、覆盖关键文件、提权操作）在执行前弹出确认，说明将要执行什么、为什么被判为危险；可在设置里调整确认粒度。此能力与既有的危险命令清单策略并存，不改变已有交互。
+- **消息流里可以直接展示可视化界面**：助手输出的 `::visualize` 引用现在会投影成有边界的桌面沙箱页面（gen-ui），而不是只剩一个文件链接；重复的 HTML 预览卡会自动去重。这些页面与 MCP 应用页面共用同一套准入与回收机制。
+- **支持 UI 插件（MCP App）**：MCP 应用可以带界面——插件在独立沙箱里运行页面、与宿主按声明申请权限（摄像头/麦克风/地理位置需确认、剪贴板写入按声明放行、macOS 走系统授权），工具调用与资源订阅按 lease 引用；插件市场声明与实际分发的口径在本版一并核对。不声明权限的调用一律拒绝。
+- **内置浏览器现在有网站权限管理**：内置浏览器（用于网页类任务）对摄像头、麦克风、剪贴板读取、地理位置、通知、MIDI、设备与屏幕共享等敏感能力**默认不自动放行**——每项都要你点头（访问此网站时允许 / 仅本次允许 / 不允许，20 秒超时按拒绝结算），设备类弹出选择器选具体设备。同意记录按站点持久化，可在设置页「网站权限」查看与清除，清除浏览器数据时一并联动。未知的新权限枚举一律拒绝，不会随 Electron 升级悄悄放权。
+- **Linux 下关闭窗口可驻留系统托盘**：Linux 对齐 Windows 的托盘驻留（设置开 + 托盘可用时关窗隐藏驻留）。托盘是否可用先检测系统的 StatusNotifier 支持，不可用时设置项置灰并回到既有的确认退出路径，不会失联；GNOME 类未装 AppIndicator 的环境会提示安装扩展。托盘右键菜单的「清空全部数据」改为「导出日志」（不再从右键菜单暴露清空操作）。
+- **账户菜单可查看套餐并复制用户 ID**：左下角账户菜单头部显示当前套餐与用户 ID，排查或报障时一键复制用户 ID（失败有明确提示）。
+- **工作流支持运行中改并发、保存复跑，子代理可单独指定模型**：运行中的工作流可以在确认窗里调整并发上限与单个子代理使用的模型（向下取整、回到默认与会话模型三态语义），保存后的工作流可直接复跑；工作流记录里也会如实呈现每个子代理实际使用的模型。创建前的参数配置界面与部分工作流渲染的判别仍在跟进（见维护者台账）。
+- **GLM HighSpeed 加速卡界面（客户端面）**：命中加速时本轮消息出现紫色流光卡片与激活动效，带到期时钟与剩余时长（节省时长标签）；卡片可分享。加速上下文在切走再切回时从「恢复」态继续，不重播扩散动画；卡过期后不再把普通输出染成加速样式。发卡与抽奖逻辑属官方服务端，本版只包含客户端展示与交互。
 
 ## 体验优化
 
-- **macOS 的更新提示改了说法**：点「检查更新」现在会提示去 GitHub Releases 下载未签名安装包（上一版的提示指向从源码构建——当时还没有安装包）。
-- **电子表格公式交付前先问清楚**：交付带公式的表格前会先确认本环境能否重算公式；不能时（本版就是不能）会在回复里明确写出「缓存结果未在本构建中重算」，不会把缓存的旧值当成新算的结果交出去，也不用常量冒充公式。
-- **飞书机器人的长连接内存稳定了**：用户名缓存原先只增不删，长开几天会缓慢涨内存；现在写入时顺带清掉过期项。
+- **更新下载失败后自动复查**：下载失败或下载完成（发现已下载版本被更高版本取代）时自动发起新一轮检查，而不是停在原地等手动点；检查进行中的复查会收口后补一次，不会丢。轮询节奏改为无目标 15 分钟、有可见更新目标 2 分钟；已发现的更新目标不会被中间态闪掉或清掉。
+- **内置浏览器打开本地文件不再失败**：`file:` 链接改用系统默认应用打开（复用既有的路径打开实现），而不是对 file 协议无效果的 `shell.openExternal`。
+- **多个工作区同时启动时更省内存**：启动预热从「最近使用的 3 个工作区」收敛为「当前工作区 1 个」——会话进程没有闲置回收，常驻 3 份进程内存不划算；切到最近项目的冷启动收益通过按需加载获得。
+- **登录身份验证失败时的恢复更稳**：清理损坏的 OAuth 会话后刷新派生登录方式失败时，不再让整个清理流程报错（此前会出现设置页「连接套餐失败、需要重新登录」）；失败信息收敛到独立日志域，便于定位。
 
 ## 问题修复
 
-- **编辑消息重发后，后台任务不再永久「运行中」**：此前在后台任务跑着的时候编辑并重发一条消息，任务完成的通知会被「分支过期」逻辑悄悄丢弃，界面永远转圈、取消也报「任务不在运行」。现在存活任务的完成通知不再被误丢，取消也能正常生效。
-- **建好的自动化不再改掉你手动命名的会话标题**：此前创建自动化（定时任务等）会无条件把会话标题改写成冻结标题，盖掉你手动起的名字；现在只在标题不是你手动起的时候才冻结。
-- **微信渠道的附件下载补上了保护**：此前微信机器人接收的附件由回调里的下载地址直接抓取（既绕过了只允许公网地址的判据，也没有超时），现在与其它渠道走同一套地址判据与 30 秒超时。
-- **导入分享时的下载补上了地址判据**：导入别人分享的会话产物时，服务端会先检查产物地址是不是公网地址，不再抓取分享方指定的任意内网地址。
-- **首次个性引导不再卡住**：引导流程在宿主未就绪时会挂起无限等待；现在 5 秒未就绪即明确报错，而不是一直转。
-- **网页端的设备身份对齐了**：此前网页端会把浏览器指纹写进新设备的记录，与桌面端生成的设备身份不一致（计费与权限锚点会分叉）；现在新记录一律由服务端统一生成设备身份。
-- **IM 机器人的交互回执诚实了**：机器人对「已处理过」的交互回执此前无论是否真的处理都回「成功」；现在未处理会明确回「未处理」并记日志，不再吞掉多端并发应答。
+- **加速回合中编辑的消息不再丢失**：此前在加速回合进行中编辑并重发消息，完成通知会被「分支过期」逻辑丢弃，界面永远转圈、取消也报「任务不在运行」。现在编辑重发只认本次重新准备的加速凭据，且在新旧消息的递送竞态里按原子排队处理，旧消息被截断时新消息不会随之丢失。
+- **工作流恢复或修改后任务状态显示正确**：任务卡片里执行者与会话身份的对应关系在恢复、改并发、换模型后保持一致（跟随上游的会话身份语义一并修正）。
+- **群聊里的 @提及识别更准**：提及与反向回复改用严格的公共解析（三端共用同一份模式），Host 来源可核对，不再按松散文本匹配。
+- **额度已满时看得到重置机会入口**：重置机会（含完成的任务带回的余量）不再因「额度已满」被隐藏；完成提示带上剩余机会数。
+- **窗口大小变化时对话不再跳动**：视口尺寸变化时测高与吸底在同一批次内同步提交，不再「先按旧高度吸底、下一帧测高后再跳一次」。
+- **Windows 链接启动应用更安全**：注册为默认协议处理者时，在 URL 位置前插入参数终止符，链接里的特殊字符不会再被拆成 Electron 启动开关（此前可注入调试、GPU 等开关）。
 
 ## 本版尚未验证
 
-- **macOS 构建本版未产出**：runner 排队超时、两个 mac job 被取消；配置与矩阵都在 CI 上（linux/windows 已按同一流水线产出），mac 包形态只能等下一次发布流水线真正跑通后再验证。
-- **内网探测的确认弹窗未在真实桌面/浏览器窗口里逐屏看过**：门控行为有行为测试覆盖，但真实渲染未验证。
-- **导入分享的全链路未跑**：地址判据抽成独立函数单独验证过；从创建分享到导入的完整链路未端到端跑过。
+- **JetBrains/Windows deep-link 加固未在真机验证**：注册表命令行的核对在 Linux 开发环境下无法执行。
+- **内置浏览器的权限弹窗与插件沙箱未在真实 Electron 窗口里逐屏看过**：门控行为有单测覆盖，渲染态与真实 webview attach 未做端到端验证（需要 dev:desktop 联调一轮）。
+- **工作流并发上限的两条界（ceiling 与 limit）语义重构后，与既有钳制行为并存**：两路并存的行为差异由本版回归测试覆盖，长期使用反馈待观察。
+- **GLM HighSpeed 卡片依赖官方服务端下发**：客户端展示与交互已实现，但命中加速的实际下发、到期与节省时长标签的数值未做线上验证。
 
 ---
 
 # English
 
+> Draft — remove the draft line above before release.
+
+## Relationship to official 3.15.1 (this release's baseline)
+
+This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2.0; official announcement 2026-10-12: 11 features + 12 fixes). The entry-by-entry ledger (synced / partially synced / intentionally not synced / not applicable) is in the v3.15.1 section of `docs/development/upstream-sync.md`.
+
+- **Landed**: F2 (HighSpeed client side), F3 (dangerous-command confirmation), F4 (visualization surface), F5 (UI plugins / MCP App — contract, desktop host, UI surface and service bridge), F6/F7 (in-run concurrency adjustment, save-and-rerun chain, per-subagent model), F9 (embedded-browser permission governance), F10 (Linux close-to-tray), F11 (account menu plan + copy user ID), X1/X2/X3/X4/X5/X6/X8/X9/X11/X12, plus the corrupt-OAuth-session cleanup tolerance from upstream's closed-source 3.15.3 (A2).
+- **Partially synced (deferred to the next round)**: the F6 render-layer discrimination (station-observation trade-off) and the pre-create settings UI; the F8 service wave (Feishu group/topic service methods and state machine — the UI was rolled back to a zero-partial-integration state and kept).
+- **Intentionally not ported**: F1 "invite friends" is an official server-side campaign (zero payload in the open-source repository); the server-side parts of F2/F8 (lottery weights, group broadcast state machine); upstream 3.15.3's closed-source update-exit state machine and signer guards (CE has no corresponding link or component — rationale in the upstream-sync v3.15.1 section).
+
 ## New features
 
-- **macOS builds are ready but not in this release**: the build matrix and ad-hoc signing configuration are live, but GitHub's macOS runner queue timed out at release time and both mac builds were cancelled — **there are no macOS installers in this release**. macOS users should build from source (`docs/development/`) or wait for the next version, which will ship .dmg/.zip (on first launch choose "Open anyway" in the Gatekeeper prompt, or run `xattr -dr com.apple.quarantine <app>`; automatic updates stay off on macOS).
-- **Intranet probing now asks first**: "probe a LAN service" (TCP targets) now confirms each target with a dialog showing the real host and port before connecting; repeated probes of the same target in one session do not ask again. The server no longer contacts unconfirmed intranet addresses.
+- **Dangerous commands now ask before executing in autonomous mode**: dangerous operations (deletions, overwriting key files, privileged actions) prompt a confirmation explaining what will run and why it was classified as dangerous; confirmation granularity is configurable. This coexists with the existing dangerous-command policy without changing current interactions.
+- **The message stream can render visualization surfaces directly**: `::visualize` references in assistant output now project into a bounded desktop sandbox page (gen-ui) instead of leaving only a file link; duplicate HTML preview cards are deduplicated. These pages share the same admission and eviction mechanism as MCP application pages.
+- **UI plugins (MCP App) are supported**: MCP applications can ship a UI — plugin pages run in an isolated sandbox, request permissions by declaration (camera/microphone/geolocation require confirmation, clipboard-write allowed by declaration, macOS goes through system authorization), and tool calls / resource subscriptions are lease-referenced; the plugin manifest-vs-actually-distributed surface was reconciled in this release. Undeclared permission requests are denied.
+- **The embedded browser now has site permission management**: sensitive capabilities — camera, microphone, clipboard read, geolocation, notifications, MIDI, devices, screen sharing — are **no longer auto-approved**: each requires your decision (allow on this site / allow once / deny; 20 s timeout counts as deny), with device pickers for device-type permissions. Consent is persisted per site, viewable and clearable in Settings → "Site permissions", and cleared together with browser data. Unknown permission enums are denied outright, so new Electron permissions cannot silently grant access.
+- **Closing the window on Linux can now keep the app in the system tray**: Linux reaches parity with Windows' close-to-tray (when enabled and a tray is available, closing hides to tray). Tray availability is detected via StatusNotifier support; when unavailable the setting is disabled and the existing confirm-quit path is used (you never lose control). GNOME-style desktops without AppIndicator get an install hint. The tray context menu's "clear all data" became "export logs" (no longer exposing destructive cleanup from the tray).
+- **The account menu shows your plan and copies your user ID**: the account menu footer shows the current plan badge and user ID; a one-click copy for support tickets (failures are reported clearly).
+- **Workflows support in-run concurrency adjustment, save-and-rerun, and per-subagent models**: the confirmation pane adjusts a running workflow's concurrency cap and the model used by individual subagents (floor / back to default / session model, three-state semantics); saved workflows can be rerun directly; the per-run record honestly shows which model each subagent actually used. The pre-create settings UI and the discrimination of some workflow rendering are still being followed up (see the maintainer ledger).
+- **GLM HighSpeed card UI (client side)**: an accelerated turn shows a purple animated card with activation effect, expiry clock and remaining time saved; the card is shareable. Acceleration context resumes (not replays) when switching away and back; once a card expires, ordinary output is no longer styled as accelerated. Issuance and the lottery are official server-side; this release contains only the client presentation and interaction.
 
 ## Improvements
 
-- **The macOS update hint was reworded**: "Check for updates" now points to the unsigned installers on GitHub Releases (the previous wording pointed at building from source — there were no installers back then).
-- **Spreadsheet formulas are checked before delivery**: before delivering a spreadsheet with formulas, the environment now states whether recalculation is available; when it is not (as in this build), the reply explicitly says "cached values were not recalculated in this build" instead of passing cached values off as freshly computed.
-- **Feishu bot long-connection memory stabilized**: the display-name cache grew without bound; expired entries are now evicted on write.
+- **Update checks resume automatically after a download failure**: a failed download — or a completed download superseded by a newer version — triggers a fresh check instead of waiting for a manual click; rechecks queued during an in-flight check run once it settles. Polling cadence is now 15 min with no target and 2 min with a visible update target; a discovered update target is no longer flickered away or cleared by intermediate states.
+- **Opening local files from the embedded browser works again**: `file:` links are handed to the system default app (reusing the existing path-opener) instead of `shell.openExternal`, which is a no-op for the file scheme on many platforms.
+- **Startup uses less memory with multiple workspaces**: warm-up narrowed from the 3 most-recent workspaces to just the active one — CLI sessions have no idle reaping, so 3 resident processes per window did not pay off; recent-project cold starts are covered by on-demand loading.
+- **Login recovery is more robust**: when refreshing derived providers after a corrupt OAuth session cleanup fails, the cleanup itself no longer errors out (previously the settings page showed "connection plan failed, please log in again"); failures are captured in a dedicated log domain for diagnosis.
 
 ## Fixes
 
-- **A background task no longer stays "running" forever after editing and resending a message**: when a message was edited while a background task was running, the completion notification was silently dropped by the branch-expiry logic, leaving the UI spinning and cancel reporting "task not running". Surviving tasks now receive their completion notifications and cancel works.
-- **Creating an automation no longer overwrites a session title you named manually**: the title is frozen only when it was not manually set.
-- **WeChat-channel attachment downloads are now guarded**: attachments arriving via the WeChat bot callback used to be fetched directly from whatever URL the callback carried (bypassing the public-address restriction and any timeout); they now go through the same address check with a 30-second timeout.
-- **Share imports now check artifact addresses**: when importing a shared session artifact, the server first verifies the address is a public one instead of fetching whatever URL the sharing side specified.
-- **First-run onboarding no longer hangs**: if the host is not ready, the flow fails clearly after 5 seconds instead of spinning forever.
-- **Web client device identity is now consistent**: the web client used to write a browser fingerprint into new device records, diverging from the device identity generated by the desktop side (billing and permission anchors disagreed). New records now get their device identity from the server.
-- **IM bot interaction receipts are honest**: an "already handled" reply used to claim success regardless of whether it was actually handled; unhandled now returns "not handled" with a log entry, without breaking concurrent replies from other endpoints.
+- **Edited messages no longer get lost during accelerated turns**: previously, editing and resending a message while an accelerated turn was running had its completion notification dropped by the branch-expiry logic, leaving the UI spinning and cancel reporting "task not running". The edit-resend now only accepts the freshly prepared acceleration credential, and the delivery race between old and new messages is queued atomically, so a truncated old message no longer takes the new one with it.
+- **Task status is correct after workflow restore or modification**: the executor-to-session mapping stays consistent across restore, concurrency changes and model switches (fixed together with the upstream session-identity semantics).
+- **@mentions in group chats are recognized correctly**: mentions and reply notifications use a strict shared parser (one schema across all three ends) with verifiable host provenance, instead of loose text matching.
+- **Quota-reset opportunities are visible when quota is exhausted**: remaining opportunities (including those brought back by completed runs) are no longer hidden behind the "quota full" state; completion notices carry the remaining count.
+- **The conversation no longer jumps when the window is resized**: height measurement and stick-to-bottom now commit in the same synchronous batch, instead of "sticking with stale heights first and jumping again after the next frame's measurement".
+- **Launching the app from a link on Windows is safer**: when registering as the default protocol handler, an argument terminator is inserted before the URL position, so special characters in links can no longer be split into Electron launch switches (which previously allowed injecting debug/GPU flags).
 
 ## Not yet verified in this version
 
-- **macOS builds were not produced in this version**: the runner queue timed out and both mac jobs were cancelled; the configuration and matrix are in CI (linux/windows shipped via the same pipeline), and the packaged-mac experience can only be validated once a release pipeline actually completes the mac jobs.
-- **The intranet-probe confirmation dialog has not been seen in a real desktop/browser window**: the gating behavior is covered by behavior tests, but the rendered dialog was not verified end to end.
-- **The full share-import chain was not run**: the address check is factored out and tested on its own; the end-to-end path from creating a share to importing it was not executed.
+- **The Windows deep-link hardening was not verified on a real Windows machine**: registry command-line inspection cannot run from a Linux dev environment.
+- **The embedded-browser permission prompts and the plugin sandbox have not been seen in a real Electron window**: gating behavior is unit-tested; rendered state and real webview attach were not verified end to end (needs a dev:desktop pass).
+- **After the workflow concurrency two-bounds (ceiling vs limit) rework, the new semantics coexist with the existing clamp behavior**: the differences are covered by this release's regression tests; long-term behavior under real use remains to be seen.
+- **The GLM HighSpeed cards depend on official server-side issuance**: the client presentation and interaction are implemented, but actual accelerated delivery, expiry and the remaining-time labels were not verified against the live service.

@@ -318,6 +318,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - @modelcontextprotocol/core@2.0.0 — MIT
 
+- @modelcontextprotocol/ext-apps@2.0.0 — MIT
+
 - @modelcontextprotocol/sdk@1.29.0 — MIT
 
 - @modelcontextprotocol/server@2.0.0 — MIT
@@ -2554,6 +2556,52 @@ The original import revisions of copied components are not recorded in the curre
 
 - ZCode Bot Management UI (Z.ai) (Apache-2.0): packages/ui/src/BotsDialog.tsx, packages/ui/src/BotsDialog, packages/ui/src/botsUi.ts, packages/ui/src/assets/channel-icons. License reference: https://raw.githubusercontent.com/zai-org/ZCode/29628c9acdb81b703bbd4080c207a0e7ce5e276e/LICENSE. Original import revision: 29628c9acdb81b703bbd4080c207a0e7ce5e276e.
 
+- ZCode MCP Apps contract v3.15.1 (Z.ai) (Apache-2.0): packages/shared/src/mcp-apps. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode MCP UI protocol v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/bootstrap/src/zcode-protocol/mcp-ui. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode workflow protocol v4 drift v3.15.1 (Z.ai) (Apache-2.0): packages/shared/src/zcode-protocol-v4. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode shared protocol closure v3.15.1 (Z.ai) (Apache-2.0): packages/shared/src/channel-mention.ts, packages/shared/src/attachment-source.ts, packages/shared/src/conversationSelection.ts, packages/shared/src/highspeed.ts, packages/shared/src/subagent-profile.ts, packages/shared/src/subagent-runtime-config.ts, packages/shared/src/model-execution.ts, packages/shared/src/zcode-protocol/trace.ts, packages/shared/src/bots.ts, packages/shared/src/execution-state.ts, packages/shared/src/task-realtime-core.ts, packages/shared/src/zcode-agent-model-state.ts, packages/shared/src/zcode-protocol-legacy-types.ts, packages/shared/src/zcode-task-mode-schema.ts, packages/shared/src/zcode-task-types-core.ts, packages/shared/src/zcode-agent-policy.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol/plugin-ui-surfaces.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol/topic-resource-port.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol/fork-model-selection.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol/saved-workflows-run.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol/workflow-settings-answer.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode guarded command handlers v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/core/src/tool/handlers/guarded, apps/zcode-cli/packages/core/src/tool/handlers/bash.ts, apps/zcode-cli/packages/core/src/tool/types.ts, apps/zcode-cli/packages/core/src/permission/service.ts, apps/zcode-cli/packages/core/src/permission/broker.ts, apps/zcode-cli/packages/core/src/tool/handlers/bash-command-parser.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode workflow settings adjustment v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/core/src/tool/handlers/workflow-settings-adjustment.ts, apps/zcode-cli/packages/core/src/tool/executor/permission-input-adjustments.ts, apps/zcode-cli/packages/core/src/tool/executor/permission-flow.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode fork-edit-retry X1 port v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/fork-edit-retry.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/canonical-intent-replay.ts, apps/zcode-cli/packages/core/src/runtime/methods/prompt-admission.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode MCP app consumer v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/core/src/mcp/app-tools.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/mcp-elicitation.ts, apps/zcode-cli/packages/contracts/src/interfaces/mcp.port.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode plugin sandbox desktop host v3.15.1 (Z.ai) (Apache-2.0): packages/desktop/src/main/pluginSandbox, packages/desktop/src/renderer/src/plugin-sandbox, packages/desktop/src/preload/pluginSandbox, packages/desktop/src/renderer/plugin-sandbox.html, packages/desktop/src/main/index.ts, packages/desktop/src/main/autoUpdater.ts, packages/desktop/src/main/desktopOAuthDeepLink.ts, packages/desktop/src/main/desktopMainIpcHelpers.ts, packages/desktop/src/main/desktopMainIpcRemote.ts, packages/desktop/src/main/startupWorkspace.ts, packages/desktop/src/host/index.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode shared platform & channels v3.15.1 (Z.ai) (Apache-2.0): packages/shared/src/platform.ts, packages/shared/src/channels.ts, packages/shared/src/validation.ts, packages/shared/src/protocol.ts, packages/shared/src/validationAppSettings.ts, packages/shared/src/index.ts, packages/shared/src/test-ids.ts, packages/shared/src/gen-ui. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode services gen-ui & plugin-ui bridge v3.15.1 (Z.ai) (Apache-2.0): packages/services/src/gen-ui, packages/services/src/plugin-ui-bridge, packages/shared/src/node/genUiPaths.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode services gen-ui/plugin-ui wiring v3.15.1 (Z.ai) (Apache-2.0): packages/services/src/zcode-agent/zcodeAgent.ts, packages/services/src/zcode-agent/zcodeAgentService.ts, packages/services/src/zcode-agent/zcodeAgentPluginParams.ts, packages/services/src/node.ts, packages/services/src/accessor.ts, packages/services/src/index.ts, packages/shared/src/node.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode protocol follow-up extensions v3.15.1 (Z.ai) (Apache-2.0): apps/zcode-cli/packages/bootstrap/src/zcode-protocol/server-operations.ts, apps/zcode-cli/packages/core/src/runtime/types.ts, apps/zcode-cli/packages/bootstrap/src/app/types.ts, apps/zcode-cli/packages/contracts/src/interfaces/session.port.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/types.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/prompt-turn.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/input-intent.ts, apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/product-projection.ts, apps/zcode-cli/packages/tui/src/app-workflow-mirror.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode embedded browser permission governance v3.15.1 (Z.ai) (Apache-2.0): packages/desktop/src/main/embeddedBrowserPermissionPolicy.ts, packages/desktop/src/main/embeddedBrowserSitePermissions.ts, packages/desktop/src/main/embeddedBrowserSitePermissionStore.ts, packages/desktop/src/main/embeddedBrowserPermissionUiBridge.ts, packages/desktop/src/main/embeddedBrowserDeviceOptions.ts, packages/desktop/src/main/embeddedBrowserBluetoothGuard.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode Linux close-to-tray v3.15.1 (Z.ai) (Apache-2.0): packages/desktop/src/main/desktopTraySupport.ts, packages/desktop/src/main/desktopTray.ts, packages/desktop/src/main/desktopWindowLifecycle.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode HighSpeed card UI v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/highspeed, packages/ui/src/v4/highspeed, packages/ui/src/assets/highspeed, packages/ui/src/components/ui/floating-particles.tsx, packages/ui/src/global-notice/globalNoticeStore.ts, packages/ui/src/v4/conversationTurnRenderUnits.ts, packages/ui/src/v4/conversationTurnRenderUnitTypes.ts, packages/ui/src/v4/ConversationFileSummaryPanel.tsx, packages/ui/src/v4/useAssistantPreviewCardsForRow.ts, packages/ui/src/lib/assistantDirectiveParser.ts, packages/ui/src/v4/ConversationTurnGroup.tsx, packages/ui/src/v4/conversationRowContext.ts, packages/ui/src/v4/ConversationRowView.tsx. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode quota reset entry v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/lib/codingPlanQuotaResetUi.ts, packages/ui/src/hooks/useCodingPlanQuotaResetUi.ts, packages/ui/src/components/coding-plan-quota-reset/CodingPlanQuotaResetDialog.tsx, packages/ui/src/components/coding-plan-quota-reset/buildCodingPlanQuotaResetDialogConfig.ts, packages/ui/src/chat-input-toolbar/codingPlanResetOpportunityBadge.ts, packages/ui/src/chat-input-toolbar/CodingPlanContextUsage.tsx, packages/ui/src/settings/usage-stats/CodingPlanUsagePanel.tsx. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode plugin-ui domain v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/plugin-ui. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode gen-ui visualization chain v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/gen-ui. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode embedded browser UI v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/browser-use, packages/ui/src/store/embeddedBrowserPermissionStore.ts, packages/ui/src/hooks/useBrowserSitePermissions.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode UI adapted fragments v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/settings/model-provider-section/StatusCards.tsx, packages/ui/src/v4/ConversationTimeline.tsx, packages/ui/src/WorkspaceSidebarFooter.tsx, packages/ui/src/i18n/locales/zh-CN.ts, packages/ui/src/i18n/locales/en-US.ts, packages/ui/src/v4/WorkflowNotificationToolRow.tsx, packages/ui/src/components/workflow-timeline/subagent-model-label.ts, packages/ui/src/ToolCallBlocks/fileSummaryTypes.ts, packages/ui/src/app-shell/animatedSidePanePanelModel.ts, packages/ui/src/v4/SessionPane.tsx, packages/ui/src/app-shell/SubagentSessionSidePane.tsx, packages/ui/src/v4/conversationProjectionStore.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode bots broadcast infrastructure v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/root/botsTaskBroadcast.ts, packages/ui/src/root/botsTaskStreamBroadcast.ts, packages/ui/src/root/useBotBroadcastEffects.ts, packages/ui/src/lib/zcodeTaskUsageFallback.ts, packages/ui/src/lib/taskListMetaSync.ts, packages/ui/src/store/taskQueryCacheStore.ts. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
+- ZCode workflow save-and-rerun chain v3.15.1 (Z.ai) (Apache-2.0): packages/ui/src/store/workflowRunSavedStore.ts, packages/ui/src/hooks/useWorkflowRunSave.ts, packages/ui/src/v4/savedWorkflowHubContext.tsx. License reference: https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE. Original import revision: aac4755666d09fdcd70272fcf063c077a639015f.
+
 Fig autocomplete source carries the repository's MIT license; the generated registry records npm @withfig/autocomplete@2.692.3 metadata as ISC. The original source MIT notice is retained below.
 
 ## Embedded native and WASM components
@@ -4668,6 +4716,8 @@ SOFTWARE.
 - @modelcontextprotocol/client@2.0.0: LICENSE
 
 - @modelcontextprotocol/core@2.0.0: LICENSE
+
+- @modelcontextprotocol/ext-apps@2.0.0: LICENSE
 
 - @modelcontextprotocol/server@2.0.0: LICENSE
 
@@ -40833,6 +40883,52 @@ SOFTWARE.
 - ZCode Bot Channel (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/29628c9acdb81b703bbd4080c207a0e7ce5e276e/LICENSE
 
 - ZCode Bot Management UI (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/29628c9acdb81b703bbd4080c207a0e7ce5e276e/LICENSE
+
+- ZCode MCP Apps contract v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode MCP UI protocol v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode workflow protocol v4 drift v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode shared protocol closure v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode guarded command handlers v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode workflow settings adjustment v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode fork-edit-retry X1 port v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode MCP app consumer v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode plugin sandbox desktop host v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode shared platform & channels v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode services gen-ui & plugin-ui bridge v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode services gen-ui/plugin-ui wiring v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode protocol follow-up extensions v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode embedded browser permission governance v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode Linux close-to-tray v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode HighSpeed card UI v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode quota reset entry v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode plugin-ui domain v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode gen-ui visualization chain v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode embedded browser UI v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode UI adapted fragments v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode bots broadcast infrastructure v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
+
+- ZCode workflow save-and-rerun chain v3.15.1 (Z.ai): https://raw.githubusercontent.com/zai-org/ZCode/aac4755666d09fdcd70272fcf063c077a639015f/LICENSE
 
 
 

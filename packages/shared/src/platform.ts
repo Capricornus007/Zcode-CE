@@ -24,6 +24,11 @@ import type {
   WebRemoteControlWorkspaceTarget,
 } from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type { ArmsCustomEventPayload, RendererTelemetryEventPayload } from "./telemetry.js";
+import type {
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
+} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CuaAccessibilitySettingsResult,
@@ -577,7 +582,7 @@ export interface ConnectRemoteRequest {
   requestId?: string;
   workspacePath?: string;
   workspaceIdentity?: string;
-  connectTrigger?: RemoteWorkspaceConnectTrigger;
+  connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
 }
 
 export interface CancelPendingRemoteConnectionRequest {
@@ -720,7 +725,7 @@ export interface IPlatformService {
     context?: {
       workspacePath: string;
       workspaceIdentity?: string;
-      connectTrigger?: RemoteWorkspaceConnectTrigger;
+      connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
     },
   ): Promise<{ success: boolean; error?: string; sessionId?: string }>;
 
@@ -849,6 +854,20 @@ export interface IPlatformService {
   /** 触发任务状态对应的系统通知，由宿主环境决定是否真正展示 */
   showTaskNotification(payload: TaskNotificationPayload): void;
 
+  /** 通过宿主环境统一上报 UI 侧 telemetry 事件 */
+  reportTelemetryEvent(payload: RendererTelemetryEventPayload): Promise<void>;
+
+  /** 通过宿主环境上报 ARMS 自定义事件；Web 端当前为空实现 */
+  reportArmsCustomEvent(payload: ArmsCustomEventPayload): Promise<void>;
+
+  /** 读取 Desktop Renderer 用户操作 Trace 的当前灰度配置；Web/手机不实现。 */
+  getRendererActionTraceConfig?(): Promise<RendererActionTraceConfigV1>;
+  /** 订阅 Main 推送的 Renderer 用户操作 Trace 配置；Web/手机不实现。 */
+  onRendererActionTraceConfigChanged?(
+    callback: (config: RendererActionTraceConfigV1) => void,
+  ): () => void;
+  /** Renderer → Main：发送已结束的 ui_action batch；严格旁路、fire-and-forget。 */
+  reportRendererActionTraceBatch?(batch: RendererActionTraceBatchV1): void;
   reportLocalTtftBatch?(batch: import("./localTtft.js").LocalTtftBatch): void;
 
   /**

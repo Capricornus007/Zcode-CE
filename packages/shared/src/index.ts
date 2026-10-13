@@ -1,3 +1,10 @@
+export { cloudContentPayloadSchema, contentBundleSchema } from "./cloudContent.js";
+export * from "./networkCapture.js";
+export type {
+  CloudContentPayload,
+  CloudContentBundle,
+  CloudContentHeroType,
+} from "./cloudContent.js";
 export type {
   FileBinaryPreview,
   FileEntry,
@@ -30,7 +37,7 @@ export type { WorkspacePurpose } from "./workspacePurpose.js";
 export { DEFAULT_LOCALE } from "./protocol.js";
 export { ZCODE_VERSION, ZCODE_COMMIT, ZCODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
-export type { ZCodeEnv, ZCodeProductFlavor } from "./env.js";
+export type { ArmsRumEnv, ZCodeEnv, ZCodeProductFlavor } from "./env.js";
 export type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 export type {
   RemoteResourcePackageId,
@@ -39,6 +46,7 @@ export type {
 export type {
   DockerConnectOptions,
   RemoteTarget,
+  ServerConnectOptions,
   SSHConnectOptions,
   WSLConnectOptions,
 } from "./remoteTarget.js";
@@ -65,14 +73,15 @@ export {
   ZCODE_APP_VERSION_ENV,
   ZCODE_BUILD_COMMIT_ID_ENV,
   RUNTIME_ZCODE_DEBUG,
+  ZCODE_ARMS_RUM_ENDPOINT,
+  ZCODE_TELEMETRY_REPORT_ENDPOINT,
+  ZCODE_AUTO_UPDATE_ENABLED,
+  mapZCodeEnvToArmsRumEnv,
   normalizeZCodeEnv,
   normalizeZCodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
-// 危险命令清单：工具与权限策略页与 core 的 Bash 授权判据共用的唯一真相源。
-export * from "./dangerousCommands.js";
-export type { SessionCreateSource } from "./sessionCreateSource.js";
-export { resolveSafeEndpointHostname } from "./endpointHostname.js";
+export * from "./rendererActionTrace.js";
 export * from "./validation.js";
 export * from "./api.js";
 export * from "./zcode-protocol/index.js";
@@ -91,6 +100,7 @@ export * from "./conversation-message-projection-policy.js";
 export * from "./conversation-share.js";
 export * from "./conversation-preview-artifacts.js";
 export * from "./zcode-session-task-status.js";
+export * from "./zcode-session-content-profile.js";
 export * from "./zcode-tool-projection-memory.js";
 export * from "./zcode-slash-command-help.js";
 export * from "./zcodeEndpoint.js";
@@ -105,7 +115,6 @@ export * from "./dynamic-workflow-feature.js";
 export * from "./markdown-artifact-images.js";
 export * from "./serviceAuthority.js";
 export * from "./server-remote.js";
-export * from "./workspace-registry.js";
 
 export interface ICredentialStore {
   get(key: string): Promise<string | null>;
@@ -124,7 +133,6 @@ export * from "./e2e-test-bridge.js";
 export * from "./remoteAppConfig.js";
 export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
-export * from "./remoteAssetCdn.js";
 export * from "./onboardingRecord.js";
 export * from "./remoteResourcePackages.js";
 export * from "./plan-identity.js";
@@ -135,22 +143,44 @@ export {
   DesktopCommandIds,
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
-  // 这三个窗口控件/缩放类型定义在 platform.ts，但开源版具名导出名单漏了它们，
-  // 导致 preload 与 client/globals.d.ts 从公开入口导入时报 TS2305。纯类型，无运行时影响。
-  type DesktopZoomState,
-  type WindowControlsOverlayMetrics,
-  type WindowControlsOverlayReadyPayload,
 } from "./platform.js";
-// 遥测已全部移除（P1）：以下模块与其全部导出已删除 ——
-//   telemetry.ts（埋点载荷/脱敏上下文）、telemetryRedaction.ts（上报文本脱敏）、
-//   remoteUsageTelemetry.ts（远端用量事件构造）、sessionCreateTelemetry.ts（会话创建事件 schema）、
-//   rendererActionTrace.ts（renderer 行为 trace 协议）。
-// 注意：RemoteWorkspaceConnectTrigger 是 connectRemote 的业务协议字段，已迁至 platform.ts 保留。
+export type {
+  ArmsCustomEventPayload,
+  ConfigureFinalArmsCustomEventE2ERequest,
+  FinalArmsCustomEventE2EEntry,
+  FinalArmsCustomEventPayload,
+  RendererTelemetryEventPayload,
+  TelemetryEventPayload,
+  TelemetryRendererContext,
+} from "./telemetry.js";
+export {
+  collectTelemetryRendererContext,
+  resolveSafeTelemetryHostname,
+  sanitizeTelemetryErrorMessage,
+  sanitizeTelemetryEventDetail,
+} from "./telemetry.js";
+export type {
+  RedactTelemetryTextOptions,
+  TelemetryProviderIdentity,
+  TelemetryProviderScope,
+} from "./telemetryRedaction.js";
+export {
+  TELEMETRY_SAFE_BUILTIN_MODEL_IDS,
+  TELEMETRY_TEXT_MAX_LENGTH,
+  redactTelemetryText,
+  redactTelemetryUrl,
+  resolveTelemetryModelId,
+  resolveTelemetryProviderScope,
+  sanitizeTelemetryModelValue,
+} from "./telemetryRedaction.js";
+export * from "./remoteUsageTelemetry.js";
+export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
 export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
 export type {
   CancelPendingRemoteConnectionRequest,
   BindRemoteWorkspaceSessionContextRequest,
+  BotRemoteWorkspaceReconnectedEvent,
   BrowserTabResidencyState,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
@@ -162,19 +192,19 @@ export type {
   BrowserViewScreenshotSurfacePreparePayload,
   BrowserViewScreenshotSurfaceReadyPayload,
   BrowserViewScreenshotSurfaceReleasePayload,
-  // desktop main 的 browserScreenshotSurfaceContracts 需要它；补进具名导出名单（纯类型）。
-  BrowserViewSurfaceScaleMode,
   BrowserViewViewportChangedPayload,
   ChromeBrowserDataImportError,
   ChromeBrowserDataImportOptions,
   ChromeBrowserDataImportResult,
   ConnectRemoteRequest,
-  RemoteWorkspaceConnectTrigger,
   CreateTempTextAttachmentRequest,
   CreateTempTextAttachmentResult,
+  MaterializeWorkflowArtifactFileRequest,
+  MaterializeWorkflowArtifactFileResult,
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
+  DesktopCloseToTrayCapability,
   DesktopCommandId,
   CuaOsSupport,
   DesktopWindowChromeState,
@@ -188,6 +218,14 @@ export type {
   BrowserGuestAttachResult,
   EmbeddedBrowserDataClearResult,
   EmbeddedBrowserOpenUrlRequest,
+  EmbeddedBrowserPermissionDeviceOption,
+  EmbeddedBrowserPermissionPromptEvent,
+  EmbeddedBrowserPermissionResolution,
+  EmbeddedBrowserPermissionResolveRequest,
+  EmbeddedBrowserPermissionScreenOption,
+  EmbeddedBrowserSitePermissionResetRequest,
+  EmbeddedBrowserSitePermissionUpdateRequest,
+  EmbeddedBrowserSitePermissionsSnapshot,
   IPlatformService,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
@@ -195,17 +233,6 @@ export type {
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
   RemoteServiceSession,
-  WebServiceConnectionInfoPayload,
-  WebServiceStatusErrorCode,
-  WebServiceStatusPayload,
-  WebServiceStatusStaleReason,
-  WebServiceStatusState,
-  RemoteControlConnection,
-  RemoteControlConnectionRole,
-  RemoteControlConnectionsPayload,
-  RemoteControlRevokeRequest,
-  RemoteControlRevokeResult,
-  RemoteControlRotateTokenResult,
   SSHConfigAliasOption,
   TaskNotificationPayload,
   UpdateCheckResultPayload,
@@ -238,7 +265,6 @@ export * from "./custom-model-value.js";
 export * from "./model-selection-types.js";
 export * from "./model-selection-key.js";
 export * from "./model-selection.js";
-export * from "./model-catalog.js";
 export * from "./legacy-model-provider-identity.js";
 export * from "./official-glm-model-id.js";
 export * from "./skills-types.js";
@@ -258,7 +284,7 @@ export * from "./process-names.js";
 export * from "./mcp.js";
 export * from "./runtime-tool-runtime.js";
 export * from "./git.js";
-export * from "./githubMirror.js";
+export * from "./bots.js";
 export * from "./assistant-message-parts.js";
 export * from "./zcodePersistedMessageMerge.js";
 export * from "./assistant-presentation.js";
@@ -267,31 +293,26 @@ export * from "./tool-identity.js";
 export * from "./streaming-tool-input-preview.js";
 export * from "./tool-plan-adapter.js";
 export * from "./permission-request-preview.js";
+export * from "./web-remote-control.js";
+export * from "./web-remote-control-heartbeat.js";
+export * from "./web-remote-control-rpc-transport.js";
 export * from "./settings-sync.js";
 export * from "./uuid.js";
 export * from "./usage-stats.js";
 export * from "./coding-plan-subscription.js";
-// ManualClaim* 由 manual-claim-plan.ts 权威导出；此处显式排除避免 export * 歧义（TS2308）。
-export type {
-  ManualClaimPlanPreview,
-  ManualClaimPlanClaimRequest,
-  ManualClaimPlanEntitlement,
-} from "./manual-claim-plan.js";
-// 手动领取（周末/体验套餐）claim 平面协议类型：与购买链路分离，单独 barrel 导出。
-export * from "./manual-claim-plan.js";
 export * from "./forceUpdate.js";
 export * from "./intranetProbe.js";
 export * from "./intranetDefaults.js";
 export * from "./hooks.js";
+export * from "./memory.js";
+export * from "./output-style.js";
 export * from "./openrouter-attribution.js";
 export * from "./workspaceSessionRestore.js";
 export * from "./skill-scan-policy.js";
-// Bot Channel（IM 机器人）共享合约。搬运自官方 v3.14.3（MIT），见
-// docs/development/official-diff.md 与 third-party/copied-components.json。
-export * from "./bots.js";
 export * from "./browser-use/index.js";
 
 export * from "./coding-plan-reset.js";
+export * from "./highspeed.js";
 export {
   parseSubagentMarkdownSelection,
   formatSubagentMarkdownModel,
@@ -303,42 +324,20 @@ export * from "./execution-state.js";
 
 export { bashOutputDisplaySchema } from "./bash-output-display.js";
 
+export * from "./subagent-runtime-config.js";
+
+export * from "./subagent-profile.js";
+export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
+
 export * from "./localTtft.js";
 export * from "./pluginStoreOrder.js";
 export * from "./clientConfig.js";
 export * from "./pluginStoreOrdering.js";
-export * from "./session-debug.js";
-// ---- 官方 3.15.1 增量 barrel（整版升级移植）----
-export * from "./attachment-source.js";
-export * from "./channel-mention.js";
-export * from "./conversationSelection.js";
-export * from "./highspeed.js";
 export * from "./marketingTouch.js";
-export * from "./memory.js";
-export * from "./networkCapture.js";
-export * from "./output-style.js";
-export * from "./remoteUsageTelemetry.js";
-// rendererActionTrace 属 CE 移除的遥测面，不导出（文件已删）
-export * from "./request-security-edition/verification-policy.js";
-export * from "./rewardsBridge.js";
 export * from "./rewardsEmbedded.js";
-export * from "./sessionCreateTelemetry.js";
-export * from "./subagent-profile.js";
-export * from "./subagent-runtime-config.js";
-export * from "./web-remote-control.js";
-export * from "./web-remote-control-heartbeat.js";
-export * from "./web-remote-control-rpc-transport.js";
-export * from "./zcode-session-content-profile.js";
+export * from "./rewardsBridge.js";
+export * from "./session-debug.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
-
-// ---- 官方 3.15.1 增量导出（整版升级移植）----
-export { cloudContentPayloadSchema, contentBundleSchema } from "./cloudContent.js";
-export * from "./networkCapture.js";
-export type {
-  CloudContentPayload,
-  CloudContentBundle,
-} from "./cloudContent.js";
-export { parseAgentProfileFromMarkdown } from "./subagent-profile-parser.js";
 export { API_KEY_USAGE_SCENE, type ApiKeyCreationUsageScene } from "./api-key-usage-scene.js";
 export {
   projectAccessTokenFingerprint,
@@ -349,18 +348,30 @@ export {
   type ProjectAccessTokenInput,
   type ProjectAccessTokenMaterial,
 } from "./project-access-token-client.js";
-export { ZCODE_TELEMETRY_REPORT_ENDPOINT } from "./env.js";
+
+export * from "./conversationSelection.js";
+export * from "./attachment-source.js";
+
+export * from "./channel-mention.js";
+
 export {
-  type FinalArmsCustomEventE2EEntry,
-  type FinalArmsCustomEventPayload,
-  type RendererTelemetryEventPayload,
-  type TelemetryEventPayload,
-  type TelemetryRendererContext,
-} from "./telemetry.js";
-export {
-  collectTelemetryRendererContext,
-  resolveSafeTelemetryHostname,
-  sanitizeTelemetryErrorMessage,
-  sanitizeTelemetryEventDetail,
-} from "./telemetry.js";
-export { getCapturedZCodeAgentTelemetryEnv } from "./runtimeEnv.js";
+  requestSecuritySensitiveHeaders,
+  isRequestSecurityFailure,
+} from "./request-security-edition/policy.js";
+export * from "./request-security-edition/verification-policy.js";
+
+// ---- CE 线增量导出（整版升级移植保留面）----
+export * from "./dangerousCommands.js";
+export { resolveSafeEndpointHostname } from "./endpointHostname.js";
+export * from "./githubMirror.js";
+// ManualClaim* 由 manual-claim-plan.ts 权威导出；此处显式排除避免 export * 歧义（TS2308）。
+export type {
+  ManualClaimPlanPreview,
+  ManualClaimPlanClaimRequest,
+  ManualClaimPlanEntitlement,
+} from "./manual-claim-plan.js";
+export * from "./manual-claim-plan.js";
+export * from "./model-catalog.js";
+export * from "./remoteAssetCdn.js";
+export type { SessionCreateSource } from "./sessionCreateSource.js";
+export * from "./workspace-registry.js";

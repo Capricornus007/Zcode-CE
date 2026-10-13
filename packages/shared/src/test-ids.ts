@@ -125,6 +125,16 @@ export const TID_BROWSER_OPEN_EXTERNAL_ITEM = "browser-open-external-item";
 export const TID_BROWSER_DEVTOOLS_BUTTON = "browser-devtools-button";
 /** 浏览器网页视图 */
 export const TID_BROWSER_WEBVIEW = "browser-webview";
+// Modified by ZCode: 增量自上游 aac47556（F9 权限确认条 test ids，三方合并入本仓自研文件）。
+/** 内置浏览器权限确认条容器 */
+export const TID_BROWSER_PERMISSION_PROMPTS = "browser-permission-prompts";
+/** 权限确认条「仅本次允许」按钮 */
+export const TID_BROWSER_PERMISSION_ALLOW_ONCE = "browser-permission-allow-once";
+/** 权限确认条「访问此网站时允许」按钮 */
+export const TID_BROWSER_PERMISSION_ALLOW_ALWAYS = "browser-permission-allow-always";
+/** 权限确认条「不允许」按钮（本次拒绝，不记忆） */
+export const TID_BROWSER_PERMISSION_DENY = "browser-permission-deny";
+export const TID_BROWSER_PERMISSION_DISMISS = "browser-permission-dismiss";
 /** 浏览器页面加载失败的可读错误态 */
 export const TID_BROWSER_LOAD_ERROR = "browser-load-error";
 /** 浏览器加载失败错误态里的证书放行指引 */

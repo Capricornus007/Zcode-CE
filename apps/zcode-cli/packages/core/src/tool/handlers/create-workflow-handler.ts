@@ -50,7 +50,7 @@ export const EXECUTION_UNAVAILABLE_NOTE =
 export const createWorkflowHandler: ToolHandler = async (input, context) => {
   // 走到这里输入已经过 resolveInput 归一化：`script` 一定在场，两条来源在此完全同形。
   // `saved` 只是来龙去脉（run 标签兜底与实参持久化读它），执行一个字节都不读它——因此
-  // 一个 hook 若在归一化之后改写 `saved`，是**刻意无效**的，改不了将要跑的东西。
+  // 一个 hook 若在归一化之后改写 `saved`，是刻意无效的，改不了将要跑的东西。
   const parsed = CreateWorkflowInputSchema.parse(input) as CreateWorkflowInput;
   const script = parsed.script;
   if (script === undefined) {
@@ -66,7 +66,7 @@ export const createWorkflowHandler: ToolHandler = async (input, context) => {
   // 确认窗与持久化输出读的是同一份静态分析：中间没有任何模型调用改写名字。
   const causalityGraph = boundGraphOfAnalysis(analysis);
 
-  // 内联脚本的工作副本**无论编译结果如何**都落盘：
+  // 内联脚本的工作副本无论编译结果如何都落盘：
   // 编不过的脚本走不到确认窗，handler 是它唯一必经的地方，不写就等于「唯一需要被编辑的那份
   // 脚本反而没有文件」。分析排在前面只为取名：没有 `name` 时文件名取第一个阶段名，而阶段名
   // 在图上。saved 来源的拷贝已在 resolveInput 里写过，`path` 来源不写。
@@ -93,12 +93,12 @@ export const createWorkflowHandler: ToolHandler = async (input, context) => {
       diagnostics,
       ok,
       response: [
-        // 保存的定义编不过是**它的**问题，不是这次调用的输入问题；不点名文件的话，模型
+        // 保存的定义编不过是它的问题，不是这次调用的输入问题；不点名文件的话，模型
         // 会以为是自己刚才写错了什么，然后原样重试。
         saved === undefined
           ? "The workflow script has errors:"
           : `The saved workflow '${saved.name}'${saved.path === undefined ? "" : ` (${saved.path})`} has errors:`,
-        // 有文件就按**文件行**报（行号要能直接粘进一次 `Edit`）；输出里的 `diagnostics` 数组
+        // 有文件就按文件行报（行号要能直接粘进一次 `Edit`）；输出里的 `diagnostics` 数组
         // 保持正文行不变——转录面画的是正文。
         ...formatWorkflowDiagnosticLines(diagnostics, location),
         "",
@@ -119,7 +119,7 @@ export const createWorkflowHandler: ToolHandler = async (input, context) => {
     } satisfies CreateWorkflowOutput;
   }
 
-  // run 记下的永远是**绝对路径**：它是 run 身份的一部分，而会话的工作目录会变。模型面的写法
+  // run 记下的永远是绝对路径：它是 run 身份的一部分，而会话的工作目录会变。模型面的写法
   // 由 `location.described` 负责（同一个绝对路径的另一种写法，不是另一个来源）。
   const scriptPath = resolveSubmittedScriptPath(parsed, inlineDraft?.path);
 
@@ -251,7 +251,7 @@ function diagnosticsNote(
 }
 
 /**
- * 生效的并发上界在结果文案里的一句话（`AmendWorkflow` 共用）。**只在设了上界时出现**：跑在
+ * 生效的并发上界在结果文案里的一句话（`AmendWorkflow` 共用）。只在设了上界时出现：跑在
  * 天花板上的 run 没有可说的，多一句「至多 N 个」只会让模型以为自己设过什么。
  *
  * 正好等于天花板时点明是本机上限——那说明模型要的数被压低了，不说破的话它会把「至多 32」
@@ -286,7 +286,7 @@ export function resolveTraceContext(context: ToolExecutionContext): TraceContext
 /**
  * 判断"运行这段脚本"值不值得打断用户，并构造确认窗要渲染的预览。
  *
- * **对两条来源是同一段代码**：走到这里输入已被 `resolveInput` 归一化，`script` 一定在场，
+ * 对两条来源是同一段代码：走到这里输入已被 `resolveInput` 归一化，`script` 一定在场，
  * 所以这里既不知道也不需要知道脚本是内联写的还是从磁盘读的。saved run 的确认窗因此与内联
  * 逐字节同形——这正是「同一段脚本经两条路径产出的 display 完全相同」那条测试钉住的东西。
  *

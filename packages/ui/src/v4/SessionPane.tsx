@@ -1,3 +1,4 @@
+// Modified by ZCode: F5: SessionPaneProps 增加 compactForRemoteControl 可选 prop(上游 compactForRemoteControl)。
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
 import { useStartPlanRecommendation } from "@/hooks/useStartPlanRecommendation.js";
 import type { SessionCreateSource } from "@zcode/shared";
@@ -287,6 +288,8 @@ export interface SessionPaneProps {
   remoteSessionId?: string | null;
   /** Prompt 模板埋点当前仅覆盖 Desktop；Web / 手机远控保留 UI 行为但不触发该事件。 */
   isDesktop?: boolean;
+  /** 远控紧凑态(F5 plugin-ui 提取带入)。 */
+  compactForRemoteControl?: boolean;
   provider?: ZCodeProvider;
   onSessionCreated?: (sessionId: string) => void;
   /** deleteSession：删除当前会话后回到 draft（shell 起新草稿）。 */
@@ -478,6 +481,7 @@ export function SessionPane({
   workspaceIdentity,
   remoteSessionId,
   isDesktop = false,
+  compactForRemoteControl = false,
   provider,
   onSessionCreated,
   onSelectionSideChatUnavailable,

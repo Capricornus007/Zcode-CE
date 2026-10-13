@@ -5,12 +5,14 @@
 //   2. delta 帧仅在区间衔接（frame.fromSeq === snapshot.seq）时 apply，断档不猜、不缓存补偿；
 //   3. base 与状态同生共死——断档时状态未被污染，携当前水位重订阅，由服务端裁决 resume/snapshot。
 // 除 optimistic overlay（pending 命令展示）外，本 store 不产生任何 conversation 事实。
+// Modified by ZCode: F4: 采用上游 onLiveDeltas 增量链(liveDeltaListeners + onLiveDeltas + applyFrame 发射点), 供 pluginUiResourceDeltaFeed 消费 live 增量; 未引入上游 row pool(conversationRowSharing, 独立优化)。
 import {
   applyConversationDeltas,
   isDeterministicContentFault,
   parseConversationTopic,
   PROTOCOL_V4_LIMITS,
   SUBSCRIPTION_CONTENT_REJECTED,
+  type ConversationDelta,
   type ConversationRow,
   type ConversationSnapshot,
   type ConversationOpenTiming,
@@ -283,6 +285,7 @@ export class ConversationProjectionStore {
   private readonly modelTransitionListeners = new Set<
     (transition: SessionModelTransition) => void
   >();
+  private readonly liveDeltaListeners = new Set<(deltas: readonly ConversationDelta[]) => void>();
   private observedModelTransitionEventId: string | null = null;
   // 订阅代际：并发 connect 只认最新一代，过期结果立即退订防服务端悬挂。
   private generation = 0;
@@ -382,6 +385,10 @@ export class ConversationProjectionStore {
   onOnlineModelTransition(listener: (transition: SessionModelTransition) => void): () => void {
     this.modelTransitionListeners.add(listener);
     return () => this.modelTransitionListeners.delete(listener);
+  }
+  onLiveDeltas(listener: (deltas: readonly ConversationDelta[]) => void): () => void {
+    this.liveDeltaListeners.add(listener);
+    return () => this.liveDeltaListeners.delete(listener);
   }
 
   private setState(patch: Partial<ConversationStoreState>): void {
@@ -720,6 +727,7 @@ export class ConversationProjectionStore {
       return;
     }
     const applied = applyConversationDeltas(current, frame.payload.deltas);
+    for (const listener of this.liveDeltaListeners) listener(frame.payload.deltas);
     // seq 是快照对齐水位，delta 帧应用完推进到帧右端点。
     const next = { ...applied, seq: frame.toSeq };
     logSubagentProjectionTransition(this.topic, current, next, "deltas");

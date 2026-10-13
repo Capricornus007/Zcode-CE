@@ -1,4 +1,5 @@
 /* oxlint-disable eslint(max-lines) -- v4 逐行 row 渲染分发集中收口（每种 row 一个 memo 叶子 + timelineMarker 分隔线），拆分会打散行类型对照。 */
+// Modified by ZCode: F2 提取: ConversationAssistantTextActions 增加 compactForRemoteControl prop 与 resolveTooltip 紧凑态行为(上游 compactForRemoteControl)。
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1321,6 +1322,7 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   entityId,
   text,
   createdAt,
+  compactForRemoteControl = false,
   feedback = null,
   hookInvocations,
   turnId,
@@ -1334,6 +1336,8 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   text: string;
   /** "turn"：text 是整轮 assistant 正文合并（轮尾工具栏），文案明确为"复制完整回复"。 */
   copyScope?: "row" | "turn";
+  /** 远控紧凑态：隐藏 tooltip 文案（上游 compactForRemoteControl 行为，F2 提取带入）。 */
+  compactForRemoteControl?: boolean;
   createdAt: number;
   feedback?: AssistantMessageFeedback | null;
   hookInvocations?: readonly HookInvocationRow[];
@@ -1356,7 +1360,8 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   });
   const forkLabel = intl.formatMessage({ id: "chat.message.fork" });
   const timeLabel = formatMessageTimeLabel(createdAt, locale, intl);
-  const resolveTooltip = (label: string): string | undefined => label;
+  const resolveTooltip = (label: string): string | undefined =>
+    compactForRemoteControl ? undefined : label;
 
   useEffect(() => {
     setLocalFeedback(feedback);

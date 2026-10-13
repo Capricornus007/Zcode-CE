@@ -1,6 +1,7 @@
 // v4 行渲染上下文（ai-elements / ToolCallBlocks 回接所需的宿主注入面）。
 // 注入模式对齐 PermissionDialog（store 耦合剥离）：展示组件不自取 store，
 // theme / codePreviewSettings 在宿主（SessionPane）处取，向下走稳定 props。
+// Modified by ZCode: F2/F4 提取: 采用上游 3.15.1 版并删除 F6 域字段 workflowFillGraphByRunId(F6 判别轮恢复)。
 import type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { AssistantPreviewCardsAutoOpenRequest } from "@/lib/assistantPreviewCards.js";
@@ -11,6 +12,7 @@ import type { WorkflowRunSettingsChange } from "@/components/workflow-timeline/w
 import type { WorkflowDraftPosition, WorkflowRunCardSummary } from "@/ToolCallBlocks/shared.js";
 import type { Theme } from "@/useTheme.js";
 import type { ModelSelectionView } from "@zcode/services";
+import type { ZCodeWorkflowsForRunCandidate } from "@zcode/shared";
 import type { ConversationAttachmentReadParams, ConversationTransport } from "@/v4/transport.js";
 import type {
   OpenPlanDetailSideTabRequest,
@@ -52,6 +54,7 @@ export interface ConversationRowRenderContext {
   /** @deprecated 旧内联下钻标记；新的子会话统一打开侧栏详情。 */
   inSubagentDrilldown?: boolean;
   /** 手机 /remote 紧凑模式：隐藏外部 App 打开下拉，只保留应用内预览。 */
+  compactForRemoteControl?: boolean;
   /** 当前 session 正在 compact 或 goal verify；专用状态 UI 独占进度反馈。 */
   chatLoadingBlockedByActiveWork?: boolean;
   /** 当前 session 正在等待权限确认或 AskUserQuestion 回答，隐藏底部 ChatLoading。 */
@@ -87,6 +90,7 @@ export interface ConversationRowRenderContext {
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
   onOpenSubagentSession?: (request: OpenSubagentSideTabRequest) => void;
   onOpenPlanDetail?: (request: OpenPlanDetailSideTabRequest) => void;
+  /** 插件 UI：内联卡片请求在侧栏打开；RowView 补 parentSessionId 与 workspace 字段。 */
   onOpenWorkflowRun?: (request: OpenWorkflowRunSideTabRequest) => void;
   /**
    * 产物的全尺寸查看 tab 入口。
@@ -95,7 +99,7 @@ export interface ConversationRowRenderContext {
    * 「脚本顶层返回值」的同名词。
    *
    * 与 `onOpenWorkflowRun` 同构：行只发意图（哪个 run 的哪个产物），会话与 workspace 身份
-   * 由宿主补齐。**不带版本号**——chip 的语义是「让我看这个产物」，落点恒为最新版。
+   * 由宿主补齐。不带版本号——chip 的语义是「让我看这个产物」，落点恒为最新版。
    */
   onOpenWorkflowArtifact?: (request: OpenWorkflowArtifactSideTabRequest) => void;
   /**
@@ -121,6 +125,19 @@ export interface ConversationRowRenderContext {
     workId: string,
     change: WorkflowRunSettingsChange,
   ) => Promise<CommandAck>;
+  /**
+   * 完成卡的「保存」/「再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
+   * 「Saving the run, and running it again」）：把 GUI 写好的那条用户消息发进本会话，交给 ZCode
+   * 去提炼保存。与 Resume 同两道门（只读、灰度）且同一个供给点——写文件与起引擎都属于
+   * 「Resume 被收走的地方一并收走」。缺席即卡上只剩「已保存」芯片那条事实。
+   */
+  onSendWorkflowSaveRequest?: (text: string) => Promise<void>;
+  /**
+   * runId → 转写里认领过这次 run 的 SaveWorkflow 候选（`workflowRunCardJoin.buildWorkflowSaveCandidatesByRunId`），
+   * 由宿主从行窗口一遍建立。它是「模型另起名字存下的那份定义」与这次 run 之间仅有的联系
+   * （模型不会用 run 名当工作流名），所以必须从转写里读。
+   */
+  workflowSaveCandidatesByRunId?: ReadonlyMap<string, readonly ZCodeWorkflowsForRunCandidate[]>;
   /** 会话当前模型（「配置」弹层首项「会话模型」的名字）；读不到即缺席，首项只写「会话模型」。 */
   workflowSessionModel?: { providerId: string; modelId: string };
   /**
@@ -151,7 +168,7 @@ export interface ConversationRowRenderContext {
    */
   workflowRunByRunId?: ReadonlyMap<string, WorkflowRunCardSummary>;
   /**
-   * runId → 该 run 当前停驻的 qid 集合，由宿主从**活投影**（不掺 journal 兜底）建立
+   * runId → 该 run 当前停驻的 qid 集合，由宿主从活投影（不掺 journal 兜底）建立
    * （`workflowRunCardJoin.buildWorkflowRunPendingQuestionsByRunId`）。Workflow 通知 manifest
    * 的升级条目据此做 Waiting→Answered 翻转：键在场 ⟺ run 在活投影里，值含 qid = Waiting、
    * 不含 = Answered、整键缺席 = run 不在场（中性 Question）。

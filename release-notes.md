@@ -5,8 +5,8 @@
 本版从上游 `zai-org/ZCode` `v3.15.1`（`aac47556`，Apache-2.0，官方公告 2026-10-12：11 项新功能 + 12 项修复）移植。公告条目与本仓库的逐条对照（已跟进 / 部分跟进 / 未跟进（有意） / 不适用四档）见 `docs/development/upstream-sync.md` 的 v3.15.1 节。
 
 - **已落地**：F2（HighSpeed 客户端面）、F3（危险命令确认）、F4（可视化交互界面）、F5（UI 插件 / MCP App，契约 + 桌面宿主 + 界面 + 服务桥）、F6/F7（工作流运行中改并发、保存复跑链、子代理单独指定模型）、F9（内置浏览器权限治理）、F10（Linux 托盘驻留）、F11（账户菜单套餐与复制用户 ID）、X1/X2/X3/X4/X5/X6/X8/X9/X11/X12，以及上游 3.15.3 闭源修复中的 OAuth 损坏会话清理容错（A2）。
-- **部分跟进（延期到下一轮）**：F6 的渲染层判别（station-observation 取舍）与创建前调参界面；F8 的服务波次（飞书群/话题服务方法与状态机，UI 已零半集成回退保留）。
-- **有意不搬**：F1「邀请好友·免费蹬蹬」是官方服务端运营活动（开源仓库零载荷）；F2 与 F8 的服务端部分（抽卡权重、群消息广播状态机）；上游 3.15.3 闭源的更新退出状态机与签名器守卫（经评估 CE 无对应链路与组件，依据见 upstream-sync v3.15.1 节）。
+- **部分跟进（延期到下一轮）**：F6 的渲染层判别（station-observation 取舍）与创建前调参界面；F8 的群/话题 UI 编排（服务侧 13 模块、3 状态机与 IBotsService 方法已落地，界面仍为 staging 未接线）。
+- **有意不搬**：F1「邀请好友·免费蹬蹬」是官方服务端运营活动（开源仓库零载荷）；F2 的服务端部分（抽卡权重与发卡逻辑）；上游 3.15.3 闭源的更新退出状态机与签名器守卫（经评估 CE 无对应链路与组件，依据见 upstream-sync v3.15.1 节）。
 
 ## 新增功能
 
@@ -51,8 +51,8 @@
 This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2.0; official announcement 2026-10-12: 11 features + 12 fixes). The entry-by-entry ledger (synced / partially synced / intentionally not synced / not applicable) is in the v3.15.1 section of `docs/development/upstream-sync.md`.
 
 - **Landed**: F2 (HighSpeed client side), F3 (dangerous-command confirmation), F4 (visualization surface), F5 (UI plugins / MCP App — contract, desktop host, UI surface and service bridge), F6/F7 (in-run concurrency adjustment, save-and-rerun chain, per-subagent model), F9 (embedded-browser permission governance), F10 (Linux close-to-tray), F11 (account menu plan + copy user ID), X1/X2/X3/X4/X5/X6/X8/X9/X11/X12, plus the corrupt-OAuth-session cleanup tolerance from upstream's closed-source 3.15.3 (A2).
-- **Partially synced (deferred to the next round)**: the F6 render-layer discrimination (station-observation trade-off) and the pre-create settings UI; the F8 service wave (Feishu group/topic service methods and state machine — the UI was rolled back to a zero-partial-integration state and kept).
-- **Intentionally not ported**: F1 "invite friends" is an official server-side campaign (zero payload in the open-source repository); the server-side parts of F2/F8 (lottery weights, group broadcast state machine); upstream 3.15.3's closed-source update-exit state machine and signer guards (CE has no corresponding link or component — rationale in the upstream-sync v3.15.1 section).
+- **Partially synced (deferred to the next round)**: the F6 render-layer discrimination (station-observation trade-off) and the pre-create settings UI; the F8 group/topic UI wiring (the service side — 13 modules, 3 state machines and the IBotsService methods — landed, while the UI remains staging-only, not wired up).
+- **Intentionally not ported**: F1 "invite friends" is an official server-side campaign (zero payload in the open-source repository); the server-side parts of F2 (lottery weights and issuance); upstream 3.15.3's closed-source update-exit state machine and signer guards (CE has no corresponding link or component — rationale in the upstream-sync v3.15.1 section).
 
 ## New features
 

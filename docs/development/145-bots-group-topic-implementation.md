@@ -57,7 +57,7 @@ WebSocket token 过期/鉴权失败 → 连接进入 reconnecting（或重连后
 ## 本地偏离登记（Apache-2.0 modifiedFiles）
 
 - `#src/...` 路径别名按 CE tsconfig 布局重写为相对路径（纯路径重写）。
-- messages.ts 回接 2 个 CE 本地键（taskFailedProviderRuntimeHeaders*，fix.2 文案）；
+- messages.ts 回接 2 个 CE 本地键（taskFailedProviderRuntimeHeaders\*，fix.2 文案）；
   上游没有 commandNotSupportedInCe（该键随 CE 的 5 个桩 case 一并移除，真实
   命令处理器已替代桩）。
 - botsService.ts 整文件搬运后回接 5 处 CE 本地加固（fix.2 + 护栏基线）：

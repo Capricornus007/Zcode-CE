@@ -239,7 +239,6 @@ export interface IZCodeTaskService {
     v4Create?: boolean;
   }): Promise<ZCodeTaskCreateResult>;
 
-
   // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题输入与执行的 task service 契约。
 
   // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题输入与执行的 task service 契约。

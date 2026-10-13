@@ -1,8 +1,5 @@
 import { createBotTopicAdmission } from "./botTopicAdmission.js";
-import {
-  readBotGroupRuntimeSnapshot,
-  waitBotGroupExecutionEnd,
-} from "./groupRuntimeSnapshot.js";
+import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
 import { createZCodeAgentConnectionScope } from "./zcodeAgentConnectionScope.js";
 /* Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 3 个支撑模块 + 连接 scope 导入。 */
@@ -1925,7 +1922,7 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
-// Modified by ZCode: 增量自上游 aac47556——task service 的 7 个 Bot 群/话题方法。
+    // Modified by ZCode: 增量自上游 aac47556——task service 的 7 个 Bot 群/话题方法。
     async readBotTopicSummaries(params) {
       const target = taskTargets.get(params.taskId);
       if (target && taskKey(target) !== taskKey(params))

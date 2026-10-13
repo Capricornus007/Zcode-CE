@@ -1,14 +1,26 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getBotConversationKey, getBotStateKey, isGroupOwnerCommand, canAnswerGroupQuestion } from "../src/bots/groupSessions.js";
+import {
+  getBotConversationKey,
+  getBotStateKey,
+  isGroupOwnerCommand,
+  canAnswerGroupQuestion,
+} from "../src/bots/groupSessions.js";
 import { createGroupDeliveryThrottle } from "../src/bots/groupDeliveryThrottle.js";
 import { getUnavailableReplyFallback } from "../src/bots/groupReply.js";
 import { createGroupQueueCardSync } from "../src/bots/groupQueueCard.js";
-import { createGroupAdminAttention, BotAdminRequiredError, BotReplyError } from "../src/bots/groupAdminAttention.js";
+import {
+  createGroupAdminAttention,
+  BotAdminRequiredError,
+  BotReplyError,
+} from "../src/bots/groupAdminAttention.js";
 import { createGroupResultDelivery } from "../src/bots/groupResultDelivery.js";
 import { createTopicContinuation } from "../src/bots/topicContinuation.js";
 import { readTopicHistory, TopicHistoryPermissionError } from "../src/bots/topicHistory.js";
-import { createTopicHistoryAttachment, botGroupCommandId } from "../src/bots/topicHistoryAttachment.js";
+import {
+  createTopicHistoryAttachment,
+  botGroupCommandId,
+} from "../src/bots/topicHistoryAttachment.js";
 import { createTopicPreparationState } from "../src/bots/topicPreparationState.js";
 import { resolveChannelMentionNames } from "../src/bots/channelMentionResolver.js";
 import { createBotTaskStreamHub } from "../src/bots/taskStreamHub.js";
@@ -43,7 +55,10 @@ test("groupSessions：私聊按 botId，群按 chatId，话题进入独立键", 
     }),
     JSON.stringify(["b", "c", "ct"]),
   );
-  assert.throws(() => getBotConversationKey({ ...baseActor, chatType: "group" as const, chatId: "  " }), /Group chat ID/);
+  assert.throws(
+    () => getBotConversationKey({ ...baseActor, chatType: "group" as const, chatId: "  " }),
+    /Group chat ID/,
+  );
   assert.equal(
     getBotStateKey({ botId: "b", group: { chatId: "c", threadId: "t" } }),
     JSON.stringify(["b", "c", "t"]),
@@ -72,7 +87,9 @@ test("groupDeliveryThrottle：同群发送间隔 250ms", async () => {
 });
 
 test("groupReply：明确拒绝后的有限降级链", () => {
-  assert.deepEqual(getUnavailableReplyFallback({ replyToMessageId: "m" }), { replyToMessageId: undefined });
+  assert.deepEqual(getUnavailableReplyFallback({ replyToMessageId: "m" }), {
+    replyToMessageId: undefined,
+  });
   assert.deepEqual(
     getUnavailableReplyFallback({ replyToMessageId: "m", threadId: undefined, rootMessageId: "r" }),
     { replyToMessageId: undefined, threadId: undefined, rootMessageId: "r" },
@@ -97,7 +114,12 @@ test("groupQueueCard：状态只能沿生命周期单调推进", async () => {
       return found?.progress as never;
     },
     mutate: async (key, update) => {
-      const entry = { key, progress: update(((written.find((w) => w.key === key)?.progress as never) ?? { status: "waiting" })) };
+      const entry = {
+        key,
+        progress: update(
+          (written.find((w) => w.key === key)?.progress as never) ?? { status: "waiting" },
+        ),
+      };
       const idx = written.findIndex((w) => w.key === key);
       if (idx >= 0) written[idx] = entry;
       else written.push(entry);
@@ -111,12 +133,19 @@ test("groupQueueCard：状态只能沿生命周期单调推进", async () => {
   await card.attach("k", "card-1");
   // 迟到的 waiting admission 不能覆盖 working
   await card.update("k", "waiting");
-  const progress = written.find((w) => w.key === "k")?.progress as { status: string; cardMessageId?: string; cardStatus?: string };
+  const progress = written.find((w) => w.key === "k")?.progress as {
+    status: string;
+    cardMessageId?: string;
+    cardStatus?: string;
+  };
   assert.equal(progress.status, "working");
   assert.equal(progress.cardMessageId, "card-1");
   renders.push("end");
   // 渲染只在状态变化时发生：update(waiting) 不触发渲染
-  assert.deepEqual(renders.filter((r) => r.startsWith("card-1:")), ["card-1:working"]);
+  assert.deepEqual(
+    renders.filter((r) => r.startsWith("card-1:")),
+    ["card-1:working"],
+  );
 });
 
 test("groupAdminAttention：同 actor+owner+reason 只 mention 一次", () => {
@@ -127,7 +156,10 @@ test("groupAdminAttention：同 actor+owner+reason 只 mention 一次", () => {
   // 不同 reason 仍提醒
   assert.deepEqual(attention.mention(actor, "admin", "plan"), ["admin"]);
   // 私聊或无 owner 不提醒
-  assert.equal(attention.mention({ ...baseActor, chatType: "private" as const }, "admin", "permission"), undefined);
+  assert.equal(
+    attention.mention({ ...baseActor, chatType: "private" as const }, "admin", "permission"),
+    undefined,
+  );
   // clear 指定 reason 后可再次提醒该 reason
   attention.clear(actor, "admin", "permission");
   assert.deepEqual(attention.mention(actor, "admin", "permission"), ["admin"]);
@@ -155,7 +187,11 @@ test("topicHistory：无 checkpoint 的根 @ 必须先访问原生历史接口",
 
 test("topicHistory：边界缺失与超出窗口都标 hasGap", async () => {
   const pages = [
-    { messages: [{ id: "newer", chatId: "c", threadId: "t", createdAt: 2, senderId: "s", text: "x" }] },
+    {
+      messages: [
+        { id: "newer", chatId: "c", threadId: "t", createdAt: 2, senderId: "s", text: "x" },
+      ],
+    },
   ];
   await assert.rejects(
     () =>
@@ -174,7 +210,9 @@ test("topicHistory：scope 不一致直接抛错而不是静默返回", async ()
         { chatId: "c", threadId: "t", messageId: "m", rootMessageId: "root", checkpoint: "cp" },
         {
           list: async () => ({
-            messages: [{ id: "m", chatId: "other", threadId: "t", createdAt: 1, senderId: "s", text: "x" }],
+            messages: [
+              { id: "m", chatId: "other", threadId: "t", createdAt: 1, senderId: "s", text: "x" },
+            ],
           }),
           get: async () => ({}) as never,
         },
@@ -186,9 +224,22 @@ test("topicHistory：scope 不一致直接抛错而不是静默返回", async ()
 test("topicHistoryAttachment：超限抛错；内容含范围声明与 M/A 标签", () => {
   const batch = {
     messages: [
-      { id: "m1", chatId: "c", threadId: "t", createdAt: 1, senderId: "s", senderName: "S", text: "hello" },
       {
-        id: "m2", chatId: "c", threadId: "t", createdAt: 2, senderId: "s", text: "with file",
+        id: "m1",
+        chatId: "c",
+        threadId: "t",
+        createdAt: 1,
+        senderId: "s",
+        senderName: "S",
+        text: "hello",
+      },
+      {
+        id: "m2",
+        chatId: "c",
+        threadId: "t",
+        createdAt: 2,
+        senderId: "s",
+        text: "with file",
         attachments: [{ name: "a.txt", kind: "file" as const }],
         parentId: "m1",
       },
@@ -205,13 +256,21 @@ test("topicHistoryAttachment：超限抛错；内容含范围声明与 M/A 标�
   assert.match(attachment?.textContent ?? "", /[M1]/);
   assert.match(attachment?.textContent ?? "", /[A1].*not read/);
   // 空且无缺口返回 undefined
-  assert.equal(createTopicHistoryAttachment({ messages: [], checkpoint: "m", hasGap: false }, "i", "t"), undefined);
+  assert.equal(
+    createTopicHistoryAttachment({ messages: [], checkpoint: "m", hasGap: false }, "i", "t"),
+    undefined,
+  );
 });
 
 test("topicHistoryAttachment：超尺寸上限抛错", () => {
   const big = {
     messages: Array.from({ length: 600 }, (_, i) => ({
-      id: "m" + i, chatId: "c", threadId: "t", createdAt: i, senderId: "s", text: "x".repeat(40000),
+      id: "m" + i,
+      chatId: "c",
+      threadId: "t",
+      createdAt: i,
+      senderId: "s",
+      text: "x".repeat(40000),
     })),
     checkpoint: "m399",
     hasGap: false,
@@ -244,7 +303,10 @@ test("topicPreparationState：waitingStop 由后到者继承；仅 failed 可 re
   state.update("k", ["m1"], "failed", "boom");
   assert.equal(state.retry("k", "m1")?.actor.providerMessageId, "m1");
   // 缺身份的入站直接拒绝
-  assert.throws(() => state.add("k", { actor: { ...baseActor }, text: "x" }), /identity is missing/);
+  assert.throws(
+    () => state.add("k", { actor: { ...baseActor }, text: "x" }),
+    /identity is missing/,
+  );
   state.clear("k");
   assert.equal(state.snapshot("k").length, 0);
 });
@@ -260,9 +322,15 @@ test("topicContinuation：cancel 清空未提交材料；已提交批不再重�
     failed: () => {},
   };
   const continuation = createTopicContinuation<string>(ports);
-  assert.equal(continuation.receive("m1", async () => "v1"), true);
+  assert.equal(
+    continuation.receive("m1", async () => "v1"),
+    true,
+  );
   // 授权去重
-  assert.equal(continuation.receive("m1", async () => "v1again"), false);
+  assert.equal(
+    continuation.receive("m1", async () => "v1again"),
+    false,
+  );
   await continuation.settled();
   assert.equal(submitted, 1);
   // cancel 后未提交材料被丢弃
@@ -294,7 +362,17 @@ test("topicContinuation：材料准备失败走 failed 回调而不是 submit", 
 });
 
 test("channelMentionResolver：候选只能来自可信节点与成员目录", () => {
-  const trusted = [{ type: "channelMention", targetId: "ou_t1", name: "Alice", channel: "feishu", refId: "r", idType: "open_id", entityType: "user" }];
+  const trusted = [
+    {
+      type: "channelMention",
+      targetId: "ou_t1",
+      name: "Alice",
+      channel: "feishu",
+      refId: "r",
+      idType: "open_id",
+      entityType: "user",
+    },
+  ];
   const result = resolveChannelMentionNames(
     [{ type: "mentionName", name: "alice" }],
     trusted,
@@ -334,10 +412,18 @@ test("taskStreamHub：同任务一个实时源；退订归零后清理", async (
   const sub = (listener: (event: number) => Promise<void>) => {
     upstreamStarted += 1;
     emit = listener;
-    return { dispose: () => { upstreamStopped += 1; } };
+    return {
+      dispose: () => {
+        upstreamStopped += 1;
+      },
+    };
   };
-  const d1 = hub.add("task", "a", sub, (e) => { receivedA.push(e); });
-  const d2 = hub.add("task", "b", sub, (e) => { receivedB.push(e); });
+  const d1 = hub.add("task", "a", sub, (e) => {
+    receivedA.push(e);
+  });
+  const d2 = hub.add("task", "b", sub, (e) => {
+    receivedB.push(e);
+  });
   assert.equal(upstreamStarted, 1);
   await emit?.(1);
   assert.deepEqual(receivedA, [1]);

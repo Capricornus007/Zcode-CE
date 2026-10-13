@@ -11,10 +11,7 @@ import {
 import { createTopicPreparationState } from "./topicPreparationState.js";
 import { createTopicContinuation } from "./topicContinuation.js";
 import { TopicHistoryPermissionError } from "./topicHistory.js";
-import {
-  createTopicHistoryAttachment,
-  botGroupCommandId,
-} from "./topicHistoryAttachment.js";
+import { createTopicHistoryAttachment, botGroupCommandId } from "./topicHistoryAttachment.js";
 import { createGroupDeliveryThrottle } from "./groupDeliveryThrottle.js";
 import { createGroupResultDelivery } from "./groupResultDelivery.js";
 import { createGroupQueueCardSync } from "./groupQueueCard.js";
@@ -5475,7 +5472,7 @@ export function createBotsService(
           if (resultSourceCommandId && event.inputId && resultSourceCommandId !== event.inputId)
             return;
         }
-      if (event.type === "task_complete" || event.type === "task_error") {
+        if (event.type === "task_complete" || event.type === "task_error") {
           if (runId) terminalRuns.add(runId);
           // continuous 不重放旧轮；有界保留重复终态保护。
           if (terminalRuns.size > 128) terminalRuns.delete(terminalRuns.values().next().value!);

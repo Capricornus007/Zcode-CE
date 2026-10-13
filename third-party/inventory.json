@@ -1612,8 +1612,8 @@
     "packages/services/src/bots/botConfigHelpers.ts": "f4d5e4d3a6141d44a5d99418417c1d4eed80321084b671ae07d1ea86726abe9a",
     "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
     "packages/services/src/bots/botRemoteWorkspaceBridge.ts": "740b0cf99acc93d3d901919d4ef2652ebf06279ae445d2476c88a106286a1ae7",
-    "packages/services/src/bots/bots.ts": "1d403a06ed25f282fbc8df4170028a499fa544733fb8269d4dc7688fc417a5fc",
-    "packages/services/src/bots/botsService.ts": "f2b5338305c712273ed1691850713310d7b953934ea439192a50e73eaee5c5b7",
+    "packages/services/src/bots/bots.ts": "53e19f0f1812b1297d60b12fa062c73928cfc42c7fed9633cee4d89bbab7c7f5",
+    "packages/services/src/bots/botsService.ts": "ebd67bb62e0303cd04fdbc3de565c2a7d010149c3c9770259ba703996f9f5e43",
     "packages/services/src/bots/channelMentionResolver.ts": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909",
     "packages/services/src/bots/channelReply.ts": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3",
     "packages/services/src/bots/channelRuntime.ts": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74",
@@ -1678,14 +1678,14 @@
     "packages/services/src/plugin-ui-bridge/pluginUiBridgeService.ts": "9911c3493750a29cd0528a01c80548df1dbc82c6eb93f605312d70125394d22f",
     "packages/services/src/plugin-ui-bridge/pluginUiSamplingService.ts": "90d7bc70795178b4d1326911c1d99cfecc3c9e3ff62dba41109eb8e8907a4b9a",
     "packages/services/src/plugin-ui-bridge/samplingContract.ts": "be0c9b969692511f4acaa8d1a1a49222bcb6f36fa77a542c178a441d01eeafec",
-    "packages/services/src/session/zcodeTaskService.ts": "ef343f5982d966be1d5ef4f9a669989e43566ec4e789eb3d6239ef03d0d12743",
+    "packages/services/src/session/zcodeTaskService.ts": "750638a712e011ea34c9c589f7c09f1232fc44878b9253d99b223e0cda96ff74",
     "packages/services/src/zcode-agent/botTopicAdmission.ts": "10e2878cca354e31336a66e0739bd643db48dda9f967ed9f4edb012fe164a268",
     "packages/services/src/zcode-agent/groupAttachmentUpload.ts": "2a9971473632174bf5255501c7f5fe58488a77159bb337d67330ee2ccb583a28",
     "packages/services/src/zcode-agent/groupRuntimeSnapshot.ts": "62072670a30e39fbe87a99a0a98b3e0b2f621d541fde1e60e5f7a8e3c8714d4d",
     "packages/services/src/zcode-agent/zcodeAgent.ts": "a2474dc921576684ae3c4c2dc3629c48dd32d54c626b20fa09d4f21d1b5aaecb",
     "packages/services/src/zcode-agent/zcodeAgentPluginParams.ts": "4cc744012ab424eaa819812bc7b9e376bc5de6f1979da88cb9e4c924a7c6b811",
     "packages/services/src/zcode-agent/zcodeAgentService.ts": "3f585d126d68d84331a71c9393a1ef98b44de16df1335109d1eb2356666b7f04",
-    "packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts": "1c82ea47724a03ea8a52dac6f7d9ec21dcf3f617961fcf280aa70ab7252b9fed",
+    "packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts": "c4b4d37afc67faf95ae20b1c664eecb65b9e48fddfd6c76a0df3a9999b2f434c",
     "packages/shared/package.json": "d516a6ba67e649aa0f37224ea94a0784134b52494a90326271106048efa75e33",
     "packages/shared/src/attachment-source.ts": "1ab5985a30d2be53e9e3af364e04c8a902ce4a6dc3b9bcc18e8d81c227d37069",
     "packages/shared/src/bots.ts": "c9ae67d700e4f744118348e3cb4517968393d9f86fa7d0e8cbf5c957b3ba315d",
@@ -31499,11 +31499,11 @@
         },
         {
           "file": "packages/services/src/bots/bots.ts",
-          "sha256": "1d403a06ed25f282fbc8df4170028a499fa544733fb8269d4dc7688fc417a5fc"
+          "sha256": "53e19f0f1812b1297d60b12fa062c73928cfc42c7fed9633cee4d89bbab7c7f5"
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "f2b5338305c712273ed1691850713310d7b953934ea439192a50e73eaee5c5b7"
+          "sha256": "ebd67bb62e0303cd04fdbc3de565c2a7d010149c3c9770259ba703996f9f5e43"
         },
         {
           "file": "packages/services/src/bots/channelMentionResolver.ts",
@@ -34098,7 +34098,7 @@
         },
         {
           "file": "packages/services/src/bots/bots.ts",
-          "sha256": "1d403a06ed25f282fbc8df4170028a499fa544733fb8269d4dc7688fc417a5fc"
+          "sha256": "53e19f0f1812b1297d60b12fa062c73928cfc42c7fed9633cee4d89bbab7c7f5"
         },
         {
           "file": "packages/services/src/bots/messages.ts",
@@ -34114,15 +34114,15 @@
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "f2b5338305c712273ed1691850713310d7b953934ea439192a50e73eaee5c5b7"
+          "sha256": "ebd67bb62e0303cd04fdbc3de565c2a7d010149c3c9770259ba703996f9f5e43"
         },
         {
           "file": "packages/services/src/session/zcodeTaskService.ts",
-          "sha256": "ef343f5982d966be1d5ef4f9a669989e43566ec4e789eb3d6239ef03d0d12743"
+          "sha256": "750638a712e011ea34c9c589f7c09f1232fc44878b9253d99b223e0cda96ff74"
         },
         {
           "file": "packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts",
-          "sha256": "1c82ea47724a03ea8a52dac6f7d9ec21dcf3f617961fcf280aa70ab7252b9fed"
+          "sha256": "c4b4d37afc67faf95ae20b1c664eecb65b9e48fddfd6c76a0df3a9999b2f434c"
         }
       ]
     }

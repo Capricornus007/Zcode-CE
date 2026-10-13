@@ -75,6 +75,20 @@ git checkout -- packages/ui/src/remoteControlPanelModel.ts packages/ui/src/Remot
    这样任何静默还原都能被立刻发现（本事故正是「33 pass → 该断言 0 命中」暴露的）。
 4. **归因顺序**：成员报「我的改动被还原」时，**Lead 应先自查自己是否执行过回退类命令**，
    再怀疑其他成员。本事故 Lead 的第一反应是怀疑 f1/f2 的写范围冲突，方向错了。
+5. **`git clean` / 批量删未跟踪文件与 §4.1 同罪**（2026-10-13 v3.15.1 轮近事故）：某成员在共享主检出跑
+   `git clean -fd` 类命令，**静默删除了另一成员正在写的未跟踪新文件**（guarded/ 目录与 app-tools.ts），
+   靠成员自证「文件重建+验证」才无损失。**并行期间禁止在共享检出跑 `git clean -fd`、`git checkout .`、
+   `git stash push -u` 等清未跟踪/批量回退类命令**；自己的判别实验一律在 fresh worktree（§七）里做，
+   用完 `git worktree remove`；确实要删自己造成的未跟踪文件时**逐文件 rm 并声明清单**。
+
+   **程序化等价物的具体机制（同轮自证 RCA）**：把「回退到 HEAD」写成脚本时，同样的删除会以
+   更隐蔽的方式发生——
+   - `git status --porcelain` 把**未跟踪整目录折叠为单条目录项**（如 `?? path/to/dir/`）；
+   - 快照阶段对目录 `readFile` 必然失败，若失败即跳过则**该目录没有任何备份**；
+   - 回退阶段对未跟踪条目执行 `rm { recursive: true, force: true }` 会**整目录递归删除**，
+     连同其他成员在该目录下正在写的未跟踪文件，**静默无报错**。
+   ⇒ 结论：`git clean -fd`、`git checkout .`、`git stash push -u` 与**自写的 rm 回退脚本**
+   一律禁止（程序化等价物与命令行等价物同罪）；判别实验只用 §七 的 fresh worktree。
 
 ## 五、与之同源的另一类事故：把失败伪装成成功
 
@@ -94,3 +108,35 @@ git checkout -- packages/ui/src/remoteControlPanelModel.ts packages/ui/src/Remot
 
 - **不要等磁盘满才清理** —— 在长任务中途**主动查一次** `df -h /tmp`；
 - **把"需要清理"当作阻塞项立刻上报**，不要连续几十轮重复同一失败尝试（本次重复了 480+ 次，纯浪费）。
+
+## 七、判别实验的两个自证陷阱（2026-10-13 v3.15.1 跟进轮实测）
+
+### 案例 1：`tsc -b` 增量缓存会跳过整个工程，根门禁必须在 fresh worktree 跑
+
+**事实**：v3.15.1 wave-1 移植后，成员在**提交前**跑根 `pnpm typecheck`（= `tsc -b`，project references）显示通过；
+wave-1 提交后另一次构建里，`packages/ui` 工程**一次性冒出 51 处错误**。定位：`tsc -b` 的增量缓存按
+"工程输入未变"跳过整个 ui 工程 ⇒ 提交前的"根门禁通过"是**缓存给的假象**，真实缺口一直存在。
+
+**规则**：**根 typecheck 的可信跑法是 fresh worktree**：
+
+    git worktree add --detach /tmp/<名> <基线 commit>
+    cd /tmp/<名> && pnpm install --frozen-lockfile --prefer-offline
+    pnpm typecheck; echo EXIT:$?     # 不要接管道——管道退出码恒 0,会掩盖真实结果
+    git worktree remove --force /tmp/<名>   # 用后即清
+
+成员在**自己范围内的 tsc --noEmit** 是可信的（单工程无跨工程缓存问题）；**根门禁**必须 fresh。
+另一个同源陷阱：`pnpm typecheck 2>&1 | tail -40` 的退出码是 `tail` 的（恒 0），不是 typecheck 的。
+
+### 案例 2："HEAD 既存"的复现实验可能被自己的提交污染
+
+**事实**：wave-1 提交后 botsService 出现两处类型失配。成员回传"已做过 HEAD 全量回退实验，同一报错，
+HEAD 既存"。Lead 用 fresh worktree 对 HEAD（`003870d`）全新安装后跑 `pnpm typecheck` 得 **EXIT 0** ⇒
+推翻结论。真相：成员的"回退实验"是在 wave-1 提交**之后**执行的，HEAD 已含其改动 ⇒ 实验测的是
+"我的提交之后是什么样"，不是"HEAD 是什么样"。
+
+**规则**：验收"某错误是否 HEAD 既有"时，判别实验**必须在不含任何本批改动的干净检出上跑**
+（fresh worktree + 指定基线 commit），并**把基线 commit 写进回传**。任何在 dirty 工作树或
+含本批提交的 HEAD 上跑的"复现"，一律视为待验证。
+
+**Lead 侧**：成员给出"复现过/HEAD 既存"这类**免罪结论**时，按 §四-6 复核一次—— 尤其当结论
+恰好把责任推出自己范围外时（"不是我的回归，是基线问题"）。

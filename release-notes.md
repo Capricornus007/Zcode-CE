@@ -1,7 +1,5 @@
 # ZCode-CE
 
-<!-- 草稿：未发版，发版前删除本行 -->
-
 ## 与官方 3.15.1 的关系（本版基线）
 
 本版从上游 `zai-org/ZCode` `v3.15.1`（`aac47556`，Apache-2.0，官方公告 2026-10-12：11 项新功能 + 12 项修复）移植。公告条目与本仓库的逐条对照（已跟进 / 部分跟进 / 未跟进（有意） / 不适用四档）见 `docs/development/upstream-sync.md` 的 v3.15.1 节。
@@ -47,8 +45,6 @@
 ---
 
 # English
-
-> Draft — remove the draft line above before release.
 
 ## Relationship to official 3.15.1 (this release's baseline)
 

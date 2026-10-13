@@ -103,7 +103,9 @@
 | X11 Windows 链接启动应用的安全问题            | 开源仓库            | 源码比对（矩阵原标 B，判别后提级 A：CE 未修）                                                                                                    | **已跟进**（注册表命令行插 `--` 终止符，防 argv 开关注入；windows 真机验证记为待验证项）                                                                                                                                                                                                                                | 3.15.1-ce.1（spec 154）                                   |
 | X12 多个工作区同时启动时可能卡顿              | 开源仓库            | 源码比对（矩阵原标 B，判别后提级 A：`STARTUP_AGENT_WARMUP_LIMIT` 3→1）                                                                           | **已跟进**（只预热 active workspace；host 侧注释同步）                                                                                                                                                                                                                                                                  | 3.15.1-ce.1（spec 156）                                   |
 
-**延期到下一轮的记账**（本版有意不做，避免半成品）：F8 服务波次（IBotsService 6 方法 + 群/话题状态机）；F6 渲染层判别（station-observation 与 CE 现有呈现的取舍）与创建前调参 UI；`conversationRowSharing` 的 row pool（F2 第二切片附带的行池，暂无独立消费方）。
+**延期到下一轮的记账**（本版有意不做，避免半成品）：F8 服务波次（IBotsService 6 方法 + 群/话题状态机）；F6 渲染层判别（station-observation 与 CE 现有呈现的取舍）与创建前调参 UI。
+
+**未跟进（有意）**：`conversationRowSharing` 的 row pool（F2 第二切片附带的行池，全仓无独立消费方，搬了也只是死代码；待出现消费者再评估）。
 
 ### 3.15.3 闭源修复自查（A1–A3，不照搬闭源补丁）
 

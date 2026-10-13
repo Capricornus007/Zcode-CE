@@ -146,6 +146,8 @@ import type { TopicFrameReservation } from "./topic-frame-reservation.js";
 import { ConversationTelemetryFactNormalizer } from "./conversation-telemetry-facts.js";
 import { CuaPermissionObservationNormalizer } from "./cua-permission-observation.js";
 import { V4CapabilityUnsupportedError } from "./commands/handlers/interaction-background.js";
+// Modified by ZCode:X1。宿主暂存口的执行材料类型（内存凭据，见 queuedTurnExecutions）。
+import type { V4QueuedTurnExecution } from "./commands/types.js";
 
 function toRuntimeTurnId(turnId: string | null): TurnId | null {
   // conversation projection 为了 row 索引用 string 保存 product turnId；
@@ -567,6 +569,10 @@ function toShareStatFault(error: unknown): unknown {
 
 export class ConversationV4Gateway {
   private readonly publishers = new Map<string, ConversationTopicPublisher>();
+  // Modified by ZCode:X1。Highspeed 队列执行材料（含动态凭据）的内存暂存：只能驻留内存，
+  // 禁止进入 queue event/snapshot（投影层永远读不到它，只有提升边界读）。会话级清理随
+  // clearQueuedTurnExecutions；publisher 重建不触碰它（执行材料与投影无关）。
+  private readonly queuedTurnExecutions = new Map<string, Map<string, V4QueuedTurnExecution>>();
   /** sessions-index：workspaceId → 列表 publisher（与 conversation 并列，独立 seq/logEpoch）。 */
   private readonly indexPublishers = new SessionsIndexPublisherRegistry();
   /** workspace-config：workspaceId → 配置目录 publisher（conflated 整体替换态）。 */
@@ -2597,6 +2603,36 @@ export class ConversationV4Gateway {
 
   getQueueLength(sessionId: string): number {
     return this.publishers.get(sessionId)?.getSnapshot().queue.items.length ?? 0;
+  }
+
+  // Modified by ZCode:X1。编辑重发入队路径的凭据暂存：只存内存、不进投影；
+  // 提升时 canonical-intent-replay 读回并冻结成 ModelExecutionContext。
+  retainQueuedTurnExecution(
+    sessionId: string,
+    sourceCommandId: string,
+    execution: V4QueuedTurnExecution,
+  ): void {
+    let byCommand = this.queuedTurnExecutions.get(sessionId);
+    if (byCommand === undefined) {
+      byCommand = new Map();
+      this.queuedTurnExecutions.set(sessionId, byCommand);
+    }
+    byCommand.set(sourceCommandId, execution);
+  }
+
+  readQueuedTurnExecution(
+    sessionId: string,
+    sourceCommandId: string,
+  ): V4QueuedTurnExecution | undefined {
+    return this.queuedTurnExecutions.get(sessionId)?.get(sourceCommandId);
+  }
+
+  deleteQueuedTurnExecution(sessionId: string, sourceCommandId: string): void {
+    this.queuedTurnExecutions.get(sessionId)?.delete(sourceCommandId);
+  }
+
+  clearQueuedTurnExecutions(sessionId: string): void {
+    this.queuedTurnExecutions.delete(sessionId);
   }
 
   /**

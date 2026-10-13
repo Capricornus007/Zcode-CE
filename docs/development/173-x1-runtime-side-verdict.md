@@ -48,3 +48,12 @@ X1 主体按 166 §3 移交结论移植；上游 ref `aac47556`（Apache-2.0）�
 - `ProductProjection` 的 conversationQuotes 投影透传（上游在 event-normalizer/projection-rows/transcript-hydration 等 8 处消费）未移植：X1 运行时链不依赖，引用快照在投影层的完整透传属 F2 UI 范围。
 
 **验证**：`npx tsc --noEmit` 六包全绿；core 89（含新增 `test/x1-require-queue-admission.test.ts` 3）+ cli 8 + adapters 21 + tui 12 + bootstrap 51 = 181 测试全绿。未覆盖：fork-edit-retry 的端到端 handler 路径（上游 1493 行 native harness 未移植，其 mock 基建 CE 无对应件）；`retainQueuedTurnExecutions` 宿主实现缺失（降级路径已由类型保证）。
+
+## 收口更新（2026-10-13 晚，技术清除三件）
+
+三处未闭合项均已收口：
+- **宿主暂存口实现**：`ConversationV4Gateway` 实现了 `retain/read/delete/clearQueuedTurnExecutions`（内存 Map，key=sessionId+sourceCommandId），两个消费点同步接线——`queue.ts` 的 sendQueuedNow 提升路径（同卡刷新优先、过期/凭据缺失退回会话模型并 warn、启动成功后销毁暂存副本）与 `session-flow.applyHeldQueueDisposition` 的 clearQueueAndSend 清理。类型保证的降级描述作废，现在是实现保证。
+- **编辑重发关键路径测试**：未整搬上游 1493 行 harness；自建 `bootstrap/test/x1-fork-edit-retry.test.ts`（5 例，经 NATIVE_HANDLERS 注册表入口 + 最小 host/record 桩）覆盖 X1 四个判定点：跨会话卡不应用、过期卡退回会话模型、同会话有效卡写快照换 Selection 带执行材料、admission 竞态原子入队（requireQueue 重试 + warn 审计），外加纯引用编辑放行。
+- **create-workflow.ts 拆分**：433 → `create-workflow.ts`（180，entry/schema/确认窗/权限声明）+ `create-workflow-handler.ts`（296，handler 与私有助手）。NOTE 常量与 `describeWorkflowConcurrencyLimit`/`resolveTraceContext` 在 handler 文件定义、entry 重导出，amend-workflow 的既有导入路径不变。
+
+验证：六包 tsc --noEmit 全绿；core 89 + cli 8 + adapters 21 + tui 12 + bootstrap 56 = 186 测试全绿。

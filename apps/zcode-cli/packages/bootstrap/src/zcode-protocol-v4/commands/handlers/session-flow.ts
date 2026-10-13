@@ -128,6 +128,8 @@ export async function applyHeldQueueDisposition(
   }
   if (disposition === "clearQueueAndSend") {
     await record.app.clearQueueItems();
+    // Modified by ZCode:X1。被清空的队列项可能带有内存暂存的高凭据；队列已没，凭据必须一起没。
+    host.clearQueuedTurnExecutions?.(record.app.sessionId);
   }
 }
 

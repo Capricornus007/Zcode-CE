@@ -228,7 +228,7 @@
     "apps/zcode-cli/packages/adapters/package.json": "da99aebdd4d463b7705a2a0febc12adb9ad7e792f74f4ba7c4e258b8bb6a13dc",
     "apps/zcode-cli/packages/bootstrap/package.json": "0e175ac8b64cd5b478c15e6bf71fb3940c17ddb7f95fb7cbcdd426bb61ce5bef",
     "apps/zcode-cli/packages/bootstrap/src/app/types.ts": "348855c40fb7f4169e591330bf6dc32105f0eb7b844c35653d0ac215c8bc3f28",
-    "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/canonical-intent-replay.ts": "4a40f2e4f4916bf57696ba6368b4f32f8d493f81fd07a1004eccbe8f6b915d60",
+    "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/canonical-intent-replay.ts": "544f8528b4b89fc2a3fe7d7ad6edfcce53fe6c606ca797f51a4adf0d4293cd72",
     "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/fork-edit-retry.ts": "21c312dcf3069aaca4f366e68800d55b0f4b8621b16d3b7b68cef4ac18a1bda6",
     "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/input-intent.ts": "daa953b7726027fc4ed08107da3ebbdea6cb3f5578b4ad5f2d72a92a51ebd960",
     "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/prompt-turn.ts": "98e88d39682abb858b4816d25f81b00dd0072a21b244450c003da5ad4b113ecd",
@@ -1612,21 +1612,32 @@
     "packages/services/src/bots/botConfigHelpers.ts": "f4d5e4d3a6141d44a5d99418417c1d4eed80321084b671ae07d1ea86726abe9a",
     "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
     "packages/services/src/bots/botRemoteWorkspaceBridge.ts": "740b0cf99acc93d3d901919d4ef2652ebf06279ae445d2476c88a106286a1ae7",
-    "packages/services/src/bots/bots.ts": "01764678a4aff2c3fcc8732ae7cf4fa945ea639cf5cd23c331a4d0ac08750fcc",
-    "packages/services/src/bots/botsService.ts": "fbdbe0bdf81a68dc0bce1504d9bdbe23bcb47492c42d1ef3b42e24dea4719fbc",
+    "packages/services/src/bots/bots.ts": "525f2a34ee086912fc6292e18cac3b78beda8ca2b7c663af9e9deb406bc9cbd1",
+    "packages/services/src/bots/botsService.ts": "f524a6492e1bd76851edaf6de0a1951d1105ef91e02b5fcf91a28ff9bbabba93",
+    "packages/services/src/bots/channelMentionResolver.ts": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909",
+    "packages/services/src/bots/channelReply.ts": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3",
     "packages/services/src/bots/channelRuntime.ts": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74",
     "packages/services/src/bots/commandOrder.ts": "5bd3200e30f1458351b355d97328763496c798f4959326c27e581b7fba5f0a72",
     "packages/services/src/bots/commandParser.ts": "bc592f34c14b6f73d5b1ab2c913c0c77c99138f1e043cdb18187143fd069b8ff",
     "packages/services/src/bots/config.ts": "be93598984c0e73e129a0f1135d9baf490d6207ffa91dd804df58d6afa3fc542",
     "packages/services/src/bots/feishuChannelRuntime.ts": "aab47c1a41c7e2e921cc6d5374ac56bdac2ef2d1d989710b7ed00fd3fd9bd111",
-    "packages/services/src/bots/messages.ts": "539ceff11efcceff6e7cf4146fcff8b09a47d8364687365882f078ab5c540f75",
+    "packages/services/src/bots/groupAdminAttention.ts": "747f60553685e52bc69a136abd5f469f0ff4c16f650c783caef97411cb05c1f8",
+    "packages/services/src/bots/groupDeliveryThrottle.ts": "ff5a0a8faea74cf79a916d52b1936b99f61662f0d585b6687a1dca08606d8386",
+    "packages/services/src/bots/groupQueueCard.ts": "d5b3d0551bfd66962fdb2eade805d75babffd3dfbb9f89f023c7c8f5dc2bf3d5",
+    "packages/services/src/bots/groupReply.ts": "e36a2fb16b92686a31366663ce76b4cb4d6b699b06d160e876778e93073aaa10",
+    "packages/services/src/bots/groupResultDelivery.ts": "54d9fa1feabd0bbf03a4757627d8bbfe646af3b776668094462affaf49d89cb1",
+    "packages/services/src/bots/groupSessions.ts": "07f1a786fb103ddc0cf60143673e5a58653530295a13c1716ca927407896c6c3",
+    "packages/services/src/bots/messages.ts": "2dc9f3f74753c668bf16d40b51db753eda3b3b572893e52e1bac9167c73f9b1e",
     "packages/services/src/bots/modelSelectionHelpers.ts": "1b8279ecc7e2ee11980346cadc088eaa3f38d2ac3b51c283bb9a709dbe70b051",
     "packages/services/src/bots/providers/feishuAppRegistration.ts": "7a6a1919de4d0f9f862e4755f25a9383f4f3e73b80d0e86f1727930b77486978",
     "packages/services/src/bots/providers/feishuDisplayNameCache.ts": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf",
+    "packages/services/src/bots/providers/feishuGroupMessages.ts": "8f533592134bb8d514e729a3acd13735a34cb4572cdd3bd9056d17cd01ab4b02",
     "packages/services/src/bots/providers/feishuProvider.ts": "08f13ed9dcdd759c9e555dd4fc9ac06021839f57c3660b01e3322f6079f1d298",
+    "packages/services/src/bots/providers/groupInputReaction.ts": "2dfae7a686d125a0600adc4dc06aa166137b424f65c78393946ba0b14d8ba59b",
+    "packages/services/src/bots/providers/groupMemberDirectory.ts": "c36d1bcb2ae37295f7403396615e6d5f7d2e13154fd93ed53cb377b023f7d3d8",
     "packages/services/src/bots/providers/providerRequest.ts": "8412040408c61525b4e1291e1721556febdcf80b5b39584f06b9eae47b8d314b",
     "packages/services/src/bots/providers/telegramProvider.ts": "19e64d9c9042329564d8045fb5e96a90a6a65d5f71b14559b963274bb24b7ff7",
-    "packages/services/src/bots/providers/types.ts": "92dee8cc703901971d854f0a9c81b19e673d5fb323a2fa181b6b69a96442b07a",
+    "packages/services/src/bots/providers/types.ts": "e652fdb9bb423f5f9a6fc392a65d2957abbe854e14a47b3951ed9ab59bb9f996",
     "packages/services/src/bots/providers/webhookProvider.ts": "53bcb8e9787097a46ce4e5ff780a45a77170926231a4afe4803446897c24008a",
     "packages/services/src/bots/providers/weixinProvider.ts": "7f88a6adb5e6883dbf00e1f2c5f1e6f38f0c9063bc9f8c5b4490f208432f9804",
     "packages/services/src/bots/providers/weixinRegistration.ts": "290ff395a2ca6c0ca9d185dae0af029b0f2589d639c0b20edb9d37bf7ed0f276",
@@ -1635,7 +1646,13 @@
     "packages/services/src/bots/statusFormatting.ts": "f645bb81625ab71504cffa14438b153ed6d3f13fcdcfbd584e653e9513d01369",
     "packages/services/src/bots/storageMigration.ts": "d6b806bd77f4f3ba070559c6bc48bd64e20848c14a0639fefb95c3d1bf96baf6",
     "packages/services/src/bots/taskFailureMessage.ts": "ca18d0f1372daf9ed0d673b54f02222f3ab8eb346fca4170283efc818467b30d",
+    "packages/services/src/bots/taskStreamHub.ts": "ae8d38d374216465927bfbf956e5576e20bebb66172707d77084d18905dde3d7",
     "packages/services/src/bots/telegramChannelRuntime.ts": "92936b803880362960acbfbcc78b3bed8e85dee7c6a95ef49a49a306c7075028",
+    "packages/services/src/bots/topicContinuation.ts": "ee122db713a8c728021b8002a54f8f765c3e1fcb8f8776a60a47d24e512ec5cc",
+    "packages/services/src/bots/topicHistory.ts": "e808201b53484920815d35bdc92f18484ac1b98b68ec013b7214a042e2a618fe",
+    "packages/services/src/bots/topicHistoryAttachment.ts": "b9f11e012e6b3d9a9b839e7e9d826b37aef1dfdd7867dbe0ae9877014f484365",
+    "packages/services/src/bots/topicPreparationState.ts": "6464b584bf201cae93743d16c357e4087d4f66d54b38ce249271e97a89a63113",
+    "packages/services/src/bots/topicResource.ts": "f4559e855084c9d47710268b0ba94ec8701966c7c33d00035e6ee1b66a6ad2ca",
     "packages/services/src/bots/weixinChannelRuntime.ts": "701c2482365fabb20503a4681dd7cfa560b9137e7f8678077cc0e4b6516cd876",
     "packages/services/src/bots/workspaceHelpers.ts": "2681a2c8cb2a7c11d44920060bb60af3d45a1fb28389bf5079940898fade0871",
     "packages/services/src/gen-ui/adapters/files.ts": "8e98f310525ac70c31e19f34e8fae195bc7482efad18b610226660f15910de07",
@@ -31477,11 +31494,19 @@
         },
         {
           "file": "packages/services/src/bots/bots.ts",
-          "sha256": "01764678a4aff2c3fcc8732ae7cf4fa945ea639cf5cd23c331a4d0ac08750fcc"
+          "sha256": "525f2a34ee086912fc6292e18cac3b78beda8ca2b7c663af9e9deb406bc9cbd1"
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "fbdbe0bdf81a68dc0bce1504d9bdbe23bcb47492c42d1ef3b42e24dea4719fbc"
+          "sha256": "f524a6492e1bd76851edaf6de0a1951d1105ef91e02b5fcf91a28ff9bbabba93"
+        },
+        {
+          "file": "packages/services/src/bots/channelMentionResolver.ts",
+          "sha256": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909"
+        },
+        {
+          "file": "packages/services/src/bots/channelReply.ts",
+          "sha256": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3"
         },
         {
           "file": "packages/services/src/bots/channelRuntime.ts",
@@ -31504,8 +31529,32 @@
           "sha256": "aab47c1a41c7e2e921cc6d5374ac56bdac2ef2d1d989710b7ed00fd3fd9bd111"
         },
         {
+          "file": "packages/services/src/bots/groupAdminAttention.ts",
+          "sha256": "747f60553685e52bc69a136abd5f469f0ff4c16f650c783caef97411cb05c1f8"
+        },
+        {
+          "file": "packages/services/src/bots/groupDeliveryThrottle.ts",
+          "sha256": "ff5a0a8faea74cf79a916d52b1936b99f61662f0d585b6687a1dca08606d8386"
+        },
+        {
+          "file": "packages/services/src/bots/groupQueueCard.ts",
+          "sha256": "d5b3d0551bfd66962fdb2eade805d75babffd3dfbb9f89f023c7c8f5dc2bf3d5"
+        },
+        {
+          "file": "packages/services/src/bots/groupReply.ts",
+          "sha256": "e36a2fb16b92686a31366663ce76b4cb4d6b699b06d160e876778e93073aaa10"
+        },
+        {
+          "file": "packages/services/src/bots/groupResultDelivery.ts",
+          "sha256": "54d9fa1feabd0bbf03a4757627d8bbfe646af3b776668094462affaf49d89cb1"
+        },
+        {
+          "file": "packages/services/src/bots/groupSessions.ts",
+          "sha256": "07f1a786fb103ddc0cf60143673e5a58653530295a13c1716ca927407896c6c3"
+        },
+        {
           "file": "packages/services/src/bots/messages.ts",
-          "sha256": "539ceff11efcceff6e7cf4146fcff8b09a47d8364687365882f078ab5c540f75"
+          "sha256": "2dc9f3f74753c668bf16d40b51db753eda3b3b572893e52e1bac9167c73f9b1e"
         },
         {
           "file": "packages/services/src/bots/modelSelectionHelpers.ts",
@@ -31520,8 +31569,20 @@
           "sha256": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf"
         },
         {
+          "file": "packages/services/src/bots/providers/feishuGroupMessages.ts",
+          "sha256": "8f533592134bb8d514e729a3acd13735a34cb4572cdd3bd9056d17cd01ab4b02"
+        },
+        {
           "file": "packages/services/src/bots/providers/feishuProvider.ts",
           "sha256": "08f13ed9dcdd759c9e555dd4fc9ac06021839f57c3660b01e3322f6079f1d298"
+        },
+        {
+          "file": "packages/services/src/bots/providers/groupInputReaction.ts",
+          "sha256": "2dfae7a686d125a0600adc4dc06aa166137b424f65c78393946ba0b14d8ba59b"
+        },
+        {
+          "file": "packages/services/src/bots/providers/groupMemberDirectory.ts",
+          "sha256": "c36d1bcb2ae37295f7403396615e6d5f7d2e13154fd93ed53cb377b023f7d3d8"
         },
         {
           "file": "packages/services/src/bots/providers/providerRequest.ts",
@@ -31533,7 +31594,7 @@
         },
         {
           "file": "packages/services/src/bots/providers/types.ts",
-          "sha256": "92dee8cc703901971d854f0a9c81b19e673d5fb323a2fa181b6b69a96442b07a"
+          "sha256": "e652fdb9bb423f5f9a6fc392a65d2957abbe854e14a47b3951ed9ab59bb9f996"
         },
         {
           "file": "packages/services/src/bots/providers/webhookProvider.ts",
@@ -31568,8 +31629,32 @@
           "sha256": "ca18d0f1372daf9ed0d673b54f02222f3ab8eb346fca4170283efc818467b30d"
         },
         {
+          "file": "packages/services/src/bots/taskStreamHub.ts",
+          "sha256": "ae8d38d374216465927bfbf956e5576e20bebb66172707d77084d18905dde3d7"
+        },
+        {
           "file": "packages/services/src/bots/telegramChannelRuntime.ts",
           "sha256": "92936b803880362960acbfbcc78b3bed8e85dee7c6a95ef49a49a306c7075028"
+        },
+        {
+          "file": "packages/services/src/bots/topicContinuation.ts",
+          "sha256": "ee122db713a8c728021b8002a54f8f765c3e1fcb8f8776a60a47d24e512ec5cc"
+        },
+        {
+          "file": "packages/services/src/bots/topicHistory.ts",
+          "sha256": "e808201b53484920815d35bdc92f18484ac1b98b68ec013b7214a042e2a618fe"
+        },
+        {
+          "file": "packages/services/src/bots/topicHistoryAttachment.ts",
+          "sha256": "b9f11e012e6b3d9a9b839e7e9d826b37aef1dfdd7867dbe0ae9877014f484365"
+        },
+        {
+          "file": "packages/services/src/bots/topicPreparationState.ts",
+          "sha256": "6464b584bf201cae93743d16c357e4087d4f66d54b38ce249271e97a89a63113"
+        },
+        {
+          "file": "packages/services/src/bots/topicResource.ts",
+          "sha256": "f4559e855084c9d47710268b0ba94ec8701966c7c33d00035e6ee1b66a6ad2ca"
         },
         {
           "file": "packages/services/src/bots/weixinChannelRuntime.ts",
@@ -32367,7 +32452,7 @@
         },
         {
           "file": "apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/canonical-intent-replay.ts",
-          "sha256": "4a40f2e4f4916bf57696ba6368b4f32f8d493f81fd07a1004eccbe8f6b915d60"
+          "sha256": "544f8528b4b89fc2a3fe7d7ad6edfcce53fe6c606ca797f51a4adf0d4293cd72"
         },
         {
           "file": "apps/zcode-cli/packages/core/src/runtime/methods/prompt-admission.ts",

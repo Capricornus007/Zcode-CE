@@ -124,8 +124,12 @@ export async function startCanonicalIntent(
   }
 }
 
-/** 上游 input-admission 的同名 resolver；CE 复用 session-flow 既有解析（见模块头偏离说明）。 */
-function resolveSessionFallbackModelSelection(
+/**
+ * Modified by ZCode:X1。上游 input-admission 的同名 resolver；CE 复用 session-flow 既有解析
+ * （见模块头偏离说明）。导出供 queue 提升路径共用：加速 Selection 失效时必须同时改写
+ * Selection（只删卡标记会让本轮带着加速 provider 却没有任何凭据）。
+ */
+export function resolveSessionFallbackModelSelection(
   record: V4SessionRecordView,
 ): NonNullable<CommandPayloadMap["editUserQuery"]["modelSelection"]> {
   return resolveSubmittedExecutionState(record, {}).modelSelection;

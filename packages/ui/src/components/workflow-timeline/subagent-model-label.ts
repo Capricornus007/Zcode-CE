@@ -1,9 +1,10 @@
+// Modified by ZCode: F6: 采用上游 3.15.1 版补 workflowActorModelLabels 导出(纯函数 +24 行, CE 无自研)。
 import { thoughtLevelLabelId } from "@/chat-input-toolbar/thoughtLevelOptions.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
 import { formatProviderModelLabel } from "@/v4/composer/modelTriggerDisplay.js";
 
 /**
- * 子代理模型的**词**：run 上存的是规范串
+ * 子代理模型的词：run 上存的是规范串
  * `providerId/modelId[$reasoningLevel]`——那是给机器回填用的，不是给人读的。团队套餐的
  * providerId 是一个 UUID，原样贴到屏幕上，用户第一眼看到的就是一串十六进制。
  *
@@ -31,7 +32,7 @@ export interface WorkflowSubagentModelDeps {
   formatMessage: FormatMessage;
   /**
    * providerId → 会话模型清单里的 provider 名。缺席（或查不到）时退回裸 modelId——
-   * 这是**刻意**的兜底：解析不到名字也绝不把 providerId 摆出来。
+   * 这是刻意的兜底：解析不到名字也绝不把 providerId 摆出来。
    */
   providerName?: (providerId: string) => string | undefined;
 }
@@ -125,4 +126,25 @@ export function workflowSubagentModelCardLabel(
   }
   const label = describeWorkflowSubagentModel(canonical, deps);
   return { name: label.name, title: workflowSubagentModelTooltip(deps.formatMessage, label) };
+}
+
+/**
+ * 脊线上子代理行要的模型词（docs/dynamic-workflow/presentation.md「The spine」）：persona 点名了
+ * 模型的子代理，行尾计数后面跟上模型名，行的 tooltip 多一行规范串。按实例键 `siteId@ordinal`
+ * 索引一次，行只查不算。跑在 run 模型上的子代理不进表——摘要行已经说过那个模型。
+ */
+export function workflowActorModelLabels(
+  actors: readonly { siteId: string; ordinal: number; model?: string }[] | undefined,
+  deps: WorkflowSubagentModelDeps,
+): ReadonlyMap<string, { name: string; canonical: string }> {
+  const labels = new Map<string, { name: string; canonical: string }>();
+  for (const actor of actors ?? []) {
+    if (actor.model === undefined) continue;
+    const label = describeWorkflowSubagentModel(actor.model, deps);
+    labels.set(`${actor.siteId}@${actor.ordinal}`, {
+      name: label.name,
+      canonical: label.canonical,
+    });
+  }
+  return labels;
 }

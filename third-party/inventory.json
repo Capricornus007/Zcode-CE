@@ -1615,7 +1615,7 @@
     "packages/services/src/bots/bots.ts": "53e19f0f1812b1297d60b12fa062c73928cfc42c7fed9633cee4d89bbab7c7f5",
     "packages/services/src/bots/botsService.ts": "ebd67bb62e0303cd04fdbc3de565c2a7d010149c3c9770259ba703996f9f5e43",
     "packages/services/src/bots/channelMentionResolver.ts": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909",
-    "packages/services/src/bots/channelReply.ts": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3",
+    "packages/services/src/bots/channelReply.ts": "f0b2a2bca51bc35bb6d9b75290f7c9fcd7a262bdc229d765436255d38455da4c",
     "packages/services/src/bots/channelRuntime.ts": "1e2f5b1f3c86e223f039a91bab01121dbc263ce93724438c13b2249e1b147f74",
     "packages/services/src/bots/commandOrder.ts": "5bd3200e30f1458351b355d97328763496c798f4959326c27e581b7fba5f0a72",
     "packages/services/src/bots/commandParser.ts": "bc592f34c14b6f73d5b1ab2c913c0c77c99138f1e043cdb18187143fd069b8ff",
@@ -1625,7 +1625,7 @@
     "packages/services/src/bots/groupDeliveryThrottle.ts": "ff5a0a8faea74cf79a916d52b1936b99f61662f0d585b6687a1dca08606d8386",
     "packages/services/src/bots/groupQueueCard.ts": "d5b3d0551bfd66962fdb2eade805d75babffd3dfbb9f89f023c7c8f5dc2bf3d5",
     "packages/services/src/bots/groupReply.ts": "e36a2fb16b92686a31366663ce76b4cb4d6b699b06d160e876778e93073aaa10",
-    "packages/services/src/bots/groupResultDelivery.ts": "54d9fa1feabd0bbf03a4757627d8bbfe646af3b776668094462affaf49d89cb1",
+    "packages/services/src/bots/groupResultDelivery.ts": "3b74c5f285399272d7f1682e6d340394fb74eecad51affb9fe3353dc58f197ed",
     "packages/services/src/bots/groupSessions.ts": "07f1a786fb103ddc0cf60143673e5a58653530295a13c1716ca927407896c6c3",
     "packages/services/src/bots/messages.ts": "2dc9f3f74753c668bf16d40b51db753eda3b3b572893e52e1bac9167c73f9b1e",
     "packages/services/src/bots/modelSelectionHelpers.ts": "1b8279ecc7e2ee11980346cadc088eaa3f38d2ac3b51c283bb9a709dbe70b051",
@@ -1680,8 +1680,8 @@
     "packages/services/src/plugin-ui-bridge/samplingContract.ts": "be0c9b969692511f4acaa8d1a1a49222bcb6f36fa77a542c178a441d01eeafec",
     "packages/services/src/session/zcodeTaskService.ts": "750638a712e011ea34c9c589f7c09f1232fc44878b9253d99b223e0cda96ff74",
     "packages/services/src/zcode-agent/botTopicAdmission.ts": "10e2878cca354e31336a66e0739bd643db48dda9f967ed9f4edb012fe164a268",
-    "packages/services/src/zcode-agent/groupAttachmentUpload.ts": "2a9971473632174bf5255501c7f5fe58488a77159bb337d67330ee2ccb583a28",
-    "packages/services/src/zcode-agent/groupRuntimeSnapshot.ts": "62072670a30e39fbe87a99a0a98b3e0b2f621d541fde1e60e5f7a8e3c8714d4d",
+    "packages/services/src/zcode-agent/groupAttachmentUpload.ts": "00216e365c8f2547c2cf40487c3963295e34174929dc16eb35a6af32f7081c06",
+    "packages/services/src/zcode-agent/groupRuntimeSnapshot.ts": "826cbd314a164d9e2e2f330984002e4b9565780ac714825febe764d36d040edb",
     "packages/services/src/zcode-agent/zcodeAgent.ts": "a2474dc921576684ae3c4c2dc3629c48dd32d54c626b20fa09d4f21d1b5aaecb",
     "packages/services/src/zcode-agent/zcodeAgentPluginParams.ts": "4cc744012ab424eaa819812bc7b9e376bc5de6f1979da88cb9e4c924a7c6b811",
     "packages/services/src/zcode-agent/zcodeAgentService.ts": "3f585d126d68d84331a71c9393a1ef98b44de16df1335109d1eb2356666b7f04",
@@ -31511,7 +31511,7 @@
         },
         {
           "file": "packages/services/src/bots/channelReply.ts",
-          "sha256": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3"
+          "sha256": "f0b2a2bca51bc35bb6d9b75290f7c9fcd7a262bdc229d765436255d38455da4c"
         },
         {
           "file": "packages/services/src/bots/channelRuntime.ts",
@@ -31551,7 +31551,7 @@
         },
         {
           "file": "packages/services/src/bots/groupResultDelivery.ts",
-          "sha256": "54d9fa1feabd0bbf03a4757627d8bbfe646af3b776668094462affaf49d89cb1"
+          "sha256": "3b74c5f285399272d7f1682e6d340394fb74eecad51affb9fe3353dc58f197ed"
         },
         {
           "file": "packages/services/src/bots/groupSessions.ts",
@@ -34034,7 +34034,7 @@
         },
         {
           "file": "packages/services/src/bots/groupResultDelivery.ts",
-          "sha256": "54d9fa1feabd0bbf03a4757627d8bbfe646af3b776668094462affaf49d89cb1"
+          "sha256": "3b74c5f285399272d7f1682e6d340394fb74eecad51affb9fe3353dc58f197ed"
         },
         {
           "file": "packages/services/src/bots/topicContinuation.ts",
@@ -34066,7 +34066,7 @@
         },
         {
           "file": "packages/services/src/bots/channelReply.ts",
-          "sha256": "be1856e6f9f5aead2da426ddac41a57017239930c6846253989cd69034305ae3"
+          "sha256": "f0b2a2bca51bc35bb6d9b75290f7c9fcd7a262bdc229d765436255d38455da4c"
         },
         {
           "file": "packages/services/src/bots/providers/feishuGroupMessages.ts",
@@ -34090,11 +34090,11 @@
         },
         {
           "file": "packages/services/src/zcode-agent/groupRuntimeSnapshot.ts",
-          "sha256": "62072670a30e39fbe87a99a0a98b3e0b2f621d541fde1e60e5f7a8e3c8714d4d"
+          "sha256": "826cbd314a164d9e2e2f330984002e4b9565780ac714825febe764d36d040edb"
         },
         {
           "file": "packages/services/src/zcode-agent/groupAttachmentUpload.ts",
-          "sha256": "2a9971473632174bf5255501c7f5fe58488a77159bb337d67330ee2ccb583a28"
+          "sha256": "00216e365c8f2547c2cf40487c3963295e34174929dc16eb35a6af32f7081c06"
         },
         {
           "file": "packages/services/src/bots/bots.ts",

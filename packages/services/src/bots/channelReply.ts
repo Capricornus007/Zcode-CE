@@ -1,3 +1,4 @@
+// Modified by ZCode: 逐字节搬运自上游 aac47556；上游 import 路径别名 #src/bots/channelMentionResolver.js 按布局重写为 ./channelMentionResolver.js（local modification，仅路径重写）。
 import { resolveChannelMentionNames } from "./channelMentionResolver.js";
 import { createHash } from "node:crypto";
 import {

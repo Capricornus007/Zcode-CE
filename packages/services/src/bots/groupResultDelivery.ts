@@ -1,3 +1,4 @@
+// Modified by ZCode: 逐字节搬运自上游 aac47556；上游 import 路径别名 #src/bots/groupReply.js 按布局重写为 ./groupReply.js（local modification，仅路径重写）。
 import { getUnavailableReplyFallback } from "./groupReply.js";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { BotGroupDelivery } from "@zcode/shared";

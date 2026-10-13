@@ -1,3 +1,4 @@
+// Modified by ZCode: 逐字节搬运自上游 aac47556；上游 import 路径别名按 CE 布局重写为相对路径（local modification，仅路径重写）。
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { ZCodePromptAttachment } from "@zcode/shared";

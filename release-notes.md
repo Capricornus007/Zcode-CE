@@ -5,7 +5,6 @@
 本版从上游 `zai-org/ZCode` `v3.15.1`（`aac47556`，Apache-2.0，官方公告 2026-10-12：11 项新功能 + 12 项修复）移植。公告条目与本仓库的逐条对照（已跟进 / 部分跟进 / 未跟进（有意） / 不适用四档）见 `docs/development/upstream-sync.md` 的 v3.15.1 节。
 
 - **已落地**：F2（HighSpeed 客户端面）、F3（危险命令确认）、F4（可视化交互界面）、F5（UI 插件 / MCP App，契约 + 桌面宿主 + 界面 + 服务桥）、F6/F7（工作流运行中改并发、保存复跑链、子代理单独指定模型）、F8（飞书群 + 独立话题：服务波次与 UI 接线）、F9（内置浏览器权限治理）、F10（Linux 托盘驻留）、F11（账户菜单套餐与复制用户 ID）、X1/X2/X3/X4/X5/X6/X8/X9/X11/X12，以及上游 3.15.3 闭源修复中的 OAuth 损坏会话清理容错（A2）。
-- **部分跟进（延期到下一轮）**：F6 的渲染层判别（station-observation 取舍）与创建前调参界面。
 - **有意不搬**：F1「邀请好友·免费蹬蹬」是官方服务端运营活动（开源仓库零载荷）；F2 的服务端部分（抽卡权重与发卡逻辑）；上游 3.15.3 闭源的更新退出状态机与签名器守卫（经评估 CE 无对应链路与组件，依据见 upstream-sync v3.15.1 节）。
 
 ## 新增功能
@@ -16,7 +15,7 @@
 - **内置浏览器现在有网站权限管理**：内置浏览器（用于网页类任务）对摄像头、麦克风、剪贴板读取、地理位置、通知、MIDI、设备与屏幕共享等敏感能力**默认不自动放行**——每项都要你点头（访问此网站时允许 / 仅本次允许 / 不允许，20 秒超时按拒绝结算），设备类弹出选择器选具体设备。同意记录按站点持久化，可在设置页「网站权限」查看与清除，清除浏览器数据时一并联动。未知的新权限枚举一律拒绝，不会随 Electron 升级悄悄放权。
 - **Linux 下关闭窗口可驻留系统托盘**：Linux 对齐 Windows 的托盘驻留（设置开 + 托盘可用时关窗隐藏驻留）。托盘是否可用先检测系统的 StatusNotifier 支持，不可用时设置项置灰并回到既有的确认退出路径，不会失联；GNOME 类未装 AppIndicator 的环境会提示安装扩展。托盘右键菜单的「清空全部数据」改为「导出日志」（不再从右键菜单暴露清空操作）。
 - **账户菜单可查看套餐并复制用户 ID**：左下角账户菜单头部显示当前套餐与用户 ID，排查或报障时一键复制用户 ID（失败有明确提示）。
-- **工作流支持运行中改并发、保存复跑，子代理可单独指定模型**：运行中的工作流可以在确认窗里调整并发上限与单个子代理使用的模型（向下取整、回到默认与会话模型三态语义），保存后的工作流可直接复跑；工作流记录里也会如实呈现每个子代理实际使用的模型。创建前的参数配置界面与部分工作流渲染的判别仍在跟进（见维护者台账）。
+- **工作流支持创建前调参、运行中改并发、保存复跑，子代理可单独指定模型**：创建工作流时即可配置参数（asks 设置面板与模型选择），运行中的工作流可以在确认窗里调整并发上限与单个子代理使用的模型（向下取整、回到默认与会话模型三态语义），保存后的工作流可直接复跑；工作流记录里也会如实呈现每个子代理实际使用的模型。工作流时间线的渲染（站点、孔洞、填充、脊线）整体对齐了上游 3.15.1 的 A-prime 形态。
 - **GLM HighSpeed 加速卡界面（客户端面）**：命中加速时本轮消息出现紫色流光卡片与激活动效，带到期时钟与剩余时长（节省时长标签）；卡片可分享。加速上下文在切走再切回时从「恢复」态继续，不重播扩散动画；卡过期后不再把普通输出染成加速样式。发卡与抽奖逻辑属官方服务端，本版只包含客户端展示与交互。
 
 - **飞书群里可以开独立话题协作**：群里的机器人交互自动归入话题上下文——话题的准备态、历史、续接、附件与资源都在话题内隔离，互不串线；群成员名册可查，投递有节流与队列卡防刷屏；@提及与反向回复走严格解析。与 CE 既有形态一致：IM 机器人（Bot Channel）默认关闭、用户同意后开启，Web 自托管控制默认开。
@@ -40,7 +39,7 @@
 ## 本版尚未验证
 
 - **JetBrains/Windows deep-link 加固未在真机验证**：注册表命令行的核对在 Linux 开发环境下无法执行。
-- **内置浏览器的权限弹窗与插件沙箱未在真实 Electron 窗口里逐屏看过**：门控行为有单测覆盖，渲染态与真实 webview attach 未做端到端验证（需要 dev:desktop 联调一轮）。
+- **内置浏览器的权限弹窗与插件沙箱未在真实 Electron 窗口里逐屏看过**：会话级真实行为（session 清除断言）已在真实 Electron 上验证；门控行为有单测覆盖，渲染态与真实 webview attach 未做逐屏端到端验证（需要 dev:desktop 联调一轮）。
 - **工作流并发上限的两条界（ceiling 与 limit）语义重构后，与既有钳制行为并存**：两路并存的行为差异由本版回归测试覆盖，长期使用反馈待观察。
 - **GLM HighSpeed 卡片依赖官方服务端下发**：客户端展示与交互已实现，但命中加速的实际下发、到期与节省时长标签的数值未做线上验证。
 
@@ -53,7 +52,6 @@
 This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2.0; official announcement 2026-10-12: 11 features + 12 fixes). The entry-by-entry ledger (synced / partially synced / intentionally not synced / not applicable) is in the v3.15.1 section of `docs/development/upstream-sync.md`.
 
 - **Landed**: F2 (HighSpeed client side), F3 (dangerous-command confirmation), F4 (visualization surface), F5 (UI plugins / MCP App — contract, desktop host, UI surface and service bridge), F6/F7 (in-run concurrency adjustment, save-and-rerun chain, per-subagent model), F8 (Feishu groups + standalone topics: service wave and UI wiring), F9 (embedded-browser permission governance), F10 (Linux close-to-tray), F11 (account menu plan + copy user ID), X1/X2/X3/X4/X5/X6/X8/X9/X11/X12, plus the corrupt-OAuth-session cleanup tolerance from upstream's closed-source 3.15.3 (A2).
-- **Partially synced (deferred to the next round)**: the F6 render-layer discrimination (station-observation trade-off) and the pre-create settings UI.
 - **Intentionally not ported**: F1 "invite friends" is an official server-side campaign (zero payload in the open-source repository); the server-side parts of F2 (lottery weights and issuance); upstream 3.15.3's closed-source update-exit state machine and signer guards (CE has no corresponding link or component — rationale in the upstream-sync v3.15.1 section).
 
 ## New features
@@ -64,7 +62,7 @@ This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2
 - **The embedded browser now has site permission management**: sensitive capabilities — camera, microphone, clipboard read, geolocation, notifications, MIDI, devices, screen sharing — are **no longer auto-approved**: each requires your decision (allow on this site / allow once / deny; 20 s timeout counts as deny), with device pickers for device-type permissions. Consent is persisted per site, viewable and clearable in Settings → "Site permissions", and cleared together with browser data. Unknown permission enums are denied outright, so new Electron permissions cannot silently grant access.
 - **Closing the window on Linux can now keep the app in the system tray**: Linux reaches parity with Windows' close-to-tray (when enabled and a tray is available, closing hides to tray). Tray availability is detected via StatusNotifier support; when unavailable the setting is disabled and the existing confirm-quit path is used (you never lose control). GNOME-style desktops without AppIndicator get an install hint. The tray context menu's "clear all data" became "export logs" (no longer exposing destructive cleanup from the tray).
 - **The account menu shows your plan and copies your user ID**: the account menu footer shows the current plan badge and user ID; a one-click copy for support tickets (failures are reported clearly).
-- **Workflows support in-run concurrency adjustment, save-and-rerun, and per-subagent models**: the confirmation pane adjusts a running workflow's concurrency cap and the model used by individual subagents (floor / back to default / session model, three-state semantics); saved workflows can be rerun directly; the per-run record honestly shows which model each subagent actually used. The pre-create settings UI and the discrimination of some workflow rendering are still being followed up (see the maintainer ledger).
+- **Workflows support pre-create settings, in-run concurrency adjustment, save-and-rerun, and per-subagent models**: creation-time parameter configuration (asks settings panel and model choice); the confirmation pane adjusts a running workflow's concurrency cap and the model used by individual subagents (floor / back to default / session model, three-state semantics); saved workflows can be rerun directly; the per-run record honestly shows which model each subagent actually used. The workflow timeline rendering (stations, holes, fills, spine) is aligned with upstream 3.15.1's A-prime shape.
 - **GLM HighSpeed card UI (client side)**: an accelerated turn shows a purple animated card with activation effect, expiry clock and remaining time saved; the card is shareable. Acceleration context resumes (not replays) when switching away and back; once a card expires, ordinary output is no longer styled as accelerated. Issuance and the lottery are official server-side; this release contains only the client presentation and interaction.
 
 - **Standalone topic collaboration in Feishu groups**: bot interactions in a group are scoped to their own topic context — preparation state, history, continuation, attachments and resources are all isolated per topic and never cross wires; the group member directory is queryable, delivery is throttled with queue cards to prevent flooding, and @mentions and reverse replies use the strict parser. Consistent with CE's existing posture: the IM bot channel (Bot Channel) is off by default and enabled only with your consent, while the self-hosted Web console stays on by default.
@@ -88,6 +86,6 @@ This release ports from upstream `zai-org/ZCode` `v3.15.1` (`aac47556`, Apache-2
 ## Not yet verified in this version
 
 - **The Windows deep-link hardening was not verified on a real Windows machine**: registry command-line inspection cannot run from a Linux dev environment.
-- **The embedded-browser permission prompts and the plugin sandbox have not been seen in a real Electron window**: gating behavior is unit-tested; rendered state and real webview attach were not verified end to end (needs a dev:desktop pass).
+- **The embedded-browser permission prompts and the plugin sandbox have not been seen in a real Electron window**: session-level behavior (session-clear assertions) was verified on a real Electron run; gating behavior is unit-tested, while rendered state and real webview attach were not verified screen by screen end to end (needs a dev:desktop pass).
 - **After the workflow concurrency two-bounds (ceiling vs limit) rework, the new semantics coexist with the existing clamp behavior**: the differences are covered by this release's regression tests; long-term behavior under real use remains to be seen.
 - **The GLM HighSpeed cards depend on official server-side issuance**: the client presentation and interaction are implemented, but actual accelerated delivery, expiry and the remaining-time labels were not verified against the live service.

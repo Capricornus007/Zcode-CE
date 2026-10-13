@@ -503,6 +503,8 @@ export type PromptAdmissionOptions = ExecuteTurnOptions & {
   queueDelivery?: "guide" | "queue";
   /** queue promotion 等内部调用要求 admission 必须 idle，否则直接拒绝。 */
   requireIdle?: boolean;
+  // Modified by ZCode:X1。编辑重发的排队语义：不参考 busy 快照，无条件入队成未来独立 turn。
+  requireQueue?: boolean;
 };
 
 export type PromptAdmissionReceipt =

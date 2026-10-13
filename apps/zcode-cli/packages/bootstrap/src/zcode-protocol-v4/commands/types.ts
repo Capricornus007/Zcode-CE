@@ -39,6 +39,12 @@ export interface V4CommandLogger {
 
 export type V4QueueItemCommand = QueueItem;
 
+/**
+ * Modified by ZCode:X1/F2。队列项的单轮执行材料（协议原形）。加速卡的 Selection 已随
+ * QueueItem.modelSelection 进入投影，这里只暂存不可投影的动态凭据，提升时再冻结成 ModelExecutionContext。
+ */
+export type V4QueuedTurnExecution = NonNullable<CommandPayloadMap["sendText"]["modelExecution"]>;
+
 export type V4StableForkTargetResolution =
   | {
       ok: true;
@@ -90,6 +96,18 @@ export interface V4CommandCoreHost {
   /** guide eligibility：只阻止已有 ordinary queue；已有 guide 仍允许继续按 FIFO admission。 */
   hasQueuedDelivery?(sessionId: string, delivery: "guide" | "queue"): boolean;
   getQueueLength?(sessionId: string): number;
+  // Modified by ZCode:X1/F2。Highspeed queue 的执行材料含凭据，只允许驻留内存，禁止进入 queue event/snapshot。
+  retainQueuedTurnExecution?(
+    sessionId: string,
+    sourceCommandId: string,
+    execution: V4QueuedTurnExecution,
+  ): void;
+  readQueuedTurnExecution?(
+    sessionId: string,
+    sourceCommandId: string,
+  ): V4QueuedTurnExecution | undefined;
+  deleteQueuedTurnExecution?(sessionId: string, sourceCommandId: string): void;
+  clearQueuedTurnExecutions?(sessionId: string): void;
   /**
    * 切模型复位队列授权位（spec 130 §4.6）的判据读侧：投影里的 queue.autoDrain + pauseReason。
    * 无投影 → null（调用方按「不复位」处理）。数据源 = v4 投影，与 getInputRoutingMode 同一条

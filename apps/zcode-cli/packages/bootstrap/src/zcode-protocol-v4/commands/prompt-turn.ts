@@ -10,7 +10,7 @@ import type { SendInputOptions, SendInputResult } from "../../app/types.js";
 import { runWithSessionResidencyFinalization } from "../../zcode-protocol/session-residency.js";
 import type { V4CommandCoreHost, V4SessionRecordView } from "./types.js";
 
-interface StartPromptTurnParamsBase {
+export interface StartPromptTurnParamsBase {
   content: string;
   /** v4 锚点：inputId=queryId=commandId（权威数据 sourceCommandId 对账）。 */
   inputId: string;
@@ -25,13 +25,18 @@ interface StartPromptTurnParamsBase {
   toolDisallowlist?: readonly string[];
   /** sendQueuedNow 已持有 Core promotion lease，要求这次 admission 只能占用空闲位。 */
   requireIdle?: boolean;
+  // Modified by ZCode:X1。编辑重发在 rewind 提交后可能撞上 Core 仍在收口旧 turn：
+  // admission 瞬间会话恰好空闲会让这条输入被直接启动，而不是按编辑语义排队成独立 turn。
+  // 置位后 admission 只能入队，canonical-intent-replay 据此验证落地结果。
+  /** 当前输入必须保留为未来独立 turn，不能因 admission 瞬间转为空闲而直接启动。 */
+  requireQueue?: boolean;
   /** Bot 入站 turn 的稳定回推地址；仅在本 turn 内暴露给 CronCreate。 */
   botDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
 }
 
-type StartPromptTurnParams = StartPromptTurnParamsBase & TurnBackgroundAttribution;
+export type StartPromptTurnParams = StartPromptTurnParamsBase & TurnBackgroundAttribution;
 
-interface PromptTurnStartResult {
+export interface PromptTurnStartResult {
   /** Core admission 已完成；不等待 TurnStarted 或 projection commit。 */
   turnStarted: Promise<void>;
   /** Core 真实完成 promise，仅供生命周期清理使用，不属于 ACK 边界。 */
@@ -133,6 +138,8 @@ export async function startPromptTurn(
         ...(params.sharedContextRefs ? { sharedContextRefs: params.sharedContextRefs } : {}),
         ...(turnToolDisallowlist ? { toolDisallowlist: turnToolDisallowlist } : {}),
         ...(params.requireIdle ? { requireIdle: true } : {}),
+        // Modified by ZCode:X1：编辑重发要求排队成未来独立 turn（见 params.requireQueue 注释）。
+        ...(params.requireQueue ? { requireQueue: true } : {}),
         queryId: params.inputId as SendInputOptions["queryId"],
       },
     );

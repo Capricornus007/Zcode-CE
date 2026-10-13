@@ -19,6 +19,8 @@ interface CanonicalCommandIntent {
   attachmentRefs?: readonly AttachmentRef[];
   sharedContextRefs?: TurnInputIntentMetadata["sharedContextRefs"];
   provenance?: TurnInputIntentMetadata["provenance"];
+  // Modified by ZCode:X1。纯引用编辑的引用快照：edit/retry 重建 intent 时从 canonical fact 继承。
+  conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
 }
 
 export function inputIntentMetadata(
@@ -33,6 +35,8 @@ export function inputIntentMetadata(
     mode?: SubmissionMode;
     planEnabled?: boolean;
     sharedContextRefs?: TurnInputIntentMetadata["sharedContextRefs"];
+    // Modified by ZCode:X1。live 发送同样允许只带引用的输入（见 CanonicalCommandIntent 同名字段）。
+    conversationQuotes?: TurnInputIntentMetadata["conversationQuotes"];
   },
 ): TurnInputIntentMetadata {
   const admission = commandAdmissionOf(envelope);
@@ -65,6 +69,8 @@ export function inputIntentMetadata(
     ...(options.fallbackReasonCode ? { fallbackReasonCode: options.fallbackReasonCode } : {}),
     ...(options.attachmentRefs ? { attachmentRefs: [...options.attachmentRefs] } : {}),
     ...(options.sharedContextRefs ? { sharedContextRefs: [...options.sharedContextRefs] } : {}),
+    // Modified by ZCode:X1。
+    ...(options.conversationQuotes ? { conversationQuotes: options.conversationQuotes } : {}),
   };
 }
 
@@ -93,6 +99,8 @@ export function inputIntentMetadataFromCanonical(
     ...(canonical.fallbackReasonCode ? { fallbackReasonCode: canonical.fallbackReasonCode } : {}),
     ...(canonical.attachmentRefs ? { attachmentRefs: [...canonical.attachmentRefs] } : {}),
     ...(canonical.sharedContextRefs ? { sharedContextRefs: [...canonical.sharedContextRefs] } : {}),
+    // Modified by ZCode:X1。
+    ...(canonical.conversationQuotes ? { conversationQuotes: canonical.conversationQuotes } : {}),
     ...(originalSourceCommandId
       ? {
           provenance: canonical.provenance ?? {
@@ -129,6 +137,8 @@ export function inputIntentMetadataFromQueueItem(
       : {}),
     attachmentRefs: item.attachments,
     ...(item.sharedContextRefs ? { sharedContextRefs: [...item.sharedContextRefs] } : {}),
+    // Modified by ZCode:X1。
+    ...(item.conversationQuotes ? { conversationQuotes: item.conversationQuotes } : {}),
     // 提升只改变调度状态；重试／编辑原始输入的来源关联不能在此丢失。
     ...(item.provenance ? { provenance: { ...item.provenance } } : {}),
   };

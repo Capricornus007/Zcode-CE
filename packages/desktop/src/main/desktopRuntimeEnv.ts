@@ -15,8 +15,6 @@ import {
   ZCODE_VERSION,
   buildZCodeToolEnvPassthroughEnv,
   resolveRuntimeZCodeEndpointOrigin,
-  readProductEndpointEnv,
-  pickProductEndpointEnv,
   resolveZaiBusinessBaseUrl,
   resolveZaiOAuthClientId,
   resolveZaiOAuthOrigin,
@@ -286,15 +284,16 @@ function resolveEnvValue(envName: string, localEnv: LocalRuntimeEnv = {}): strin
 export function resolveZCodeEndpointEnvBaseOrigin(
   localEnv: LocalRuntimeEnv = {},
 ): string | undefined {
-  const buildEnv = readProductEndpointEnv();
-  // main 进程临时验证更新服务时不会重新写 .env，命令行传入的 endpoint 必须优先于本地文件。
+  const scopedEnvName =
+    ZCODE_ENV === "production" ? "ZCODE_PRODUCTION_BASE_URL" : "ZCODE_TEST_BASE_URL";
+  // Bugfix: main 进程临时验证更新服务时不会重新写 .env，命令行传入的 endpoint 必须优先于本地文件。
   return (
     process.env["ZCODE_BASE_URL"]?.trim() ||
     process.env["ZCODE_ENDPOINT_ORIGIN"]?.trim() ||
+    process.env[scopedEnvName]?.trim() ||
     localEnv.ZCODE_BASE_URL?.trim() ||
     localEnv.ZCODE_ENDPOINT_ORIGIN?.trim() ||
-    buildEnv.ZCODE_BASE_URL?.trim() ||
-    buildEnv.ZCODE_ENDPOINT_ORIGIN?.trim() ||
+    localEnv[scopedEnvName]?.trim() ||
     undefined
   );
 }
@@ -311,13 +310,11 @@ function readDefinedProcessEnv(): Record<string, string> {
 
 function applySelectedZCodeEnvLinks(env: Record<string, string>): Record<string, string> {
   const endpointEnv = {
-    ...readProductEndpointEnv(),
     ...env,
     ZCODE_ENV,
   };
 
   return {
-    ...pickProductEndpointEnv(endpointEnv),
     ...env,
     ZCODE_BASE_URL: env.ZCODE_BASE_URL ?? resolveRuntimeZCodeEndpointOrigin(endpointEnv),
     ZAI_OAUTH_ORIGIN: env.ZAI_OAUTH_ORIGIN ?? resolveZaiOAuthOrigin(endpointEnv),

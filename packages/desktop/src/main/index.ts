@@ -122,7 +122,7 @@ import { applyAppIcon } from "./desktopWindowChrome.js";
 import { resolveWindowsAppUserModelIdForFlavor } from "../../scripts/desktop-product-identity.mjs";
 import type { DesktopWindowSize } from "./desktopWindowSize.js";
 import { maybeWarnArchitectureMismatch } from "./desktopArchitectureGuard.js";
-import { createWindowsDesktopTray, updateWindowsDesktopTrayMenu } from "./desktopTray.js";
+import { createDesktopTray, updateWindowsDesktopTrayMenu } from "./desktopTray.js";
 import { createWindowsCuaOperationIndicator } from "./windowsCuaOperationIndicator.js";
 import {
   configureDockMenu,
@@ -1572,7 +1572,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         platform: process.platform,
         forceQuit: forceQuitRef.current,
         explicitQuitRequested: explicitQuitRef.current,
-        closeToTrayOnWindows,
+        closeToTray: closeToTrayOnWindows,
         isLastWindow: getMainApplicationWindows().length === 1,
         label,
         logger,
@@ -1643,6 +1643,17 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     syncAutoUpdaterStateToWindow,
     syncReadyUpdateToWindow,
     syncPostUpdateReleaseNotesToWindow,
+    // 官方 3.15.1 createWindow 契约成员：Web 远控按窗口的生命周期挂靠（fire-and-forget）。
+    // CE 主进程未引入官方 webRemoteControlManager 单例 —— 官方语义是「窗口关闭时停掉该窗口
+    // 的远控挂靠」，CE 的等价物是清同一窗口的远程 workspace 会话（下方 dispose 函数按
+    // webContentsId 清）。这里按契约最小适配：同通道调用 + 异步化满足 Promise<void>。
+    webRemoteControlManager: {
+      disposeWindow: (windowId: number) => {
+        // CE 侧签名只收 webContentsId；此处 windowId 即该窗口主 webContents 的 id。
+        remoteSessionManager.disposeRemoteWorkspaceSessionsForWindow(windowId);
+        return Promise.resolve();
+      },
+    },
     disposeRemoteWorkspaceSessionsForWindow:
       remoteSessionManager.disposeRemoteWorkspaceSessionsForWindow,
     reattachRemoteWorkspaceSessionsForWindow:
@@ -1865,7 +1876,7 @@ app.whenReady().then(async () => {
       ),
     () => showCurrentWindowFromDock(primaryWindowCoordinator),
   );
-  createWindowsDesktopTray({
+  createDesktopTray({
     getLocale: () => currentApplicationLocale,
     showCurrentWindow: () =>
       primaryWindowCoordinator.ensurePrimaryWindow("tray-show-current-window"),

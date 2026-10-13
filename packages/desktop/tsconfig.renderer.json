@@ -2,12 +2,17 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "out/renderer",
-    "rootDir": "src/renderer",
     "lib": ["es2025", "dom", "dom.iterable"],
     "jsx": "react-jsx",
     "noEmit": true
   },
-  "include": ["src/renderer"],
+  // 3.15.1 对齐本地修正（官方 drop 未带 CI、renderer 工程自不自洽）：
+  // 1) include 补 src/shared —— armsBrowserBootstrap(官方) 跨目录 import ../../shared/armsBrowserInit，
+  //    rootDir 限定 src/renderer 时 TS6059/TS6307；noEmit 工程去掉 rootDir 无产物影响。
+  // 2) exclude *.test.ts —— genUiTweakRuntime.test(官方) import node:fs/vm 与 setImmediate，
+  //    renderer 工程无 node types；测试运行走 vitest/tsx（不 typecheck），不属本工程职责。
+  "include": ["src/renderer", "src/shared"],
+  "exclude": ["src/renderer/**/*.test.ts"],
   // renderer 直接 import 了 shared；把它补进 references，避免 renderer 单独检查时再走源码回退路径。
   "references": [{ "path": "../shared" }, { "path": "../ui" }, { "path": "../client" }]
 }

@@ -1,34 +1,38 @@
+import { recordArmsCustomEventForE2E } from "@zcode/ui";
 import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
+import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
 
 export function createDesktopPlatform(options: {
   isLocalDevelopmentRuntime: boolean;
 }): IPlatformService {
   return {
     canSelectFilePath: true,
+    pluginSandbox: createDesktopPluginSandboxPlatform(),
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
     selectDirectory: () => window.zcode.selectDirectory(),
     selectFile: () => window.zcode.selectFile(),
     selectFiles: () => window.zcode.selectFiles?.() ?? Promise.resolve([]),
     createTempTextAttachment: (payload) => window.zcode.createTempTextAttachment(payload),
-    // 本地 Web 服务（远程控制，契约 §5）。preload 已暴露这八条；这里把它们映射进
-    // IPlatformService —— 少这一步的话 `window.zcode` 有、`IPlatformService` 没有，
-    // UI 侧的能力探测会判成"能力缺失"⇒ 入口与面板在**桌面端也不渲染**（静默失效）。
+    materializeWorkflowArtifactFile: (payload) =>
+      window.zcode.materializeWorkflowArtifactFile(payload),
+    onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
+    onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+    onBotRemoteWorkspaceReconnected: (handler) =>
+      window.zcode.onBotRemoteWorkspaceReconnected(handler),
+    // ---- CE 线增量：本地 Web 服务（远程控制，契约 §5）。preload 已暴露这八条；这里把它们映射进
+    // IPlatformService —— 少这一步的话 `window.zcode` 有、`IPlatformService` 没有，UI 侧的
+    // 能力探测会判成"能力缺失"⇒ 入口与面板在桌面端也不渲染（静默失效）。
     getWebServiceStatus: () => window.zcode.getWebServiceStatus(),
     startWebService: (options) => window.zcode.startWebService(options),
     stopWebService: () => window.zcode.stopWebService(),
     getWebServiceConnectionInfo: () => window.zcode.getWebServiceConnectionInfo(),
     onWebServiceChanged: (handler) => window.zcode.onWebServiceChanged(handler),
     // 连接面三条（谁连着）。与上面五条分开映射：UI 侧分档探测，各自门控自己的区块
-    // （设备清单 / 断开按钮 / 轮换入口）。缺任何一条只会让对应区块不出现，不会让整个面板消失。
-    //
-    // 用条件定义而不是无条件转发（与上面的 printPageToPdf / getDesktopWindowChromeState 同一写法）：
-    // 无条件的箭头函数会让 IPlatformService 上永远有这个方法，于是 UI 的能力探测恒判成
-    // "有能力"，而真正调用时抛 "window.zcode.xxx is not a function" —— 那比不渲染更糟
-    // （面板出现了、点一下才炸）。旧 preload（开发态 HMR、升级后未重启的窗口）确实缺这三条，
-    // 所以这里必须让缺失如实反映成 undefined。
+    // （设备清单 / 断开按钮 / 轮换入口）。条件定义而非无条件转发：旧 preload（开发态 HMR、
+    // 升级后未重启的窗口）缺这三条时，能力探测判"无能力"⇒ 区块不渲染，而不是点了才炸。
     getWebServiceConnections: window.zcode.getWebServiceConnections
       ? () => window.zcode.getWebServiceConnections()
       : undefined,
@@ -38,8 +42,7 @@ export function createDesktopPlatform(options: {
     rotateWebServiceToken: window.zcode.rotateWebServiceToken
       ? () => window.zcode.rotateWebServiceToken()
       : undefined,
-    onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
-    onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+
     activateOrSetWorkspace: (path) =>
       window.zcode.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
     connectRemote: (remoteOptions, requestId, context) =>
@@ -48,6 +51,13 @@ export function createDesktopPlatform(options: {
       window.zcode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
     bindRemoteWorkspaceSessionContext: (context) =>
       window.zcode.bindRemoteWorkspaceSessionContext?.(context) ?? Promise.resolve(),
+    startWebRemoteControl: (context) => window.zcode.startWebRemoteControl(context),
+    refreshWebRemoteControlPairing: (context) =>
+      window.zcode.refreshWebRemoteControlPairing(context),
+    stopWebRemoteControl: () => window.zcode.stopWebRemoteControl(),
+    getWebRemoteControlStatus: () => window.zcode.getWebRemoteControlStatus(),
+    onWebRemoteControlStatusChanged: (handler) =>
+      window.zcode.onWebRemoteControlStatusChanged?.(handler) ?? (() => {}),
     disposeRemoteSession: (sessionId) => window.zcode.disposeRemoteSession(sessionId),
     isDockerAvailable: () => window.zcode.isDockerAvailable(),
     listWSLDistros: () => window.zcode.listWSLDistros(),
@@ -80,21 +90,56 @@ export function createDesktopPlatform(options: {
     onPaymentCallback: (callback) => window.zcode.onPaymentCallback(callback),
     onShareImport: (callback) => window.zcode.onShareImport?.(callback) ?? (() => {}),
     notifyRendererReady: () => window.zcode.notifyRendererReady(),
-    // reportRendererHeapSample 保留：它服务本地内存诊断，不属于本次删除的遥测上报链路。
+    reportTelemetryEvent: (payload) => window.zcode.reportTelemetryEvent(payload),
+    reportArmsCustomEvent: (payload) => {
+      recordArmsCustomEventForE2E(payload);
+      return window.zcode.reportArmsCustomEvent(payload);
+    },
+    getRendererActionTraceConfig: window.zcode.getRendererActionTraceConfig
+      ? () => window.zcode.getRendererActionTraceConfig!()
+      : undefined,
+    onRendererActionTraceConfigChanged: window.zcode.onRendererActionTraceConfigChanged
+      ? (callback) => window.zcode.onRendererActionTraceConfigChanged!(callback)
+      : undefined,
+    reportLocalTtftBatch: (batch) => window.zcode.reportLocalTtftBatch(batch),
+    reportRendererActionTraceBatch: window.zcode.reportRendererActionTraceBatch
+      ? (batch) => window.zcode.reportRendererActionTraceBatch!(batch)
+      : undefined,
     reportRendererHeapSample: window.zcode.reportRendererHeapSample
       ? (sample) => window.zcode.reportRendererHeapSample!(sample)
       : undefined,
     showTaskNotification: (payload) => window.zcode.showTaskNotification(payload),
     syncWindowTabs: (paths) => window.zcode.syncWindowTabs(paths),
+    syncWebRemoteControlWorkspaces: (workspaces) =>
+      window.zcode.syncWebRemoteControlWorkspaces?.(workspaces),
+    syncWebRemoteControlTasks: (tasks) => window.zcode.syncWebRemoteControlTasks?.(tasks),
+    onWebRemoteControlReconnectWorkspace: (handler) =>
+      window.zcode.onWebRemoteControlReconnectWorkspace?.(handler) ?? (() => {}),
     syncWindowUnreadCount: (count) => window.zcode.syncWindowUnreadCount(count),
     syncActiveTaskSession: (sessionId) => window.zcode.syncActiveTaskSession(sessionId),
     syncAppSettings: (patch) => window.zcode.syncAppSettings?.(patch),
+    // 桥缺失（旧 preload 升级窗口）时按 supported 兜底，与 Windows 现状一致，设置开关可用。
+    getCloseToTrayCapability: () =>
+      window.zcode.getCloseToTrayCapability?.() ??
+      Promise.resolve({ supported: true, gnomeLikeWithoutTray: false }),
     setShortcutRecordingActive: (active) => window.zcode.setShortcutRecordingActive?.(active),
     onFocusTab: (handler) => window.zcode.onFocusTab(handler),
     onNewTab: (handler) => window.zcode.onNewTab(handler),
     onCloseActiveContextRequest: (handler) =>
       window.zcode.onCloseActiveContextRequest?.(handler) ?? (() => {}),
     onOpenBrowserUrl: (handler) => window.zcode.onOpenBrowserUrl?.(handler) ?? (() => {}),
+    onEmbeddedBrowserPermissionPrompt: (handler) =>
+      window.zcode.onEmbeddedBrowserPermissionPrompt?.(handler) ?? (() => {}),
+    resolveEmbeddedBrowserPermissionPrompt: (request) =>
+      window.zcode.resolveEmbeddedBrowserPermissionPrompt?.(request),
+    getEmbeddedBrowserSitePermissions: () =>
+      window.zcode.getEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+    setEmbeddedBrowserSitePermission: (request) =>
+      window.zcode.setEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
+    clearEmbeddedBrowserSitePermissions: () =>
+      window.zcode.clearEmbeddedBrowserSitePermissions?.() ?? Promise.resolve({}),
+    resetEmbeddedBrowserSitePermission: (request) =>
+      window.zcode.resetEmbeddedBrowserSitePermission?.(request) ?? Promise.resolve({}),
     onBrowserViewScreenshotSurfacePrepare: (handler) =>
       window.zcode.onBrowserViewScreenshotSurfacePrepare?.(handler) ?? (() => {}),
     onBrowserViewScreenshotSurfaceRelease: (handler) =>

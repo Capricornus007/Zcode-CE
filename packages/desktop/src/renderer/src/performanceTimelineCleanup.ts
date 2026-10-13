@@ -1,6 +1,8 @@
 const PERFORMANCE_TIMELINE_CLEANUP_INTERVAL_MS = 10_000;
 
-let cleanupTimer: ReturnType<typeof window.setInterval> | undefined;
+// 显式 number：renderer 工程经共享包引用链可见 node 类型时，setInterval 的全局合并重载
+// 会让 ReturnType 解析出 NodeJS.Timeout；DOM 环境下 window.setInterval 实际返回 number。
+let cleanupTimer: number | undefined;
 
 export function startPerformanceTimelineCleanup(): void {
   if (!import.meta.env.DEV || cleanupTimer != null) {

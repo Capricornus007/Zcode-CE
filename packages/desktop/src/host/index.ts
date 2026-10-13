@@ -31,6 +31,7 @@ import {
   IOffPeakTaskService,
   IModelSelectionService,
   ISettingService,
+  IOnboardingRecordService,
   IWindowControllerService,
   IConversationShareService,
   IZCodeAgentService,
@@ -1547,6 +1548,8 @@ function formatRemoteTargetForLog(target: RemoteTarget): string {
     }
     case "docker":
       return `docker:${target.container}`;
+    case "server":
+      return `server:${target.name?.trim() || target.url}`;
   }
 }
 
@@ -1672,8 +1675,10 @@ async function createWindowRemoteConnectionHandle(params: {
         logger.warn("remote prompt attachment janitor failed", error),
     },
   );
+  const localOnboardingRecordService = activeServices.get(IOnboardingRecordService);
   const services = createRemoteWorkspaceServiceCollection({
     clientConfigService,
+    localOnboardingRecordService,
     connectionServices: backendConnection.services,
     sourceServices: activeServices ?? undefined,
     parentPort,
@@ -2788,7 +2793,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
               hostApiNetworkTransport,
               authorizeLocalMediaPreviewPath,
               runtimeProcessEnvPatch: msg.runtimeProcessEnvPatch,
-              agentRuntimeContext: {
+              agentTelemetry: {
                 getDeviceMid: () => msg.deviceMid,
                 runtimeSurface: "desktop_local_host",
               },

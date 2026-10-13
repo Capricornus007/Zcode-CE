@@ -4,12 +4,15 @@ import { createPluginSandboxProtocolHandler } from "./protocol.js";
 import { createPluginSandboxRegistry } from "./registry.js";
 
 const fragment = `<html><head><!--__ZCODE_GEN_UI_STYLES__--><script src="__ZCODE_GEN_UI_RUNTIME__"></script></head><body><script>author()</script><!--__ZCODE_GEN_UI_INNER_KIT__--></body></html>`;
+// 官方 drop 自相矛盾修正：contentKind 的合法联合只有 "gen-ui"（contract.ts），"mcp-app" 是
+// registry 里 `input.contentKind ?? "mcp-app"` 的缺省哨兵而非可传值。fixture 的 kind 参数
+// 只区分「gen-ui 标记」与「MCP app（缺省档 + pluginId/serverName）」两种形态。
 function fixture(kind: "gen-ui" | "mcp-app", html = fragment, missing = false) {
   const registry = createPluginSandboxRegistry();
   const instance = { runtimeId: "a", generation: 1, token: "one", appIdentity: "a".repeat(64) };
   const handle = registry.register({
     instance,
-    contentKind: kind,
+    ...(kind === "gen-ui" ? { contentKind: kind } : {}),
     ownerWebContentsId: 1,
     workspacePath: "/repo",
     sessionId: "s",

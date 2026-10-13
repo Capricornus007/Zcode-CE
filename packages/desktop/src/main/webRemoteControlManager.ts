@@ -812,7 +812,9 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
         ]);
       })
       .sort();
-    const taskSignatureEntries = result.tasks
+    // WebRemoteControlWorkspaceListResult.tasks 是可选键；协议上折叠判定只关心已提供的任务，
+    // 缺席即空集（本仓禁止把 undefined 当数组展开）。
+    const taskSignatureEntries = (result.tasks ?? [])
       .map((task) => {
         const workspaceKey = resolveWebRemoteControlWorkspaceKey(task);
         return JSON.stringify([

@@ -1,3 +1,4 @@
+import { installPluginSandboxHostBridge } from "./pluginSandbox/hostBridge.js";
 import {
   databaseStartupControlSchema,
   databaseStartupStateSchema,
@@ -5,9 +6,14 @@ import {
 } from "@zcode/shared";
 /* eslint-disable max-lines -- preload bridge 集中暴露桌面平台 IPC，拆散会让 contextBridge 权限边界更难审计。 */
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
-// 遥测移除（P1）：这里原有 armsRumBridgeForward 的 installArmsRumBridgeIpcForward /
-// scheduleArmsEventBridgePatch —— 它们包装 ipcRenderer.send 把 ARMS SDK 的网络观测转给 main。
-// 模块已随 ARMS 整体删除，preload 不再对 ipcRenderer 做任何补丁。
+import {
+  installArmsRumBridgeIpcForward,
+  scheduleArmsEventBridgePatch,
+} from "../shared/armsRumBridgeForward.js";
+
+// ARMS frame preload 闭包内的 send 不会随后序 ipcRenderer.send 补丁生效，须同步包装 Bridge.send
+installArmsRumBridgeIpcForward(ipcRenderer);
+scheduleArmsEventBridgePatch();
 
 /** 从 command-line 参数中解析 --device-id= */
 function parseDeviceIdFromArgs(): string {
@@ -43,14 +49,23 @@ import type {
   DesktopCommandId,
   DesktopTitleBarTheme,
   EmbeddedBrowserOpenUrlRequest,
+  EmbeddedBrowserPermissionPromptEvent,
+  EmbeddedBrowserPermissionResolveRequest,
+  EmbeddedBrowserSitePermissionUpdateRequest,
+  EmbeddedBrowserSitePermissionResetRequest,
+  EmbeddedBrowserSitePermissionsSnapshot,
   Locale,
   OAuthStateRegistration,
   OpenInEditorOptions,
   RemoteTarget,
   TaskNotificationPayload,
+  TelemetryRendererContext,
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
   RendererHeapSample,
   PostUpdateReleaseNotesPayload,
   RemoteSessionClosedEvent,
+  BotRemoteWorkspaceReconnectedEvent,
   UpdateCheckResultPayload,
   UpdateStatePayload,
   ZCodeStdioTapDevState,
@@ -61,23 +76,45 @@ import type {
   SaveFileResult,
   PrintPageToPdfResult,
   SSHConfigAliasOption,
+  WebRemoteControlContext,
+  WebRemoteControlReconnectWorkspaceRequest,
+  WebRemoteControlReconnectWorkspaceResult,
+  WebRemoteControlStatus,
+  WebRemoteControlTaskTarget,
+  WebRemoteControlWorkspaceTarget,
   RemoteConnectionRuntimeLog,
-  WindowControlsOverlayMetrics,
-  WindowControlsOverlayReadyPayload,
-  CreateTempTextAttachmentRequest,
-  OpenCuaPermissionOnboardingOptions,
+  // ---- CE 线增量：本地 Web 服务（远程控制）载荷类型 ----
   WebServiceStatusPayload,
   WebServiceConnectionInfoPayload,
   RemoteControlConnectionsPayload,
   RemoteControlRevokeRequest,
   RemoteControlRevokeResult,
   RemoteControlRotateTokenResult,
+  WindowControlsOverlayMetrics,
+  WindowControlsOverlayReadyPayload,
+  CreateTempTextAttachmentRequest,
+  MaterializeWorkflowArtifactFileRequest,
+  OpenCuaPermissionOnboardingOptions,
+  ConfigureFinalArmsCustomEventE2ERequest,
+  FinalArmsCustomEventE2EEntry,
 } from "@zcode/shared";
-import { InternalChannels, PlatformChannels, formatZCodeRendererProcessName } from "@zcode/shared";
+import {
+  InternalChannels,
+  PlatformChannels,
+  formatZCodeRendererProcessName,
+  shouldEnableE2ETestBridge,
+} from "@zcode/shared";
 import { createOAuthCallbackHandler } from "./oauthCallbackBridge.js";
 
-// 遥测移除（P1）：这里原有 __zcodeFinalArmsCustomEventsE2E 桥（E2E 读取/清空/配置 ARMS 自定义
-// 事件上报），随 desktopArmsCustomEvent 与对应 PlatformChannels 一并删除。
+if (shouldEnableE2ETestBridge(process.env)) {
+  contextBridge.exposeInMainWorld("__zcodeFinalArmsCustomEventsE2E", {
+    read: (): Promise<FinalArmsCustomEventE2EEntry[]> =>
+      ipcRenderer.invoke(PlatformChannels.ReadFinalArmsCustomEventsE2E),
+    clear: (): Promise<void> => ipcRenderer.invoke(PlatformChannels.ClearFinalArmsCustomEventsE2E),
+    configure: (request: ConfigureFinalArmsCustomEventE2ERequest): Promise<void> =>
+      ipcRenderer.invoke(PlatformChannels.ConfigureFinalArmsCustomEventsE2E, request),
+  });
+}
 
 const updateReadyCallbacks = new Set<(version: string) => void>();
 const updateStateCallbacks = new Set<(payload: UpdateStatePayload) => void>();
@@ -252,6 +289,21 @@ contextBridge.exposeInMainWorld("zcode", {
     workspaceIdentity?: string;
   }): Promise<void> =>
     ipcRenderer.invoke(PlatformChannels.BindRemoteWorkspaceSessionContext, context),
+  startWebRemoteControl: (context: WebRemoteControlContext) =>
+    ipcRenderer.invoke(PlatformChannels.StartWebRemoteControl, context),
+  refreshWebRemoteControlPairing: (context: WebRemoteControlContext) =>
+    ipcRenderer.invoke(PlatformChannels.ResetWebRemoteControlPairing, context),
+  stopWebRemoteControl: (): Promise<void> =>
+    ipcRenderer.invoke(PlatformChannels.StopWebRemoteControl),
+  getWebRemoteControlStatus: () => ipcRenderer.invoke(PlatformChannels.GetWebRemoteControlStatus),
+  onWebRemoteControlStatusChanged: (
+    callback: (status: WebRemoteControlStatus) => void,
+  ): (() => void) => {
+    const handler = (_event: unknown, payload: WebRemoteControlStatus) => callback(payload);
+    ipcRenderer.on(PlatformChannels.WebRemoteControlStatusChanged, handler);
+    return () =>
+      ipcRenderer.removeListener(PlatformChannels.WebRemoteControlStatusChanged, handler);
+  },
   disposeRemoteSession: (sessionId: string): Promise<void> =>
     ipcRenderer.invoke(PlatformChannels.DisposeRemoteSession, sessionId),
   isDockerAvailable: (): Promise<boolean> => ipcRenderer.invoke(PlatformChannels.IsDockerAvailable),
@@ -291,17 +343,10 @@ contextBridge.exposeInMainWorld("zcode", {
   /** 长文本粘贴落盘为真正的本地附件，避免正文和 prompt payload 被撑大 */
   createTempTextAttachment: (payload: CreateTempTextAttachmentRequest) =>
     ipcRenderer.invoke(PlatformChannels.CreateTempTextAttachment, payload),
-  /**
-   * 本地 Web 服务（远程控制）八条通道（契约 §5）：服务面五条 + 连接面三条。
-   *
-   * 令牌不变式：`webService:connectionInfo` **是唯一**把带令牌链接交给渲染进程的通道；
-   * 其余七条（status/start/stop/changed + connections/revokeConnection/rotateToken）的载荷都不含令牌。
-   * 通道名统一取自 `PlatformChannels`，与 main 侧 `web-service/ipc.ts` 共用同一份常量。
-   *
-   * 连接面三条必须在这里暴露，也必须同时映射进 `desktopPlatform.ts` 的 `IPlatformService` ——
-   * 只做一处会让 UI 的能力探测把桌面端也判成"能力缺失"：入口与面板静默不渲染且无报错
-   * （task-84 记过这一形态）。
-   */
+  /** dwf 产物「作为文件打开」：把某一版的字节落成本机副本 */
+  materializeWorkflowArtifactFile: (payload: MaterializeWorkflowArtifactFileRequest) =>
+    ipcRenderer.invoke(PlatformChannels.MaterializeWorkflowArtifactFile, payload),
+  // ---- CE 线增量：本地 Web 服务（远程控制）八条通道（契约 §5）：服务面五条 + 连接面三条。
   getWebServiceStatus: (): Promise<WebServiceStatusPayload> =>
     ipcRenderer.invoke(PlatformChannels.WebServiceStatus),
   startWebService: (options: { scope: "loopback" | "lan"; port?: number }) =>
@@ -341,13 +386,50 @@ contextBridge.exposeInMainWorld("zcode", {
     ipcRenderer.on(PlatformChannels.RemoteSessionClosed, handler);
     return () => ipcRenderer.removeListener(PlatformChannels.RemoteSessionClosed, handler);
   },
+  /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
+  onBotRemoteWorkspaceReconnected: (
+    callback: (event: BotRemoteWorkspaceReconnectedEvent) => void,
+  ) => {
+    const handler = (_event: unknown, payload: unknown) =>
+      callback(payload as BotRemoteWorkspaceReconnectedEvent);
+    ipcRenderer.on(PlatformChannels.BotRemoteWorkspaceReconnected, handler);
+    return () =>
+      ipcRenderer.removeListener(PlatformChannels.BotRemoteWorkspaceReconnected, handler);
+  },
   /** 检查目录是否已在其他窗口打开 */
   activateOrSetWorkspace: (path: string): Promise<{ activated: boolean }> =>
     ipcRenderer.invoke(PlatformChannels.ActivateOrSetWorkspace, path),
   /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程 */
   syncWindowTabs: (paths: string[]) => ipcRenderer.send(PlatformChannels.SyncWindowTabs, paths),
   /** 同步当前窗口里 Web 远程控制允许切换的 workspace */
+  syncWebRemoteControlWorkspaces: (workspaces: WebRemoteControlWorkspaceTarget[]) =>
+    ipcRenderer.send(PlatformChannels.SyncWebRemoteControlWorkspaces, workspaces),
   /** 同步当前窗口里 Web 远程控制可展示的 task 快照 */
+  syncWebRemoteControlTasks: (tasks: WebRemoteControlTaskTarget[]) =>
+    ipcRenderer.send(PlatformChannels.SyncWebRemoteControlTasks, tasks),
+  onWebRemoteControlReconnectWorkspace: (
+    callback: (
+      request: WebRemoteControlReconnectWorkspaceRequest,
+    ) => Promise<WebRemoteControlReconnectWorkspaceResult>,
+  ) => {
+    const handler = async (event: Electron.IpcRendererEvent, payload: unknown) => {
+      const request = payload as WebRemoteControlReconnectWorkspaceRequest;
+      try {
+        const result = await callback(request);
+        event.sender.send(PlatformChannels.WebRemoteControlReconnectWorkspace, result);
+      } catch (error) {
+        event.sender.send(PlatformChannels.WebRemoteControlReconnectWorkspace, {
+          requestId: request.requestId,
+          workspaceKey: request.workspaceKey,
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        } satisfies WebRemoteControlReconnectWorkspaceResult);
+      }
+    };
+    ipcRenderer.on(PlatformChannels.WebRemoteControlReconnectWorkspace, handler);
+    return () =>
+      ipcRenderer.removeListener(PlatformChannels.WebRemoteControlReconnectWorkspace, handler);
+  },
   /** 同步当前窗口的未读 task 数到 main 进程 */
   syncWindowUnreadCount: (count: number) =>
     ipcRenderer.send(PlatformChannels.SyncWindowUnreadCount, count),
@@ -356,6 +438,8 @@ contextBridge.exposeInMainWorld("zcode", {
   /** 同步需要 main 进程即时感知的应用设置 */
   syncAppSettings: (patch: Partial<AppSettings>) =>
     ipcRenderer.send(PlatformChannels.SyncAppSettings, patch),
+  /** 查询关闭驻留托盘能力（Linux 置灰判断；spec：docs/desktop/linux-close-to-tray.md） */
+  getCloseToTrayCapability: () => ipcRenderer.invoke(PlatformChannels.GetCloseToTrayCapability),
   /** 快捷键设置页录制态开关：main 暂时摘除可配置菜单 accelerator，防止录制按键触发原命令 */
   setShortcutRecordingActive: (active: boolean) =>
     ipcRenderer.send(PlatformChannels.SetShortcutRecordingActive, active),
@@ -383,6 +467,38 @@ contextBridge.exposeInMainWorld("zcode", {
     ipcRenderer.on(PlatformChannels.OpenBrowserUrl, handler);
     return () => ipcRenderer.removeListener(PlatformChannels.OpenBrowserUrl, handler);
   },
+  /** 注册内置浏览器网页权限/源选择/设备选择弹窗请求，返回 disposer */
+  onEmbeddedBrowserPermissionPrompt: (
+    callback: (event: EmbeddedBrowserPermissionPromptEvent) => void,
+  ): (() => void) => {
+    const handler = (_event: unknown, payload: EmbeddedBrowserPermissionPromptEvent) =>
+      callback(payload);
+    ipcRenderer.on(PlatformChannels.EmbeddedBrowserPermissionPrompt, handler);
+    return () =>
+      ipcRenderer.removeListener(PlatformChannels.EmbeddedBrowserPermissionPrompt, handler);
+  },
+  /** 回传用户对内置浏览器权限弹窗的决策 */
+  resolveEmbeddedBrowserPermissionPrompt: (
+    request: EmbeddedBrowserPermissionResolveRequest,
+  ): void => {
+    ipcRenderer.send(PlatformChannels.EmbeddedBrowserPermissionResolve, request);
+  },
+  /** 读取内置浏览器站点权限记录（设置页「网站权限」） */
+  getEmbeddedBrowserSitePermissions: (): Promise<EmbeddedBrowserSitePermissionsSnapshot> =>
+    ipcRenderer.invoke(PlatformChannels.GetEmbeddedBrowserSitePermissions),
+  /** 修改/删除单条站点权限 */
+  setEmbeddedBrowserSitePermission: (
+    request: EmbeddedBrowserSitePermissionUpdateRequest,
+  ): Promise<EmbeddedBrowserSitePermissionsSnapshot> =>
+    ipcRenderer.invoke(PlatformChannels.SetEmbeddedBrowserSitePermission, request),
+  /** 清空全部站点权限记录 */
+  clearEmbeddedBrowserSitePermissions: (): Promise<EmbeddedBrowserSitePermissionsSnapshot> =>
+    ipcRenderer.invoke(PlatformChannels.ClearEmbeddedBrowserSitePermissions),
+  /** 重置单个站点的全部权限记录 */
+  resetEmbeddedBrowserSitePermission: (
+    request: EmbeddedBrowserSitePermissionResetRequest,
+  ): Promise<EmbeddedBrowserSitePermissionsSnapshot> =>
+    ipcRenderer.invoke(PlatformChannels.ResetEmbeddedBrowserSitePermission, request),
   /** 注册 agent 首次 browser 命令建好受控 view 的回调（自动开 browser-use tab），返回 disposer */
   onBrowserViewReady: (
     callback: (payload: {
@@ -637,10 +753,45 @@ contextBridge.exposeInMainWorld("zcode", {
   },
   /** 通知 main process renderer 已就绪 */
   notifyRendererReady: () => ipcRenderer.send(PlatformChannels.RendererReady),
-  // 遥测移除（P1）：这里原有 syncTelemetryContext / reportTelemetryEvent /
-  // reportArmsCustomEvent / getRendererActionTraceConfig / onRendererActionTraceConfigChanged /
-  // reportLocalTtftBatch / reportRendererActionTraceBatch 七个上报与配置桥，
-  // 随 @arms/rum-electron、TelemetryCore 与 renderer action trace 一并删除。
+  /** 同步 renderer telemetry 上下文到 main process */
+  syncTelemetryContext: (context: TelemetryRendererContext) =>
+    ipcRenderer.send(PlatformChannels.SyncTelemetryContext, context),
+  /** 通过 main process 统一上报业务 telemetry 事件 */
+  reportTelemetryEvent: (payload: {
+    context: TelemetryRendererContext;
+    elementName: string;
+    eventRegion: string;
+    eventType: string;
+    eventText?: string;
+    eventExtraDetail: Record<string, string>;
+    userId?: string;
+    talkId?: string;
+    messageId?: string;
+  }) => ipcRenderer.invoke(PlatformChannels.ReportTelemetryEvent, payload),
+  /** 通过 main process 统一上报 ARMS 自定义事件 */
+  reportArmsCustomEvent: (payload: {
+    name: string;
+    group: string;
+    value?: number;
+    properties?: Record<string, string | number | boolean | undefined>;
+  }) => ipcRenderer.invoke(PlatformChannels.ReportArmsCustomEvent, payload),
+  /** 读取 Renderer 用户操作 Trace 灰度配置。 */
+  getRendererActionTraceConfig: (): Promise<RendererActionTraceConfigV1> =>
+    ipcRenderer.invoke(PlatformChannels.GetRendererActionTraceConfig),
+  /** 订阅 Main 推送的 Renderer 用户操作 Trace 配置变化。 */
+  onRendererActionTraceConfigChanged: (
+    callback: (config: RendererActionTraceConfigV1) => void,
+  ): (() => void) => {
+    const handler = (_event: unknown, config: RendererActionTraceConfigV1) => callback(config);
+    ipcRenderer.on(PlatformChannels.RendererActionTraceConfigChanged, handler);
+    return () =>
+      ipcRenderer.removeListener(PlatformChannels.RendererActionTraceConfigChanged, handler);
+  },
+  /** 发送已结束 Span；使用 send 避免遥测往返阻塞业务。 */
+  reportLocalTtftBatch: (batch: import("@zcode/shared").LocalTtftBatch): void =>
+    ipcRenderer.send(PlatformChannels.ReportLocalTtftBatch, batch),
+  reportRendererActionTraceBatch: (batch: RendererActionTraceBatchV1): void =>
+    ipcRenderer.send(PlatformChannels.ReportRendererActionTraceBatch, batch),
   /**
    * 主窗口 renderer 的 60 秒 heap 读数。
    * 只提供单向 send：main 不回执，renderer 也不能靠它反查 main 的进程事实。
@@ -797,6 +948,8 @@ contextBridge.exposeInMainWorld("zcode", {
   getDeviceId: () => ipcRenderer.invoke(PlatformChannels.GetDeviceId),
 });
 
+installPluginSandboxHostBridge();
+
 /**
  * MessagePort 不能通过 contextBridge 传递（contextBridge 会把它包成 Proxy，
  * 丢失 addEventListener 等原生方法）。改用 window.postMessage 的 transfer
@@ -880,6 +1033,9 @@ ipcRenderer.on(
     notifyPostUpdateReleaseNotesCallbacks(payload);
   },
 );
+
+// dom-ready autoInject 之后 Bridge 若被重置，再尝试一次包装
+scheduleArmsEventBridgePatch();
 
 // 启动控制面先于普通 RPC；reload 从 Main 的通知镜像补齐，不触发新迁移。
 ipcRenderer.on(InternalChannels.DatabaseStartupState, (_event, raw: unknown) => {

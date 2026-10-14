@@ -6,13 +6,14 @@
  * 需手工拼命令且容易漏跑。本脚本统一入口。
  *
  * 关键约束（实测得出，勿改）：
- * - runner 是 node:test（Node 内置），配 --import tsx 解析 TS。
+ * - runner 按文件风格双轨分发：node:test（Node 内置，配 --import tsx 解析 TS）与
+ *   vitest（仓库根 vitest.config.ts 提供构建期 define 与项目分区）。判据见 isVitestStyle。
  * - **必须从各包目录内执行**：ui 包用 tsconfig paths 的 `@/*` 别名，
  *   node 直跑不认，从仓库根跑会 ERR_MODULE_NOT_FOUND。
  * - 不引入任何新依赖（tsx 已是根 devDependency）。
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -185,6 +186,19 @@ function collectTests(packageDir) {
     .map((name) => join("test", name));
 }
 
+/**
+ * 判定一个测试文件是 vitest 风格还是 node:test 风格：按 import 语句扫前若干行。
+ *
+ * 为什么按 import 而不是执行结果：node:test 下加载 vitest 文件会在注册阶段就崩
+ * （initSuite 读不到 config / "No test suite found"），报错形态与真实断言失败无法
+ * 区分——CI 上要么整包跳过（漏跑），要么整包红（假失败）。import 是最便宜且稳定的判据。
+ * 只扫文件头：vitest 导入按惯例在顶部；测试体内动态 import 不影响归类。
+ */
+function isVitestStyle(file) {
+  const head = readFileSync(join(repoRoot, file), "utf8").slice(0, 2048);
+  return /from\s+"vitest"/.test(head);
+}
+
 let totalTests = 0;
 let failedPackages = 0;
 
@@ -196,20 +210,41 @@ for (const packageDir of TEST_PACKAGES) {
     console.log(`[test] ${packageDir}: 无测试文件，跳过`);
     continue;
   }
-  console.log(`[test] ${packageDir}: ${files.length} 个测试文件`);
+  const nodeTestFiles = files.filter((f) => !isVitestStyle(f));
+  const vitestFiles = files.filter((f) => isVitestStyle(f));
+  console.log(
+    `[test] ${packageDir}: ${files.length} 个测试文件（node:test ${nodeTestFiles.length} / vitest ${vitestFiles.length}）`,
+  );
+
+  // node:test 风格：维持原执行路径。
   // cwd 必须是包目录：ui 的 @/* 别名依赖 tsconfig paths，node 直跑不认。
-  const nodeArgs = ["--import", "tsx"];
-  if (needsZcodeSourceResolver(packageDir)) {
-    // 排在 tsx 之后：本钩子只做 specifier→源码路径，转译仍由 tsx 承担。
-    nodeArgs.push("--import", ZCODE_SOURCE_RESOLVER_URL);
+  if (nodeTestFiles.length > 0) {
+    const nodeArgs = ["--import", "tsx"];
+    if (needsZcodeSourceResolver(packageDir)) {
+      // 排在 tsx 之后：本钩子只做 specifier→源码路径，转译仍由 tsx 承担。
+      nodeArgs.push("--import", ZCODE_SOURCE_RESOLVER_URL);
+    }
+    nodeArgs.push("--test", ...nodeTestFiles);
+    const result = spawnSync(process.execPath, nodeArgs, {
+      cwd: join(repoRoot, packageDir),
+      stdio: "inherit",
+    });
+    if (result.status !== 0) {
+      failedPackages += 1;
+    }
   }
-  nodeArgs.push("--test", ...files);
-  const result = spawnSync(process.execPath, nodeArgs, {
-    cwd: join(repoRoot, packageDir),
-    stdio: "inherit",
-  });
-  if (result.status !== 0) {
-    failedPackages += 1;
+
+  // vitest 风格：必须从仓库根跑——根 vitest.config.ts 注入构建期 define
+  // （env.test.ts 的端点断言依赖）并声明 include/exclude 项目分区，包内跑两样都缺。
+  if (vitestFiles.length > 0) {
+    const result = spawnSync(
+      process.execPath,
+      ["node_modules/vitest/vitest.mjs", "run", ...vitestFiles.map((f) => join(packageDir, f))],
+      { cwd: repoRoot, stdio: "inherit", shell: false },
+    );
+    if (result.status !== 0) {
+      failedPackages += 1;
+    }
   }
   totalTests += files.length;
 }

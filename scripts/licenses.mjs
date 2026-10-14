@@ -133,6 +133,14 @@ const PROD_WEAK_ALLOW = [
     "@ubjs/* 是 MPL-2.0（uniffi N-API 运行时），原样分发未修改；源码见 pinned 上游 tag（已独立核实可达且覆盖实际分发的二进制来源），MPL-2.0 全文随 THIRD-PARTY-NOTICES.md 分发，许可材料已登记",
   ],
   [
+    // elkjs 经 dev-docs 的 dependencies 进 prod 图，但 dev-docs 是文档站、不随产品二进制
+    // 发行（apps/dev-docs 只产出站点构建物）。EPL-2.0 OR GPL-3.0 是用户可选双许可：
+    // 文档站对外发布时需二选一履行（EPL-2.0：保留声明+提供源码；GPL-3.0：整站衍生义务），
+    // 该核对属于发布流程，不属本门禁；若 elkjs 将来进入产品包依赖，此登记即失效需重核。
+    /^elkjs$/,
+    "dev-docs 文档站依赖（随其 prod 图进入扫描），不进产品二进制；EPL-2.0 OR GPL-3.0 双许可，站点发布时二选一履行的核对在发布流程",
+  ],
+  [
     /^@trycua\/cua-driver(?:-|$)/,
     // 注意：**平台包声明的是 MIT AND MPL-2.0**，不是 MIT —— MPL 部分覆盖随包分发的
     // cua_driver_node_runtime.node（包内 node-runtime-NOTICE.md 自述）。登记表此前把 7 条

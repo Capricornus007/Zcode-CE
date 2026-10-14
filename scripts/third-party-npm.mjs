@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { readFile, readdir, realpath } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { promisify } from "node:util";
@@ -142,31 +143,84 @@ export function assertProductionGraphs(lockedProjects, installedProjects) {
   return locked;
 }
 
+/**
+ * 枚举 workspace 成员包（读 pnpm-workspace.yaml 的 packages: 段）。
+ *
+ * 为什么不再用 `pnpm -r ls` 拿项目清单：整仓一次调用会让 pnpm 并行 open 全部
+ * node_modules 的 package.json，依赖树长过 Windows 单进程句柄上限时直接 EMFILE
+ * （2026-10 实测：串行遍历同树 2670 个文件零错误，故障纯粹来自 pnpm 的并发遍历）。
+ * 这里只认两种形态：字面目录与一层 `dir/*` glob —— 与 pnpm-workspace.yaml 的
+ * 实际用法一致；出现更复杂的 glob 时显式报错而不是静默漏包。
+ */
+function workspaceProjectDirectories(root) {
+  const text = readFileSync(join(root, "pnpm-workspace.yaml"), "utf8");
+  const section = [];
+  let inPackages = false;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (/^[A-Za-z][A-Za-z0-9_-]*:/.test(line)) {
+      inPackages = line === "packages:";
+      continue;
+    }
+    if (!inPackages || !line.startsWith("- ")) continue;
+    section.push(line.slice(2).replace(/^['"]|['"]$/g, ""));
+  }
+  const dirs = [];
+  for (const entry of section) {
+    if (!entry.includes("*")) {
+      dirs.push(entry);
+      continue;
+    }
+    const star = entry.indexOf("*");
+    if (star !== entry.length - 1 || entry.includes("**")) {
+      throw new Error(`pnpm-workspace.yaml 出现不支持的 glob（需要显式适配枚举器）：${entry}`);
+    }
+    const parent = entry.slice(0, star - 1);
+    for (const child of readdirSync(join(root, parent), { withFileTypes: true })) {
+      if (!child.isDirectory() || child.name.startsWith(".")) continue;
+      const candidate = join(parent, child.name);
+      if (existsSync(join(root, candidate, "package.json"))) dirs.push(candidate);
+    }
+  }
+  return dirs.filter((dir) => existsSync(join(root, dir, "package.json")));
+}
+
+async function pnpmLsProject(root, dir, lockfileOnly) {
+  const { stdout } = await exec(
+    "pnpm",
+    [
+      "--filter",
+      `./${dir.replaceAll("\\", "/")}`,
+      "ls",
+      "--prod",
+      "--json",
+      "--depth",
+      "Infinity",
+      ...(lockfileOnly ? ["--lockfile-only"] : []),
+    ],
+    {
+      cwd: root,
+      maxBuffer: 256 * 1024 * 1024,
+      ...resolveSpawnRuntimeOptions("pnpm"),
+    },
+  );
+  return JSON.parse(stdout);
+}
+
 export async function readWorkspaceProductionGraph(root) {
   root = await realpath(root);
-  // 修复：pnpm ls 默认读取安装快照，不能把旧图与当前锁文件哈希拼成有效声明。
-  const [locked, actual] = await Promise.all(
-    [true, false].map(async (lockfileOnly) => {
-      const { stdout } = await exec(
-        "pnpm",
-        [
-          "-r",
-          "ls",
-          "--prod",
-          "--json",
-          "--depth",
-          "Infinity",
-          ...(lockfileOnly ? ["--lockfile-only"] : []),
-        ],
-        {
-          cwd: root,
-          maxBuffer: 256 * 1024 * 1024,
-          ...resolveSpawnRuntimeOptions("pnpm"),
-        },
-      );
-      return JSON.parse(stdout);
-    }),
-  );
+  // 修复①：locked 图必须来自 --lockfile-only（读锁文件而非安装快照）。
+  // 修复②（EMFILE）：不再 `pnpm -r ls` 整仓一次调用 —— pnpm 会并行 open 全部
+  // package.json，Windows 句柄上限下必然炸。改为按 workspace 成员串行分片调用
+  // （每片只走自己的依赖子树，实测单片 depth Infinity 稳定通过），再拼回数组。
+  // 输出形状与 `-r ls` 完全一致（每成员一个元素），下游 productionPackages 无感。
+  const dirs = workspaceProjectDirectories(root);
+  const locked = [];
+  const actual = [];
+  for (const dir of dirs) {
+    locked.push(...(await pnpmLsProject(root, dir, true)));
+    actual.push(...(await pnpmLsProject(root, dir, false)));
+  }
   const required = assertProductionGraphs(locked, actual);
   return { required, projects: actual };
 }

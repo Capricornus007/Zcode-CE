@@ -106,7 +106,10 @@ async function withBotsService(
       handle: (payload) => service.handleProviderCallbackResponse("webhook", payload),
       logLines,
     });
-    service.disposeAll();
+    // 官方 3.15.1 引擎的关闭是异步的（disposeAll 只触发不等待）：state 文件锁的释放
+    // 在 disposeAllAndWait 里完成。立即 rm 会与残留句柄竞速（Windows 上 ENOTEMPTY/EPERM）。
+    // botsService.groups.test.ts 的 afterEach 同款写法。
+    await service.disposeAllAndWait();
   } finally {
     console.log = originalLog;
     setDataBaseDir(null);

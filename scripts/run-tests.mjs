@@ -194,8 +194,8 @@ function collectTests(packageDir) {
  * 区分——CI 上要么整包跳过（漏跑），要么整包红（假失败）。import 是最便宜且稳定的判据。
  * 只扫文件头：vitest 导入按惯例在顶部；测试体内动态 import 不影响归类。
  */
-function isVitestStyle(file) {
-  const head = readFileSync(join(repoRoot, file), "utf8").slice(0, 2048);
+function isVitestStyle(packageDir, file) {
+  const head = readFileSync(join(repoRoot, packageDir, file), "utf8").slice(0, 2048);
   return /from\s+"vitest"/.test(head);
 }
 
@@ -210,8 +210,8 @@ for (const packageDir of TEST_PACKAGES) {
     console.log(`[test] ${packageDir}: 无测试文件，跳过`);
     continue;
   }
-  const nodeTestFiles = files.filter((f) => !isVitestStyle(f));
-  const vitestFiles = files.filter((f) => isVitestStyle(f));
+  const nodeTestFiles = files.filter((f) => !isVitestStyle(packageDir, f));
+  const vitestFiles = files.filter((f) => isVitestStyle(packageDir, f));
   console.log(
     `[test] ${packageDir}: ${files.length} 个测试文件（node:test ${nodeTestFiles.length} / vitest ${vitestFiles.length}）`,
   );

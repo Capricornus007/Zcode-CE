@@ -259,22 +259,11 @@ export function MarketingTouchProvider({
             };
           phase("submitting");
           submitted = true;
-          const outcome = await services.codingPlanSubscriptionService.claimManualPlan({
+          const result = await services.codingPlanSubscriptionService.claimManualPlan({
             planId: action.args.plan_id,
             ...proof,
           });
           signal.throwIfAborted();
-          // CE 线增量桥接：CE 侧 claimManualPlan 返回 ManualClaimPlanClaimOutcome（ok 判别联合，
-          // 设置页手动领取同源消费），官方营销触达流按 success/code/message 读取 —— 在此做一次
-          // 形状适配，两侧契约各自保持权威。字符串失败码（manual_claim_captcha_* 等）映射为
-          // -1（不在官方终态码 1001-1005 内 ⇒ 非终态、可重试），与验证码失败的可重试语义一致。
-          const result = outcome.ok
-            ? { success: true as const, code: 0, message: "" }
-            : {
-                success: false as const,
-                code: typeof outcome.code === "number" ? outcome.code : -1,
-                message: outcome.message,
-              };
           if (!result.success)
             return {
               status: "failure",

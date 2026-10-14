@@ -30,3 +30,15 @@ allowBuilds:
   protobufjs: true
   ssh2: true
   unsafe-pointer: true
+
+# pnpm 10.7+ 的新配置家：package.json 的 "pnpm" 键已被忽略（安装时警告实锤）。
+# 从根 package.json 迁移而来；CE 守卫测试（arms-patch-install-contract）要求补丁实际生效。
+overrides:
+  "react": "19.2.7"
+  "react-dom": "19.2.7"
+  "unzipper": "0.12.5"
+patchedDependencies:
+  "@ai-sdk/openai-compatible@2.0.60": "patches/@ai-sdk__openai-compatible@2.0.60.patch"
+  "@ai-sdk/anthropic@3.0.81": "patches/@ai-sdk__anthropic@3.0.81.patch"
+  "wdio-electron-service@9.2.1": "patches/wdio-electron-service@9.2.1.patch"
+  "@arms/rum-electron@0.0.3": "patches/@arms__rum-electron@0.0.3.patch"

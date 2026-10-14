@@ -16,6 +16,12 @@ patchedDependencies:
   '@ai-sdk/openai-compatible@2.0.60':
     hash: 9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b
     path: patches/@ai-sdk__openai-compatible@2.0.60.patch
+  '@arms/rum-electron@0.0.3':
+    hash: 36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97
+    path: patches/@arms__rum-electron@0.0.3.patch
+  wdio-electron-service@9.2.1:
+    hash: 52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f
+    path: patches/wdio-electron-service@9.2.1.patch
 
 importers:
 
@@ -765,7 +771,7 @@ importers:
     dependencies:
       '@arms/rum-electron':
         specifier: ^0.0.3
-        version: 0.0.3(@babel/runtime@7.29.7)(electron@41.0.3)
+        version: 0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@41.0.3)
       '@babel/runtime':
         specifier: ^7.24.5
         version: 7.29.7
@@ -970,7 +976,7 @@ importers:
         version: 8.0.8(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.9.0)
       wdio-electron-service:
         specifier: ^9.2.1
-        version: 9.2.1(electron@41.0.3)(expect-webdriverio@6.1.0)(webdriverio@9.32.0(puppeteer-core@22.15.0))
+        version: 9.2.1(patch_hash=52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f)(electron@41.0.3)(expect-webdriverio@6.1.0)(webdriverio@9.32.0(puppeteer-core@22.15.0))
       webdriverio:
         specifier: ^9.27.0
         version: 9.32.0(puppeteer-core@22.15.0)
@@ -12256,7 +12262,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@arms/rum-electron@0.0.3(@babel/runtime@7.29.7)(electron@41.0.3)':
+  '@arms/rum-electron@0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@41.0.3)':
     dependencies:
       '@arms/rum-browser': 0.1.8(@babel/runtime@7.29.7)
       '@arms/rum-core': 0.1.4(@babel/runtime@7.29.7)
@@ -23361,7 +23367,7 @@ snapshots:
     dependencies:
       defaults: 1.0.4
 
-  wdio-electron-service@9.2.1(electron@41.0.3)(expect-webdriverio@6.1.0)(webdriverio@9.32.0(puppeteer-core@22.15.0)):
+  wdio-electron-service@9.2.1(patch_hash=52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f)(electron@41.0.3)(expect-webdriverio@6.1.0)(webdriverio@9.32.0(puppeteer-core@22.15.0)):
     dependencies:
       '@babel/parser': 7.29.2
       '@electron/fuses': 2.1.3

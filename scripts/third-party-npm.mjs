@@ -108,12 +108,92 @@ export async function readPackageNotices(directory) {
   return files.sort((a, b) => a.member.localeCompare(b.member, "en"));
 }
 
-function productionPackages(projects) {
+// 解析锁文件（v9）packages 段的平台约束：`  'name@version':` 下的 `    os/cpu/libc: [..]` 行。
+export function readLockfilePlatformConstraints(lockfileText) {
+  const constraints = new Map();
+  let inPackages = false;
+  let key = null;
+  for (const line of lockfileText.split(/\r?\n/u)) {
+    if (/^\S/u.test(line)) {
+      inPackages = line === "packages:";
+      key = null;
+      continue;
+    }
+    if (!inPackages) continue;
+    const header = /^ {2}(?:'([^']+)'|([^\s'][^:]*)):$/u.exec(line);
+    if (header) {
+      key = header[1] ?? header[2];
+      continue;
+    }
+    const field = key && /^ {4}(os|cpu|libc): \[(.*)\]$/u.exec(line);
+    if (field) {
+      const values = field[2]
+        .split(",")
+        .map((value) => value.trim().replace(/^'(.*)'$/u, "$1"))
+        .filter(Boolean);
+      constraints.set(key, { ...constraints.get(key), [field[1]]: values });
+    }
+  }
+  return constraints;
+}
+
+// 照搬 pnpm package-is-installable 的 checkList，保证与实际安装结果一致（含否定项语义）。
+function pnpmCheckList(values, list) {
+  if (list.length === 1 && list[0] === "any") return true;
+  let match = false;
+  let blc = 0;
+  for (const value of values) {
+    for (const item of list) {
+      if (item[0] === "!") {
+        if (item.slice(1) === value) return false;
+        ++blc;
+      } else {
+        match = match || item === value;
+      }
+    }
+  }
+  return match || blc === list.length;
+}
+
+// targets.libc 为 null 表示宿主 libc 未知（非 Linux），pnpm 此时不检查 libc。
+export function createInstallablePackageFilter(constraints, targets) {
+  return (name, version) => {
+    const wanted = constraints.get(`${name}@${version.split("(")[0]}`);
+    if (!wanted) return true;
+    if (wanted.os && !pnpmCheckList(targets.os, wanted.os)) return false;
+    if (wanted.cpu && !pnpmCheckList(targets.cpu, wanted.cpu)) return false;
+    if (wanted.libc && targets.libc && !pnpmCheckList(targets.libc, wanted.libc)) return false;
+    return true;
+  };
+}
+
+function hostLibc() {
+  if (process.platform !== "linux") return null;
+  return process.report?.getReport?.()?.header?.glibcVersionRuntime ? "glibc" : "musl";
+}
+
+// 与 pnpm checkPlatform 相同：supportedArchitectures 未配置时只取宿主，`current` 替换为宿主值。
+export async function readInstallTargets(root) {
+  const { parse } = await import("yaml");
+  const workspace = parse(await readFile(join(root, "pnpm-workspace.yaml"), "utf8")) ?? {};
+  const supported = workspace.supportedArchitectures ?? {};
+  const resolveCurrent = (list, current) =>
+    (list ?? ["current"]).map((value) => (value === "current" ? current : value));
+  const libc = hostLibc();
+  return {
+    os: resolveCurrent(supported.os, process.platform),
+    cpu: resolveCurrent(supported.cpu, process.arch),
+    libc: libc ? resolveCurrent(supported.libc, libc) : null,
+  };
+}
+
+export function productionPackages(projects, isInstallable = () => true) {
   const own = new Set(projects.map((project) => project.name));
   const required = new Map();
   function dependencies(deps) {
     for (const [alias, info] of Object.entries(deps ?? {})) {
       const name = info.name ?? alias;
+      if (!isInstallable(name, info.version)) continue;
       if (!own.has(name) && !name.startsWith("@zcode/") && !info.version.startsWith("link:")) {
         required.set(`${name}@${info.version}`, { name, version: info.version });
       }

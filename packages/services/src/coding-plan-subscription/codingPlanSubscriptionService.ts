@@ -1,9 +1,10 @@
-import type { ApiClient } from "@zcode/shared";
+import { applyDynamicWorkflowUserMode, type ApiClient } from "@zcode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import type { ICodingPlanSubscriptionService } from "./codingPlanSubscription.js";
 import { BigModelCodingPlanSubscriptionProvider } from "./bigmodelCodingPlanSubscriptionProvider.js";
 import type { ModelSelectionView } from "@zcode/provider";
 import { ZaiCodingPlanSubscriptionProvider } from "./zaiCodingPlanSubscriptionProvider.js";
+// ---- CE 线增量：claim 验证码配置面 ----
 import {
   createManualClaimCaptcha,
   type ManualClaimCaptcha,
@@ -15,14 +16,12 @@ interface CodingPlanSubscriptionServiceDependencies {
   credentialService: Pick<ICredentialService, "load">;
   resolveOffPeakModelSelectionView?: () => Promise<ModelSelectionView>;
   /**
-   * claim 平面的验证码求解器（可选）。
-   * CE 当前没有本地求解器实现（不引入 happy-dom），因此缺省不传 →
-   * claimManualPlan 在需要验证码时返回可读的 captcha_unavailable 失败。
-   * 桌面端由 UI 在内嵌 WebView 里求解并把 verifyParam 直接传进请求，走主路径。
+   * 用户在设置里选的动态工作流模式（launch.md「The user's choice」）。只有拥有设置权威的装配
+   * （desktop 本地 Host、web/standalone server）注入；缺省时快照只含服务端的「提供」。
    */
+  resolveDynamicWorkflowUserMode?: () => Promise<unknown>;
+  /** CE 线增量：claim 平面的验证码求解器（可选）。桌面端由 UI 在内嵌 WebView 里求解并把 verifyParam 传进请求。 */
   manualClaimCaptchaSolver?: ManualClaimCaptchaSolver;
-  /** 测试注入：覆盖 deviceMid 解析。 */
-  resolveDeviceMid?: () => Promise<string>;
 }
 
 /**
@@ -42,19 +41,16 @@ interface CodingPlanSubscriptionServiceDependencies {
 export function createCodingPlanSubscriptionService(
   dependencies: CodingPlanSubscriptionServiceDependencies,
 ): ICodingPlanSubscriptionService {
+  // CE 线增量：claim 平面的验证码配置读取（solver 缺省不接，桌面端由 UI 内嵌 WebView 求解）。
   const manualClaimCaptcha: ManualClaimCaptcha = createManualClaimCaptcha({
     apiClient: dependencies.apiClient,
     solve: dependencies.manualClaimCaptchaSolver,
   });
-  const providerOptions = {
-    apiClient: dependencies.apiClient,
-    credentialService: dependencies.credentialService,
-    resolveOffPeakModelSelectionView: dependencies.resolveOffPeakModelSelectionView,
+  const bigmodelProvider = new BigModelCodingPlanSubscriptionProvider({
+    ...dependencies,
     manualClaimCaptcha,
-    resolveDeviceMid: dependencies.resolveDeviceMid,
-  };
-  const bigmodelProvider = new BigModelCodingPlanSubscriptionProvider(providerOptions);
-  const zaiProvider = new ZaiCodingPlanSubscriptionProvider(providerOptions);
+  });
+  const zaiProvider = new ZaiCodingPlanSubscriptionProvider(dependencies);
 
   // 按 family 选择 enterprise 读路径 provider；缺省（含未指定 family 的历史调用）走 bigmodel。
   const resolveEnterprisePricingProvider = (
@@ -66,14 +62,23 @@ export function createCodingPlanSubscriptionService(
     getStaticProducts: () => bigmodelProvider.getStaticProducts(),
     getStaticTeamProducts: () => bigmodelProvider.getStaticTeamProducts(),
     getStartPlanPreview: () => bigmodelProvider.getStartPlanPreview(),
-    getBillingDiscount: () => bigmodelProvider.getBillingDiscount(),
-    getRequestVerificationConfig: () => bigmodelProvider.getRequestVerificationConfig(),
+    getManualClaimPlanPreviews: () => bigmodelProvider.getManualClaimPlanPreviews(),
+    claimManualPlan: (request) => bigmodelProvider.claimManualPlan(request),
+    getManualClaimCaptchaConfig: (options) =>
+      bigmodelProvider.getManualClaimCaptchaConfig(options),
     getOffPeakClientConfig: (options) => bigmodelProvider.getOffPeakClientConfig(options),
     // 动态工作流灰度：与 client/configs 同源，
     // 因此和其它平台级配置一样固定走 bigmodel provider，与 family 无关。
-    getDynamicWorkflowClientConfig: (options) =>
-      bigmodelProvider.getDynamicWorkflowClientConfig(options),
+    // 用户选择在这里套到「提供」上，renderer 读到的就是生效值；规则只写在 shared 的
+    // applyDynamicWorkflowUserMode 里，renderer 不自己算。
+    getDynamicWorkflowClientConfig: async (options) => {
+      const offer = await bigmodelProvider.getDynamicWorkflowClientConfig(options);
+      const resolveUserMode = dependencies.resolveDynamicWorkflowUserMode;
+      return resolveUserMode ? applyDynamicWorkflowUserMode(offer, await resolveUserMode()) : offer;
+    },
     getModelContextBudgetStrategy: () => bigmodelProvider.getModelContextBudgetStrategy(),
+    getBillingDiscount: () => bigmodelProvider.getBillingDiscount(),
+    getRequestVerificationConfig: () => bigmodelProvider.getRequestVerificationConfig(),
     getForceUpdateConfig: () => bigmodelProvider.getForceUpdateConfig(),
     productInfo: (request) => bigmodelProvider.productInfo(request),
     preview: (request) => bigmodelProvider.preview(request),
@@ -98,10 +103,5 @@ export function createCodingPlanSubscriptionService(
     continueEnterpriseOrderPayment: (request) =>
       bigmodelProvider.continueEnterpriseOrderPayment(request),
     checkEnterpriseOrderStatus: (request) => bigmodelProvider.checkEnterpriseOrderStatus(request),
-    // claim 平面：与 family 无关（zcode-plan 域共用 zcodejwttoken + deviceMid），
-    // 与 staticConfigs 同理固定走 bigmodel provider，避免两个 provider 各存一份设备身份缓存。
-    getManualClaimPlanPreviews: () => bigmodelProvider.getManualClaimPlanPreviews(),
-    claimManualPlan: (request) => bigmodelProvider.claimManualPlan(request),
-    getManualClaimCaptchaConfig: (options) => bigmodelProvider.getManualClaimCaptchaConfig(options),
   };
 }

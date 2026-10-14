@@ -2764,6 +2764,10 @@ Electron/Chromium target-specific notices are shipped separately under Resources
 
 - @ai-sdk/anthropic@3.0.81: modified by ZCode; the changes are recorded in patches/@ai-sdk__anthropic@3.0.81.patch in the source repository.
 
+- wdio-electron-service@9.2.1: modified by ZCode; the changes are recorded in patches/wdio-electron-service@9.2.1.patch in the source repository.
+
+- @arms/rum-electron@0.0.3: modified by ZCode; the changes are recorded in patches/@arms__rum-electron@0.0.3.patch in the source repository.
+
 ## License and NOTICE texts
 
 ### Notice b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529

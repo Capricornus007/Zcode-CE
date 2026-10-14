@@ -141,7 +141,13 @@ async function loadManualClaimPreviewSnapshot(
   }
   if (!manualClaimPreviewRequest) {
     manualClaimPreviewRequest = Promise.all([
-      service.getManualClaimPlanPreviews(),
+      // CE 适配（服务层已官方化）：官方 getManualClaimPlanPreviews 返回
+      // ManualClaimPlanPreviewSnapshot（{serverTime?, plans}），plans 运行时对象携带
+      // meter/unitType/capabilities/grantUnits/period/priority 全量字段（官方 provider
+      // 解析时保留），仅静态类型建模较瘦 —— 这里以带注释的透传对齐 CE 契约。
+      service
+        .getManualClaimPlanPreviews()
+        .then((snapshot) => snapshot.plans as unknown as ManualClaimPlanPreview[]),
       // 验证码配置只用于决定点击「领取」后是否需要开对话框，
       // 它的失败不应阻断列表展示（列表本身就是「有什么可领」的答案）。
       service.getManualClaimCaptchaConfig().catch(() => null),
@@ -254,7 +260,32 @@ export function useManualClaimPlan(options?: { enabled?: boolean }) {
         claimedPlan: null,
       }));
       try {
-        const outcome = await service.claimManualPlan(request);
+        const result = await service.claimManualPlan(request);
+        // CE 适配（服务层已官方化）：官方 ManualClaimPlanClaimResult（success 判别）→
+        // 本 hook 对下游（ManualClaimPlanCard/Dialog）暴露的 CE outcome 形状（ok 判别联合）。
+        // 失败码按官方服务端语义映射 failureKind：401 未登录、1005 额度耗尽，其余 unknown。
+        const outcome: ManualClaimPlanClaimOutcome = result.success
+          ? {
+              ok: true,
+              planId: request.planId,
+              ...(result.plan?.startsAt !== undefined ? { startsAt: result.plan.startsAt } : {}),
+              ...(result.plan?.endsAt !== undefined ? { endsAt: result.plan.endsAt } : {}),
+            }
+          : {
+              ok: false,
+              planId: request.planId,
+              failureKind:
+                result.code === 401
+                  ? "login_required"
+                  : result.code === 1005
+                    ? "quota_exhausted"
+                    : "unknown",
+              code: result.code,
+              message: result.message,
+              ...(result.failureEndsAt !== undefined
+                ? { failureEndsAt: result.failureEndsAt }
+                : {}),
+            };
         if (!mountedRef.current) {
           return;
         }

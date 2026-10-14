@@ -287,7 +287,17 @@ async function createTarball({ packageParent, releaseDir, tarballName }) {
   await rm(tarball, {
     force: true,
   });
-  run("tar", ["-czf", tarball, "-C", packageParent, packageDirName]);
+  // Windows 修正：GNU tar 把 `D:\...` 的盘符冒号当远程主机（rsh 语法）→ "Cannot connect
+  // to D:"。--force-local 关掉该解释；非 Windows（BSD tar）不需要也不认识，按平台加。
+  const tarArgs = [
+    "-czf",
+    tarball,
+    "-C",
+    packageParent,
+    ...(process.platform === "win32" ? ["--force-local"] : []),
+    packageDirName,
+  ];
+  run("tar", tarArgs);
   return tarball;
 }
 

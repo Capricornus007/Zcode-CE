@@ -11,6 +11,7 @@ import type {
 } from "@zcode/shared/zcode-protocol-v4";
 import { V4CommandNoopError } from "../../v4-gateway.js";
 import { runSessionModelConfigMutation } from "../../model-config-mutation.js";
+import { resetHeldQueueAfterModelSelectionChange } from "../../queue-held-reset.js";
 import { requireRecord } from "../record-access.js";
 import type { V4CommandCoreHost, V4SessionRecordView } from "../types.js";
 
@@ -79,7 +80,9 @@ async function switchModelConfig(
 ): Promise<CommandResult | undefined> {
   const payload = envelope.payload as CommandPayloadMap["switchModelConfig"];
   const record = requireRecord(host, envelope.sessionId);
-  return runSessionModelConfigMutation(record.app, async () => {
+  // CE 线增量：复位标志由临界区内带出（回调返回值即命令结果，不能挪作他用）。
+  let resumedHeldQueue = false;
+  await runSessionModelConfigMutation(record.app, async () => {
     // previous 必须在串行化临界区内、setModel 之前快照。registry fallback 可能排在本命令
     // 前面，若在排队前读取会拿到过期 previous，并让 noop/事件顺序与 runtime 真值分裂。
     const previousSelection = record.app.runtime.getSessionModelSelection();
@@ -137,8 +140,30 @@ async function switchModelConfig(
       // trace 链路结构透传自 record（会话根 trace），不在命令层另起无关联 traceId。
       traceContext: record.traceContext,
     });
+    // spec 130 §4.6：切换成功后若队列因上一次 turn 失败而 held，复位授权位。
+    // 在串行化临界区内、emitModelSelected 之后执行；「切换失败不复位」由 setModel
+    // 抛错天然保证。只在 modelIdentityChanged 分支之外也执行：同模型显式改 thought
+    // 同样是「用户表达继续用这个会话」；判据件内部按选型是否真的变更做幂等短路。
+    resumedHeldQueue = await resetHeldQueueAfterModelSelectionChange({
+      app: record.app,
+      sessionId: record.app.sessionId,
+      previousSelection: previousModelSelection,
+      nextSelection: nextModelSelection,
+      readQueueState: () => host.getQueueAutoDrainState?.(record.app.sessionId) ?? null,
+      traceContext: record.traceContext,
+      ...(host.logger ? { logger: host.logger } : {}),
+    });
     return undefined;
   });
+  // ready hook 必须在 runSessionModelConfigMutation 临界区之外：钩子实现（afterStateMutation
+  // → ensureSessionModelAvailable）空闲时会再进同一把非重入锁，锁内重入直接自死锁。
+  // 而「空闲 + 队列 held」正是本修复最主要的使用场景。
+  if (resumedHeldQueue) {
+    // 与 queue.ts setAutoDrain(true) 逐字同源：只翻授权位不够——idle 暂停队列
+    // 没有 active turn 可替它启动队首，必须复用同一条 ready hook。
+    await host.afterLegacyStateMutation?.(record, "queue_auto_drain_resumed");
+  }
+  return undefined;
 }
 
 /**

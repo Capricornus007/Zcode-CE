@@ -208,6 +208,11 @@ interface BinaryReadCacheEntry {
 }
 
 export interface V4GatewayHost {
+  /**
+   * CE 线增量：切模型复位 held 队列后触发就绪重评（idle 会话没有 active turn 能替它
+   * 启动队首，只翻授权位不够）。实现归 bridge：转发给宿主 onTargetCompleted 同款入口。
+   */
+  requestQueueDrainReevaluation?(sessionId: string): void;
   cliVersion?: string;
   /** 会话是否在宿主注册表中活跃（inbox 的 sessionNotFound 裁决依据）。 */
   sessionExists(sessionId: string): boolean;
@@ -2723,6 +2728,24 @@ export class ConversationV4Gateway {
 
   /** 会话关闭：清 publisher 与其全部订阅调度；hydration 标记同清（重开走冷启动重建）；
    *  并从其 workspace index 移除该会话（session.removed 推给列表订阅者）。 */
+  /** CE 线增量：读投影里的 queue.autoDrain/pauseReason（切模型复位判据）。无投影 → null。 */
+  getQueueAutoDrainState(sessionId: string): {
+    autoDrain: boolean;
+    pauseReason?: "stopped" | "manual" | "error";
+  } | null {
+    const queue = this.publishers.get(sessionId)?.getSnapshot().queue;
+    if (!queue) return null;
+    return {
+      autoDrain: queue.autoDrain,
+      ...(queue.pauseReason ? { pauseReason: queue.pauseReason } : {}),
+    };
+  }
+
+  /** CE 线增量：转发给宿主的重评入口（实现归 bridge）。 */
+  requestQueueDrainReevaluation(sessionId: string): void {
+    this.host.requestQueueDrainReevaluation?.(sessionId);
+  }
+
   disposeSession(sessionId: string): void {
     this.cleanupSessionRuntime(sessionId, {
       clearCommandInbox: false,

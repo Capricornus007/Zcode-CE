@@ -30,12 +30,13 @@ const LOADED: ToolInputResolutionContext = { hasLoadedSkill: () => true };
 /** 探针缺席：没有 skillPort 的会话（子代理、headless 精简装配）——门不得生效。 */
 const NO_PROBE: ToolInputResolutionContext = {};
 
-function refuse(
+async function refuse(
   entry: { resolveInput?: (input: unknown, context: ToolInputResolutionContext) => unknown },
   input: unknown,
   context: ToolInputResolutionContext,
-): { errorCode?: number; message?: string } | undefined {
-  const out = entry.resolveInput?.(input, context) as
+): Promise<{ errorCode?: number; message?: string } | undefined> {
+  // 官方 3.15.1 起 resolveInput 是 async（读盘与模型目录解析搬进了归一化），必须 await。
+  const out = (await entry.resolveInput?.(input, context)) as
     | { result: true; input: unknown }
     | { result: false; errorCode: number; message: string }
     | undefined;
@@ -43,8 +44,8 @@ function refuse(
   return undefined;
 }
 
-test("CreateWorkflow：未加载技能时 resolveInput 拒绝，且拒绝文案点名技能与工具", () => {
-  const out = refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, NOT_LOADED);
+test("CreateWorkflow：未加载技能时 resolveInput 拒绝，且拒绝文案点名技能与工具", async () => {
+  const out = await refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, NOT_LOADED);
   assert.ok(out, "未加载技能时必须拒绝");
   assert.equal(out.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
   assert.match(out.message ?? "", /dynamic-workflows/);
@@ -53,16 +54,16 @@ test("CreateWorkflow：未加载技能时 resolveInput 拒绝，且拒绝文案�
   assert.match(out.message ?? "", /Nothing was started/);
 });
 
-test("CreateWorkflow：加载技能后放行到归一化（不再返回技能门失败）", () => {
-  const out = refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, LOADED);
+test("CreateWorkflow：加载技能后放行到归一化（不再返回技能门失败）", async () => {
+  const out = await refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, LOADED);
   // 归一化本身需要 workingDirectory；这里只断言「不再是技能门那条拒绝」。
   if (out) assert.notEqual(out.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
 });
 
-test("CreateWorkflow：按名字跑保存的工作流不需要技能（上游的例外）", () => {
+test("CreateWorkflow：按名字跑保存的工作流不需要技能（上游的例外）", async () => {
   // 例外也打在最终消费点：saved-only 的调用穿过 resolveInput 时不得拿到技能门那条 428。
   // （没有 run 端口时归一化会以「找不到这个保存的工作流」失败，那是另一条路径，不是技能门。）
-  const savedOnly = refuse(createWorkflowToolEntry, { saved: { name: "pr-review" } }, NOT_LOADED);
+  const savedOnly = await refuse(createWorkflowToolEntry, { saved: { name: "pr-review" } }, NOT_LOADED);
   if (savedOnly) assert.notEqual(savedOnly.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
   assert.equal(createWorkflowNeedsSkill({ saved: { name: "pr-review" } }), false);
   assert.equal(createWorkflowNeedsSkill({ saved: { name: "pr-review" }, script: "x" }), true);
@@ -72,19 +73,23 @@ test("CreateWorkflow：按名字跑保存的工作流不需要技能（上游的
   assert.equal(createWorkflowNeedsSkill([]), true);
 });
 
-test("AmendWorkflow：只改设定的调用放行，带 path 或 script 的拒绝", () => {
+test("AmendWorkflow：只改设定的调用放行，带 path 或 script 的拒绝", async () => {
   assert.equal(amendWorkflowNeedsSkill({ run_id: "r", max_concurrency: 2 }), false);
   assert.equal(amendWorkflowNeedsSkill({ run_id: "r", script: "return 1;" }), true);
   assert.equal(amendWorkflowNeedsSkill({ run_id: "r", path: "a.ts" }), true);
   assert.equal(amendWorkflowNeedsSkill(undefined), true);
 
-  const settingsOnly = refuse(
+  const settingsOnly = await refuse(
     amendWorkflowToolEntry,
     { run_id: "r", max_concurrency: 2 },
     NOT_LOADED,
   );
-  assert.equal(settingsOnly, undefined, "只改设定的调用不得被技能门拒绝");
-  const withScript = refuse(
+  // 门必须放行。官方 3.15.1 起 settings-only 在门之后还要读存量脚本（本夹具无存储可读，
+  // 会拿到 workflow_amend_script_unavailable 的后续失败）——那不是技能门，断言只锁门的编码。
+  if (settingsOnly !== undefined) {
+    assert.notEqual(settingsOnly.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
+  }
+  const withScript = await refuse(
     amendWorkflowToolEntry,
     { run_id: "r", script: "return 1;" },
     NOT_LOADED,
@@ -94,25 +99,25 @@ test("AmendWorkflow：只改设定的调用放行，带 path 或 script 的拒�
   assert.match(withScript.message ?? "", /AmendWorkflow/);
 });
 
-test("SaveWorkflow 与 EvalWorkflowSnippet：未加载技能时同样拒绝", () => {
+test("SaveWorkflow 与 EvalWorkflowSnippet：未加载技能时同样拒绝", async () => {
   for (const [entry, toolName] of [
     [saveWorkflowToolEntry, "SaveWorkflow"],
     [evalWorkflowSnippetToolEntry, "EvalWorkflowSnippet"],
   ] as const) {
-    const out = refuse(entry, { script: "return 1;", name: "x", scope: "project" }, NOT_LOADED);
+    const out = await refuse(entry, { script: "return 1;", name: "x", scope: "project" }, NOT_LOADED);
     assert.ok(out, `${toolName} 未加载技能时必须拒绝`);
     assert.equal(out.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
     assert.match(out.message ?? "", new RegExp(toolName));
   }
 });
 
-test("探针缺席时不设门：没有 Skill 工具的会话仍可提交脚本", () => {
+test("探针缺席时不设门：没有 Skill 工具的会话仍可提交脚本", async () => {
   assert.equal(requireDynamicWorkflowSkill(NO_PROBE, "CreateWorkflow"), undefined);
-  const out = refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, NO_PROBE);
+  const out = await refuse(createWorkflowToolEntry, { script: "return 1;", name: "x" }, NO_PROBE);
   if (out) assert.notEqual(out.errorCode, WORKFLOW_SKILL_NOT_LOADED_CODE);
 });
 
-test("sessionHasLoadedSkill：判据取自历史，只有成功闭合的 Skill 调用才算", () => {
+test("sessionHasLoadedSkill：判据取自历史，只有成功闭合的 Skill 调用才算", async () => {
   const entries = [
     {
       message: {

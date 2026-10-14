@@ -1,4 +1,6 @@
 export { basename, join, resolve as resolvePath } from "node:path";
+// CE 线增量⑧：compact 指令合并器（compact-active 降准警告链消费）。
+export { mergeCompactInstructions } from "../compact/policy.js";
 import {
   createChildTraceContext as createContractChildTraceContext,
   traceContextToLogContext as contractTraceContextToLogContext,

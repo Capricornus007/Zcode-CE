@@ -1,4 +1,6 @@
 import { requestVerificationReasons } from "../request-security-edition/verification-policy.js";
+// disabledTools 上限唯一所有者：../mcpDisabledTools.js（叶子模块，不依赖任何本仓模块）。
+import { MCP_SERVER_MAX_DISABLED_TOOLS } from "../mcpDisabledTools.js";
 import { zcodeProtocolTraceSchema } from "./trace.js";
 // Bot 反向回复的名字解析/待澄清结果与 App、CLI 使用同一严格 schema。
 export { channelReplyRequestSchema, channelReplyResultSchema } from "../channel-mention.js";
@@ -747,6 +749,10 @@ export const zcodeProtocolMcpServerSchema = z.union([
       env: z.array(zcodeProtocolMcpEntrySchema),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      // CE 线增量：工具级启停（disabledTools）必须走 wire——server.config 要原样下发
+      // 给 agent；本 schema 是 .strict() 的，漏声明该键会在协议校验阶段判非法。
+      // 上限唯一所有者是 ../mcpDisabledTools.js，wire 边界与配置边界必须同一个数。
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -759,6 +765,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       oauth: zcodeProtocolMcpOAuthSchema.optional(),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),

@@ -35,6 +35,7 @@ import type {
   WorkflowPort,
   WorkflowSubmitPort,
 } from "@zcode/contracts";
+import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { HookRunner } from "../../hooks/index.js";
 import type { PermissionService } from "../../permission/service.js";
 import type { RuntimeTaskRegistry } from "../../runtime-task/registry.js";
@@ -98,6 +99,8 @@ export interface ToolExecutorOptions {
   model?: Model;
   embeddedSearchBackend?: EmbeddedSearchBackend;
   nativeSearchEnhancementsEnabled?: boolean;
+  /** 危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   skillPort?: SkillPort;
   subagentPort?: SubagentPort;
   coordinatorResponsePort?: CoordinatorResponsePort;
@@ -212,6 +215,8 @@ export interface ToolExecutorDeps {
   model?: Model;
   embeddedSearchBackend?: EmbeddedSearchBackend;
   nativeSearchEnhancementsEnabled?: boolean;
+  /** 危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   skillPort?: SkillPort;
   subagentPort?: SubagentPort;
   coordinatorResponsePort?: CoordinatorResponsePort;

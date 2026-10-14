@@ -131,6 +131,8 @@ export interface AgentRuntimeInternal
   lastContextPressure?: number;
   /** CE 线增量：缓存保活定时器句柄（cache-keep-alive 方法持有）。 */
   cacheKeepAliveTimer?: ReturnType<typeof setTimeout>;
+  /** CE 线增量⑧：本会话累计 compact 次数（≥2 时摘要附降准警告）。 */
+  sessionCompactCount?: number;
   executionPort?: ExecutionPort;
   fileSystemPort?: FileSystemPort;
   imageProcessorPort?: ImageProcessorPort;

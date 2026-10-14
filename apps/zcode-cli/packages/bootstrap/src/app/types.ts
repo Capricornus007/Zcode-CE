@@ -66,6 +66,7 @@ import type {
   UiThemePreference,
   WorkflowEvent,
   WorkflowRunListItem,
+  SessionTitleSource,
   WorkspaceHookPolicy,
 } from "@zcode/contracts";
 import type {
@@ -359,7 +360,12 @@ export interface ZCodeApp {
   ): Promise<import("./subagent-observation.js").SubagentTranscriptSnapshot>;
   readTodos(): Promise<TodoItem[]>;
   readTarget(): Promise<SessionGoal | null>;
-  setCustomSessionTitle(input: { title: string; traceContext?: TraceContext }): Promise<void>;
+  setCustomSessionTitle(input: {
+    title: string;
+    /** 乐观锁：仅覆盖期望来源的标题（custom 不在内）；不传 = 无条件覆盖（用户重命名）。 */
+    expectedTitleSources?: readonly SessionTitleSource[];
+    traceContext?: TraceContext;
+  }): Promise<void>;
   readToolResultArtifact(uri: string): Promise<ToolArtifactReadResult>;
   /** chunk transaction commit 后把完整二进制原子寄存到 session artifact store。 */
   writePromptAttachment(input: {

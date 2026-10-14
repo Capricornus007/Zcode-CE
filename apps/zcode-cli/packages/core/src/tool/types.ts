@@ -1,3 +1,4 @@
+import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 // ============================================================
 // Tool Types - Core tool types for registry and executor
@@ -434,6 +435,8 @@ export interface ToolRuntimePermissionCapabilityContext {
   runtimeScope?: ToolRuntimeScope;
   workingDirectory?: string;
   workspaceRoot?: string;
+  /** CE 线增量：危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
 }
 
 export interface ToolExecutionModelContext {

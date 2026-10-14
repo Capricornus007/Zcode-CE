@@ -28,6 +28,7 @@
   "dependencies": {
     "@zcode/adapters": "workspace:*",
     "@zcode/contracts": "workspace:*",
+    "@zcode/telemetry": "workspace:*",
     "@zcode/core": "workspace:*",
     "@zcode/dynamic-workflow": "workspace:*",
     "@zcode/dynamic-workflow-runtime": "workspace:*",

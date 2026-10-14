@@ -20,7 +20,7 @@ import { defer, rejectWith } from "./workflow-driver-helpers.js";
 import type { SessionState } from "./workflow-driver-types.js";
 
 /**
- * driver 交给提交桥接的宿主面。两样都是 driver 私有状态的引用（不是副本）：`sessions` 就是
+ * driver 交给提交桥接的宿主面。两样都是 driver 私有状态的**引用**（不是副本）：`sessions` 就是
  * 类里那张会话表，`sink` 是 Boundary B 的向上回报面（`askSubmitAttempted` 在本调用栈内被引擎
  * 同步回裁决，所以这两者必须是同一世的那一对）。
  */
@@ -46,11 +46,11 @@ export function makeSessionSubmitPort(
         // 无在飞 ask 却收到 submit：不路由到引擎，直接拒绝（避免悬挂）。
         return Promise.resolve(rejectWith("no active ask is awaiting a submitted result"));
       }
-      // Untyped ask 守卫：设计上「全 untyped 的 actor 不注册 submit_result」，
+      // Untyped ask 守卫（phase 1.5 偏离说明）：spec 要求「全 untyped 的 actor 不注册 submit_result」，
       // 但 driver 在 createActorSession 时拿不到 actor 的聚合 typed 信息（需 site graph，未透传），故
       // 一律注册。为不依赖引擎「submitAttempted 对 untyped 早退」的行为（那会让 deferred 永久悬挂），
       // 这里在 driver 内部直接拦截：untyped ask 收到 submit 时立即回一条合成 rejection 让模型改用纯文本，
-      // 绝不上报 askSubmitAttempted。后续版本可据 actor-graph 投影把 per-actor typed 信息透传进来，
+      // 绝不上报 askSubmitAttempted。phase 2 应据 actor-graph 投影把 per-actor typed 信息透传进来，
       // 真正在 untyped-only actor 上跳过注册（关系到 prompt-cache 的 frozen-tools 不变式）。
       if (!state.currentTyped) {
         return Promise.resolve(

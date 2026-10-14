@@ -246,7 +246,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - @jridgewell/resolve-uri@3.1.2 — MIT
 
-- @jridgewell/sourcemap-codec@1.5.5 — MIT
+- @jridgewell/sourcemap-codec@1.6.0 — MIT
 
 - @jridgewell/trace-mapping@0.3.31 — MIT
 
@@ -379,6 +379,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 - @opentelemetry/api@1.9.0 — Apache-2.0
 
 - @opentelemetry/api@1.9.1 — Apache-2.0
+
+- @opentelemetry/context-async-hooks@2.6.1 — Apache-2.0
 
 - @opentelemetry/core@2.6.1 — Apache-2.0
 
@@ -2044,7 +2046,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - picomatch@2.3.2 — MIT
 
-- picomatch@4.0.4 — MIT
+- picomatch@4.0.7 — MIT
 
 - pinyin-pro@3.29.4 — MIT
 
@@ -2386,7 +2388,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - tinycolor2@1.6.0 — MIT
 
-- tinyexec@1.2.4 — MIT
+- tinyexec@1.3.1 — MIT
 
 - tldts-core@7.0.28 — MIT
 
@@ -2868,6 +2870,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - @opentelemetry/api@1.9.0: LICENSE
 
 - @opentelemetry/api@1.9.1: LICENSE
+
+- @opentelemetry/context-async-hooks@2.6.1: LICENSE
 
 - @opentelemetry/core@2.6.1: LICENSE
 
@@ -4581,7 +4585,7 @@ SOFTWARE.
 
 - @jridgewell/remapping@2.3.5: LICENSE
 
-- @jridgewell/sourcemap-codec@1.5.5: LICENSE
+- @jridgewell/sourcemap-codec@1.6.0: LICENSE
 
 - @jridgewell/trace-mapping@0.3.31: LICENSE
 
@@ -4640,7 +4644,7 @@ SOFTWARE.
 
 ### Notice 98bb58f02f63428bdcf9153ac14c74149b50d3995e363c17a3faea9f8248858c
 
-- @jridgewell/sourcemap-codec@1.5.5: README.md (license section)
+- @jridgewell/sourcemap-codec@1.6.0: README.md (license section)
 
 - deepmerge@4.3.1: readme.md (license section)
 
@@ -5598,6 +5602,29 @@ Apache 2.0 - See [LICENSE][license-url] for more information.
 [license-url]: https://github.com/open-telemetry/opentelemetry-js/blob/main/api/LICENSE
 [docs-tracing]: https://github.com/open-telemetry/opentelemetry-js/blob/main/doc/tracing.md
 [docs-sdk-registration]: https://github.com/open-telemetry/opentelemetry-js/blob/main/doc/sdk-registration.md
+
+````
+
+### Notice fc58ccbf60cdd4a212be673e7f1278dd1a3e49f1b1ddc21a7d70724bc8b3044a
+
+- @opentelemetry/context-async-hooks@2.6.1: README.md (license section)
+
+
+
+````text
+## License
+
+Apache 2.0 - See [LICENSE][license-url] for more information.
+
+[discussions-url]: https://github.com/open-telemetry/opentelemetry-js/discussions
+[license-url]: https://github.com/open-telemetry/opentelemetry-js/blob/main/LICENSE
+[license-image]: https://img.shields.io/badge/license-Apache_2.0-green.svg?style=flat
+[def-context-manager]: https://opentelemetry.io/docs/instrumentation/js/api/context/#context-manager
+[dd-js-tracer-scope]: https://github.com/DataDog/dd-trace-js/blob/master/packages/dd-trace/src/scope.js
+[opentracing-scope]: https://github.com/opentracing/opentracing-javascript/pull/113
+[diag-team-scope-discussion]: https://github.com/nodejs/diagnostics/issues/300
+[npm-url]: https://www.npmjs.com/package/@opentelemetry/context-async-hooks
+[npm-img]: https://badge.fury.io/js/%40opentelemetry%2Fcontext-async-hooks.svg
 
 ````
 
@@ -33131,7 +33158,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 - picomatch@2.3.2: LICENSE
 
-- picomatch@4.0.4: LICENSE
+- picomatch@4.0.7: LICENSE
 
 
 
@@ -33164,8 +33191,6 @@ THE SOFTWARE.
 
 - picomatch@2.3.2: README.md (license section)
 
-- picomatch@4.0.4: README.md (license section)
-
 
 
 ````text
@@ -33174,6 +33199,19 @@ THE SOFTWARE.
 Copyright © 2017-present, [Jon Schlinkert](https://github.com/jonschlinkert).
 Released under the [MIT License](LICENSE).
 
+````
+
+### Notice 8cac265faf4dc5af17d3567f9c2c44bf91415e2cbbb14db01582262a9383d715
+
+- picomatch@4.0.7: README.md (license section)
+
+
+
+````text
+### License
+
+Copyright © 2017-present, [Jon Schlinkert](https://github.com/jonschlinkert).
+Released under the [MIT License](LICENSE).
 ````
 
 ### Notice 824f6069c5a59b0c1650d0fb9f8d091866c6019eb761c8e658dfc03f001eabd2
@@ -38360,7 +38398,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### Notice f95f668fe64081ddb4153b322e34fdd719b991285ed08177d5ad7133b7988d92
 
-- tinyexec@1.2.4: LICENSE
+- tinyexec@1.3.1: LICENSE
 
 
 

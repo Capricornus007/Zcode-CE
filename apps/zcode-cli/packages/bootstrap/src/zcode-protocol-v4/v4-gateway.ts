@@ -17,10 +17,10 @@ import {
 import type {
   DynamicWorkflowRunArtifact,
   DynamicWorkflowRunArtifactBytes,
-  DynamicWorkflowRunArtifactItem,
+  DynamicWorkflowRunArtifactItemsResult,
   DynamicWorkflowRunWorkspaceNode,
   DynamicWorkflowRunWorkspaceNodeResult,
-  DynamicWorkflowRunEvent,
+  DynamicWorkflowRunEventsResult,
   DynamicWorkflowRunSessionSummary,
   MessageWithParts,
   SessionEvent,
@@ -113,6 +113,7 @@ import {
   v4ConversationWorkflowRunWorkspaceParamsSchema,
   v4ConversationWorkflowRunWorkspaceResultSchema,
   WORKFLOW_WORKSPACE_LIMITS,
+  WORKFLOW_RUN_EVENTS_PAGE_LIMITS,
   v4ConversationWorkflowRunEventsParamsSchema,
   v4ConversationWorkflowRunEventsResultSchema,
   v4ConversationWorkflowRunsParamsSchema,
@@ -162,6 +163,7 @@ function rowTargetActionForCommand(
     case "retryTurn":
     case "applyFileRewind":
     case "setAssistantFeedback":
+    case "setHighspeedMetrics":
       return type;
     default:
       return null;
@@ -181,7 +183,7 @@ interface PersistedEventsLoadResult {
   usageSeed?: SessionUsageSeed | null;
 }
 
-type V4GatewayErrorContext = Record<string, unknown>;
+export type V4GatewayErrorContext = Record<string, unknown>;
 
 /**
  * 一条已读回的**整份字节**，供分块读取复用。
@@ -322,15 +324,12 @@ export interface V4GatewayHost {
   invalidatePersistentCommandFacts?(sessionId: string): void;
   /** canonical goal complete 已进入 projection；宿主副作用必须 detached，禁止阻塞 ingest。 */
   onTargetCompleted?(sessionId: string, event: SessionEvent): void;
-  /**
-   * 队列授权位被复位后请宿主重评一次自动提升（spec 130 §4.6）。
-   *
-   * 与 onTargetCompleted 同源：bridge 内两者都落到同一个 `autoDrainV4QueueIfReady`。
-   * 为什么必须重评：暂停队列的项只活在投影里（core 的 activeTurn.pendingInputs 已随 turn
-   * 结束释放），idle 会话没有任何 active turn 能替它启动队首——只翻授权位不够，
-   * 用户切完渠道仍会看到队列卡着。这条与 queue.ts:138-142 的 setAutoDrain(true) 义务一致。
-   */
-  requestQueueDrainReevaluation?(sessionId: string): void;
+  /** Highspeed 真实耗时在 CLI 终态落 transcript；宿主副作用必须 detached。 */
+  onHighspeedTurnTerminal?(
+    sessionId: string,
+    event: SessionEvent,
+    snapshot: ConversationSnapshot,
+  ): void;
   /** 完整 chunk transaction commit 后一次性写 session artifact。 */
   putSessionAttachment?(
     sessionId: string,
@@ -385,8 +384,8 @@ export interface V4GatewayHost {
    */
   listDynamicWorkflowRunEvents?(
     sessionId: string,
-    input: { runId: string; afterSequence?: number; limit?: number },
-  ): Promise<DynamicWorkflowRunEvent[]>;
+    input: { runId: string; afterSequence?: number; limit?: number; maxBytes?: number },
+  ): Promise<DynamicWorkflowRunEventsResult>;
   /**
    * dwf run 的枚举面（重启后的发现查询）。
    * 缺席条件同 {@link listDynamicWorkflowRunEvents}。
@@ -407,8 +406,15 @@ export interface V4GatewayHost {
   ): Promise<readonly DynamicWorkflowRunArtifact[] | undefined>;
   listDynamicWorkflowRunArtifactItems?(
     sessionId: string,
-    input: { runId: string; artifactId: string; afterSequence?: number; limit: number },
-  ): Promise<readonly DynamicWorkflowRunArtifactItem[]>;
+    input: {
+      runId: string;
+      artifactId: string;
+      afterSequence?: number;
+      limit: number;
+      maxBytes: number;
+      fields?: readonly string[];
+    },
+  ): Promise<DynamicWorkflowRunArtifactItemsResult>;
   readDynamicWorkflowRunArtifact?(
     sessionId: string,
     input: { runId: string; artifactId: string; version: number },
@@ -441,7 +447,7 @@ export interface V4GatewayHost {
   onError?(scope: string, error: unknown, context?: V4GatewayErrorContext): void;
 }
 
-interface ConversationV4GatewayOptions {
+export interface ConversationV4GatewayOptions {
   now?: () => number;
   /** logEpoch 生成器（默认进程内随机；测试注入固定值保证确定性）。 */
   createLogEpoch?: (sessionId: string) => string;
@@ -488,7 +494,7 @@ interface ProjectionEventCommitWaiter {
 const PROJECTION_EVENT_COMMIT_TIMEOUT_MS = 25_000;
 const MAX_TELEMETRY_EVENT_IDS = 2_000;
 /** detached subagent child 终态后无订阅者时，publisher 由低频 tick 释放前的保留时长。 */
-const DETACHED_CHILD_PUBLISHER_GRACE_MS = 120_000;
+export const DETACHED_CHILD_PUBLISHER_GRACE_MS = 120_000;
 
 class ProjectionEventCommitWaitError extends Error {
   constructor(
@@ -511,14 +517,14 @@ class ProjectionEventCommitWaitError extends Error {
  * server 内部分派结果：initial frame 只供 request-scoped post-response outbox
  * 消费，公共 JSON-RPC result schema 始终严格为 `{ ack }`。
  */
-interface V4SubscribeDispatchResult<TFrame> {
+export interface V4SubscribeDispatchResult<TFrame> {
   ack: SubscribeAck & { openTiming?: ConversationOpenTiming };
   initialFrame: TFrame | null;
   initialWires: RoutedTopicWireFrame[];
   commit(): boolean;
 }
 
-function encodeReservedTopicFrame(
+export function encodeReservedTopicFrame(
   reservation: TopicFrameReservation<RoutedTopicFrame>,
 ): RoutedTopicWireFrame[] {
   return encodeTopicWireFrames(reservation.frame, {
@@ -529,6 +535,16 @@ function encodeReservedTopicFrame(
     logicalFrameOrdinal: reservation.logicalFrameOrdinal,
     measurePhysicalFrameBytes: (wire) => measureTopicNotificationEnvelopeBytes(wire).maxBytes,
   }) as RoutedTopicWireFrame[];
+}
+
+/** 所有 physical wire 都被下游接受后才 commit publisher 水位。 */
+export function emitReservedTopicFrame<F extends RoutedTopicFrame>(
+  reservation: TopicFrameReservation<F>,
+  emit: (wire: RoutedTopicWireFrame) => unknown,
+): boolean {
+  const wires = encodeReservedTopicFrame(reservation as TopicFrameReservation<RoutedTopicFrame>);
+  for (const wire of wires) emit(wire);
+  return reservation.commit();
 }
 
 function subscriptionRouteKey(topic: string, subscriptionId: string, connectionId: string): string {
@@ -959,6 +975,16 @@ export class ConversationV4Gateway {
       return;
     }
     this.resolveProjectionEventCommit(sessionId, String(event.id));
+    if (
+      !this.hydrationBuffers.has(sessionId) &&
+      (event.type === SessionEventType.TurnComplete || event.type === SessionEventType.TurnError)
+    ) {
+      try {
+        this.host.onHighspeedTurnTerminal?.(sessionId, event, publisher.getSnapshot());
+      } catch (error) {
+        this.host.onError?.("v4.projection.highspeedMetrics", error);
+      }
+    }
     if (
       event.type === SessionEventType.TargetChanged &&
       (event.payload as TargetChangedPayload).target?.status === "complete"
@@ -1612,8 +1638,9 @@ export class ConversationV4Gateway {
    * 与 rows/range、plans 同族：只读、无状态、超时重发安全。刻意**不是** v4 command——
    * command 的 ACK 结果是那个封闭的「变更结果」判别联合，一页只读事件不属于那个词汇表。
    *
-   * `hasMore` 由「取满 limit」判定：多读一条来确认后面还有，比让 renderer 靠"这页正好满"
-   * 猜测更可靠（正好取尽时不会白翻一页空的）。
+   * 一页的条数与字节两道界在这里定（docs/execution-engine.md「Reading the journal」）：条数取
+   * 调用方的 limit，缺省为协议上限；字节恒为协议上限，renderer 不能放宽。`hasMore` 由存储层
+   * 判定——页可能因字节提前收尾，「取满 limit」已经不是判据。
    */
   async workflowRunEvents(rawParams: unknown): Promise<V4ConversationWorkflowRunEventsResult> {
     const params = v4ConversationWorkflowRunEventsParamsSchema.parse(rawParams);
@@ -1621,18 +1648,13 @@ export class ConversationV4Gateway {
       throw new V4CapabilityUnsupportedError("listDynamicWorkflowRunEvents", params.sessionId);
     }
     await this.ensureHostRecordForJournalRead(params.sessionId);
-    const limit = params.limit;
-    const events = await this.host.listDynamicWorkflowRunEvents(params.sessionId, {
+    const page = await this.host.listDynamicWorkflowRunEvents(params.sessionId, {
       runId: params.runId,
       ...(params.afterSequence === undefined ? {} : { afterSequence: params.afterSequence }),
-      // 多取一条只为判定 hasMore；它不进结果页。
-      ...(limit === undefined ? {} : { limit: limit + 1 }),
+      limit: params.limit ?? WORKFLOW_RUN_EVENTS_PAGE_LIMITS.maxEvents,
+      maxBytes: WORKFLOW_RUN_EVENTS_PAGE_LIMITS.maxBytes,
     });
-    const hasMore = limit !== undefined && events.length > limit;
-    return v4ConversationWorkflowRunEventsResultSchema.parse({
-      events: hasMore ? events.slice(0, limit) : events,
-      hasMore,
-    });
+    return v4ConversationWorkflowRunEventsResultSchema.parse(page);
   }
 
   /**
@@ -1679,8 +1701,8 @@ export class ConversationV4Gateway {
   /**
    * 预置看板的取数面：喂给某个产物的 `report` 条目分页。
    *
-   * `limit` 的**缺省与钳制都在这里**（存储层精确兑现、绝不自造页大小也绝不再钳）；`hasMore` 照 workflowRunEvents 的惯例多取一条判定——判据绝不能是「这页正好满」，
-   * 那会在条目数恰好等于 limit 时误报，让看板去翻一页不存在的数据。
+   * 条数的**缺省与钳制**、以及字节上界都在这里定（存储层精确兑现、绝不自造页大小也绝不再钳）。`fields` 原样下传：看板只要 spec 点名的字段，由 SQLite 取出；`hasMore` 由存储层判定——页可能因字节提前收尾，所以判据绝不能是
+   * 「这页正好满」，也不再是网关多取一条。
    */
   async workflowRunArtifactData(
     rawParams: unknown,
@@ -1700,18 +1722,15 @@ export class ConversationV4Gateway {
         WORKFLOW_ARTIFACT_LIMITS.maxItemsPerPage,
       ),
     );
-    const items = await this.host.listDynamicWorkflowRunArtifactItems(params.sessionId, {
+    const page = await this.host.listDynamicWorkflowRunArtifactItems(params.sessionId, {
       runId: params.runId,
       artifactId: params.artifactId,
       ...(params.afterSequence === undefined ? {} : { afterSequence: params.afterSequence }),
-      // 多取一条只为判定 hasMore；它不进结果页。
-      limit: limit + 1,
+      limit,
+      maxBytes: WORKFLOW_ARTIFACT_LIMITS.maxPageBytes,
+      ...(params.fields === undefined ? {} : { fields: params.fields }),
     });
-    const hasMore = items.length > limit;
-    return v4ConversationWorkflowRunArtifactDataResultSchema.parse({
-      items: hasMore ? items.slice(0, limit) : items,
-      hasMore,
-    });
+    return v4ConversationWorkflowRunArtifactDataResultSchema.parse(page);
   }
 
   /**
@@ -2191,7 +2210,15 @@ export class ConversationV4Gateway {
   ): { attachment: AttachmentRef; messageId?: string; attachmentIndex?: number } | null {
     const isPreviewable = (attachment: AttachmentRef) => {
       const mime = attachment.mime.split(";", 1)[0]?.trim().toLowerCase() ?? "";
-      return mime.startsWith("image/") || mime.startsWith("video/") || mime === "application/pdf";
+      // 根因：原预览仅放行图片、视频和 PDF，文本附件即使归属当前行也被拒绝。
+      // 文本只开放既有材料标记，后续仍须通过权威行、附件索引和 ref 的归属校验。
+      return (
+        mime.startsWith("image/") ||
+        mime.startsWith("video/") ||
+        mime === "application/pdf" ||
+        (mime === "text/plain" &&
+          (attachment.sourceKind === "topic-history" || attachment.sourceKind === "clipboard-text"))
+      );
     };
     const matchesRef = (attachment: AttachmentRef) =>
       attachment.ref === ref || attachment.previewRef === ref;
@@ -2296,7 +2323,11 @@ export class ConversationV4Gateway {
           !allowGeneric &&
           !resultMime.startsWith("image/") &&
           !resultMime.startsWith("video/") &&
-          resultMime !== "application/pdf"
+          resultMime !== "application/pdf" &&
+          !(
+            resultMime === "text/plain" &&
+            mime.split(";", 1)[0]?.trim().toLowerCase() === "text/plain"
+          )
         ) {
           throw new ZCodeAttachmentFaultError(ZCODE_ATTACHMENT_FAULT_CODES.previewNotMedia);
         }
@@ -2597,34 +2628,6 @@ export class ConversationV4Gateway {
 
   getQueueLength(sessionId: string): number {
     return this.publishers.get(sessionId)?.getSnapshot().queue.items.length ?? 0;
-  }
-
-  /**
-   * 切模型复位队列授权位（spec 130 §4.6）的判据读侧：queue.autoDrain + pauseReason。
-   *
-   * 为什么必须由投影提供 pauseReason：core 只有 agent-runtime.ts:216 的 `queueAutoDrain`
-   * 布尔，不区分原因（127 §6.1 第 4 点）；pauseReason 只在投影
-   * （packages/shared/src/zcode-protocol-v4/snapshot.ts:222）。没有它就无法区分
-   * 「turn 失败造成的 held」与「用户主动 Stop 造成的 held」，而后者按 spec 必须保留。
-   *
-   * 无 publisher（会话尚无投影 / 冷恢复未水合）→ null，调用方按「不复位」处理：
-   * 宁可漏一次自动复位（用户仍可点「恢复队列」），也不误清用户主动停止的暂停队列。
-   */
-  getQueueAutoDrainState(sessionId: string): {
-    autoDrain: boolean;
-    pauseReason?: "stopped" | "manual" | "error";
-  } | null {
-    const queue = this.publishers.get(sessionId)?.getSnapshot().queue;
-    if (!queue) return null;
-    return {
-      autoDrain: queue.autoDrain,
-      ...(queue.pauseReason ? { pauseReason: queue.pauseReason } : {}),
-    };
-  }
-
-  /** 见 V4GatewayHost.requestQueueDrainReevaluation：转发给宿主（实现归 bridge）。 */
-  requestQueueDrainReevaluation(sessionId: string): void {
-    this.host.requestQueueDrainReevaluation?.(sessionId);
   }
 
   /** Resident 回收保护：publisher queue 与 CommandInbox pinned facts 任一存在都不可关闭。 */

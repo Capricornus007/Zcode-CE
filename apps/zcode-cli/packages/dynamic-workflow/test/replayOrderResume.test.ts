@@ -158,7 +158,7 @@ function settleOrder(events: readonly RunEvent[]): string[] {
 /** 该 run journal 里 report 行的内容（按 ordinal）。 */
 function reports(journal: JournalStorePort): unknown[] {
   return journal
-    .listNodes(RUN_ID)
+    .listNodes(RUN_ID, { kinds: "all", withResult: true })
     .filter((n) => n.kind === "report")
     .sort((a, b) => a.ordinal - b.ordinal)
     .map((n) => n.result);
@@ -177,8 +177,8 @@ function legacyJournalFrom(source: JournalStorePort): InMemoryJournalStore {
   const run = source.getRun(RUN_ID);
   assert.ok(run !== undefined);
   legacy.createRun(run);
-  for (const node of source.listNodes(RUN_ID)) legacy.putNode(node);
-  for (const stored of source.listEvents(RUN_ID)) {
+  for (const node of source.listNodes(RUN_ID, { kinds: "all", withResult: true })) legacy.putNode(node);
+  for (const stored of source.listEvents(RUN_ID, { types: "all", reportItems: { limit: 8 } })) {
     const settled =
       stored.event.type === "node-settled" ||
       stored.event.type === "artifact-published" ||

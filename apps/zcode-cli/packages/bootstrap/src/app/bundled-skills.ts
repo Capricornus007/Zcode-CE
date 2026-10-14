@@ -281,3 +281,5 @@ function getSeaModule(): SeaModule | undefined {
 function hashBytes(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
+// CE 线增量：动态工作流技能名（builtin-workflow-command / dynamic-workflow-gate 消费）。
+export { DYNAMIC_WORKFLOW_SKILL_NAME } from "@zcode/contracts";

@@ -1,5 +1,5 @@
 // ============================================================
-// 「这段历史里加载过某个技能吗」
+// 「这段历史里加载过某个技能吗」（docs/dynamic-workflow/authoring.md「The authoring surface」）
 // ============================================================
 // 工作流创作工具的技能门（tool/handlers/workflow-skill-gate.ts）问的是这一句。判据刻意取自
 // runtime 的 provider 可见历史，而不是另立一个会话级 Set：历史就是模型此刻记得的东西——
@@ -11,10 +11,10 @@ import type { RuntimeMessageEntry } from "./message-history.js";
 const SKILL_TOOL_NAME = "Skill";
 
 /**
- * 历史里是否有一次成功完成的 Skill 调用加载了 skillName。
+ * 历史里是否有一次**成功完成**的 `Skill` 调用加载了 `skillName`。
  *
  * 成功 = assistant 发出的调用有对应的 tool 结果条目且不是错误。只发出没结果（还在跑、被拒）
- * 或结果 isError 都不算。技能名同时认当前形 { skill } 与旧形 { name }
+ * 或结果 `isError` 都不算。技能名同时认当前形 `{ skill }` 与旧形 `{ name }`
  * （contracts 的 SkillInputSchema 两种都收）。
  */
 export function sessionHasLoadedSkill(

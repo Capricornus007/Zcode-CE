@@ -18,7 +18,7 @@ export interface OfficialPluginListingSeed {
   examplePrompts_i18n?: Record<string, string[]>;
 }
 
-const OFFICIAL_BROWSER_USE_PLUGIN_NAME = "browser-use";
+export const OFFICIAL_BROWSER_USE_PLUGIN_NAME = "browser-use";
 export const OFFICIAL_BROWSER_USE_PLUGIN_ID = `${OFFICIAL_BROWSER_USE_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 /**
  * node_repl 宿主。它不是面向用户的插件：没有 skill、没有 listing、不进市场，唯一职责是
@@ -31,7 +31,7 @@ export const OFFICIAL_BROWSER_USE_PLUGIN_ID = `${OFFICIAL_BROWSER_USE_PLUGIN_NAM
  */
 export const OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME = "node-repl-host";
 export const OFFICIAL_NODE_REPL_HOST_PLUGIN_ID = `${OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
-const OFFICIAL_CUA_PLUGIN_NAME = "computer-use";
+export const OFFICIAL_CUA_PLUGIN_NAME = "computer-use";
 export const OFFICIAL_CUA_PLUGIN_ID = `${OFFICIAL_CUA_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 
 export interface OfficialPluginDefinition {
@@ -57,7 +57,7 @@ export interface OfficialPluginDefinition {
 const ZAI_AUTHOR = { name: "Z.ai", url: "https://z.ai" } as const;
 const OFFICIAL_PLUGIN_ASSETS_BASE_URL = "https://cdn-zcode.z.ai/zcode/official-plugin/assets";
 
-const OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS = ["dist/mcp/server.js"] as const;
+export const OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS = ["dist/mcp/server.js"] as const;
 
 export const OFFICIAL_BROWSER_USE_REQUIRED_SEED_PATHS = [
   "docs/api.json",
@@ -71,69 +71,65 @@ export const OFFICIAL_BROWSER_USE_REQUIRED_SEED_PATHS = [
   "skills/web-gui-tester/SKILL.md",
 ] as const;
 
-const OFFICIAL_CUA_REQUIRED_SEED_PATHS = [
+export const OFFICIAL_CUA_REQUIRED_SEED_PATHS = [
   "docs/computer-use.md",
   "scripts/computer-use-client.mjs",
   "skills/computer-use/SKILL.md",
 ] as const;
 
-// zcode-guide 原本没有 requiredSeedPaths，seed 丢文件时会静默装出一个
-// 没有 /workflow 命令的插件——症状是命令不存在，没有任何诊断。commands/ 与技能正文都钉住。
-//
-// 2026-09-23（对齐官方 3.14.3）：该插件从 0.3.0 起**不再携带** commands/workflow.md 与
-// skills/dynamic-workflows/*（官方把这项能力收成内置 bundled skill，见
-// bootstrap/src/app/bundled-skills.ts），所以这里必须同步摘掉那四条路径 —— 继续钉着一个
-// 已删文件会让 seed 整插件拒收（ZCODE_PLUGIN_SEED_INCOMPLETE，bundled-plugins.ts:316-324）。
-// 剩下的六份正文（五个自诊断 + 配置指南）仍是本插件的能力面，全部保留。
-const OFFICIAL_ZCODE_GUIDE_REQUIRED_SEED_PATHS = [
-  "skills/diagnosing-commands/SKILL.md",
-  "skills/diagnosing-hooks/SKILL.md",
-  "skills/diagnosing-mcp/SKILL.md",
-  "skills/diagnosing-plugins/SKILL.md",
-  "skills/diagnosing-skills/SKILL.md",
+// 修复原因（2026-08-24）：zcode-guide 原本没有 requiredSeedPaths，seed 丢文件时会静默装出一个
+// 残缺插件而没有任何诊断。0.3.0 起 `/workflow` 与 dynamic-workflows 技能不再随本插件发布
+// （命令编进 CLI，技能进 packages/bundled-skills，见 docs/dynamic-workflow/authoring.md），
+// 这里钉住的是配置指南技能正文。
+export const OFFICIAL_ZCODE_GUIDE_REQUIRED_SEED_PATHS = [
   "skills/zcode-configuration-guide/SKILL.md",
 ] as const;
 
-// 纯内容型插件（commands + skills，无 MCP server、无编译产物）的必需资产。
-// 必须逐个钉住正文：清单里的路径缺失时 seed 会整插件拒收（ZCODE_PLUGIN_SEED_INCOMPLETE，
-// bundled-plugins.ts:316-324），只钉 manifest 则会把「有壳没内容」的残缺插件静默发出去。
-const OFFICIAL_SKILL_CREATOR_REQUIRED_SEED_PATHS = ["skills/skill-creator/SKILL.md"] as const;
-
-/**
- * "文档类"四插件里只有 pdf 自带 Node 运行时载荷，所以它额外钉住载荷与三个入口。
- *
- * 这是**运行期闸门**：载荷缺失时 seed 拒绝写缓存并告警（bundled-plugins.ts 的
- * ZCODE_PLUGIN_SEED_INCOMPLETE），而不是让用户看到一个"已启用、但第一次调用就
- * MODULE_NOT_FOUND"的插件 —— 该失效形态已在 task-6 实测（.reverse/38-pdf/COMMIT-SHAPE.md：
- * 只有目录与 manifest 时，plugins list 就会输出 pdf@zcode-plugins-official [enabled]）。
- *
- * 载荷由打包链 stage 到 <plugin>/scripts/pdf-node/（packages/desktop/scripts/pdf-node-payload-assets.mjs），
- * pdf-build.mjs 是生成器、check_pdf.mjs 与 pdf-fonts.mjs 是技能正文直接调用的另外两个入口。
- * **不钉 lib/*.mjs 等内部实现文件**：入口缺文件会以可读错误暴露，而多钉一层会让"重命名内部文件"
- * 变成"插件静默不出现"的新失效形态。
- */
-const OFFICIAL_PDF_EXTRA_REQUIRED_SEED_PATHS = [
-  "scripts/pdf-node/fontkit.cjs",
-  "scripts/pdf-node/pdfkit.cjs",
-  "scripts/pdf-build.mjs",
-  "scripts/check_pdf.mjs",
-  "scripts/pdf-fonts.mjs",
-] as const;
-
-/** name → 该插件在通用 requiredSeedPaths 之外还必须存在的资产。 */
-const DOCUMENT_PLUGIN_EXTRA_REQUIRED_SEED_PATHS: Record<string, readonly string[]> = {
-  pdf: OFFICIAL_PDF_EXTRA_REQUIRED_SEED_PATHS,
-};
-
-const OFFICIAL_RESTORE_LEGACY_SESSIONS_REQUIRED_SEED_PATHS = [
-  "commands/restore-legacy-sessions.md",
-  "skills/restore-legacy-sessions/SKILL.md",
-  // 命令正文只负责让 agent 去跑这两个脚本；缺脚本会 seed 出一个「会说要做、做不了」的插件。
-  "skills/restore-legacy-sessions/scripts/restore-conversation.mjs",
-  "skills/restore-legacy-sessions/scripts/scan-legacy-sessions.mjs",
-] as const;
-
 export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = [
+  {
+    defaultEnabled: true,
+    listing: {
+      author: ZAI_AUTHOR,
+      category: "productivity",
+      displayName: "Visualize",
+      displayName_i18n: { "zh-CN": "交互视图" },
+      description_i18n: { "zh-CN": "在对话中创建交互图表、解释和设计预览。" },
+    },
+    name: "visualize",
+    requiredSeedPaths: [
+      "skills/visualize/SKILL.md",
+      "skills/visualize/references/api.md",
+      "skills/visualize/references/styles.md",
+      "skills/visualize/tweak.md",
+      "skills/visualize/LICENSE.md",
+      "skills/visualize/scripts/render.py",
+      "skills/visualize/assets/visualize.css",
+      "skills/visualize/assets/visualize.html",
+      "skills/visualize/assets/calendar.js",
+      "skills/visualize/assets/runtime-manifest.json",
+      "skills/visualize/scripts/vendor.py",
+      "skills/visualize/assets/vendor/manifest.json",
+      "skills/visualize/assets/vendor/floating-ui-core-1.7.3.min.js",
+      "skills/visualize/assets/vendor/floating-ui-core-1.7.3.min.js.LICENSE",
+      "skills/visualize/assets/vendor/floating-ui-dom-1.7.4.min.js",
+      "skills/visualize/assets/vendor/floating-ui-dom-1.7.4.min.js.LICENSE",
+      "skills/visualize/assets/vendor/lucide-1.17.0.js",
+      "skills/visualize/assets/vendor/lucide-1.17.0.js.LICENSE",
+      "skills/visualize/assets/vendor/d3-7.9.0.min.js",
+      "skills/visualize/assets/vendor/d3-7.9.0.min.js.LICENSE",
+      "skills/visualize/widgets/calendar.md",
+      "skills/visualize/examples/calendar.html",
+      "skills/visualize/assets/standalone-host-bridge.js",
+      "skills/visualize/assets/standalone-shell.js",
+    ],
+    rootCandidates: [
+      "packages/visualize-plugin",
+      "../visualize-plugin",
+      "../../visualize-plugin",
+      "../../../visualize-plugin",
+    ],
+    version: "0.1.0",
+  },
   {
     // 无 listing：宿主不进市场、不对用户露出。它必须始终可用，因为 node_repl 的注册门禁
     // 是「Browser Use 或 Computer Use 任一启用」，宿主自己不参与那个判断。
@@ -144,26 +140,13 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     defaultEnabled: true,
     name: OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME,
     requiredSeedPaths: OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS,
-    // Computer Use 驱动（@trycua/cua-driver）是 uniffi 生成的 Rust 原生库：.node/.so 由
-    // 运行时解析，esbuild 无法内联，所以打包链把它 stage 到 <plugin>/node_modules
-    // （packages/desktop/scripts/cua-driver-package-assets.mjs:52），seed 必须保留它。
-    //
-    // 用 **per-plugin** 的 runtimeTopLevelPaths，而不是全局 includedTopLevelPaths：后者是
-    // 模块级常量，对所有官方插件生效 —— 安全审计实测，放进全局后 browser-use-plugin 的
-    // 85 MiB node_modules（@esbuild/esbuild/typescript 等构建期 devDeps）也会被搬进用户
-    // cache，两个插件合计多搬约 166 MiB，而 browser-use 完全不需要它。
-    //
-    // 必须是插件根直属：shouldSkipDirectory 只放行 depth === 0，实测 dist/node_modules、
-    // scripts/node_modules、vendor/…/node_modules 一律被丢弃，白名单救不了。
-    // 详见 .reverse/29-cua-seed/CUA-SEED-PAYLOAD.md 与 .reverse/31-audit/SECURITY-AUDIT.md。
-    runtimeTopLevelPaths: ["node_modules"],
     rootCandidates: [
       "packages/node-repl-host",
       "../node-repl-host",
       "../../node-repl-host",
       "../../../node-repl-host",
     ],
-    version: "0.6.0",
+    version: "0.6.1",
   },
   {
     listing: {
@@ -232,18 +215,14 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
         description_i18n: { "zh-CN": `创建、编辑与审阅${chineseName}（${skill.toUpperCase()}）。` },
       },
       name,
-      requiredSeedPaths: [
-        "agents/visual-judge.md",
-        `skills/${skill}/SKILL.md`,
-        ...(DOCUMENT_PLUGIN_EXTRA_REQUIRED_SEED_PATHS[name] ?? []),
-      ],
+      requiredSeedPaths: ["agents/visual-judge.md", `skills/${skill}/SKILL.md`],
       rootCandidates: [
         `packages/${name}-plugin`,
         `../${name}-plugin`,
         `../../${name}-plugin`,
         `../../../${name}-plugin`,
       ],
-      version: "0.1.7",
+      version: "0.1.8",
     }),
   ),
   {
@@ -298,7 +277,6 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       },
     },
     name: "restore-legacy-sessions",
-    requiredSeedPaths: OFFICIAL_RESTORE_LEGACY_SESSIONS_REQUIRED_SEED_PATHS,
     rootCandidates: [
       "packages/restore-legacy-sessions-plugin",
       "../restore-legacy-sessions-plugin",
@@ -349,7 +327,6 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       description_i18n: { "zh-CN": "创建、编辑和验证可复用的 ZCode 技能。" },
     },
     name: "skill-creator",
-    requiredSeedPaths: OFFICIAL_SKILL_CREATOR_REQUIRED_SEED_PATHS,
     rootCandidates: [
       "packages/skill-creator-plugin",
       "../skill-creator-plugin",
@@ -387,7 +364,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../zcode-guide-plugin",
       "../../../zcode-guide-plugin",
     ],
-    version: "0.2.0",
+    version: "0.3.0",
   },
   {
     // 产品决策：电脑控制回退为默认关闭，需用户在设置页显式开启。
@@ -421,20 +398,13 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../../zcode-cua-plugin",
     ],
     requiredSeedPaths: OFFICIAL_CUA_REQUIRED_SEED_PATHS,
-    // 2026-09-22（fix.3）：插件资产已从官方发行包原样搬进 apps/zcode-cli/packages/zcode-cua-plugin
-    // （4 文件逐字节全等，许可见 docs/development/computer-use.md 的表）。这里仍不复制 native runtime：
-    // 本构建的 CUA 驱动改走 MIT 许可的 @trycua/cua-driver（packages/zcode-cua/index.js:19-32），
-    // 官方 native runtime 与 Helper 实体均不随包发出（electron-builder.config.js 中 cua-helper 命中 0）。
-    // 避免把本地旧依赖继续带入插件缓存。
-    runtimeTopLevelPaths: [],
-    // 这里的 version 追踪上游 zcode-cua runtime 版本（packages/zcode-cua/package.json 的 version），
-    // 使插件 UI 展示、缓存路径、marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
-    //
-    // 2026-09-22（fix.3 回退）：本轮一度把它改成 0.6.1（意图对齐插件 manifest 的 version），已回退。
-    // 原因：本字段追踪的是 **runtime 版本**而非插件 manifest 版本 —— packages/zcode-cua 是 0.6.3，
-    // 且官方发行包本来就是「manifest 0.6.1 / 定义 0.6.3」并存，这个差不是我们引入的缺陷。改成 0.6.1
-    // 会破坏上一条注释的追踪不变量，并让 producer bump 工作流失去正确的比较基线。
-    version: "0.6.3",
+    // Bug 根因：迁移 node_repl 时把旧 MCP launcher 与 SDK 仍需的 Sharp runtime 一并裁掉了。
+    // Dev/desktop 会把最小 Sharp 闭包 stage 到这里；官方 cache 必须继续携带 node_modules，
+    // 否则 seed 原子替换后首次截图才会报 Cannot find module 'sharp'。
+    runtimeTopLevelPaths: ["node_modules"],
+    // 这里的 version 追踪上游 zcode-cua runtime 版本，使插件 UI 展示、缓存路径、
+    // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
+    version: "0.6.4",
   },
 ];
 

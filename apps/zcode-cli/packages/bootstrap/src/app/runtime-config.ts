@@ -1,4 +1,5 @@
 import type { ConfigResult } from "@zcode/adapters/config";
+import { GEN_UI_OUTPUT_ROOT_ENV } from "@zcode/shared/node";
 import { resolveInitialModelSelection, type ModelSelectionOptions } from "@zcode/provider";
 import { resolveBashTimeoutPolicy, type AgentProfile, type AgentRuntimeConfig } from "@zcode/core";
 import { type BuiltInSubagentModelSelectionOverrides } from "@zcode/shared";
@@ -117,6 +118,7 @@ export function resolveAppRuntimeConfig(input: {
     options.runtimeConfig?.subagents?.builtInModelSelectionOverrides ?? {};
   const runtimeConfig: AgentRuntimeConfig = {
     ...options.runtimeConfig,
+    genUiOutputRoot: (options.env ?? process.env)[GEN_UI_OUTPUT_ROOT_ENV],
     bashTimeoutPolicy:
       options.runtimeConfig?.bashTimeoutPolicy ??
       resolveBashTimeoutPolicy(options.env ?? process.env),
@@ -143,13 +145,6 @@ export function resolveAppRuntimeConfig(input: {
     },
     skillMetadataBudget:
       options.runtimeConfig?.skillMetadataBudget ?? configResult.config.skills.metadataBudget,
-    // P4 压缩域包：项目级 compact.domainInstructions（域指令随每次压缩注入）。
-    compact: {
-      ...options.runtimeConfig?.compact,
-      domainInstructions:
-        options.runtimeConfig?.compact?.domainInstructions ??
-        configResult.config.compact.domainInstructions,
-    },
     toolConcurrency: {
       maxConcurrency:
         options.runtimeConfig?.toolConcurrency?.maxConcurrency ??

@@ -1,4 +1,3 @@
-import { sanitizeLoneSurrogates } from "../../model/sanitize-surrogates.js";
 import { open } from "node:fs/promises";
 import type { BackgroundExecutionSnapshot, TaskOutputTask } from "@zcode/contracts";
 import type { RuntimeTaskSnapshot } from "../../runtime-task/registry.js";
@@ -145,7 +144,7 @@ async function readRunningBashOutputFile(
 
       return {
         available: true,
-        content: sanitizeLoneSurrogates(buffer.subarray(0, bytesRead).toString("utf8")),
+        content: buffer.subarray(0, bytesRead).toString("utf8"),
         truncated: stat.size > bytesRead,
       };
     } finally {

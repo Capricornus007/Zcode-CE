@@ -8,9 +8,8 @@
  */
 
 import type { AskNode, SchedulerHost } from "./scheduler-types.js";
-import { refToString } from "./types.js";
-import type { InstanceRef, NodeRecord, Violation } from "./types.js";
-import { REPAIR_ATTEMPTS, WorkflowError } from "./types.js";
+import type { InstanceRef, JournalStorePort, NodeRecord, Violation } from "./types.js";
+import { refToString, REPAIR_ATTEMPTS, WorkflowError } from "./types.js";
 
 /** 调度器暴露给回报处理的最小接缝：查 live 节点、按结果结算。 */
 export interface SubmitSeam {
@@ -116,13 +115,14 @@ export function handleTurnEnded(seam: SubmitSeam, instance: InstanceRef, finalTe
   );
 }
 
+// ---- CE 线增量（workflow-hang-fix）：journal 写失败的收容与可读错误 ----
 /**
- * 结算写入失败时合成的失败原因：把「哪个节点的哪一次写入失败、为什么」一并说清。
+ * journal 写失败的可读 WorkflowError。
  *
- * original 在场时是本次 ask 本身的失败原因（例如 typed ask 未提交判的
- * ResultNotSubmitted），journal 写错因是后来叠加的；两者都要保留——只报后者会让
- * 脚本以为 merely 记账问题而重试同一个注定失败的值，只报前者则掩盖了 run 已无法
- * 持久化节点这一更严重的事实。cause 链同时携带原始 Error，诊断面不丢下层堆栈。
+ * 为什么不直接透传 cause：结算路径可能已带一个原始错误（如 ResultNotSubmitted），
+ * journal 写错因是后来叠加的；两者都要保留——只报后者会让脚本以为 merely 记账问题而
+ * 重试同一个注定失败的值，只报前者则掩盖了 run 已无法持久化节点这一更严重的事实。
+ * cause 链同时携带原始 Error，诊断面不丢下层堆栈。
  */
 export function journalWriteFailedError(
   cause: unknown,
@@ -147,14 +147,10 @@ export function journalWriteFailedError(
 /**
  * 把一次结算落进 journal 行与事件流（settleOk / settleFailed 共用）。
  *
- * undefined = 落库成功；否则返回合成的失败原因（cause 链携带原始写入错误）。
- *
- * journal 落库/事件记录失败（磁盘满、锁竞争、IO 错误）不得让 ask 悬空：此前调用方
  * 直接 journal.putNode 且无 try/catch，一旦抛出 deferred 永不兑现、finishLiveNode
  * 不跑、activeAsks 不减——子进程在 await ask(...) 上永久等待 response，run 永不
  * 结算；生产 launch 不设墙钟超时，唯一出口是用户手动取消。这正是「所有智能体
- * 已完成而界面永远卡住」的断链点（判别实验见
- * test/journalWriteFailureSettlement.test.ts）。
+ * 已完成而界面永远卡住」的断链点（判别实验见 test/journalWriteFailureSettlement.test.ts）。
  */
 export function persistNodeSettlement(
   seam: SubmitSeam,

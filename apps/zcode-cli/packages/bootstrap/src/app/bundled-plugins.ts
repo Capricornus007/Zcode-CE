@@ -12,7 +12,6 @@ import { dirname, join, resolve, sep } from "node:path";
 import { writeBundledOfficialMarketplacePartitionSync } from "@zcode/adapters";
 import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE, type Logger } from "@zcode/contracts";
 import { isZCodeCuaInternalFeatureEnabled, ZCODE_CUA_OFFICIAL_PLUGIN_ID } from "@zcode/shared";
-import { listEntrypointCandidateBaseDirs } from "./entrypoint-candidates.js";
 import {
   createOfficialPluginCacheRetryBudget,
   getOfficialPluginCacheRetryAttempts,
@@ -47,17 +46,6 @@ const includedTopLevelPaths = new Set([
   "dist",
   "docs",
   "hooks",
-  // 注意：这里**刻意不放 node_modules**。Computer Use 驱动（@trycua/cua-driver，uniffi 生成的
-  // Rust 原生库）确实需要插件根直属的 node_modules 才能被 seed 保留，但那是 **node-repl-host
-  // 单个插件**的需求，已由该插件自己的 runtimeTopLevelPaths 声明（见 official-plugin-definitions.ts）。
-  //
-  // 为什么不能放全局白名单：includedTopLevelPaths 是**模块级常量**，对所有官方插件生效。
-  // 安全审计实测：放进全局后 browser-use-plugin 的 node_modules（85 MiB，全是 @esbuild/esbuild/
-  // typescript 这类**构建期 devDeps**）也会被 seed 搬进用户 cache，且它完全不需要 ——
-  // 两个插件合计多搬约 166 MiB。runtimeTopLevelPaths 是 per-plugin 的，
-  // collectFilesystemPluginFiles 在 :379-382 已把它并进 allowedTopLevelPaths，零新机制。
-  //
-  // 详见 .reverse/29-cua-seed/CUA-SEED-PAYLOAD.md 与 .reverse/31-audit/SECURITY-AUDIT.md。
   "output-styles",
   "package.json",
   // Browser skill 会从官方插件根目录动态导入 scripts/browser-client.mjs。
@@ -325,7 +313,7 @@ function resolveFilesystemSeedSource(): OfficialPluginSeedSource | undefined {
   };
 }
 
-function findMissingOfficialPluginSeedPaths(
+export function findMissingOfficialPluginSeedPaths(
   definition: Pick<OfficialPluginDefinition, "requiredSeedPaths">,
   files: ReadonlyArray<{ path: string }>,
 ): string[] {
@@ -355,8 +343,7 @@ function readSeaManifest(sea: SeaModule): SeaOfficialPluginManifest | undefined 
 }
 
 function resolveFilesystemPluginRoot(definition: OfficialPluginDefinition): string | undefined {
-  // 候选基目录与内置技能包（bundled-skills.ts）共用同一枚举器，理由见 entrypoint-candidates.ts。
-  for (const baseDir of listEntrypointCandidateBaseDirs()) {
+  for (const baseDir of candidateBaseDirs()) {
     for (const relativePath of definition.rootCandidates) {
       const rootPath = resolve(baseDir, relativePath);
       if (existsSync(join(rootPath, ".zcode-plugin", "plugin.json"))) return rootPath;
@@ -641,6 +628,23 @@ function officialPluginCacheRoot(
   );
 }
 
+/** 内置技能包（bundled-skills.ts）沿同一组候选目录定位，保证两类内置资产在每种运行布局下同进同出。 */
+export function candidateBaseDirs(): string[] {
+  // 修复原因：Electron app-server 运行在 resources/glm/zcode.cjs，官方插件资源也随桌面包
+  // stage 到同级 packages/*-plugin。候选目录必须优先看入口文件目录，避免生产态退回到
+  // monorepo-only 的 __dirname 查找假设。
+  return [entrypointDir(), runtimeDir(), process.cwd()].filter(
+    (dir): dir is string => typeof dir === "string",
+  );
+}
+
+function runtimeDir(): string | undefined {
+  return typeof __dirname === "string" ? __dirname : undefined;
+}
+
+function entrypointDir(): string | undefined {
+  return process.argv[1] ? dirname(process.argv[1]) : undefined;
+}
 
 function shouldSkipDirectory(
   name: string,

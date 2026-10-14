@@ -1,4 +1,4 @@
-type SystemReminderDeliveryChannel =
+export type SystemReminderDeliveryChannel =
   | "request_prefix"
   | "current_turn"
   | "tool_result"
@@ -6,7 +6,7 @@ type SystemReminderDeliveryChannel =
   | "mid_turn_event"
   | "real_user";
 
-type SystemReminderLifecycle =
+export type SystemReminderLifecycle =
   | "request_prefix"
   | "per_current_turn"
   | "runtime_local"
@@ -15,11 +15,12 @@ type SystemReminderLifecycle =
   | "mid_turn_event"
   | "real_user";
 
-type SystemReminderProviderVisibility = "provider_visible" | "provider_hidden";
+export type SystemReminderProviderVisibility = "provider_visible" | "provider_hidden";
 
 export const SYSTEM_REMINDER_PREFIX_SOURCES = ["context_prefix", "skills_listing"] as const;
 
 export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
+  "agent_listing_delta",
   "todo_reminder",
   "task_status",
   "tool_result_warning",
@@ -28,6 +29,7 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
   "resume_goal_state",
   "goal_state_change",
   "plugin_reference",
+  "bot_topic_context",
   "target_continuation",
   "goal_completion_verification",
   "rewind_notice",
@@ -40,12 +42,8 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
 export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
   "incoming_message",
   "hook_context",
-  "memory_recall",
-  "user_instructions_update",
-  "followup_due",
-  "kb_recall",
-  "caliber_guard",
-  "task_reanchor",
+  "memory_update",
+  "relevant_memory",
   "runtime_mode",
   "plan_mode_exit",
   "output_style",
@@ -65,7 +63,7 @@ export type SystemReminderSource =
   | SystemReminderPersistedSource
   | SystemReminderPerRequestSource;
 
-interface SystemReminderSourceDescriptor {
+export interface SystemReminderSourceDescriptor {
   source: SystemReminderSource;
   channel: SystemReminderDeliveryChannel;
   lifecycle: SystemReminderLifecycle;
@@ -92,10 +90,19 @@ const NON_MID_CONVERSATION_SYSTEM_SOURCES = new Set<SystemReminderSource>([
 ]);
 
 const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape> = {
+  agent_listing_delta: descriptor("current_turn", "resume_history", true, "sr.agent_listing_delta"),
   incoming_message: descriptor("mid_turn_event", "mid_turn_event", true, "sr.incoming_message"),
+  bot_topic_context: descriptor(
+    "history_continuity",
+    "resume_history",
+    true,
+    "sr.bot_topic_context",
+  ),
   context_prefix: descriptor("request_prefix", "request_prefix", true, "sr.context_prefix"),
   skills_listing: descriptor("request_prefix", "request_prefix", true, "sr.skills_listing"),
   hook_context: descriptor("current_turn", "per_current_turn", true, "sr.hook_context"),
+  memory_update: descriptor("current_turn", "per_current_turn", true, "sr.memory_update"),
+  relevant_memory: descriptor("current_turn", "per_current_turn", true, "sr.relevant_memory"),
   runtime_mode: descriptor("current_turn", "per_current_turn", true, "sr.runtime_mode"),
   plan_mode_exit: descriptor("current_turn", "runtime_local", true, "sr.plan_mode_exit"),
   output_style: descriptor("current_turn", "per_current_turn", true, "sr.output_style"),
@@ -110,24 +117,6 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
   // model-only synthetic notice 固化，后续只追加、不改写；冷恢复按原文重建以保持缓存前缀。
   plugin_reference: descriptor("current_turn", "per_current_turn", true, "sr.plugin_reference"),
   todo_reminder: descriptor("current_turn", "per_current_turn", true, "sr.todo_reminder"),
-  // 记忆召回提醒：按本轮用户输入对记忆清单做相关性排序后注入 top-K 摘要。
-  memory_recall: descriptor("current_turn", "per_current_turn", true, "sr.memory_recall"),
-  // 任务再锚定：长会话每 N 个模型步在尾部重申最初任务（防漂移）。
-  task_reanchor: descriptor("current_turn", "runtime_local", true, "sr.task_reanchor"),
-  // 用户指令热更新：AGENTS.md 等会话中途被修改时以 per-request 注入新版
-  // （前缀不动保缓存，②吸收 codex agents_md_manager）。
-  user_instructions_update: descriptor(
-    "current_turn",
-    "per_current_turn",
-    true,
-    "sr.user_instructions_update",
-  ),
-  // 预测回填闭环：会话首 turn 注入已到期/临期的预测登记（P5）。
-  followup_due: descriptor("current_turn", "runtime_local", true, "sr.followup_due"),
-  // 知识卡召回：按本轮问题对技能知识卡 manifest 做全量融合召回注入锚点（P1）。
-  kb_recall: descriptor("current_turn", "per_current_turn", true, "sr.kb_recall"),
-  // 口径裁决护栏：本轮输入命中已裁决口径注册表时注入权威源指引（P2）。
-  caliber_guard: descriptor("current_turn", "per_current_turn", true, "sr.caliber_guard"),
   task_status: descriptor("mid_turn_event", "mid_turn_event", true, "sr.task_status"),
   // 只用于 Read 等 tool result 内容内联 warning，不作为 synthetic user notice 持久化。
   tool_result_warning: descriptor("tool_result", "tool_result", true, "sr.tool_result_warning"),
@@ -185,6 +174,7 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     "sr.shell_environment_change",
   ),
   diagnostics: descriptor("mid_turn_event", "mid_turn_event", true, "sr.diagnostics"),
+  // 第四批 4a-0（2026-09-12）：原 plugin_ui_state 源已删除，插件给模型的信息改走 ui/update-model-context。
 };
 
 export const SYSTEM_REMINDER_SOURCES = Object.freeze([
@@ -205,6 +195,10 @@ export function getSystemReminderDescriptor(
     source,
     ...descriptor,
   };
+}
+
+export function isSystemReminderMetaSource(source: SystemReminderSource): boolean {
+  return getSystemReminderDescriptor(source).isMeta;
 }
 
 export function isMidConversationSystemSource(source: SystemReminderSource): boolean {

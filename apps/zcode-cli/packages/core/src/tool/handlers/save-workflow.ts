@@ -41,7 +41,6 @@ import type {
   ToolInputValidationResult,
 } from "../types.js";
 import { SAVE_WORKFLOW_TOOL_DESCRIPTION } from "./save-workflow-description.js";
-import { requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 import {
   SAVED_WORKFLOW_SENTINEL,
   findSavedWorkflowShadowing,

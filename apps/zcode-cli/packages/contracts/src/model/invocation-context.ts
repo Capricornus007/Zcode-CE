@@ -1,3 +1,4 @@
+import type { RequestVerificationReason } from "@zcode/shared";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { ModelApiCallObservation } from "../telemetry/index.js";
@@ -9,19 +10,6 @@ import type {
   ModelStatusSink,
   ModelStreamRecoveryStatus,
 } from "./index.js";
-
-/**
- * 模型请求 attempt 发送前刷新运行时请求头（provider runtime headers）的原因。
- *
- * - `model-request`：常规模型请求，含 adapter 内部重试的每一次 attempt。
- * - `captcha-retry`：start-plan 渠道收到网关的 3007 验证码挑战后触发的单次重试；
- *   渲染层据此重新求解验证码并回传新 token（对齐官方 `CaptchaRequestRetry.takeReason()`，
- *   见 docs/development/126-start-plan-3007-root-cause.md §2.1）。
- *
- * 抽成具名类型而不是在各处散落字面量联合：该值跨 adapter / core / bootstrap / 协议四处传递，
- * 任一处的字面量漂移都会让 `captcha-retry` 在链路中静默退化成普通请求（渲染层不重新求解）。
- */
-export type ProviderRuntimeHeadersRequestReason = "model-request" | "captcha-retry";
 
 /**
  * Runtime 与 Adapter 之间的调用级执行信息。
@@ -44,6 +32,8 @@ export interface ModelInvocationContext {
   preserveProviderStreamBoundaries?: boolean;
   refreshRuntimeHeadersBeforeAttempt?: (input: {
     accountAccess?: ZCodeProviderAccountAccess;
+    expectedAccountScope?: string;
+    rejectedProjectTokenFingerprint?: string;
     attempt: number;
     reason?: ProviderRuntimeHeadersRequestReason;
     abortSignal?: AbortSignal;
@@ -56,9 +46,24 @@ export interface ModelInvocationContext {
   }>;
 }
 
+/**
+ * 模型请求 attempt 发送前刷新运行时请求头（provider runtime headers）的原因。
+ *
+ * - `model-request`：常规模型请求，含 adapter 内部重试的每一次 attempt。
+ * - `captcha-retry`：start-plan 渠道收到网关的 3007 验证码挑战后触发的单次重试；
+ *   渲染层据此重新求解验证码并回传新 token（对齐官方 `CaptchaRequestRetry.takeReason()`，
+ *   见 docs/development/126-start-plan-3007-root-cause.md §2.1）。
+ *
+ * 抽成具名类型而不是在各处散落字面量联合：该值跨 adapter / core / bootstrap / 协议四处传递，
+ * 任一处的字面量漂移都会让 `captcha-retry` 在链路中静默退化成普通请求（渲染层不重新求解）。
+ */
+export type ProviderRuntimeHeadersRequestReason = "model-request" | "captcha-retry";
+
 /** Adapter 为单个物理请求 attempt 使用的动态鉴权材料。 */
 export interface ModelRequestAuth {
+  accountScope?: string;
   apiKey?: string;
+  apiKeyId?: string;
   headers?: Record<string, string>;
 }
 

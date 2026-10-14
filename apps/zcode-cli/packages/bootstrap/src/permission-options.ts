@@ -38,15 +38,9 @@ interface PermissionOptionSource {
 export function buildProtocolPermissionOptions(
   source: PermissionOptionSource,
 ): ZCodePermissionOption[] {
-  // 必须区分「工具说它没有可建议的规则」（空数组）与「工具没有策略」（undefined）：
-  // 空数组是**刻意的信号**（Bash 对空命令返回 []），而 defaultPermissionUpdates 在拿不到
-  // ruleContent 时会产出一条**无 ruleContent 的规则 —— 它匹配一切**（见 core 的
-  // permission/service.ts 的 `if (!rule.ruleContent) return true;`）。
-  // 用 `.length ? :` 会把前者当成后者，于是 `Bash {command:""}` 的「始终允许本项目」
-  // 退化成「本项目内任意 Bash 永久免问」（安全审计 P1，实测 sudo rm -rf / 也被放行）。
-  const permissionUpdates = source.suggestedPermissionUpdates ?? defaultPermissionUpdates(source);
-  // 规则集为空时不投放 allow_project：没有规则可授予，按钮只会误导用户。
-  const hasProjectScope = permissionUpdates.some((update) => update.rules.length > 0);
+  const permissionUpdates = source.suggestedPermissionUpdates?.length
+    ? source.suggestedPermissionUpdates
+    : defaultPermissionUpdates(source);
   const officialCuaProjectScope = permissionUpdates.some((update) =>
     update.rules.some((rule) => rule.toolName === OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME),
   );
@@ -64,14 +58,12 @@ export function buildProtocolPermissionOptions(
     // 而是把这道确认永久关掉。session-always-allow 则换成会话作用域的免确认：response 里
     // **没有** permissionUpdates——wire 上 zcodePermissionUpdateSchema 是 strict，会话语义由
     // broker 在应答侧合成为 sessionPermissionUpdates（纯内存，绝不落项目规则）。
-    ...(source.optionsPolicy === "no-always-allow" || !hasProjectScope
+    ...(source.optionsPolicy === "no-always-allow"
       ? []
       : source.optionsPolicy === "session-always-allow"
         ? [
             {
-              // 会话授权的真实范围是「本会话内该工具的全部调用」（无 ruleContent ⇒ 匹配一切）。
-              // 文案写明"every call"，不留"同一个请求"的误读空间。
-              description: "Do not ask again for every call of this tool in this session",
+              description: "Do not ask again for this tool in this session",
               kind: SESSION_ALLOW_PERMISSION_OPTION_KIND,
               name: SESSION_ALLOW_PERMISSION_OPTION_NAME,
               optionId: SESSION_ALLOW_PERMISSION_OPTION_ID,
@@ -83,14 +75,9 @@ export function buildProtocolPermissionOptions(
           ]
         : [
             {
-              // 文案必须说出**真实范围**（用户决策「立场 A」）：授予的是
-              // 「本项目内、匹配该规则的请求，永久」，而不是"这次"或"同一个请求"。
-              // 原文案 "Do not ask again for matching requests in this project" 里的
-              // "matching requests" 会被读成"这一条请求"，而前缀规则实际覆盖整个命令族
-              // （npm install:* 覆盖任意包）—— 这是安全审计 task-72 判定 P2 的文案面。
               description: officialCuaProjectScope
                 ? "Do not ask again for official Computer Use tools in this project"
-                : "Do not ask again for matching commands in this project, until you remove the rule",
+                : "Do not ask again for matching requests in this project",
               kind: "allow_always" as const,
               name: officialCuaProjectScope
                 ? "Always allow Computer Use in this project"

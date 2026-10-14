@@ -207,6 +207,7 @@ export const resolveBuildAliases = ({
     rootDirectory,
     "../../packages/shared/src/zcodeEndpoint.ts",
   ),
+  "@zcode/shared/mcp-apps": resolve(rootDirectory, "../../packages/shared/src/mcp-apps/index.ts"),
   "@zcode/shared/node": resolve(rootDirectory, "../../packages/shared/src/node.ts"),
   "@zcode/shared": resolve(rootDirectory, "../../packages/shared/src/index.ts"),
   "@zcode/core": resolve(cliDirectory, "../core/dist/index.js"),

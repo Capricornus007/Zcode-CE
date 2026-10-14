@@ -4,7 +4,6 @@ import {
   isAutomationCreateLimitError,
   type AutomationPort,
   type CronAutomation,
-  type SessionTitleSource,
 } from "@zcode/contracts";
 import {
   parseModelPickerValue,
@@ -22,27 +21,15 @@ import {
   type ZCodeProtocolSessionRecord,
 } from "./server-types.js";
 
-const AUTOMATION_CREATE_FROM_AUTOMATION_RUN_ERROR =
+export const AUTOMATION_CREATE_FROM_AUTOMATION_RUN_ERROR =
   "Cannot create a scheduled task while running a scheduled task.";
 
-const AUTOMATION_CREATE_IN_BOUND_SESSION_ERROR =
+export const AUTOMATION_CREATE_IN_BOUND_SESSION_ERROR =
   "Cannot create a scheduled task inside a session that already belongs to a scheduled task. " +
   "Ask the user to start a new chat to create another scheduled task.";
 
-const AUTOMATION_CREATE_BOUND_SESSION_CHECK_ERROR =
+export const AUTOMATION_CREATE_BOUND_SESSION_CHECK_ERROR =
   "Cannot verify whether this session belongs to a scheduled task. Try again later.";
-
-/**
- * CronCreate 标题冻结只允许覆盖自动标题。与 core 的 GENERATED_TITLE_EXPECTED_SOURCES
- * （persistGeneratedSessionTitle 的乐观锁集合，default/first_input/generated）同口径：
- * titleSource=custom（用户手动命名）不在其中，冻结路径遇到 custom 时原子跳过——
- * 修复 zcode-plugins issue #60（每次建 automation 都改写会话标题，一天 4 次）。
- */
-const AUTOMATION_TITLE_FREEZE_EXPECTED_SOURCES: readonly SessionTitleSource[] = [
-  "default",
-  "first_input",
-  "generated",
-];
 
 export function createProtocolAutomationPort(
   context: ZCodeProtocolAgentServerContext,
@@ -111,6 +98,9 @@ export function createProtocolAutomationPort(
       }
       // CronCreate 的工具上下文只携带了部分配置，导致权限或思考等级在跨层时丢失。
       // 协议边界按 sessionId 读取活跃 runtime，确保保存的是用户触发工具当下看到的配置。
+      // 定时任务只继承会话稳定 Selection：加速卡等单轮执行走 modelExecution
+      // （selectionScope=execution），从不改写 Session Selection，因此这里读到的一定不是
+      // turn-only 模型，不需要再区分持久/临时两套读取路径。
       const runtimeModelSelection =
         activeSession?.app.runtime.getSessionModelSelection() ??
         (() => {
@@ -143,8 +133,6 @@ export function createProtocolAutomationPort(
             ...(runtimeModelSelection ? { modelSelection: runtimeModelSelection } : {}),
             ...(runtimeMode ? { mode: runtimeMode === "auto" ? "build" : runtimeMode } : {}),
             ...(createContext?.sessionId ? { targetTaskId: createContext.sessionId } : {}),
-            // Bot 来源 turn 的回推地址：只在本轮 turn 内有效（prompt-turn 写入并在结束时恢复），
-            // 经 automationCreate 协议带给服务层落库，scheduler 终态按它回推 Bot 会话。
             ...(activeSession?.activeBotDeliveryTarget
               ? { botDeliveryTarget: activeSession.activeBotDeliveryTarget }
               : {}),
@@ -177,11 +165,8 @@ export function createProtocolAutomationPort(
           // 会话内 CronCreate 会在首轮回复中创建 automation，但首条消息触发的
           // session_title sidecar 可能迟到并根据助手解释生成标题，导致标题变成“我无法...”。
           // CronCreate 成功后把当前会话标题固定为 automation 标题，阻止 generated 标题覆盖。
-          // 只能覆盖自动标题：用户手动命名（titleSource=custom）用乐观锁跳过，不能被
-          // automation 改写（issue #60）。
           await activeSession.app.setCustomSessionTitle({
             title,
-            expectedTitleSources: AUTOMATION_TITLE_FREEZE_EXPECTED_SOURCES,
             traceContext: activeSession.traceContext,
           });
         } catch (error) {
@@ -248,10 +233,16 @@ function normalizeCronAutomationMode(
       return undefined;
     case "plan":
     case "edit":
+    case "guarded":
     case "yolo":
     case "build":
       return mode;
+    case "dontAsk":
+    case "bypassPermissions":
+      return "yolo";
+    case "default":
     case "auto":
+    case "acceptEdits":
     case "autoEdit":
       return "build";
     default: {

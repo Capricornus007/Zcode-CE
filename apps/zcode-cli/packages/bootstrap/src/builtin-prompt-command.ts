@@ -1,72 +1,68 @@
 import { join } from "node:path";
 import {
-  DYNAMIC_WORKFLOW_SKILL_NAME,
-  DYNAMIC_WORKFLOW_SLASH_COMMAND_NAME,
-} from "./app/dynamic-workflow-gate.js";
+  BUILTIN_WORKFLOW_COMMAND_NAME,
+  expandBuiltinWorkflowCommandPrompt,
+} from "./builtin-workflow-command.js";
 
 const BUILTIN_PROMPT_COMMAND_PATTERN = /^\/([^\s]+)(?:\s+([\s\S]*))?$/;
+const INIT_COMMAND_NAME = "init";
 
-interface ResolveZCodeBuiltinPromptCommandOptions {
-  workingDirectory?: string;
+export interface ResolveZCodeBuiltinPromptCommandOptions {
   /**
-   * 动态工作流灰度门：**显式 false** 时 `/workflow` 不展开成提示词。
-   * 与 `/` 目录侧的剔除同一判据；缺席（TUI、workflow_child，以及未显式关闭的 headless）
-   * 不设门禁。headless 的取值来自 `--no-enable-workflow`（本仓库默认开启，与官方相反）。
+   * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）。**只有显式 false 才挡下**
+   * `/workflow`：TUI / headless 从不设置该字段，那里的功能始终开启。挡下时返回 undefined，
+   * 与「命令不存在」同形——`workflow` 是保留名，后续的自定义命令解析同样拒绝展开，于是原文作为
+   * 普通 prompt 交给模型，与目录侧剔除它的结论一致（DWG-03）。
    */
   dynamicWorkflowEnabled?: boolean;
+  workingDirectory?: string;
 }
 
-/**
- * 内置提示词命令（不经过自定义命令发现，直接由入口层展开）。
- *
- * `/init` 与 `/workflow` 都在这里：官方 3.14.3 把 `/workflow` 从 zcode-guide 插件
- * 收成内置命令，理由与把 dynamic-workflows 技能收进 bundled-skills 一样 ——
- * 它服务的工具面由 runtime 注册，入口就不能由插件启停决定。
- */
+export interface ResolvedZCodeBuiltinPromptCommand {
+  /** 命中的内置命令名（`init` / `workflow`），调用方据此挂命令特有的副作用（如 onDemand 激活）。 */
+  name: string;
+  prompt: string;
+}
+
 export function resolveZCodeBuiltinPromptCommand(
   input: string,
   options: ResolveZCodeBuiltinPromptCommandOptions = {},
 ): string | undefined {
+  return resolveZCodeBuiltinPromptCommandInvocation(input, options)?.prompt;
+}
+
+export function resolveZCodeBuiltinPromptCommandInvocation(
+  input: string,
+  options: ResolveZCodeBuiltinPromptCommandOptions = {},
+): ResolvedZCodeBuiltinPromptCommand | undefined {
   const invocation = parseBuiltinPromptCommandInvocation(input);
   if (!invocation) {
     return undefined;
   }
 
-  if (invocation.name === DYNAMIC_WORKFLOW_SLASH_COMMAND_NAME) {
-    return options.dynamicWorkflowEnabled === false
-      ? undefined
-      : buildWorkflowPrompt(invocation.args);
+  if (invocation.name === INIT_COMMAND_NAME) {
+    const workingDirectory = options.workingDirectory ?? process.cwd();
+    return {
+      name: INIT_COMMAND_NAME,
+      prompt: buildInitAgentsPrompt({
+        args: invocation.args,
+        targetPath: join(workingDirectory, "AGENTS.md"),
+        workingDirectory,
+      }),
+    };
   }
 
-  if (invocation.name !== "init") {
-    return undefined;
+  if (invocation.name === BUILTIN_WORKFLOW_COMMAND_NAME) {
+    if (options.dynamicWorkflowEnabled === false) {
+      return undefined;
+    }
+    return {
+      name: BUILTIN_WORKFLOW_COMMAND_NAME,
+      prompt: expandBuiltinWorkflowCommandPrompt(invocation.args),
+    };
   }
 
-  const workingDirectory = options.workingDirectory ?? process.cwd();
-  return buildInitAgentsPrompt({
-    args: invocation.args,
-    targetPath: join(workingDirectory, "AGENTS.md"),
-    workingDirectory,
-  });
-}
-
-/**
- * `/workflow` 的提示词正文：逐字对齐官方 3.14.3 的内置命令模板
- * （官方 `expandBuiltinWorkflowCommandPrompt` 的 `HAn` 常量），只把 `$ARGUMENTS`
- * 换成用户实际输入。改词就等于改产品行为，务必与官方对齐后再动。
- */
-function buildWorkflowPrompt(args: string): string {
-  return [
-    `Use the \`${DYNAMIC_WORKFLOW_SKILL_NAME}\` skill to design and launch a dynamic workflow for this request:`,
-    "",
-    args,
-    "",
-    "Decide the subagent topology before writing any code: how many subagents, which of them",
-    "share a context, what result each one returns. Then write the script and call the",
-    "`CreateWorkflow` tool. (`CreateWorkflow` is the dynamic-workflow tool. Do not use the",
-    "legacy `Workflow` tool, and do not substitute the `Agent` tool.)",
-    "",
-  ].join("\n");
+  return undefined;
 }
 
 function parseBuiltinPromptCommandInvocation(input: string): { args: string; name: string } | null {
@@ -86,9 +82,13 @@ function buildInitAgentsPrompt(params: {
   workingDirectory: string;
 }): string {
   const additionalInstructions = params.args
-    ? ["", "Additional user instructions supplied with /init:", "```text", params.args, "```"].join(
-        "\n",
-      )
+    ? [
+        "",
+        "Additional user instructions supplied with /init:",
+        "```text",
+        params.args,
+        "```",
+      ].join("\n")
     : "";
 
   return [

@@ -117,6 +117,7 @@ export type {
   AttachmentStorageMetadata,
   AutomationPort,
   OffPeakPort,
+  TopicResourcePort,
   BackgroundExecutionSnapshot,
   BackgroundTaskCancelResult,
   BackgroundTaskInfo,
@@ -291,7 +292,6 @@ export {
   MAX_COMPACT_PROMPT_TOO_LONG_RETRIES,
   MAX_OUTPUT_TOKENS_FOR_SUMMARY,
   buildCompactPrompt,
-  mergeCompactInstructions,
   buildCompactSummaryMessage,
   buildManualCompactBoundary,
   createCompactBoundaryId,
@@ -322,5 +322,3 @@ export {
 } from "../subagent/index.js";
 export type { AgentProfile, ExploreSubagentRuntimeRequest } from "../subagent/index.js";
 export { registerMcpTools } from "../mcp/index.js";
-export type { RegisterMcpToolsResult } from "../mcp/index.js";
-export { buildDisabledMcpToolsByServer, isMcpToolDisabled } from "../mcp/tool-disabled.js";

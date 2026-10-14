@@ -6,7 +6,6 @@ import { runtimeInputMetadata } from "../../agent/runtime-input-presentation.js"
 import type { AgentRuntimeInternal } from "../internal.js";
 import type { SealBackgroundTaskNotificationsInput } from "../types.js";
 import { shouldSuppressSealedSubagentBashNotification } from "../../runtime-task/notification-policy.js";
-import type { ParentTaskNotificationEnqueueResult } from "../../subagent/runner.js";
 
 export function enqueueBackgroundTaskNotification(
   this: AgentRuntimeInternal,
@@ -17,7 +16,7 @@ export function enqueueBackgroundTaskNotification(
     toolName?: string;
     traceContext: TraceContext;
   },
-): ParentTaskNotificationEnqueueResult {
+): void {
   if (this.shuttingDown) {
     // 防御直接调用路径：session teardown 期间只允许任务状态收口，不能再启动模型轮次。
     this.logger?.info?.("Dropped background task notification during runtime shutdown", {
@@ -27,15 +26,12 @@ export function enqueueBackgroundTaskNotification(
       taskId: notification.taskId,
       toolName: notification.toolName,
     });
-    return { enqueued: false, reason: "shutdown" };
+    return;
   }
   const task = notification.taskId ? this.runtimeTaskRegistry.get(notification.taskId) : undefined;
   const branchGeneration = task?.branchGeneration ?? this.branchGeneration;
   if (branchGeneration !== this.branchGeneration) {
-    // 丢弃必须可见（issue #64 复盘）：静默 debug 级丢弃让调用方（subagent runner）
-    // 误打「已入队」info 日志并盖 notified 戳，形成完成通知永久丢失却无报错的闭环。
-    // 修复后命中此分支只剩竞态/孤儿任务，升级 warn 并回传明确结果。
-    this.logger?.warn("Dropped stale-branch background task notification", {
+    this.logger?.debug("Dropped stale-branch background task notification", {
       ...traceContextToLogContext(notification.traceContext),
       branchGeneration,
       currentBranchGeneration: this.branchGeneration,
@@ -43,7 +39,7 @@ export function enqueueBackgroundTaskNotification(
       module: "core.runtime",
       taskId: notification.taskId,
     });
-    return { enqueued: false, reason: "stale_branch" };
+    return;
   }
   const commandId = createRuntimeCommandId();
   this.enqueueRuntimeCommand({
@@ -84,7 +80,6 @@ export function enqueueBackgroundTaskNotification(
       });
     });
   }
-  return { enqueued: true };
 }
 
 export function sealBackgroundTaskNotifications(

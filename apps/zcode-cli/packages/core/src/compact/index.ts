@@ -42,7 +42,6 @@ export type {
   CompactModelMessage,
   TokenUsageLike,
 } from "./manual.js";
-export { mergeCompactInstructions } from "./policy.js";
 export type { AutoCompactDecision, AutoCompactPolicyConfig } from "./policy.js";
 export type { AutoCompactTokenOverride, AutoCompactTokenSource } from "./policy.js";
 export type {

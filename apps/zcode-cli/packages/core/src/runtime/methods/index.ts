@@ -195,7 +195,6 @@ import {
   drainMemoryExtractions,
   isProjectMemoryEnabled,
 } from "../helpers/project-memory-extraction.js";
-import { sendCacheKeepAliveRequestImpl } from "./cache-keep-alive.js";
 
 type AgentRuntimeConstructor = { prototype: object };
 
@@ -393,5 +392,4 @@ export function installAgentRuntimeMethods(ctor: AgentRuntimeConstructor): void 
   proto.sampleModel = sampleModel;
   proto.drainMemoryExtractions = drainMemoryExtractions;
   proto.isProjectMemoryEnabled = isProjectMemoryEnabled;
-  proto.sendCacheKeepAliveRequest = sendCacheKeepAliveRequestImpl;
 }

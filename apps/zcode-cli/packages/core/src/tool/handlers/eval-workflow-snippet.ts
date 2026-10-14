@@ -40,7 +40,6 @@ import type {
   ToolInputValidationResult,
 } from "../types.js";
 import { EVAL_WORKFLOW_SNIPPET_TOOL_DESCRIPTION } from "./eval-workflow-snippet-description.js";
-import { requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 import { readWorkflowScriptFile } from "./workflow-path-source.js";
 import { formatWorkflowDiagnosticLines } from "./workflow-script-notes.js";
 import { describeWorkflowScriptPath } from "./workflow-script-path.js";

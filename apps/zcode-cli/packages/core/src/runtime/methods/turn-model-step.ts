@@ -1,3 +1,5 @@
+import { getTurnTools } from "./turn-tool-visibility.js";
+
 import { beginLocalTurnPreparation } from "@zcode/contracts";
 import {
   CompactTrigger,
@@ -7,7 +9,6 @@ import {
   createCoreError,
   createMessageId,
   createPartId,
-  getModelUsageContextTokens,
   getModelUsageTotalTokens,
   traceContextToLogContext,
   TurnMachineImpl,
@@ -54,8 +55,6 @@ import {
   emitStreamRecoveryStarted,
   getStartPlanBusyAdmissionRetryDelayMs,
   isStartPlanBusyStreamRecoveryFailure,
-  resetStreamRecoveryBudgetOnSuccess,
-  streamRecoveryRetryDelayMs,
 } from "./streaming-recovery.js";
 import type { RegularTurnLoopState } from "./turn-loop-state.js";
 import {
@@ -76,6 +75,10 @@ import {
   resolveModelStepMaxOutputTokens,
   resolveNormalRequestMaxOutputTokens,
 } from "./model-token-limits.js";
+import {
+  applyExecutionSelectionFallback,
+  matchExecutionSelectionFallback,
+} from "./turn-execution-fallback.js";
 import {
   appendOutputTokenContinuation,
   classifyOutputTokenContinuation,
@@ -264,12 +267,6 @@ async function runModelBackedTurnStepImpl(
       traceContext: modelTraceContext,
     });
     throwIfTurnAborted(state.turnAbortSignal);
-    // 本次模型调用完整返回 = 此前的流恢复（若有）已奏效。恢复预算按「连续失败」
-    // 计，而非整个 turn 生命周期累计——长任务横跨上百个模型步、可运行数小时，
-    // 偶发流抖动每次消耗 1 次额度，累计到 10 后预算耗尽，下一次抖动直接杀死整个
-    // turn（「长任务经常自己停止」的根因）。成功即重置后，同一处连续失败仍在
-    // 10 次内熔断，防死循环性质不变。
-    resetStreamRecoveryBudgetOnSuccess(state);
   } catch (error) {
     let finalError = error;
     await recordMainTurnModelUsage(this, state, {
@@ -282,24 +279,48 @@ async function runModelBackedTurnStepImpl(
       status: state.turnAbortSignal.aborted ? "cancelled" : "error",
     });
     const failedRequestId = latestFailedModelRequestId ?? latestModelRequestId;
+    // 执行 Selection 的声明式退回必须先于同模型 stream recovery：明确归因到加速 provider/network
+    // 边界的请求失败都要退回会话模型（spec §2.2）。若 recovery 在前，流中断后会先在加速模型上
+    // 重试到预算耗尽，降级形同虚设。
+    const selectionFallbackMatch = matchExecutionSelectionFallback({
+      error: finalError,
+      executionProviderId: String(executionModelSelection.providerId),
+      selectionFallback: state.selectionFallback,
+      turnAborted: state.turnAbortSignal.aborted,
+    });
+    const toolCallCountBeforeSelectionFallback = state.toolCallCount;
+    const selectionFallbackResult = selectionFallbackMatch
+      ? await applyExecutionSelectionFallback(this, state, {
+          assistantCreatedAt,
+          assistantMessageId,
+          error: finalError,
+          executionModel: model,
+          match: selectionFallbackMatch,
+          modelTraceContext,
+          streamingToolCoordinator,
+        })
+      : undefined;
+    if (selectionFallbackResult?.applied) {
+      // Bug 根因：fallback settlement 已提交工具结果并建立新 anchor，却继承了此前 length 链的计数，
+      // 使退回模型第一次截断就可能提前耗尽。只按工具计数增量重置，纯文本 tail discard 不绕过上限。
+      if (state.toolCallCount > toolCallCountBeforeSelectionFallback) {
+        completeOutputTokenRecovery(state.turnRequestState);
+      }
+      return "continue";
+    }
     const toolCallCountBeforeStreamRecovery = state.toolCallCount;
+    // Bug 根因：退回目标解析失败后若继续进入通用恢复，会重新请求同一个已失败的 execution provider。
+    // 命中声明就已消费本轮恢复决策；无处可退必须保留原错误并直接失败。
     if (
-      await streamingToolCoordinator.recoverFromModelFailure(
+      !selectionFallbackMatch &&
+      (await streamingToolCoordinator.recoverFromModelFailure(
         error,
         assistantCreatedAt,
         failedRequestId ? { failedRequestId } : undefined,
-      )
+      ))
     ) {
       if (state.toolCallCount > toolCallCountBeforeStreamRecovery) {
         completeOutputTokenRecovery(state.turnRequestState);
-      }
-      // ① 错误分类学重试间隔（吸收 codex retry_delay）：恢复已受理，重开流前
-      // 按分类等待——限流指数退避更长、网络抖动短退避、服务器显式建议优先。
-      // 终态错误不会走到这里（isRetryable 已挡），此处仅是延迟决策。
-      const recoveryDelayMs = streamRecoveryRetryDelayMs(error, state.streamRecoveryRetryCount);
-      if (recoveryDelayMs !== null && recoveryDelayMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, recoveryDelayMs));
-        throwIfTurnAborted(state.turnAbortSignal);
       }
       return "continue";
     }
@@ -309,7 +330,11 @@ async function runModelBackedTurnStepImpl(
       state,
       turnNumber: this.turnNumber,
     });
-    if (!state.turnAbortSignal.aborted && admissionRetryDelayMs !== undefined) {
+    if (
+      !selectionFallbackMatch &&
+      !state.turnAbortSignal.aborted &&
+      admissionRetryDelayMs !== undefined
+    ) {
       // 第二轮及以后 Start Plan 可能在首 token 前被 admission 并发限制拒绝；
       // 这时没有文本或 tool anchor，旧 stream recovery 不会启动，必须关闭空 assistant 后短重试。
       const recoveryAttempt = beginStartPlanBusyAdmissionRetryAttempt(state);
@@ -371,6 +396,7 @@ async function runModelBackedTurnStepImpl(
       return "continue";
     }
     if (
+      !selectionFallbackMatch &&
       state.streamRecoveryRetryCount > 0 &&
       !state.turnAbortSignal.aborted &&
       isStartPlanBusyStreamRecoveryFailure(finalError)
@@ -379,9 +405,12 @@ async function runModelBackedTurnStepImpl(
       // 继续抛原 provider 文案会和首轮繁忙失败无法区分，UI 也就不能展示“自动重试达到最大次数”。
       finalError = createStartPlanBusyAutoRetryExhaustedError(finalError);
     }
-    await streamingToolCoordinator.abandon(
-      state.turnAbortSignal.aborted ? "cancelled" : "model_failed",
-    );
+    // 无 fallback target 时工具已在上方 settlement；再次 abandon 会发布与终态矛盾的 ledger 事件。
+    if (!selectionFallbackResult?.settledAcceptedTools) {
+      await streamingToolCoordinator.abandon(
+        state.turnAbortSignal.aborted ? "cancelled" : "model_failed",
+      );
+    }
     if (
       state.turnAbortSignal.aborted &&
       isTurnCancellationError(finalError, state.turnAbortSignal)
@@ -461,14 +490,6 @@ async function runModelBackedTurnStepImpl(
   state.modelResponse = result.text;
   state.modelStepCount += 1;
   state.tokenCount += getModelUsageTotalTokens(result.usage);
-
-  // 上下文压力信号（0-1，占模型窗口比例）：供工具执行层收缩输出预算（②）。
-  // getModelUsageContextTokens 归一化了各家 provider 的 input/cacheRead 语义。
-  const contextTokens = getModelUsageContextTokens(result.usage);
-  const contextWindow = model?.properties?.contextWindow;
-  if (contextTokens !== undefined && contextWindow && contextWindow > 0) {
-    this.lastContextPressure = Math.min(1, contextTokens / contextWindow);
-  }
 
   if (result.usage.cacheReadTokens && result.usage.cacheReadTokens > 0) {
     this.messageHistory.setCacheHit(result.usage.cacheReadTokens);
@@ -804,6 +825,7 @@ async function recoverModelStepAfterContextExceeded(
     {
       activeEntries,
       modelStepIndex,
+      agentListingTools: getTurnTools(this, state),
       rapidRefillCount: rapidRefill.consecutiveRapidRefills,
       model: state.model,
       turnRequestState: state.turnRequestState,

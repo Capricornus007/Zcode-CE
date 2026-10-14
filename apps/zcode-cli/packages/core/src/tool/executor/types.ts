@@ -1,4 +1,3 @@
-import type { DangerousCommandPolicy } from "@zcode/shared";
 import type {
   AgentExecutionTelemetryPort,
   AgentTelemetryActorKind,
@@ -89,8 +88,6 @@ export interface ToolExecutorOptions {
   permissionTimeoutMs?: number;
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
-  /** 最近模型请求的上下文压力 getter；由 runtime 提供供预算收缩。 */
-  getContextPressure?: () => number | undefined;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;
@@ -101,8 +98,6 @@ export interface ToolExecutorOptions {
   model?: Model;
   embeddedSearchBackend?: EmbeddedSearchBackend;
   nativeSearchEnhancementsEnabled?: boolean;
-  /** 危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
-  dangerousCommandPolicy?: DangerousCommandPolicy;
   skillPort?: SkillPort;
   subagentPort?: SubagentPort;
   coordinatorResponsePort?: CoordinatorResponsePort;
@@ -206,8 +201,6 @@ export interface ToolExecutorDeps {
   defaultTimeoutMs: number;
   permissionTimeoutMs?: number;
   logger?: Logger;
-  /** 最近模型请求的上下文压力 getter；由 runtime 提供供预算收缩。 */
-  getContextPressure?: () => number | undefined;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
@@ -219,8 +212,6 @@ export interface ToolExecutorDeps {
   model?: Model;
   embeddedSearchBackend?: EmbeddedSearchBackend;
   nativeSearchEnhancementsEnabled?: boolean;
-  /** 危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
-  dangerousCommandPolicy?: DangerousCommandPolicy;
   skillPort?: SkillPort;
   subagentPort?: SubagentPort;
   coordinatorResponsePort?: CoordinatorResponsePort;

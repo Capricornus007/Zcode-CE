@@ -2,7 +2,12 @@ import { basename, relative, sep } from "node:path";
 import type { FileSystemPort } from "@zcode/contracts";
 import { parse as parseYaml } from "yaml";
 
-import { MEMORY_RECALL_TYPES, type MemoryManifestEntry, type MemoryRecallType } from "./types.js";
+import {
+  MEMORY_RECALL_TYPES,
+  type MemoryManifestEntry,
+  type MemoryRecallState,
+  type MemoryRecallType,
+} from "./types.js";
 
 const MANIFEST_FILE_LIMIT = 200;
 const MANIFEST_PREVIEW_LINE_LIMIT = 30;
@@ -11,9 +16,6 @@ export async function scanMemoryManifest(input: {
   fileSystem: FileSystemPort;
   rootDir: string;
   signal?: AbortSignal;
-  /** 清单条数上限（默认 200）。kb 卡语料（数千张）必须显式放宽，否则生产
-   * 召回只看得见最新改动的 200 张——对抗审查抓到的口径坑。 */
-  fileLimit?: number;
 }): Promise<MemoryManifestEntry[]> {
   try {
     const paths = await collectMemoryPaths(input.fileSystem, input.rootDir, input.signal);
@@ -29,10 +31,29 @@ export async function scanMemoryManifest(input: {
       )
       .map((result) => result.value)
       .sort((left, right) => right.mtimeMs - left.mtimeMs)
-      .slice(0, input.fileLimit ?? MANIFEST_FILE_LIMIT);
+      .slice(0, MANIFEST_FILE_LIMIT);
   } catch {
     return [];
   }
+}
+
+export async function getMemoryRecallManifest(input: {
+  fileSystem: FileSystemPort;
+  rootDir: string;
+  signal?: AbortSignal;
+  state: MemoryRecallState;
+}): Promise<MemoryManifestEntry[]> {
+  if (input.state.manifest && input.state.manifest.length > 0) {
+    return input.state.manifest;
+  }
+
+  const manifest = await scanMemoryManifest(input);
+  if (input.signal?.aborted) return [];
+  if (manifest.length > 0) {
+    input.state.manifest = manifest;
+    input.state.selectorMessages = [createManifestMessage(manifest)];
+  }
+  return manifest;
 }
 
 export function formatMemoryManifest(manifest: readonly MemoryManifestEntry[]): string {
@@ -44,6 +65,14 @@ export function formatMemoryManifest(manifest: readonly MemoryManifestEntry[]): 
       return entry.description ? `${base}: ${entry.description}` : base;
     })
     .join("\n");
+}
+
+function createManifestMessage(manifest: readonly MemoryManifestEntry[]) {
+  return {
+    role: "user" as const,
+    content: `Available memories:\n${formatMemoryManifest(manifest)}`,
+    cacheControl: { type: "ephemeral" as const },
+  };
 }
 
 async function collectMemoryPaths(
@@ -103,8 +132,7 @@ async function readManifestEntry(
   };
 }
 
-/** 记忆条目 frontmatter 解析（description/type）；bench 探针复用同一解析器。 */
-export function parseMemoryFrontmatter(content: string): {
+function parseMemoryFrontmatter(content: string): {
   description?: string;
   type?: MemoryRecallType;
 } {

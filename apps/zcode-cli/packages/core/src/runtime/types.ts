@@ -1,4 +1,9 @@
-import type { RuntimeInputPresentation } from "@zcode/contracts";
+import type { GetAgentDefinitions, LoadAgentDefinitions } from "../subagent/definitions.js";
+import type {
+  ProviderRuntimeHeadersRequestReason,
+  RuntimeInputPresentation,
+  TurnExecutionModelFallbackReason,
+} from "@zcode/contracts";
 /* eslint-disable max-lines -- Runtime 类型集中承载 core/runtime 对外结构，拆分需要单独迁移。 */
 import { PermissionService, ToolScheduler } from "./deps.js";
 import type {
@@ -14,14 +19,13 @@ import type {
   ModelRequestDependencies,
   ModelSelection,
   PluginReferenceCatalog,
-  ProviderRuntimeHeadersRequestReason,
   ResolvedUserInstructions,
   StableForkGoalBoundaryMetadata,
   StableForkTargetMetadata,
   WorkspaceHookBundleSnapshot,
   WorkspaceId,
 } from "@zcode/contracts";
-import type { DangerousCommandPolicy, ZCodeProviderAccountAccess } from "@zcode/shared";
+import type { ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
 import type { RuntimeMessageEntry } from "../agent/message-history.js";
 import type {
@@ -73,6 +77,7 @@ import type {
   ExecutionShellSelection,
   AutomationPort,
   OffPeakPort,
+  TopicResourcePort,
   FileSystemPort,
   HttpClientPort,
   ImageProcessorPort,
@@ -123,6 +128,8 @@ export interface AgentRuntimeConfig {
   remoteSessionId?: string;
   bashTimeoutPolicy?: BashTimeoutPolicy;
   presentationSurface?: PresentationSurface;
+  /** Execution Host's output root, independent of the working repository. */
+  genUiOutputRoot?: string;
   mode?: CollaborationMode;
   planEnabled?: boolean;
   modelStreaming?: "off" | "on";
@@ -132,9 +139,9 @@ export interface AgentRuntimeConfig {
   maxTurns?: number;
   permissionTimeoutMs?: number;
   compact?: AutoCompactPolicyConfig;
-  /** 自适应思考档（experimental）：工具续跑步自动降一档。缺省=关。 */
+  /** CE 线增量（experimental）：自适应思考档——工具续跑步自动降一档。缺省=关。 */
   adaptiveReasoning?: { enabled?: boolean };
-  /** 缓存保活器（experimental）：会话空闲超阈值时发同前缀迷你请求刷新
+  /** CE 线增量（experimental）：缓存保活器——会话空闲超阈值时发同前缀迷你请求刷新
    * provider 侧 prompt cache，消除长空档后下一请求的预填充跳升。默认关。 */
   cacheKeepAlive?: { enabled?: boolean; idleThresholdMs?: number };
   targetCompletionVerification?: { enabled?: boolean };
@@ -200,16 +207,6 @@ export interface AgentRuntimeConfig {
   embeddedSearchBackend?: EmbeddedSearchBackend;
   /** 根 Session runtime 创建时固定；false 只关闭 Bash 的 bfs/ugrep prelude。 */
   nativeSearchEnhancementsEnabled?: boolean;
-  /**
-   * 危险命令策略（工具与权限页）。**根 Session runtime 创建时固定**，与
-   * nativeSearchEnhancementsEnabled 同一条链路：Host 在 session create/resume 时下发，
-   * 已运行的会话不重新读取。
-   *
-   * 缺席即严格：core 侧 resolveDangerousCommandPolicy(undefined) 得到
-   * allowPersistentAuthorization=false + 默认清单全开。TUI / headless / workflow_child
-   * 不设置它，因此也落在严格态 —— 这正是产品默认（fail-safe）。
-   */
-  dangerousCommandPolicy?: DangerousCommandPolicy;
   memory?: MemoryRuntimeConfig;
   /** 历史恢复允许未绑定；只有完整选择才能创建本轮执行 Model。 */
   modelSelection?: ModelSelection;
@@ -221,16 +218,20 @@ export interface AgentRuntimeConfig {
   parentSessionId?: SessionId;
   taskType?: SessionTaskType;
   /**
-   * 动态工作流灰度门：Host 判定后经
-   * ZCode Protocol 下发，runtime 只消费。**缺席即开启**——TUI 与 workflow_child 都不写它，
-   * 它们必须保留完整工具面；只有受信 Host 创建的 protocol session 会显式写 false
-   * 把十个工作流工具关掉。
-   *
-   * headless `-p` 也会写它，但只在用户显式传 `--no-enable-workflow` 时写 false：
-   * 本仓库 headless 默认开启（与官方相反，官方 `-p` 默认关闭）。见
-   * apps/zcode-cli/packages/cli/src/workflow-flag.ts。
+   * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）：Host 判定后经
+   * ZCode Protocol 下发，runtime 只消费。**缺席即开启**（进程内嵌入方靠这个极性）；
+   * 独立 CLI 的 TUI 与 headless 按 --workflow-mode 显式传 true/false（缺省 disabled，DWG-04），
+   * workflow_child 继承父配置。
+   * false 会关闭十个工作流工具，不改变其他工具的注册策略。
    */
   dynamicWorkflowEnabled?: boolean;
+  /**
+   * 灰度 mode `onDemand`（docs/dynamic-workflow/launch.md「On demand: activation」）：十个工作流
+   * 工具推迟到会话首次 `/workflow`（或 GUI 对本会话 run 的 Resume / 配置 / 直接启动、冷恢复时记录里
+   * 已有工作流）才注册。**缺席即立刻注册**，与 dynamicWorkflowEnabled 同极性；只有协议服务端在
+   * Host 下发的 mode 为 onDemand 时写 true。激活状态归 runtime（dynamicWorkflowToolsActivated）。
+   */
+  dynamicWorkflowToolsOnDemand?: boolean;
 
   // Context Builder config
   systemPrompt?: string;
@@ -263,8 +264,8 @@ export interface AgentRuntimeConfig {
   workspaceIdentity?: WorkspaceId;
   envInfo?: EnvInfo; // Optional, will be auto-detected if not provided
   currentDate?: string; // YYYY-MM-DD, resolved by adapter when omitted
-  userInstructions?: UserInstructionsOptions; // AGENTS.md
-  projectContext?: ProjectContext; // auto-detected if not provided
+  userInstructions?: UserInstructionsOptions; // P1: AGENTS.md
+  projectContext?: ProjectContext; // P2: auto-detected if not provided
   skillMetadataBudget?: number;
 }
 
@@ -327,6 +328,10 @@ export interface MemoryRuntimeConfig {
 }
 
 export interface AgentRuntimeDeps {
+  /** 只读目录入口；必须同步读取内存，不在请求收集阶段进行 I/O。 */
+  getAgentDefinitions?: GetAgentDefinitions;
+  /** 新父上下文读取一次；子执行不得继承此加载器。 */
+  loadAgentDefinitions?: LoadAgentDefinitions;
   agentTelemetry?: AgentExecutionTelemetryPort;
   agentTelemetryCausation?: AgentTelemetryCausation;
   agentTelemetryCausationMode?: "child" | "linked_root";
@@ -387,6 +392,7 @@ export interface AgentRuntimeDeps {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
+  topicResourcePort?: TopicResourcePort;
   contextSourcePort?: ContextSourcePort;
   eventSink?: SessionEventSink;
   logger?: Logger;
@@ -416,11 +422,13 @@ export interface ProviderRuntimeHeadersPort {
   shouldRefreshBeforeModelRequest?(input: { providerId: string; modelId: string }): boolean;
   refreshBeforeModelRequest(input: {
     accountAccess?: ZCodeProviderAccountAccess;
+    expectedAccountScope?: string;
+    rejectedProjectTokenFingerprint?: string;
     abortSignal?: AbortSignal;
     modelId: string;
     providerId: string;
-    // 与 contracts 的 ProviderRuntimeHeadersRequestReason 同域：3007 验证码挑战触发的
-    // 单次重试以 "captcha-retry" 走到这里，渲染层据此重新求解验证码（spec §4.5）。
+    // CE 线增量：与 contracts 的 ProviderRuntimeHeadersRequestReason 同域——3007 验证码
+    // 挑战触发的单次重试以 "captcha-retry" 走到这里，渲染层据此重新求解验证码（spec §4.5）。
     reason: ProviderRuntimeHeadersRequestReason;
     sessionId: SessionId;
     traceContext: TraceContext;
@@ -452,6 +460,22 @@ export interface ModelExecutionContext {
   subagents?: {
     foregroundModel: "submission";
     background: "deny";
+  };
+  /**
+   * 本次执行的 Selection 失败时，同一 Turn 内退回原模型继续跑完（保留已提交历史，只替换后续请求的
+   * 模型），而不是让整轮直接失败。触发条件必须由发起方声明：`providerId` 限定只匹配本轮 execution
+   * Selection 指向的 provider，`rules` 按声明顺序匹配、首个命中决定退回原因，`providerErrorCode` 缺省
+   * 表示该 provider 的任何失败。core 不按 provider id、模型名或错误文案硬编码。
+   * 退回目标先取 `target`（发起方抽卡时的提交选择，即会话原模型），再取会话常驻 Session Selection；
+   * 两者都解析不出时无处可退，按真实错误失败。
+   */
+  selectionFallback?: {
+    providerId: string;
+    rules: Array<{
+      reason: TurnExecutionModelFallbackReason;
+      providerErrorCode?: string;
+    }>;
+    target?: ModelSelection;
   };
 }
 
@@ -506,6 +530,8 @@ export type PromptAdmissionOptions = ExecuteTurnOptions & {
   expectedTurnId?: TurnId;
   /** busy 时的产品队列语义；附件或不可 steer 时由 Core 回退 queue。 */
   queueDelivery?: "guide" | "queue";
+  /** 强制进入 FIFO；用于携带只能在未来独立 turn 安装的临时运行模型。 */
+  requireQueue?: boolean;
   /** queue promotion 等内部调用要求 admission 必须 idle，否则直接拒绝。 */
   requireIdle?: boolean;
 };

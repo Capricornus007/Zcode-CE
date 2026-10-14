@@ -1,3 +1,4 @@
+import { collectRuntimeAgentListing } from "../helpers/agent-listing.js";
 import {
   CompactPhase,
   CompactReason,
@@ -11,14 +12,12 @@ import {
   createPartId,
   traceContextToLogContext,
   buildCompactPrompt,
-  mergeCompactInstructions,
   buildCompactSummaryMessage,
   buildManualCompactBoundary,
   createCompactBoundaryId,
   getUsageTotalTokens,
 } from "../deps.js";
 import type { SessionEvent, TraceContext } from "../deps.js";
-import { resolveModelRequestSessionTypeFromTaskType } from "./model-request-session-type.js";
 import {
   defaultCompactPhaseForTrigger,
   defaultCompactReasonForTrigger,
@@ -64,6 +63,7 @@ import { runCompactSummaryModelRequest } from "./compact-summary-model-request.j
 import { resolveNormalRequestMaxOutputTokens } from "./model-token-limits.js";
 import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { recordModelUsageFact } from "./usage-observability.js";
+import { resetProjectMemoryRecall } from "../helpers/project-memory-recall.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import {
   filterOutputTokenContinuationEntries,
@@ -93,6 +93,7 @@ export async function compactActiveConversation(
     sourceCommandId?: string;
     trigger?: CompactTrigger;
     model?: Model;
+    agentListingTools?: readonly { name: string }[];
     activeEntries?: readonly RuntimeMessageEntry[];
   } = {},
 ): Promise<{
@@ -160,6 +161,7 @@ async function compactActiveConversationImpl(
     sourceCommandId?: string;
     trigger?: CompactTrigger;
     model?: Model;
+    agentListingTools?: readonly { name: string }[];
     activeEntries?: readonly RuntimeMessageEntry[];
   } = {},
 ): Promise<{
@@ -266,11 +268,7 @@ async function compactActiveConversationImpl(
           querySource: "compact",
         },
       });
-      // P4：项目级域包（compact.domainInstructions）与运行时 customInstructions
-      // 叠加——域指令不因一次 /compact 带参数而丢失。
-      const compactPrompt = buildCompactPrompt(
-        mergeCompactInstructions(this.config.compact?.domainInstructions, customInstructions),
-      );
+      const compactPrompt = buildCompactPrompt(customInstructions);
       let result: RuntimeModelTextResult;
       let compactPromptTooLongAttempts = 0;
       let stripMediaForSummary = false;
@@ -391,7 +389,6 @@ async function compactActiveConversationImpl(
           maxOutputTokens: compactSummaryMaxOutputTokens,
           messages: projectedRequestMessages,
           metadata: traceContextToLogContext(modelTraceContext),
-          modelRequestSessionType: resolveModelRequestSessionTypeFromTaskType(this.config.taskType),
           modelCall: {
             attributes: {
               compactionOuterAttempt: attempt,
@@ -497,7 +494,13 @@ async function compactActiveConversationImpl(
             workspaceRoot: this.workspaceRoot,
           })
         : undefined;
+      const agentListingEntry = collectRuntimeAgentListing(
+        this,
+        preservedEntries,
+        options.agentListingTools ?? this.getTools(options.model ?? compactModel),
+      );
       const postCompactReminderEntries = [
+        ...(agentListingEntry ? [agentListingEntry] : []),
         ...(planFileReferenceEntry ? [planFileReferenceEntry] : []),
         ...buildPostCompactReadStateReminderEntries({
           preservedEntries,
@@ -520,10 +523,8 @@ async function compactActiveConversationImpl(
       events.push(modelCompleteEvent);
 
       const summaryMessageId = createMessageId();
-      const compactionCount = (this.sessionCompactCount = (this.sessionCompactCount ?? 0) + 1);
       const summaryMessageContent = buildCompactSummaryMessage(persistedSummary, {
         suppressFollowup: true,
-        compactionCount,
       });
       // Continue 没有对应 Session message；无 store 的统计也不能把它计入保留记录。
       const recordablePreservedEntries = filterOutputTokenContinuationEntries(preservedEntries);
@@ -630,6 +631,8 @@ async function compactActiveConversationImpl(
           : recordablePostCompactEntries,
       );
       this.readFileState.clear();
+      resetProjectMemoryRecall(this);
+
       return {
         displayText: "Compacted",
         entries: postCompactEntries,

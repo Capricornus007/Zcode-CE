@@ -101,7 +101,7 @@ class FailingJournal implements JournalStorePort {
     return this.inner.getNode(runId, siteId, ordinal);
   }
   listNodes(runId: string) {
-    return this.inner.listNodes(runId);
+    return this.inner.listNodes(runId, { kinds: "all" });
   }
   appendEvent(runId: string, event: RunEvent): { sequence: number } {
     return this.inner.appendEvent(runId, event);

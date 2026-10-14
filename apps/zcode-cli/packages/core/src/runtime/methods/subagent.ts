@@ -83,14 +83,13 @@ export function createDefaultSubagentPort(
       await this.appendEvent(event, traceContext);
     },
     enqueueParentTaskNotification: (notification) => {
-      // 透传入队结果：父队列的显式拒绝（stale_branch / shutdown）必须让 runner
-      // 可见，否则 runner 会把拒绝当作成功（issue #64 的 fake-notified 链）。
-      return this.enqueueBackgroundTaskNotification({
+      this.enqueueBackgroundTaskNotification({
         originMeta: notification.originMeta,
         taskId: notification.taskId,
         text: notification.text,
         traceContext: notification.traceContext,
       });
+      return { enqueued: true };
     },
     getAllowedTools: () => {
       return buildExploreAllowedTools({
@@ -349,10 +348,7 @@ export function createDefaultSubagentPort(
           httpClientPort: deps.httpClientPort,
           imageProcessorPort: deps.imageProcessorPort,
           pdfDocumentPort: deps.pdfDocumentPort,
-          // P3：无 per-agent 持久记忆目录的通用子代理（含 workflow actor）此前
-          // memoryRoot=undefined，turn-loop 的 memory_recall 门控使其对主记忆全盲；
-          // 退回父 runtime 的记忆根，让子代理共享主记忆召回（口径裁决/用户偏好等）。
-          memoryRoot: persistentMemory?.rootDir ?? this.memoryRoot,
+          memoryRoot: persistentMemory?.rootDir,
           mcpPort: childMcpAccess.port,
           skillPort: childSkillPort,
           artifactStore: deps.artifactStore,

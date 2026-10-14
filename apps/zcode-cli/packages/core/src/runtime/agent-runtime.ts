@@ -34,7 +34,6 @@ import type {
   SessionId,
   SessionProjection,
   SessionStorePort,
-  SessionTitleSource,
   SessionGoal,
   SavedWorkflowScope,
   TargetChangedPayload,
@@ -180,10 +179,6 @@ export class AgentRuntime {
   private contextSourceSnapshot?: ContextSourceSnapshot;
   private latestContextBuildResult?: ContextBuildResult;
   private memoryRoot?: string;
-  /** 最近一次模型请求的上下文压力（0-1）；见 internal.ts。 */
-  lastContextPressure?: number;
-  /** 缓存保活定时器句柄；由 cache-keep-alive 模块管理。 */
-  cacheKeepAliveTimer?: ReturnType<typeof setTimeout>;
   private memoryIndexContent?: string;
   private memoryRecallState: MemoryRecallState;
   private memoryRecallPrefetch?: ProjectMemoryRecallPrefetch;
@@ -407,13 +402,8 @@ export interface AgentRuntime {
     input: string,
     options?: { goalSummaryTargetID?: string; traceContext?: TraceContext },
   ): void;
-  /** renameSession：用户显式重命名或 automation 冻结（titleSource=custom，发 SessionTitleUpdated）。 */
-  setCustomSessionTitle(input: {
-    title: string;
-    traceContext: TraceContext;
-    /** 乐观锁：仅覆盖期望来源的标题（custom 不在内）；不传 = 无条件覆盖。 */
-    expectedTitleSources?: readonly SessionTitleSource[];
-  }): Promise<void>;
+  /** renameSession：用户显式重命名（titleSource=custom，发 SessionTitleUpdated）。 */
+  setCustomSessionTitle(input: { title: string; traceContext: TraceContext }): Promise<void>;
   maybeStartGoalSummaryTitleGeneration(
     input: string,
     targetID: string,

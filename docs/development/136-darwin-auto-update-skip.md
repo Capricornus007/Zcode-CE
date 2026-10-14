@@ -44,7 +44,7 @@
    - 自动更新：electron-updater 在 macOS 保持关闭——未签名包不具备自动更新链路所需的
      签名校验基础；darwin 客户端的新版本经 GitHub Releases 手动获取，自动更新只面向 win/linux 正式包。
    - 构建：macOS 安装包只能由 mac runner 产出（dmg 打包工具与 ad-hoc 签名都依赖 macOS），
-     见 .github/workflows/release.yml 的 build 矩阵（x64 用 macos-13 runner、arm64 用 macos-14 runner）。
+     见 .github/workflows/release.yml 的 build 矩阵（x64 用 macos-15-intel runner、arm64 用 macos-15 runner）。
 
 ## 2. 状态所有者
 
@@ -126,7 +126,7 @@ i18n 文案（双语，不含「失败/重试」措辞）：
    - darwin+dev（未打包 + ZCODE_AUTO_UPDATE_DEV）：判定不跳过，启动检查照常。
 3. scripts/test/releaseWorkflowMacMatrix.test.mjs（发布矩阵形状护栏，沿用 scripts/test/ 的既有
    workflow 护栏约定）：从 release.yml 现读矩阵与上传清单，断言 mac 条目恰好覆盖 darwin x64 +
-   arm64（macos-13→x64、macos-14→arm64）且上传清单含 \*.dmg / \*.zip —— 少一行矩阵 = 该架构
+   arm64（macos-15-intel→x64、macos-15→arm64）且上传清单含 \*.dmg / \*.zip —— 少一行矩阵 = 该架构
    的 macOS 包静默失去发布入口（upload 步骤 if-no-files-found: warn，缺产物不红）。故意不断言
    publisher 顺序 / latest-mac.yml 覆盖：那是 electron-builder 的偶发行为，不是本项目的契约（见 §7）。
 
@@ -139,16 +139,22 @@ i18n 文案（双语，不含「失败/重试」措辞）：
   维护，其 macOS 条目以本文档 §1 产品规则为准。
 - README.md：安装表 macOS 行发布未签名 .dmg/.zip 与 Gatekeeper 步骤（右键打开 / xattr 命令）；
   已知限制 macOS 条目保持「无自动更新」并说明新版本从 GitHub Releases 手动获取。
-- .github/workflows/release.yml：build 矩阵新增 macos-13（darwin x64）与 macos-14（darwin arm64），
-  复用既有 windows job 的结构；产物名 ZCode-CE-<版本>-darwin-<arch>.dmg/.zip。
+- .github/workflows/release.yml：build 矩阵含 darwin x64（macos-15-intel）与 darwin arm64（macos-15），
+  复用既有 windows job 的结构；产物名 ZCode-CE-<版本>-darwin-<arch>.dmg/.zip。不要回退
+  macos-13/macos-14：前者已于 2025-12-04 退役、后者在 actions/runner-images 已 deprecated。
 - docs/development/backlog.md：issue #2 症状二一条状态更新为已完成（spec 136）。
 
 ## 7. 诚实边界（未验证项）
 
 - 未验证最终产物：本机无 macOS，.dmg/.zip 的生成、ad-hoc 签名（`identity: "-"` 路径）与
-  「装得上、打得开」只能由 ce.2 发版时的 CI mac job 验证。electron-builder 26.8.1 在非 macOS
+  「装得上、打得开」只能由 CI mac job 实跑验证。electron-builder 26.8.1 在非 macOS
   宿主上会跳过整个 macOS 签名步骤（macPackager.sign → isSignAllowed 仅在 darwin 上放行），
-  故 ad-hoc 路径无法在本机复现。
+  故 ad-hoc 路径无法在本机复现。**ce.2 至今 mac 从未产出过**：mac 矩阵自 2b358505 落地以来
+  一次也没成功跑通（ce.2 被 cancelled；此后 macos-13 已于 2025-12-04 退役、macos-14 已 deprecated，
+  job 在队列里空等，各 Release 的 macOS 产物数均为 0）。本轮（task-26）把标签改为
+  macos-15-intel / macos-15 只是恢复可调度性，**真实产出仍待下一次发版的 mac job 实跑验证**——
+  届时若再失败，必须在 release.md 与 README 的 macOS 表述里如实回落（不能让「发包在 CI」的
+  声明跑在产物存在之前）。
 - 未在真实 macOS 客户端验证 darwin 跳过行为：行为靠 §5 两层测试钉住；真实机器上可验证点为：
   帮助菜单点「检查更新」看到确定性提示 toast，且日志目录里无更新请求 error。
 - darwin arm64/x64 未分别验证：判定只看 platform，不看 arch。

@@ -6,7 +6,7 @@
 #
 # 为什么必须走 CI：Windows 安装包（nsis）无法在 Linux 上交叉打包，必须由 windows-latest 产出；
 # macOS 安装包（dmg/zip）的打包与 ad-hoc 签名只能在 mac runner 上完成
-# （x64 用 macos-13、arm64 用 macos-14；未签名 arm64 二进制在 Apple Silicon 上无法启动，
+# （x64 用 macos-15-intel、arm64 用 macos-15；未签名 arm64 二进制在 Apple Silicon 上无法启动，
 # 故两个架构都在 mac runner 上 ad-hoc 签名，不做公证）。
 #
 # 说明文档：docs/operations/ci.md、docs/operations/release.md
@@ -105,13 +105,17 @@ jobs:
             platform: win
             arch: x64
             artifact: windows
-          # macos-13 runner 是 Intel（x64），macos-14 起 runner 是 Apple Silicon（arm64）；
+          # x64 用 macos-15-intel（Intel 标准标签），arm64 用 macos-15（Apple Silicon）；
           # 在原生架构 runner 上构建避免跨架构编译原生模块（node-pty 等）。
-          - os: macos-13
+          # 不要回退到 macos-13/macos-14：macos-13 已于 2025-12-04 退役（GitHub changelog
+          # 2025-09-19「macOS 13 runner image is closing down」），macos-14 在
+          # actions/runner-images 已标 deprecated（issue #13518）——用过时标签的 job
+          # 不会报错，只会无限排队（本轮实测 10 小时 runnerName=null、steps=0）。
+          - os: macos-15-intel
             platform: mac
             arch: x64
             artifact: macos-x64
-          - os: macos-14
+          - os: macos-15
             platform: mac
             arch: arm64
             artifact: macos-arm64

@@ -62,14 +62,17 @@ test("build 矩阵覆盖 darwin x64 与 arm64 两个架构（每个恰好一行�
       "）—— 少一个 = 该架构的 macOS 未签名安装包静默失去发布入口（136 §1.6）。",
   );
   for (const entry of mac) {
-    // macos-13 runner 是 Intel（x64）；macos-14 起 runner 是 Apple Silicon（arm64）。
+    // x64 用 macos-15-intel（Intel 标准标签）；arm64 用 macos-15（Apple Silicon）。
     // runner 与架构错配不会报错，只会让原生模块（node-pty 等）走跨架构构建路径。
-    const expectedArch = entry.os === "macos-13" ? "x64" : entry.os === "macos-14" ? "arm64" : null;
+    // 标签本身也会过期：macos-13 已于 2025-12-04 退役、macos-14 已 deprecated，
+    // 用退役/弃用标签的 job 不报错，只会在队列里永远等不到 runner。
+    const expectedArch =
+      entry.os === "macos-15-intel" ? "x64" : entry.os === "macos-15" ? "arm64" : null;
     assert.ok(
       expectedArch !== null,
       "mac 条目用了未登记的 runner：" +
         JSON.stringify(entry.os) +
-        "（当前登记的对应关系：macos-13→x64、macos-14→arm64；换 runner 架构时需同步本护栏）。",
+        "（当前登记的对应关系：macos-15-intel→x64、macos-15→arm64；换 runner 架构或标签时需同步本护栏）。",
     );
     assert.equal(
       entry.arch,
@@ -97,7 +100,13 @@ test("Upload installers 的清单包含 macOS 产物（*.dmg / *.zip）", () => 
 /**
  * 本护栏守不住的东西（如实登记，别把它当发布正确性的证明）：
  * 1. 它断言的是 workflow 的**声明形状**，不是「mac job 在 GitHub runner 上真能构建 / 签名 / 打包」。
- *    ad-hoc 签名（identity: "-"）路径与本机的 dmg 产物只能在 ce.2 发版时由 CI mac job 验证（136 §7）。
+ *    这条边界已经真失效过一次：2b358505（ce.2 周期）把 mac 包加进矩阵后，矩阵声明一直在、
+ *    护栏一直绿，但 mac leg 从未成功跑通一次——ce.2 那次被 cancelled，此后 macos-13 于
+ *    2025-12-04 退役（GitHub changelog 2025-09-19）、macos-14 在 actions/runner-images
+ *    已 deprecated（issue #13518），job 在队列里空等（2026-10-13T16:38 起排队 10 小时，
+ *    runnerName=null、steps=0），各 Release 的 macOS 产物数均为 0。修标签（macos-15-intel /
+ *    macos-15）只是恢复可调度性，**真实产出仍需下一次发版的 mac job 实跑验证**。
+ *    ad-hoc 签名（identity: "-"）路径与本机的 dmg 产物同样只能由 CI mac job 验证（136 §7）。
  * 2. 它不判产物名规则（ZCode-CE-<版本>-darwin-<arch>.dmg）：产物名由 electron-builder.config.js
  *    的 mac.artifactName 决定，与 workflow 无关。
  * 3. 它不判 latest-mac.yml 的上传与覆盖关系（见文件头说明）。

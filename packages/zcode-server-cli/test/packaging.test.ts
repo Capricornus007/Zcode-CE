@@ -1,8 +1,10 @@
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { promisify } from "node:util";
+import { createRequire } from "node:module";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   collectBareModuleSpecifiers,
@@ -59,7 +61,12 @@ async function writeFakePackage(
   for (const [relativePath, contents] of Object.entries(spec.files ?? {})) {
     const filePath = join(packageDir, ...relativePath.split("/"));
     await mkdir(join(filePath, ".."), { recursive: true });
-    await writeFile(filePath, contents, "utf8");
+    if (typeof contents === "object" && contents !== null && "base64" in contents) {
+      // 二进制 fixture：base64 解码后按字节写（latin1 字符串走 utf8 会损坏高位字节）。
+      await writeFile(filePath, Buffer.from(contents.base64, "base64"));
+      continue;
+    }
+    await writeFile(filePath, contents as string, "utf8");
   }
   return packageDir;
 }
@@ -138,6 +145,22 @@ describe("isNodePtyRuntimePath", () => {
   });
 });
 
+// 真实平台包字节（latin1 保字节读写）：完整性校验按字节比对 staged 与真实 @lydell。
+// darwin/win32 的官方 prebuild 出自 node-pty 官方包（验证②的弱口径），fixture 同样用真实字节。
+const NODE_PTY_OFFICIAL_B64 = (rel: string): string =>
+  readFileSync(
+    join(dirname(createRequire(import.meta.url).resolve("node-pty/package.json")), rel),
+  ).toString("base64");
+
+const REAL_LINUX_PTY_BYTES_BASE64 = readFileSync(
+  join(
+    dirname(dirname(createRequire(import.meta.url).resolve("@lydell/node-pty-linux-x64"))),
+    "prebuilds",
+    "linux-x64",
+    "pty.node",
+  ),
+  "base64",
+) as string;
 describe("stageRelease", () => {
   async function makeStageFixture(): Promise<{
     distDir: string;
@@ -167,13 +190,20 @@ describe("stageRelease", () => {
         "lib/index.js": "module.exports = {};\n",
         "typings/node-pty.d.ts": "export {};\n",
         "build/Release/pty.node": "host-binary",
-        "prebuilds/darwin-arm64/pty.node": "darwin-binary",
-        "prebuilds/darwin-arm64/spawn-helper": "darwin-helper",
-        "prebuilds/win32-x64/pty.node": "windows-binary",
+        "prebuilds/linux-x64/pty.node": { base64: REAL_LINUX_PTY_BYTES_BASE64 },
+        "prebuilds/darwin-arm64/pty.node": {
+          base64: NODE_PTY_OFFICIAL_B64("prebuilds/darwin-arm64/pty.node"),
+        },
+        "prebuilds/darwin-arm64/spawn-helper": {
+          base64: NODE_PTY_OFFICIAL_B64("prebuilds/darwin-arm64/spawn-helper"),
+        },
+        "prebuilds/win32-x64/pty.node": {
+          base64: NODE_PTY_OFFICIAL_B64("prebuilds/win32-x64/pty.node"),
+        },
       },
     });
     await writeFakePackage(workspaceNodeModulesDir, "@lydell/node-pty-linux-x64", {
-      files: { "prebuilds/linux-x64/pty.node": "linux-binary" },
+        "prebuilds/linux-x64/pty.node": { base64: REAL_LINUX_PTY_BYTES_BASE64 },
     });
 
     const agentBundlePath = join(root, "zcode.cjs");
@@ -252,12 +282,12 @@ describe("stageRelease", () => {
       stat(join(releaseDir, "runtime/node_modules/node-pty/prebuilds/darwin-arm64")),
     ).rejects.toThrow();
 
-    // linux 平台 pty.node 由 @lydell 平台包补齐。
+    // linux 平台 pty.node 由 @lydell 平台包补齐。CE 完整性校验要求 staged 与真实
+    // 平台包逐字节一致，fixture 已携带真实字节 —— 这里按字节比对而非 utf8 字符串。
     const linuxPty = await readFile(
       join(releaseDir, "runtime/node_modules/node-pty/prebuilds/linux-x64/pty.node"),
-      "utf8",
     );
-    expect(linuxPty).toBe("linux-binary");
+    expect(linuxPty.equals(Buffer.from(REAL_LINUX_PTY_BYTES_BASE64, "base64"))).toBe(true);
 
     const manifest = JSON.parse(await readFile(join(releaseDir, "manifest.json"), "utf8")) as {
       product: string;

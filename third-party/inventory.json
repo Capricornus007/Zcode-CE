@@ -1597,7 +1597,7 @@
     "packages/server/package.json": "0a6119239c88af79bc766e3c023eb4437105a0d35b03ecca1137d1e688e60a90",
     "packages/services/package.json": "34a8d00b4b0e4874c1427cdde4ab0c3d21be955750661dbb19f5241a53a3cb9f",
     "packages/services/src/bots/attachmentPathGuard.ts": "7db16b5bbd951690ae4d92f811a7176451059554ce048ce5229891b27204c687",
-    "packages/services/src/bots/attachmentUrlGuard.ts": "d8cf20f186118d484049a1af80fee77ddaa64e2449699758c29e51fa0b35882a",
+    "packages/services/src/bots/attachmentUrlGuard.ts": "acbe2b6c7ae8c58566de3ab9ce41de759a8fb85d099ffad5ca30e8b4f23e9714",
     "packages/services/src/bots/botAttachmentLimits.ts": "8ed42b6c752ff26af77438ac157d5f35c1cb1e7e647e088cdecfaa1032a9b347",
     "packages/services/src/bots/botConfigHelpers.ts": "9a0a60154ba1693aa51b8634ee83493078c6fbedc739aa82b3b9f89a3cdecc80",
     "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
@@ -32859,7 +32859,7 @@
         },
         {
           "file": "packages/services/src/bots/attachmentUrlGuard.ts",
-          "sha256": "d8cf20f186118d484049a1af80fee77ddaa64e2449699758c29e51fa0b35882a"
+          "sha256": "acbe2b6c7ae8c58566de3ab9ce41de759a8fb85d099ffad5ca30e8b4f23e9714"
         },
         {
           "file": "packages/services/src/bots/botAttachmentLimits.ts",

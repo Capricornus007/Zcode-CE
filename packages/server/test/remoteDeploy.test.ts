@@ -53,7 +53,10 @@ const retiredProxyRuntimeId = `${retiredProtocolPrefix}-proxy-runtime`;
 const REMOTE_AGENT_BUNDLE_FILE_NAME = "zcode.cjs";
 const REMOTE_AGENT_WRAPPER_FILE_NAME = "zcode-agent";
 const BROWSER_USE_REQUIRED_RELATIVE_PATHS = [
+  // CE 口径（C34 校准）：远端必需合同裁剪到 browser-use 单包 9 文件
+  // （REMOTE_AGENT_OFFICIAL_PLUGIN_PACKAGE_NAMES = [browser-use-plugin]）。
   // node_repl 宿主已抽成 @zcode/node-repl-host，browser-use 不再产出 dist/mcp/server.js。
+  "browser-use-plugin/.zcode-plugin/plugin.json",
   "browser-use-plugin/docs/api.json",
   "browser-use-plugin/docs/documents.json",
   "browser-use-plugin/docs/overview.md",
@@ -2051,7 +2054,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     const remoteFiles = createFullyDeployedRemoteFiles("linux-arm64");
     remoteFiles[remoteOfficialPluginDir] = "directory marker";
     delete remoteFiles[
-      "~/.zcode/server/agents/glm/packages/skill-creator-plugin/.zcode-plugin/plugin.json"
+      "~/.zcode/server/agents/glm/packages/browser-use-plugin/.zcode-plugin/plugin.json"
     ];
     // SSH / Docker backend 的 exists 契约只检查普通文件，目录即使存在也会返回 false。
     const backend = new FakeFileOnlyExistsRemoteBackend(remoteFiles, [
@@ -2333,15 +2336,10 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     expect(REMOTE_AGENT_OFFICIAL_PLUGIN_REQUIRED_RELATIVE_PATHS).toEqual(
       expect.arrayContaining([
         ...BROWSER_USE_REQUIRED_RELATIVE_PATHS,
-        "image-search-plugin/.mcp.json",
-        "documents-plugin/agents/visual-judge.md",
-        "documents-plugin/skills/docx/SKILL.md",
-        "pdf-plugin/agents/visual-judge.md",
-        "pdf-plugin/skills/pdf/SKILL.md",
-        "presentations-plugin/agents/visual-judge.md",
-        "presentations-plugin/skills/pptx/SKILL.md",
-        "spreadsheets-plugin/agents/visual-judge.md",
-        "spreadsheets-plugin/skills/xlsx/SKILL.md",
+        // CE 口径（zcodeAgentOfficialPluginAssets.ts「远端口径 2026-10-04 校准 C34」）：
+        // 远端 glm 组件只带 browser-use 插件正文与 node_repl 宿主；image-search 的
+        // .mcp.json 与 office/pdf/presentations/spreadsheets 的 judge agent 是
+        // staging 侧资产，不进远端必需合同（列进 ArrayContaining 会对着幽灵路径失败）。
       ]),
     );
   });
@@ -3105,7 +3103,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
       "linux-arm64",
     );
     delete remoteFiles[
-      "~/.zcode/server/agents/glm/packages/skill-creator-plugin/.zcode-plugin/plugin.json"
+      "~/.zcode/server/agents/glm/packages/browser-use-plugin/.zcode-plugin/plugin.json"
     ];
     const cdnServer = await createStaticFileServer(cdnRoot);
 
@@ -3144,7 +3142,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
             "linux-arm64",
             glmComponent.sha256,
             "packages",
-            "skill-creator-plugin",
+            "browser-use-plugin",
             ".zcode-plugin",
             "plugin.json",
           ),
@@ -3198,7 +3196,7 @@ describe("deployServer legacy agent node-script bundle deployment", () => {
     await writeFile(join(staleComponentDir, ".ready"), "ready\n", "utf8");
     await writeFile(join(staleComponentDir, "zcode.cjs"), "stale glm bundle");
     const requiredReleasePath =
-      "glm/linux-arm64/packages/skill-creator-plugin/.zcode-plugin/plugin.json";
+      "glm/linux-arm64/packages/browser-use-plugin/.zcode-plugin/plugin.json";
     const cdnServer = await createStaticFileServer(cdnRoot);
 
     try {

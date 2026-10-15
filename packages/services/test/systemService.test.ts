@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSystemService } from "../src/system/systemService.js";
+import { createIntranetProbeTcpConsentStore } from "../src/system/intranetProbeConsent.js";
+import { setBotAttachmentDnsResolver } from "../src/bots/attachmentUrlGuard.js";
+
 
 // 探测目标只是被测入参：用保留域名与文档网段 IP，不绑定内网真实地址（开源导出里内网默认地址为空）。
 const PROBE_HOST = "intranet-probe.example";
@@ -7,6 +10,9 @@ const PROBE_SERVICE_URL = "http://intranet-probe.example:3850/api/intranet/probe
 const SECONDARY_PROBE_IP = "192.0.2.151";
 
 describe("systemService", () => {
+  afterEach(() => {
+    setBotAttachmentDnsResolver(null);
+  });
   it("info 会返回当前平台和 home 目录", async () => {
     const service = createSystemService();
     const info = await service.info();
@@ -114,7 +120,10 @@ describe("systemService", () => {
         },
       ) => Promise<number>>()
       .mockImplementationOnce(async () => 23);
-    const service = createSystemService({ tcpProbe, now: () => 1700000000000 });
+    // S3 内网探测权限化：tcp 探测前必须录入用户确认（缺席即判失败，不建连）。
+    const tcpConsentStore = createIntranetProbeTcpConsentStore({ now: () => 1700000000000 });
+    tcpConsentStore.record([{ host: PROBE_HOST, port: 22 }, { host: SECONDARY_PROBE_IP, port: 22 }]);
+    const service = createSystemService({ tcpProbe, now: () => 1700000000000, tcpConsentStore });
 
     const result = await service.probeIntranet({
       targets: [{ host: PROBE_HOST, port: 22 }],
@@ -169,7 +178,9 @@ describe("systemService", () => {
       throw new Error("timeout");
     });
 
-    const service = createSystemService({ tcpProbe, now: () => 1700000001000 });
+    const tcpConsentStore = createIntranetProbeTcpConsentStore({ now: () => 1700000001000 });
+    tcpConsentStore.record([{ host: PROBE_HOST, port: 22 }, { host: SECONDARY_PROBE_IP, port: 22 }]);
+    const service = createSystemService({ tcpProbe, now: () => 1700000001000, tcpConsentStore });
     const result = await service.probeIntranet({
       attempts: 2,
       requiredSuccessCount: 2,
@@ -248,6 +259,8 @@ describe("systemService", () => {
         latencyMs: 19,
         marker: "zcode-intranet-lab",
       });
+    // S3 判据做真实 DNS 解析；离线单测用本仓公网测试段 28.0.0.x 注入解析结果。
+    setBotAttachmentDnsResolver(async () => [{ address: "28.0.0.10", family: 4 }]);
     const service = createSystemService({
       serviceProbe,
       now: () => 1700000002000,
@@ -301,6 +314,7 @@ describe("systemService", () => {
         latencyMs: 12,
         marker: "wrong-marker",
       });
+    setBotAttachmentDnsResolver(async () => [{ address: "28.0.0.10", family: 4 }]);
     const service = createSystemService({
       serviceProbe,
       now: () => 1700000003000,

@@ -8,6 +8,13 @@ import { SERVER_REMOTE_PROTOCOL_VERSION } from "@zcode/shared";
 import { createHttpServer } from "../src/http.js";
 
 describe("server info HTTP endpoint", () => {
+  const waitForListening = (server: {
+    address(): unknown;
+    once(event: string, listener: () => void): unknown;
+  }) =>
+    server.address() === null
+      ? new Promise<void>((resolve) => server.once("listening", resolve))
+      : Promise.resolve();
   const servers: Array<{ close(callback?: (err?: Error) => void): void }> = [];
   const tempDirs: string[] = [];
 
@@ -43,6 +50,9 @@ describe("server info HTTP endpoint", () => {
       ],
     });
     servers.push(server);
+    if (server.address() === null) {
+      await new Promise<void>((resolve) => server.once("listening", resolve));
+    }
     const address = server.address() as AddressInfo;
 
     const response = await fetch(`http://127.0.0.1:${address.port}/api/server-info`);
@@ -73,6 +83,9 @@ describe("server info HTTP endpoint", () => {
       authToken: "secret-token",
     });
     servers.push(server);
+    if (server.address() === null) {
+      await new Promise<void>((resolve) => server.once("listening", resolve));
+    }
     const address = server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
@@ -116,6 +129,9 @@ describe("server info HTTP endpoint", () => {
       spaFallback: true,
     });
     servers.push(server);
+    if (server.address() === null) {
+      await new Promise<void>((resolve) => server.once("listening", resolve));
+    }
     const address = server.address() as AddressInfo;
     const baseUrl = `http://127.0.0.1:${address.port}`;
 

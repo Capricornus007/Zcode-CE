@@ -344,26 +344,46 @@ describe("weixin bot provider", () => {
     const key = Buffer.from("00112233445566778899aabbccddeeff", "hex");
     const plaintext = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
     const encrypted = encryptWeixinCdnFixture(plaintext, key);
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(encrypted)));
+    // S1/T4 后 provider 走 guarded 下载（pinned fetch，不经过全局 fetch 桩）。
+    // 用本地 server 供真实字节，DNS 钩子把 weixin.example.test 指向它。
+    const { createServer } = await import("node:http");
+    const { setBotAttachmentDnsResolver, setBotAttachmentAllowedHosts } = await import(
+      "../src/bots/attachmentUrlGuard.js"
+    );
+    // 放行名单走精确主机名匹配的快速路径（不做 bogon 判定），让 127.0.0.1 可达。
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { "content-type": "application/octet-stream" });
+      res.end(new Uint8Array(encrypted));
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as { port: number }).port;
+    setBotAttachmentAllowedHosts(["weixin.example.test"]);
+    setBotAttachmentDnsResolver(async () => [{ address: "127.0.0.1", family: 4 }]);
     const provider = createWeixinBotProvider({
       loadCredential: vi.fn(async () => "token"),
     });
 
-    const downloaded = await provider.downloadAttachment?.(
-      createWeixinBot(),
-      {
-        id: "encrypted-query",
-        kind: "image",
-        filename: "weixin-image-1.jpg",
-        mimeType: "image/jpeg",
-        downloadUrl: "https://weixin.example.test/image.jpg",
-        providerMetadata: {
-          weixinAesKey: key.toString("base64"),
+    try {
+      const downloaded = await provider.downloadAttachment?.(
+        createWeixinBot(),
+        {
+          id: "encrypted-query",
+          kind: "image",
+          filename: "weixin-image-1.jpg",
+          mimeType: "image/jpeg",
+          downloadUrl: `http://weixin.example.test:${port}/image.jpg`,
+          providerMetadata: {
+            weixinAesKey: key.toString("base64"),
+          },
         },
-      },
-    );
+      );
 
-    expect(Buffer.from(downloaded?.data ?? [])).toEqual(plaintext);
+      expect(Buffer.from(downloaded?.data ?? [])).toEqual(plaintext);
+    } finally {
+      server.close();
+      setBotAttachmentDnsResolver(null);
+      setBotAttachmentAllowedHosts([]);
+    }
   });
 
   it("preserves attachments when Weixin polling re-enters the callback parser", () => {

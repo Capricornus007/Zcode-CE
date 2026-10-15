@@ -95,7 +95,15 @@ export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSyn
     return (db) => db.exec(OFFICIAL_GLM_SELECTION_MIGRATION_SQL);
   if (id === "0004_workspace_registry") return (db) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL);
   if (id === "0005_workspace_registry_active_session_count")
-    return (db) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
+    // 幂等：账本被清（DB109-02/05 的重放路径）而物理表已有该列时，ALTER 会以
+    // duplicate column 中断——按列存在性跳过，语义与「已应用」一致。
+    return (db) => {
+      const hasColumn = db
+        .prepare("PRAGMA table_info(workspace_registry)")
+        .all()
+        .some((row) => row.name === "active_session_count");
+      if (!hasColumn) db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
+    };
   throw new Error("Unknown task database migration id: " + id);
 }
 

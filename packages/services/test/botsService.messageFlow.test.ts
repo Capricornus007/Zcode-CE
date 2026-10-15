@@ -4009,10 +4009,20 @@ describe("botsService messageFlow", () => {
   });
 
   it("returns an actionable attachment download error instead of provider internals", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => new Response("missing", { status: 404 })),
+    // S1 后附件下载走 guarded pinned fetch（不经过全局 fetch 桩）。
+    // 本地 server 返回 404，保持用例意图：下载失败 → 可操作文案，而非 provider 内部错误。
+    const { createServer } = await import("node:http");
+    const { setBotAttachmentDnsResolver, setBotAttachmentAllowedHosts } = await import(
+      "../src/bots/attachmentUrlGuard.js"
     );
+    const server = createServer((_req, res) => {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("missing");
+    });
+    await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const port = (server.address() as { port: number }).port;
+    setBotAttachmentAllowedHosts(["example.test"]);
+    setBotAttachmentDnsResolver(async () => [{ address: "127.0.0.1", family: 4 }]);
     const repo = f.createMemoryRepo(f.baseConfig);
     const legacyTaskService = f.createLegacyTaskService();
     const service = f.createBotsService({
@@ -4031,7 +4041,7 @@ describe("botsService messageFlow", () => {
           kind: "file",
           filename: "missing.txt",
           mimeType: "text/plain",
-          downloadUrl: "https://example.test/missing.txt",
+          downloadUrl: `http://example.test:${port}/missing.txt`,
         },
       ],
       actor,
@@ -4042,6 +4052,9 @@ describe("botsService messageFlow", () => {
     ]);
     expect(legacyTaskService.createTask).not.toHaveBeenCalled();
     service.disposeAll();
+    server.close();
+    setBotAttachmentDnsResolver(null);
+    setBotAttachmentAllowedHosts([]);
   });
 
   it("blocks a disconnected remote workspace message without reconnecting", async () => {

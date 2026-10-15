@@ -289,7 +289,9 @@ export async function fetchBotAttachmentFromUrl(
 
     try {
       if (!response.ok) {
-        throw new Error(`download failed: HTTP ${response.status}`);
+        // 带上 host：上游的「可操作错误」映射正则按 download .+ failed: HTTP 识别，
+        // 且诊断时需要知道是哪个源失败。
+        throw new Error(`download ${currentUrl.host} failed: HTTP ${response.status}`);
       }
       const bytes = new Uint8Array(await response.arrayBuffer());
       return { bytes, contentType: response.headers.get("content-type") };

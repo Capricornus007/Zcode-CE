@@ -16,7 +16,12 @@ import { createSubagentsService } from "../src/subagents/subagentsService.js";
 const tempRoots: string[] = [];
 
 async function makeTempHome(prefix = "zcode-subagents-home-"): Promise<string> {
-  const home = await mkdtemp(join(tmpdir(), prefix));
+  // Windows 对抗审查：home 建在 %TEMP% 下时，锚目录未建阶段的浅层父监听会上溯到
+  // %TEMP% 根，chokidar 扫到外部应用（LibreOffice LISF_* 等）的锁定文件触发
+  // EPERM → 显式重载风暴 → 断言超时。项目内 .tmp 目录没有外部竞争者。
+  const localRoot = join(tmpdir(), "..", "zcode-test-homes");
+  await mkdir(localRoot, { recursive: true });
+  const home = await mkdtemp(join(localRoot, prefix));
   tempRoots.push(home);
   return home;
 }

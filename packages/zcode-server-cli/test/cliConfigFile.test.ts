@@ -35,7 +35,16 @@ test("配置文件优先级链与 fail-closed（真实链路）", async (t) => {
   const env = { ...process.env, HOME: join(dir, "home") };
   try {
     await mkdir(env.HOME, { recursive: true });
-    await exec("tar", ["-xzf", resolve(repoRoot, archive), "-C", dir]);
+    // Windows 修正：GNU tar 把 "D:\..." 的盘符冒号当远程主机（rsh 语法）。
+    // 与 build-zcode.mjs createTarball 的 --force-local 同因同修。
+    const tarArgs = [
+      "-xzf",
+      resolve(repoRoot, archive),
+      "-C",
+      dir,
+      ...(process.platform === "win32" ? ["--force-local"] : []),
+    ];
+    await exec("tar", tarArgs);
     const runner = join(dir, "zcode", "bin", "zcode.mjs");
     assert.ok(existsSync(runner), "解包后应存在 bin/zcode.mjs");
     const configPath = join(dir, "server.json");

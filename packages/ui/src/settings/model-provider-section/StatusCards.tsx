@@ -712,7 +712,12 @@ export function resolveCodingPlanStatusCardTitle({
     // Start provider 偶尔会承载同品牌 paid Coding Plan 的权益快照。
     // 只有真实 Start 权益继续显示 Start Plan；否则必须露出后端权益名，避免付费用户看到免费套餐标题。
     // 判据是 productId 的类型段而非展示名（见 isStartPlanEntitlementProductId）：官方改名不影响。
-    return isStartPlanEntitlementProductId(planProductId)
+    // 结构判据缺席（旧快照没有 productId）时，权益名自含 "Start Plan" 也认（CE 契约：
+    // Start provider 上承载的 "ZCode V3 Start Plan" 这类权益仍应显示 Start Plan，
+    // 营销名里没有 start plan 的（如 GLM Coding Pro）才露权益名）。
+    const levelNamesStartPlan =
+      /start\s*plan/i.test(displayPlanLevel) || /start\s*plan/i.test(rawPlanLevel);
+    return isStartPlanEntitlementProductId(planProductId) || levelNamesStartPlan
       ? startPlanTitle
       : displayPlanLevel || startPlanTitle;
   }
@@ -732,6 +737,9 @@ export function resolveCodingPlanStatusCardTitle({
  * 按展示名后缀匹配的旧写法匹配的是营销名——历次活动名各不相同，一旦改名即失效。
  */
 export function isStartPlanEntitlementProductId(productId: string): boolean {
+  // planProductId 缺席（旧快照/直调）＝结构判据无从谈起 ⇒ 识别为「非 Start 权益」，
+  // 让调用方回退到 displayPlanLevel，而不是崩在 trim 上。
+  if (typeof productId !== "string") return false;
   const normalized = productId.trim().toLowerCase();
   return /(^|[-_])start-plan([-_]|$)/.test(normalized);
 }

@@ -263,6 +263,7 @@ import type {
   ConversationFindMatchState,
 } from "@/v4/legacyChatViewTypes.js";
 import type { SessionLease } from "@/v4/sessionDataLayer.js";
+import { ProviderRuntimeHeadersCaptchaAttachment } from "@/v4/ProviderRuntimeHeadersCaptchaAttachment.js";
 import { V4InteractionDialogs } from "@/v4/V4InteractionDialogs.js";
 import {
   useScopedConversationTelemetryForegroundEnabled,
@@ -5352,6 +5353,20 @@ export function SessionPane({
           onSendNow={handleSendQueuedNow}
           onMoveItem={handleReorderQueueItem}
           onResume={handleResumeQueue}
+        />
+      ) : null}
+      {/* start-plan 验证码求解：订阅 host 的 providerRuntimeHeaders.request 服务事件。
+          必须挂在这里（会话打开即挂载、且不受下面 V4InteractionDialogs 的
+          pending/snapshot 早返回影响）—— host 的 emitSessionEvent 只 fire 已存在的
+          emitter 且无缓冲，晚订阅会静默丢掉请求。见 130 spec §4.1/§4.4。 */}
+      {sessionId ? (
+        <ProviderRuntimeHeadersCaptchaAttachment
+          key="provider-runtime-captcha"
+          sessionId={sessionId}
+          workspacePath={workspacePath}
+          workspaceIdentity={workspaceIdentity}
+          remoteSessionId={remoteSessionId ?? undefined}
+          isDesktop={isDesktop}
         />
       ) : null}
       {/* Bugfix: v4 权限/问答等待态只是 runtime 的阻塞交互，必须和 composer

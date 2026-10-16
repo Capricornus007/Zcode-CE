@@ -391,6 +391,7 @@ export function App({
   const tabs = useTabStore((s) => s.tabs);
   const addTab = useTabStore((s) => s.addTab);
   const activateTabByPath = useTabStore((s) => s.activateTabByPath);
+  const activateOrOpenWorkspaceTab = useTabStore((s) => s.activateOrOpenWorkspaceTab);
 
   const {
     resolvedActiveTaskMeta,
@@ -787,7 +788,16 @@ export function App({
             : undefined,
         )
       ) {
-        addTab(targetWorkspacePath, targetTabOptions);
+        // fix.2 / Task F1：这里以前是 addTab，而 addTab 会把工作区写进 lastWorkspaceSession
+        // （useTabPersistence 的 300ms 防抖订阅整个 store）—— 点一下侧栏的注册表行，
+        // 该路径就永久变成「本客户端的显示偏好」，枚举重新由设置决定。
+        //
+        // 改成 activateOrOpenWorkspaceTab：没有已打开的 tab 时创建一条 viewOnly tab，
+        // 它只承载激活态，不进设置（持久化补丁按 viewOnly 过滤）⇒ 点击后 lastWorkspaceSession 逐字不变。
+        //
+        // 注意上面那个 targetWorkspacePurpose 分支仍走 addTab：那是「新建对话/对话工作区」，
+        // 属于用户显式创建，本来就该持久化。
+        activateOrOpenWorkspaceTab(targetWorkspacePath, targetTabOptions);
       }
       if (!webRemoteControlWorkspaceSwitcher) {
         // 修复原因：workspace 行“新建对话”以前由叶子组件直接 activateTab + startDraft，
@@ -817,6 +827,7 @@ export function App({
     },
     [
       activateTabByPath,
+      activateOrOpenWorkspaceTab,
       addTab,
       tabs,
       workspaceAbsPath,

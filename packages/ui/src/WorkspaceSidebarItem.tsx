@@ -53,6 +53,7 @@ import {
 } from "@/lib/remoteWorkspaceHistory.js";
 import { TaskList } from "@/TaskList.js";
 import { selectWorkspaceZCodeState, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import type { WorkspaceRuntimeState } from "@/hooks/useWorkspaceRuntimeStates.js";
 import type { WorkspaceTabState } from "@/store/tabStore.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import { ReconnectingRemoteWorkspaceLogTooltip } from "@/WorkspaceSidebar/ReconnectingRemoteWorkspaceLogTooltip.js";
@@ -153,6 +154,10 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   itemStyle,
   sortableBindings,
   isDragging = false,
+  runtimeState,
+  persistedSessionCount,
+  lastActivityAt,
+  isRegistryDerived = false,
 }: {
   tab: WorkspaceTabState;
   isActiveWorkspace: boolean;
@@ -189,6 +194,16 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   itemStyle?: CSSProperties;
   sortableBindings?: SortableBindings;
   isDragging?: boolean;
+  /** §3.2：runtime 状态（"unknown" 或缺席时不显示任何「未启动」标识）。 */
+  runtimeState?: WorkspaceRuntimeState;
+  /** 持久层会话数（注册表事实）。 */
+  persistedSessionCount?: number | null;
+  lastActivityAt?: number | null;
+  /**
+   * 本行由服务端注册表派生（本客户端设置里没有它）。不是真 tab：
+   * 关闭按钮等「对 tab 操作」的入口必须隐藏，点开走 onOpenRegistryWorkspace。
+   */
+  isRegistryDerived?: boolean;
 }) {
   const { intl } = useZCodeIntl();
   const workspaceZCodeState = useZCodeSessionStore((state) =>
@@ -1141,6 +1156,11 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
             onArchiveTask={handleArchiveTask}
             onSetTaskUnread={handleSetTaskUnread}
             readOnlyReason={readOnlyReason}
+            runtimeState={runtimeState}
+            persistedSessionCount={persistedSessionCount}
+            lastActivityAt={lastActivityAt}
+            onStartRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
+            onRetryRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
           />
         </CollapsibleContent>
       </Collapsible>

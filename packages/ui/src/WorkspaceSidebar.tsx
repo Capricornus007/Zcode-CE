@@ -1678,6 +1678,11 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                                             }
                                             onReconnectRemoteWorkspace={onReconnectRemoteWorkspace}
                                             onOpenFileTree={handleOpenWorkspaceFileTree}
+                                            runtimeState={
+                                              runtimeStates.get(row.workspaceKey) ?? "unknown"
+                                            }
+                                            persistedSessionCount={row.persistedSessionCount}
+                                            lastActivityAt={row.lastActivityAt}
                                           />
                                         ) : (
                                           <WorkspaceSidebarItem
@@ -1713,6 +1718,12 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                                             }
                                             onReconnectRemoteWorkspace={onReconnectRemoteWorkspace}
                                             onOpenFileTree={handleOpenWorkspaceFileTree}
+                                            isRegistryDerived
+                                            runtimeState={
+                                              runtimeStates.get(row.workspaceKey) ?? "unknown"
+                                            }
+                                            persistedSessionCount={row.persistedSessionCount}
+                                            lastActivityAt={row.lastActivityAt}
                                           />
                                         );
                                       })}

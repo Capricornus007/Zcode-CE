@@ -89,7 +89,7 @@ export const SETTINGS_USER_ACTION_FEATURES = {
   "settings.storage": ["change_data_directory"],
   "settings.memory": ["toggle_memory", "refresh_memory", "change_memory_scope"],
   // 工具与权限：全局授权策略（危险命令能否被记住、哪些命令算危险）。
-  "settings.toolPolicy": [
+  "settings.tool_policy": [
     "update_dangerous_command_policy",
     "add_dangerous_command",
     "remove_dangerous_command",

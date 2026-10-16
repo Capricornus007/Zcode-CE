@@ -38,11 +38,11 @@ describe("settingsPageConfig", () => {
       },
       {
         id: "agentCapabilities",
-        sections: ["memory", "subagents", "plugin", "mcp", "skill", "commands", "hooks"],
+        sections: ["memory", "subagents", "plugin", "mcp", "skill", "commands", "hooks", "toolPolicy"],
       },
       {
         id: "dataAndStats",
-        sections: ["usage"],
+        sections: ["usage", "feedback"],
       },
     ]);
 
@@ -57,9 +57,11 @@ describe("settingsPageConfig", () => {
       "skill",
       "commands",
       "hooks",
+      "toolPolicy",
       "browser",
       "shortcuts",
       "usage",
+      "feedback",
     ]);
   });
 
@@ -78,9 +80,11 @@ describe("settingsPageConfig", () => {
       "skill",
       "commands",
       "hooks",
+      "toolPolicy",
       "browser",
       "shortcuts",
       "usage",
+      "feedback",
     ]);
   });
 

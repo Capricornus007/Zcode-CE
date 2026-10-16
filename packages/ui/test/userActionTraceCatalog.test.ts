@@ -6,11 +6,11 @@ import {
 } from "../src/lib/userActionTraceCatalog.js";
 
 describe("user action trace catalog", () => {
-  it("固定 24 个 Core 与 15 个 Settings 叶子 feature", () => {
+  it("固定 24 个 Core 与 16 个 Settings 叶子 feature", () => {
     expect(Object.keys(CORE_USER_ACTION_FEATURES)).toHaveLength(24);
-    expect(Object.keys(SETTINGS_USER_ACTION_FEATURES)).toHaveLength(15);
+    expect(Object.keys(SETTINGS_USER_ACTION_FEATURES)).toHaveLength(16);
     expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "core")).toHaveLength(94);
-    expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "settings")).toHaveLength(44);
+    expect(USER_ACTION_CATALOG.filter((entry) => entry.group === "settings")).toHaveLength(47);
   });
 
   it("feature/action 组合唯一且不使用动态标识", () => {

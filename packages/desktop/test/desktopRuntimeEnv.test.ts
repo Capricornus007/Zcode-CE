@@ -140,6 +140,26 @@ vi.mock("@zcode/shared", () => ({
       ? { ZCODE_TOOL_ENV_PASSTHROUGH_JSON: JSON.stringify(captured) }
       : {};
   },
+  // 真实签名（remoteAssetCdn.ts）：返回 {kind: empty|valid|invalid, ...}，不静默降级。
+  normalizeRemoteAssetCdnBaseUrl: (value: unknown) => {
+    if (value === undefined || value === null) return { kind: "empty", value: undefined };
+    const trimmed = String(value).trim();
+    if (trimmed.length === 0) return { kind: "empty", value: undefined };
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        return { kind: "invalid", code: "protocol" };
+      }
+      return { kind: "valid", value: trimmed.replace(/\/$/, "") };
+    } catch {
+      return { kind: "invalid", code: "unparsable" };
+    }
+  },
+  resolvePackagedAgentTelemetryEnv: (env: Record<string, string | undefined>) =>
+    Object.fromEntries(
+      Object.entries(env).filter(([key, value]) => key.startsWith("OTEL_") && value),
+    ),
+  resolveWindowsAppInstallDirForDataBaseDirGuard: () => undefined,
 }));
 
 vi.mock("@zcode/services/node", () => ({
@@ -306,10 +326,10 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
 
       expect(dirs.mockCdnDir).toMatch(/[\\/]mock-cdn$/);
       expect(dirs.remoteCdnBaseUrl).toBe(
-        "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+        "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
       );
       expect(dirs.remoteCdnBaseUrls).toEqual([
-        "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+        "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
       ]);
       expect(dirs.remoteCacheDir).toMatch(/[\\/]userData[\\/]remote-assets-cache$/);
     });
@@ -325,10 +345,10 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
 
       expect(dirs.mockCdnDir).toBeUndefined();
       expect(dirs.remoteCdnBaseUrl).toBe(
-        "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+        "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
       );
       expect(dirs.remoteCdnBaseUrls).toEqual([
-        "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+        "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
       ]);
       expect(dirs.remoteCacheDir).toMatch(/[\\/]userData[\\/]remote-assets-cache$/);
     });
@@ -343,10 +363,10 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
 
     expect(dirs.mockCdnDir).toBeUndefined();
     expect(dirs.remoteCdnBaseUrl).toBe(
-      "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+      "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
     );
     expect(dirs.remoteCdnBaseUrls).toEqual([
-      "http://intranet.example.invalid:12345/ssh-remote-assets/0.0.0-test",
+      "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
     ]);
     expect(dirs.remoteCacheDir).toMatch(/[\\/]userData[\\/]remote-assets-cache$/);
   });
@@ -976,13 +996,13 @@ describe("desktopRuntimeEnv runtime identity", () => {
     } = await import("../src/main/desktopRuntimeEnv.js");
 
     expect(isPreviewPackagedRuntime).toBe(true);
-    expect(runtimeApplicationName).toBe("ZCode Preview");
+    expect(runtimeApplicationName).toBe("ZCode-CE Preview"); // CE 品牌：与官方 ZCode 并存安装
     // Bugfix：这两条路径由实现用宿主 path.join 从 app.getPath("appData") 拼出，
     // Windows 上是 `\mock\appData\ZCode Preview`，写死 POSIX 字面量必然失败。
     // 用例要断言的是「Preview 单独占一个 Electron 数据目录」的目录结构，与分隔符无关，
     // 所以用同样的 join 表达；在 POSIX 上是恒等变换。
-    expect(runtimeUserDataPath).toBe(join("/mock/appData", "ZCode Preview"));
-    expect(runtimeSessionDataPath).toBe(join("/mock/appData", "ZCode Preview", "session"));
+    expect(runtimeUserDataPath).toBe(join("/mock/appData", "ZCode-CE Preview"));
+    expect(runtimeSessionDataPath).toBe(join("/mock/appData", "ZCode-CE Preview", "session"));
   });
 
   it("e2e 可保留 Chromedriver 注入的 Electron userData 目录", async () => {

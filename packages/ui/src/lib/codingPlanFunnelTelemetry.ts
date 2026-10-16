@@ -3,10 +3,12 @@ import {
   BUILTIN_MODEL_PROVIDER_IDS,
   isZaiCodingPlanProviderId,
   ZAI_PROVIDER_ID,
+  type IPlatformService,
   type UsageEntitlementSnapshot,
 } from "@zcode/shared";
 import type { ProviderSettingsView } from "@zcode/services";
 import { logger } from "@/logger.js";
+import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
 
 export type CodingPlanUpgradeSource =
   | "profile_menu"
@@ -36,12 +38,14 @@ export interface CodingPlanFunnelContext {
   channel: string;
 }
 
-interface CodingPlanEntryPlanState {
+export interface CodingPlanEntryPlanState {
   entryPlanStatus: CodingPlanEntryPlanStatus;
   entryPlanLevel: string;
 }
 
-function createPurchaseFunnelId(): string {
+type TelemetryPlatform = Pick<IPlatformService, "reportTelemetryEvent">;
+
+export function createPurchaseFunnelId(): string {
   return globalThis.crypto?.randomUUID?.() ?? createFallbackFunnelId();
 }
 
@@ -161,15 +165,40 @@ export function resolveCodingPlanEntryPlanStateFromProviderSettings(
   return resolveCodingPlanEntryPlanState({ displayStatus: "notPurchased" });
 }
 
-// 上报已移除（P1）：`reportCodingPlanUpgradeClick`（coding_plan_upgrade_ck 埋点）与其
-// 辅助函数 `buildFunnelBaseDetail` 已删除。
-//
-// **本文件保留**：`CodingPlanFunnelContext` 与 create/resolve 系列函数不是遥测 ——
-// 它们经 `codingPlanEmbeddedWebview.buildCodingPlanEmbeddedReportContext` 变成官网
-// webview 的购买归因参数（purchase_funnel_id / upgrade_source / entry_plan_status ...），
-// 属「官方服务权益」链路，按决策文档不在删除范围。
+export function reportCodingPlanUpgradeClick(
+  platform: TelemetryPlatform | null | undefined,
+  context: CodingPlanFunnelContext | null | undefined,
+): void {
+  if (!platform || !context) {
+    return;
+  }
+  void reportAppTelemetryEvent(
+    platform,
+    {
+      eventType: "ck",
+      eventRegion: context.eventRegion,
+      elementName: "coding_plan_upgrade_ck",
+      eventText: context.eventText,
+      eventExtraDetail: buildFunnelBaseDetail(context),
+    },
+    "codingPlanFunnelTelemetry",
+  );
+}
 
-function resolveCodingPlanProviderFamily(providerId: string): CodingPlanProviderFamily {
+export function buildFunnelBaseDetail(context: CodingPlanFunnelContext): Record<string, string> {
+  return stringifyDetail({
+    purchase_funnel_id: context.purchaseFunnelId,
+    upgrade_source: context.upgradeSource,
+    entry_plan_status: context.entryPlanStatus,
+    entry_plan_level: context.entryPlanLevel,
+    entry_plan_list: context.entryPlanList,
+    purchase_audience: context.purchaseAudience,
+    provider_family: context.providerFamily,
+    channel: context.channel,
+  });
+}
+
+export function resolveCodingPlanProviderFamily(providerId: string): CodingPlanProviderFamily {
   if (
     providerId === BIGMODEL_PROVIDER_ID ||
     providerId === BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan ||
@@ -184,8 +213,17 @@ function resolveCodingPlanProviderFamily(providerId: string): CodingPlanProvider
   return "unknown";
 }
 
-function resolveCodingPlanChannel(providerFamily: CodingPlanProviderFamily): string {
+export function resolveCodingPlanChannel(providerFamily: CodingPlanProviderFamily): string {
   return { bigmodel: "MaaS", zai: "Z_AI", unknown: "" }[providerFamily];
+}
+
+export function stringifyDetail(detail: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(detail).map(([key, value]) => [
+      key,
+      value === undefined || value === null ? "" : String(value),
+    ]),
+  );
 }
 
 function isStartPlanProviderId(providerId: string): boolean {

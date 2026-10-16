@@ -4,7 +4,6 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { BROKER_SOCKET_ENV, BROKER_UNAVAILABLE_ENV, CuaHelperError } from "@zcode/zcode-cua/broker";
 import { ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY } from "@zcode/shared";
-import { buildCuaProductHelperAgentEnv } from "../src/node.js";
 import {
   canRunOpenSourceCuaDriver,
   mintCuaProductHelperEnv,

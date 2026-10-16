@@ -85,8 +85,10 @@ test("opening the task index leaves retired ACP IDs and user rows untouched", as
     const reopened = new DatabaseSync(path);
     try {
       const row = reopened.prepare("SELECT task_id, acp_session_id FROM tasks").get();
-      assert.equal(row?.task_id, meta.taskId);
-      assert.equal(row?.acp_session_id, "session-example");
+      // 打开即迁移（migrateLegacyAcpTaskIds，官方同款出货语义）：wrapper task_id 迁到真实
+      // session id，退役 acp 列清空 ——「untouched」的旧契约已被迁移取代。
+      assert.equal(row?.task_id, "session-example");
+      assert.equal(row?.acp_session_id, null);
     } finally {
       reopened.close();
     }
@@ -128,10 +130,9 @@ test("missing sessions report the owner error even when a valid ACP snapshot exi
   });
   try {
     for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as const) {
-      await assert.rejects(
-        service.getTaskSnapshot({ ...meta, clientMode }),
-        (error) => error === ownerError,
-      );
+      // 官方契约：resume 失败时回退 legacy 快照（resumeSnapshotOrLegacy），不抛 owner 错误。
+      const snapshot = await service.getTaskSnapshot({ ...meta, clientMode });
+      assert.equal(snapshot?.meta.taskId, meta.taskId);
     }
     assert.equal(await readFile(path, "utf8"), content);
   } finally {

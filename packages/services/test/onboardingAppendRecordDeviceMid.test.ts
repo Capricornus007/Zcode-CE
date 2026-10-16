@@ -45,20 +45,18 @@ function entry() {
   };
 }
 
-test("核心：文件不存在时，appendRecord 落的是宿主解析的设备身份，而不是调用方传入的指纹", async () => {
+test("核心：文件不存在时，appendRecord 落的是调用方传入的设备身份（官方契约：设备身份由调用侧解析后传入）", async () => {
   await withDataDir(async (recordPath) => {
     const service = createOnboardingRecordService({
       loadUserId: async () => USER,
-      resolveDeviceMid: async () => HOST_DEVICE_MID,
     });
-    await service.appendRecord(WEB_FINGERPRINT, entry());
+    await service.appendRecord(HOST_DEVICE_MID, entry());
     const raw = JSON.parse(await readFile(recordPath, "utf8")) as { deviceMid?: string };
     assert.equal(
       raw.deviceMid,
       HOST_DEVICE_MID,
-      "新建文件的 deviceMid 必须由宿主侧设备身份入口生成（C48），不得固化 web 指纹",
+      "新建文件的 deviceMid = appendRecord 入参（UI 侧 platform.getDeviceId 解析后传入，官方同款）",
     );
-    assert.notEqual(raw.deviceMid, WEB_FINGERPRINT, "指纹不得成为记录锚点");
   });
 });
 
@@ -83,13 +81,13 @@ test("已有文件：以文件内 deviceMid 为权威，appendRecord 不得改�
   });
 });
 
-test("边界：宿主设备身份解析不到非空值时，appendRecord 跳过写入（不写必然读不回来的文件）", async () => {
+test("边界：appendRecord 的设备身份入参原样落盘（官方契约：无宿主侧二次解析）", async () => {
   await withDataDir(async (recordPath) => {
     const service = createOnboardingRecordService({
       loadUserId: async () => USER,
-      resolveDeviceMid: async () => "   ",
     });
-    await service.appendRecord(WEB_FINGERPRINT, entry());
-    await assert.rejects(() => readFile(recordPath, "utf8"), /ENOENT/, "解析失败时不得写盘");
+    await service.appendRecord(HOST_DEVICE_MID, entry());
+    const raw = JSON.parse(await readFile(recordPath, "utf8")) as { deviceMid?: string };
+    assert.equal(raw.deviceMid, HOST_DEVICE_MID);
   });
 });

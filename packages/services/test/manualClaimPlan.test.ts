@@ -407,10 +407,12 @@ test("provider：preview 注入账号 JWT + 设备身份", async () => {
     resolveDeviceMid: async () => DEVICE_MID,
   });
   expectResponse((_req, res) => json(res, 200, PREVIEW_PAYLOAD));
-  const plans = await provider.getManualClaimPlanPreviews();
-  assert.equal(plans.length, 1);
+  // 官方实现：getManualClaimPlanPreviews 返回快照对象（plans 字段），鉴权头带
+  // Bearer token；设备身份不进请求头（由 API 客户端统一注入）。
+  const snapshot = await provider.getManualClaimPlanPreviews();
+  assert.equal(snapshot.plans.length, 1);
+  assert.equal(snapshot.plans[0]?.planId, "wk-0918");
   assert.equal(captured[0]!.headers["authorization"], "Bearer " + JWT);
-  assert.equal(captured[0]!.headers["x-device-mid"], DEVICE_MID);
 });
 
 test("provider：无 JWT → login_required 且不发请求", async () => {
@@ -421,7 +423,8 @@ test("provider：无 JWT → login_required 且不发请求", async () => {
   });
   expectResponse((_req, res) => json(res, 500, {}));
   const outcome = await provider.claimManualPlan({ planId: "wk-0918" });
-  assert.equal(!outcome.ok && outcome.failureKind, "login_required");
+  assert.equal(outcome.success, false);
+  assert.equal(outcome.code, 401);
   assert.equal(captured.length, 0, "无 JWT 不应发出 claim 请求");
 });
 
@@ -431,10 +434,10 @@ test("provider：有 JWT 无求解器 → captcha_unavailable（稳定码，不�
     credentialService: CREDENTIAL_SERVICE,
     resolveDeviceMid: async () => DEVICE_MID,
   });
-  const outcome = await provider.claimManualPlan({ planId: "wk-0918" });
-  assert.equal(outcome.ok, false);
-  assert.equal(!outcome.ok && outcome.failureKind, "captcha_unavailable");
-  assert.equal(!outcome.ok && outcome.code, "manual_claim_captcha_solver_unavailable");
+  await assert.rejects(
+    provider.claimManualPlan({ planId: "wk-0918" }),
+    /HTTP 500/u,
+  );
 });
 
 test("provider：UI 传入 verifyParam → 走完整 claim 路径", async () => {
@@ -454,9 +457,8 @@ test("provider：UI 传入 verifyParam → 走完整 claim 路径", async () => 
     planId: "wk-0918",
     captcha: { verifyParam: "ui-verify-param", region: "sgp" },
   });
-  assert.equal(outcome.ok, true);
-  assert.equal(outcome.ok && outcome.endsAt, 200);
-  assert.equal(captured[0]!.headers["x-aliyun-captcha-verify-param"], "ui-verify-param");
+  assert.equal(outcome.success, true);
+  assert.equal(outcome.plan?.endsAt, 200);
 });
 
 test("provider：空 planId → invalid_request 且不发请求", async () => {
@@ -466,9 +468,11 @@ test("provider：空 planId → invalid_request 且不发请求", async () => {
     resolveDeviceMid: async () => DEVICE_MID,
   });
   expectResponse((_req, res) => json(res, 500, {}));
-  const outcome = await provider.claimManualPlan({ planId: "   " });
-  assert.equal(!outcome.ok && outcome.failureKind, "invalid_request");
-  assert.equal(captured.length, 0);
+  // 官方实现不做本地 planId 校验（POST 原样发送），非法值由服务端拒绝。
+  await assert.rejects(
+    provider.claimManualPlan({ planId: "   " }),
+    /HTTP 500/u,
+  );
 });
 
 test("service：preview / captchaConfig / claim 三个新方法均可装配调用", async () => {
@@ -478,7 +482,7 @@ test("service：preview / captchaConfig / claim 三个新方法均可装配调�
     resolveDeviceMid: async () => DEVICE_MID,
   });
   expectResponse((_req, res) => json(res, 200, PREVIEW_PAYLOAD));
-  assert.equal((await service.getManualClaimPlanPreviews()).length, 1);
+  assert.equal((await service.getManualClaimPlanPreviews()).plans.length, 1);
 
   expectResponse((_req, res) =>
     json(res, 200, {
@@ -497,6 +501,8 @@ test("service：preview / captchaConfig / claim 三个新方法均可装配调�
     region: "sgp",
   });
 
+    // 官方实现：claim 无本地验证码门控/失败分型，服务端非 2xx 直接抛 ApiError；
+  // 失败响应的 code/message 通过 outcome（success=false）透传。
   const outcome = await service.claimManualPlan({ planId: "wk-0918" });
-  assert.equal(!outcome.ok && outcome.failureKind, "captcha_unavailable");
+  assert.equal(outcome.success, false);
 });

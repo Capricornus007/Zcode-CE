@@ -9,6 +9,10 @@ import type {
 
 const DEFAULT_FORCE_AFTER_MS = 2_000;
 const DEFAULT_WAIT_AFTER_FORCE_MS = 250;
+// Windows force 后 OS 终止是异步的：deadline 触发时进程可能仍在退出中，
+// 二次确认的退避窗口（每个清理周期至多一次）。
+const REMAINING_CONFIRMATION_BACKOFF_MS = 400;
+const REMAINING_CONFIRMATION_MAX_ATTEMPTS = 3;
 const DEFAULT_WINDOWS_TASKKILL_TIMEOUT_MS = 2_000;
 const WINDOWS_LATE_EXIT_OBSERVATION_MS = 750;
 
@@ -110,6 +114,7 @@ export async function waitForProcessTreeTermination(
     let forceWaitTimer: ReturnType<typeof setTimeout> | undefined;
     let cleanupDeadlineTimer: ReturnType<typeof setTimeout> | undefined;
     let treePollTimer: ReturnType<typeof setInterval> | undefined;
+    let remainingConfirmationTimer: ReturnType<typeof setTimeout> | undefined;
 
     const cleanup = () => {
       child.off?.("exit", onExit);
@@ -117,10 +122,12 @@ export async function waitForProcessTreeTermination(
       if (forceWaitTimer) clearTimeout(forceWaitTimer);
       if (cleanupDeadlineTimer) clearTimeout(cleanupDeadlineTimer);
       if (treePollTimer) clearInterval(treePollTimer);
+      if (remainingConfirmationTimer) clearTimeout(remainingConfirmationTimer);
       forceTimer = undefined;
       forceWaitTimer = undefined;
       cleanupDeadlineTimer = undefined;
       treePollTimer = undefined;
+      remainingConfirmationTimer = undefined;
     };
     const settle = (remainingPids: number[] = []) => {
       if (settled) return;
@@ -148,8 +155,16 @@ export async function waitForProcessTreeTermination(
       }
     };
     const collectRemainingPids = (): number[] => {
+      // Node 的 exit 事件是 OS 终止完成的事实边界：root pid 在 exit 之后仍可能被
+      // kill(0) 观测到（Windows 上句柄未释放的终止态进程对象仍可查询），
+      // 这是句柄滞留假象而不是残留 —— 显式豁免，避免把成功回收误报为清理失败。
+      const rootReportedExited = hasChildExited(child);
       const remainingPids = trackedIdentities
-        .filter((identity) => isPidAlive(identity.pid))
+        .filter(
+          (identity) =>
+            isPidAlive(identity.pid) &&
+            !(rootReportedExited && identity.pid === child.pid),
+        )
         .map((identity) => identity.pid);
       if (
         unverifiedRootPid !== undefined &&
@@ -195,7 +210,39 @@ export async function waitForProcessTreeTermination(
       cleanupDeadlineTimer = setTimeout(() => {
         const remainingPids = collectRemainingPids();
         if (remainingPids.length > 0) {
-          warn(options, `runtime 进程树绝对 deadline 后仍有残留 pid=${remainingPids.join(",")}`);
+          // Windows force taskkill 发出后 OS 终止是异步的：绝对 deadline 可能恰好落在
+          // "正在死"的窗口上。这里做一次带退避的二次存活确认（每个清理周期至多一次），
+          // 只把二次确认后仍存活的 PID 作为残留 settle，避免把退出中的进程误报成清理失败。
+          // Windows 的 pid 对象在所有句柄释放前仍可被 kill(0) 观测到（终止态）。
+          // 单次退避不够：最多做 REMAINING_CONFIRMATION_MAX_ATTEMPTS 次退避确认，
+          // 全部仍存活才作为残留 settle；任一次确认全灭即按成功收口。
+          let attempt = 0;
+          const confirm = () => {
+            attempt += 1;
+            const stillRemaining = collectRemainingPids();
+            if (stillRemaining.length === 0) {
+              settle([]);
+              return;
+            }
+            if (attempt >= REMAINING_CONFIRMATION_MAX_ATTEMPTS) {
+              warn(
+                options,
+                `runtime 进程树二次确认后仍有残留 pid=${stillRemaining.join(",")}`,
+              );
+              settle(stillRemaining);
+              return;
+            }
+            remainingConfirmationTimer = setTimeout(
+              confirm,
+              REMAINING_CONFIRMATION_BACKOFF_MS,
+            );
+          };
+          if (hasChildExited(child) && !isPidAlive(remainingPids[0]!)) {
+            settle([]);
+            return;
+          }
+          remainingConfirmationTimer = setTimeout(confirm, REMAINING_CONFIRMATION_BACKOFF_MS);
+          return;
         }
         settle(remainingPids);
       }, windowsCleanupDeadlineMs);

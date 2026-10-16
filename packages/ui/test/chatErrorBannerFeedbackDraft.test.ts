@@ -11,6 +11,10 @@ const buttonMock = vi.hoisted(() => ({
   props: [] as Array<Record<string, unknown>>,
 }));
 
+const entryActionMock = vi.hoisted(() => ({
+  contexts: [] as Array<{ errorSummary?: string; description?: string }>,
+}));
+
 vi.mock("@/components/ui/button.js", async () => {
   const React = await import("react");
   return {
@@ -26,6 +30,17 @@ vi.mock("@/components/ui/button.js", async () => {
 
 vi.mock("@/components/ui/toast.js", () => ({
   toast: vi.fn(),
+}));
+
+// 反馈入口已改道 useFeedbackEntryAction（渠道配置裁决）；这里捕获上下文，
+// 断言「错误现场自动进预填正文」的产品契约，而不钉具体渠道行为。
+vi.mock("@/feedback/useFeedbackEntryAction.js", () => ({
+  useFeedbackEntryAction: () => ({
+    runFeedbackEntry: (context: { errorSummary?: string; description?: string }) => {
+      entryActionMock.contexts.push(context);
+      return "opened";
+    },
+  }),
 }));
 
 const mockPlatform = {
@@ -88,8 +103,8 @@ describe("ChatErrorBanner feedback draft", () => {
     await openFeedbackFromBanner();
 
     expect(mockPlatform.captureWindowScreenshot).not.toHaveBeenCalled();
-    expect(useFeedbackStore.getState().submitDraft?.includeLogs).toBe(true);
-    const description = useFeedbackStore.getState().submitDraft?.description;
+    expect(useFeedbackStore.getState().submitDraft).toBeNull();
+    const description = entryActionMock.contexts[0]?.description;
     expect(description).toContain("报错摘要：Provider authentication failed.");
     expect(description).toContain("TraceID: trace-auth-failed");
     expect(description).not.toContain("我在使用过程中遇到了报错，请帮忙排查。");

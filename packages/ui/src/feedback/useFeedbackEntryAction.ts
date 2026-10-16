@@ -77,7 +77,7 @@ export function useFeedbackEntryAction(): FeedbackEntryAction {
         return "opened-settings";
       }
 
-      platform.openExternal(url);
+      platform.openExternal?.(url);
       return "opened";
     },
     [intl, locale, openFeedbackSettings, platform],

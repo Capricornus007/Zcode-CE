@@ -36,11 +36,11 @@ function botsKeys(locale: Record<string, string>): string[] {
     .sort();
 }
 
-test("i18n：两份 locale 的 bots.* 键集完全一致（259 键，无单语缺漏）", () => {
+test("i18n：两份 locale 的 bots.* 键集完全一致（291 键，无单语缺漏）", () => {
   const zh = botsKeys(zhCN);
   const en = botsKeys(enUS);
-  assert.equal(zh.length, 259, "zh-CN 的 bots.* 键数必须是 259");
-  assert.equal(en.length, 259, "en-US 的 bots.* 键数必须是 259");
+  assert.equal(zh.length, 291, "zh-CN 的 bots.* 键数必须是 291");
+  assert.equal(en.length, 291, "en-US 的 bots.* 键数必须是 291");
   assert.deepEqual(zh, en, "两份 locale 的键集必须逐键一致");
 });
 

@@ -17,6 +17,7 @@ export function WorkspaceHeaderActionSection({
   workspaceAbsPath,
   workspaceIdentity,
   remoteTarget,
+  isWebRemoteControl = false,
   isDesktop,
   isTerminalOpen,
   isSidePaneOpen,
@@ -47,8 +48,14 @@ export function WorkspaceHeaderActionSection({
           onSelectedEditorChange={onSelectedEditorChange}
         />
       ) : null}
-      {/* 分享发布接口依赖登录态；未登录时隐藏入口，避免用户打开后只能得到鉴权失败。 */}
-      {activeTaskId && user && isDesktop !== false ? (
+      {/* 分享发布接口依赖登录态；未登录时隐藏入口，避免用户打开后只能得到鉴权失败。
+          Web 远控同样隐藏：分享的发布/鉴权链路只在桌面端可用。 */}
+      {/* server 远端（官方服务端托管）走官方工单体系，本地分享发布链不适用。 */}
+      {activeTaskId &&
+      user &&
+      isDesktop !== false &&
+      !isWebRemoteControl &&
+      remoteTarget?.kind !== "server" ? (
         <ConversationShareMenu
           taskId={activeTaskId}
           useWindowsCaptionSpacing={useWindowsCaptionSpacing}

@@ -1599,7 +1599,6 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
         rowId={rowId}
         label={copyLabel}
         tooltip={resolveTooltip(copyLabel)}
-        dataTestId={copyScope === "turn" ? `v4-copy-turn-${rowId}` : undefined}
       />
       {entityId && onFeedbackChange ? (
         <>

@@ -205,6 +205,12 @@ export function ProviderRuntimeHeadersCaptchaAttachment({
       logger.debug("[provider-runtime-captcha] 当前宿主无 DOM，跳过订阅与能力声明");
       return;
     }
+    // CE 2b·3 诚实降级：测试/mock 或宿主未装配 zcodeAgentService 时能力整体缺席，
+    // 不订阅也不声明（与 onDynamicSessionCaptchaCapability 缺席同一语义）。
+    if (!agentService) {
+      logger.debug("[provider-runtime-captcha] 无 zcodeAgentService，跳过订阅与能力声明");
+      return;
+    }
     const replies = pendingRepliesRef.current;
     const target = {
       workspacePath,

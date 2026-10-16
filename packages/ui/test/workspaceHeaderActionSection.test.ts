@@ -25,6 +25,7 @@ const capturedHeaderHelp = vi.hoisted(() => {
     menuItems: [] as Array<{
       onSelect: (() => void | Promise<void>) | undefined;
     }>,
+    openSettingsTab: vi.fn(),
     editorButtonProps: [] as Array<Record<string, unknown>>,
   };
 });
@@ -69,12 +70,19 @@ vi.mock("@/components/ui/dropdown-menu.js", () => ({
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
+  useOptionalPlatform: () => null,
   usePlatform: () => ({
     exportLogs: capturedHeaderHelp.exportLogs,
     captureWindowScreenshot: capturedHeaderHelp.captureWindowScreenshot,
     openCommunity: capturedHeaderHelp.openCommunity,
     openExternal: capturedHeaderHelp.openExternal,
   }),
+}));
+
+vi.mock("@/store/TabStoreProvider.js", () => ({
+  useOptionalTabStore: (
+    selector: (state: { openSettingsTab: () => void }) => unknown,
+  ) => selector({ openSettingsTab: capturedHeaderHelp.openSettingsTab }),
 }));
 
 vi.mock("@/components/ui/toast.js", () => ({
@@ -292,14 +300,10 @@ describe("WorkspaceHeaderActionSection", () => {
     capturedHeaderHelp.menuItems[3]?.onSelect?.();
 
     expect(capturedHeaderHelp.captureWindowScreenshot).not.toHaveBeenCalled();
-    expect(capturedHeaderHelp.openSubmit).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        type: "bug",
-        includeLogs: true,
-        screenshots: [],
-      }),
-    );
+    // 「问题上报」改走「反馈与诊断」渠道配置（useFeedbackEntryAction）：
+    // 测试宿主无 PlatformProvider ⇒ platform 为 null ⇒ 引导到设置页反馈分区。
+    expect(capturedHeaderHelp.openSubmit).not.toHaveBeenCalled();
+    expect(capturedHeaderHelp.openSettingsTab).toHaveBeenCalledTimes(1);
     expect(capturedHeaderHelp.openFeatureRequest).toHaveBeenCalledTimes(1);
     expect(capturedHeaderHelp.openCommunity).toHaveBeenCalledTimes(1);
     expect(capturedHeaderHelp.openExternal).toHaveBeenCalledWith("https://zcode.z.ai/docs");
@@ -309,6 +313,7 @@ describe("WorkspaceHeaderActionSection", () => {
   it("opens issue report without screenshots when window screenshot fails", async () => {
     capturedHeaderHelp.menuItems = [];
     capturedHeaderHelp.openSubmit.mockClear();
+    capturedHeaderHelp.openSettingsTab.mockClear();
     capturedHeaderHelp.captureWindowScreenshot.mockReset();
     capturedHeaderHelp.captureWindowScreenshot.mockRejectedValue(new Error("capture failed"));
     const { WorkspaceHeaderActionSection } =
@@ -326,13 +331,10 @@ describe("WorkspaceHeaderActionSection", () => {
 
     await capturedHeaderHelp.menuItems[2]?.onSelect?.();
 
-    expect(capturedHeaderHelp.openSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "bug",
-        includeLogs: true,
-        screenshots: [],
-      }),
-    );
+    // 改道后问题上报不再直接开反馈表单：走渠道配置（无 platform ⇒ 引导到设置页），
+    // 截图失败与否不再影响入口行为。
+    expect(capturedHeaderHelp.openSubmit).not.toHaveBeenCalled();
+    expect(capturedHeaderHelp.openSettingsTab).toHaveBeenCalledTimes(1);
   });
 
   it("passes SSH remote context to the editor button group", async () => {

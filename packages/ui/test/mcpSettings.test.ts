@@ -157,6 +157,8 @@ describe("MCP Settings Shared", () => {
         url: "https://example.com/mcp",
         headers: '{"Authorization": "Bearer token"}',
         timeoutMs: "",
+        protocolVersion: "",
+        disabledTools: "",
       };
 
       const config = formToConfig(form);
@@ -178,6 +180,8 @@ describe("MCP Settings Shared", () => {
         url: "https://example.com/mcp",
         headers: "",
         timeoutMs: "",
+        protocolVersion: "",
+        disabledTools: "",
       };
 
       const config = formToConfig(form);
@@ -198,6 +202,8 @@ describe("MCP Settings Shared", () => {
         url: "https://example.com/mcp/sse",
         headers: "",
         timeoutMs: "",
+        protocolVersion: "",
+        disabledTools: "",
       };
 
       const config = formToConfig(form);
@@ -218,6 +224,8 @@ describe("MCP Settings Shared", () => {
         url: "",
         headers: "",
         timeoutMs: "800",
+        protocolVersion: "",
+        disabledTools: "",
       };
 
       const config = formToConfig(form);
@@ -241,6 +249,8 @@ describe("MCP Settings Shared", () => {
         url: "https://example.com/mcp",
         headers: "",
         timeoutMs: "0",
+        protocolVersion: "",
+        disabledTools: "",
       };
 
       expect(formToConfig(form)).not.toHaveProperty("timeoutMs");
@@ -269,6 +279,8 @@ describe("MCP Settings Shared", () => {
           url: "",
           headers: "",
           timeoutMs: "",
+        protocolVersion: "",
+        disabledTools: "",
         },
       );
 
@@ -299,6 +311,8 @@ describe("MCP Settings Shared", () => {
           url: "",
           headers: "",
           timeoutMs: "",
+        protocolVersion: "",
+        disabledTools: "",
         },
       );
 
@@ -323,6 +337,8 @@ describe("MCP Settings Shared", () => {
         url: "https://mcp.notion.com/mcp",
         headers: "",
         timeoutMs: "30000",
+        protocolVersion: "",
+        disabledTools: "",
       });
 
       expect(JSON.parse(draft)).toMatchObject({
@@ -347,6 +363,8 @@ describe("MCP Settings Shared", () => {
         url: "",
         headers: "",
         timeoutMs: "800",
+        protocolVersion: "",
+        disabledTools: "",
       });
 
       expect(JSON.parse(draft)).toMatchObject({

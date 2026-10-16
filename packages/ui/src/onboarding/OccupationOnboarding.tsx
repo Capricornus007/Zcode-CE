@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
 import { logger } from "@/logger.js";
+import { withOnboardingRpcTimeout } from "./withOnboardingRpcTimeout.js";
 import { DesktopWindowControls } from "@/DesktopWindowControls.js";
 import type { OnboardingRecordEntry } from "@zcode/shared";
 
@@ -102,7 +103,12 @@ export function OccupationOnboarding({
     setDismissed(true);
     setRequested(false);
     if (onboardingRecord) {
-      void onboardingRecord.dismissOnboarding(platform.getDeviceId()).catch((cause: unknown) => {
+      // dismissOnboarding 同样走 RPC：channel 未注册时 promise 永不结算，
+      // 超时兜底在 5s 后强制按写失败处理（C47，纯超时兜底，不改交互语义）。
+      void withOnboardingRpcTimeout(
+        onboardingRecord.dismissOnboarding(platform.getDeviceId()),
+        "dismissOnboarding",
+      ).catch((cause: unknown) => {
         logger.warn("[occupation-onboarding] 写入关闭决策失败", { error: String(cause) });
       });
     }

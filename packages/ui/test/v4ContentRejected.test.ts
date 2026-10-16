@@ -246,6 +246,53 @@ function wireRejectedCandidate(
 
 // ————————————————— ConversationProjectionStore —————————————————
 
+
+// 合法形态的空快照：handleFrame 的调用方（SessionDataLayer）在生产里先过 wire schema，
+// store 内部按 rows.window 结构取值 —— 夹具必须给真实形状，而不是 rows:[] 旧数组形态。
+function makeEmptySnapshot() {
+  return {
+    protocolVersion: 1,
+    sessionId: "s1",
+    logEpoch: "e1",
+    seq: 1,
+    revision: 0,
+    control: {
+      phase: "draft",
+      sessionEnded: false,
+      canStop: false,
+      stopState: "idle",
+      stopTargetKind: "unknown",
+      activeWorks: [],
+      lastError: null,
+      apiRetry: null,
+    },
+    availability: {
+      fork: { allowed: true },
+      compact: { allowed: false, reasonCode: "idleCannotCompact" },
+      switchModelConfig: { allowed: true },
+      setFollowupMode: { allowed: true },
+      queueEdit: { allowed: true },
+      sendQueuedNow: { allowed: false, reasonCode: "sendQueuedNowRequiresRunning" },
+      pauseGoal: { allowed: false, reasonCode: "noGoalToPause" },
+      resumeGoal: { allowed: false, reasonCode: "noGoalToResume" },
+    },
+    inputRouting: { mode: "startNow" },
+    config: { provider: "", model: "", thought: "", followupMode: "queue" },
+    modelTransition: null,
+    usage: {
+      contextWindow: null,
+      cumulative: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    },
+    queue: { items: [], autoDrain: true },
+    pendingInteractions: [],
+    pendingCommands: [],
+    backgroundWorks: [],
+    goal: null,
+    plan: null,
+    rows: { window: [], totalCount: 0, firstRowId: null },
+  };
+}
+
 test("最终消费点 A：schema 拒收 ⇒ 跳过 resume 档、lastError = contentRejected（UI/遥测直接读它）", async () => {
   const fake = makeTransport();
   const store = new ConversationProjectionStore(CONVERSATION_TOPIC, fake.transport as never);
@@ -260,7 +307,7 @@ test("最终消费点 A：schema 拒收 ⇒ 跳过 resume 档、lastError = cont
       sentAt: 1,
       payload: {
         kind: "snapshot",
-        snapshot: { protocolVersion: 1, logEpoch: "e1", seq: 1, rows: [] },
+        snapshot: makeEmptySnapshot(),
       },
     } as never,
     { deliveryKind: "initial" },
@@ -305,7 +352,7 @@ test("对照 A：同一份 fixture 换成**瞬态** reasonCode ⇒ resume 档、
       sentAt: 1,
       payload: {
         kind: "snapshot",
-        snapshot: { protocolVersion: 1, logEpoch: "e1", seq: 1, rows: [] },
+        snapshot: makeEmptySnapshot(),
       },
     } as never,
     { deliveryKind: "initial" },

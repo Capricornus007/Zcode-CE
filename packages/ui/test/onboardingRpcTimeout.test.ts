@@ -60,7 +60,7 @@ test("接线护栏：closeOnboarding 的 dismissOnboarding 必须经过超时兜
   const body = source.slice(start, source.indexOf("]);", end) + 3);
   assert.match(
     body,
-    /withOnboardingRpcTimeout\(\s*onboardingRecord\.dismissOnboarding\(\)/,
+    /withOnboardingRpcTimeout\(\s*onboardingRecord\.dismissOnboarding\(/,
     "dismissOnboarding 的 promise 必须包在超时兜底里（C47）",
   );
   assert.match(body, /\.catch\(/, "超时 / RPC 失败仍必须被捕获并留日志");

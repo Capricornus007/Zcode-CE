@@ -39,7 +39,7 @@ test("closeOnboarding 必须调用 dismissOnboarding 把关闭动作落盘", () 
   const body = closeOnboardingBody(readSource());
   assert.match(
     body,
-    /onboardingRecord\.dismissOnboarding\(\)/,
+    /onboardingRecord\.dismissOnboarding\(/,
     "关闭引导必须落盘（只改组件 state 会导致重启后又弹）",
   );
 });

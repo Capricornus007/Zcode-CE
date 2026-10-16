@@ -36,7 +36,7 @@ import { getTaskChangeSummary } from "@/lib/taskChangeSummary.js";
 import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
 import { buildTaskFeedbackDescription } from "@/lib/taskFeedbackDraft.js";
 import { useTaskListItemContextActions } from "@/useTaskListItemContextActions.js";
-import { useFeedbackStore } from "@/feedback/feedbackStore.js";
+import { useFeedbackEntryAction } from "@/feedback/useFeedbackEntryAction.js";
 import { getTaskListAttention, getTaskListRowActivity } from "@/v4/taskListRowActivity.js";
 import { GroupedTaskContextMenuContent } from "@/workspace-grouped-tasks/task-context-menu-content.js";
 import { TaskRowActionButton } from "@/workspace-grouped-tasks/task-row-action-button.js";
@@ -290,7 +290,7 @@ function GroupedTaskRowComponent({
       typeof window.matchMedia === "function" &&
       window.matchMedia("(hover: none)").matches,
   );
-  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
+  const { runFeedbackEntry } = useFeedbackEntryAction();
   const {
     taskSessionFile,
     taskNativeSessionLogFile,
@@ -337,17 +337,14 @@ function GroupedTaskRowComponent({
     onMoveTaskToTop(task);
   };
   const handleOpenTaskFeedback = async () => {
-    openFeedbackSubmit({
+    // 反馈入口改走「反馈与诊断」的渠道配置；渠道不可用时 hook 引导到设置页而不是静默失败。
+    const outcome = runFeedbackEntry({
       title: intl
         .formatMessage(
           { id: "feedback.submit.template.section.taskFeedbackTitle" },
           { title: taskTitle },
         )
         .slice(0, 80),
-      type: "bug",
-      module: "Agent任务执行失败",
-      severity: "P2-中",
-      includeLogs: true,
       description: buildTaskFeedbackDescription({
         taskTitle,
         taskId: task.taskId,
@@ -357,9 +354,10 @@ function GroupedTaskRowComponent({
         formatMessage: (id: string, values?: Record<string, string>) =>
           intl.formatMessage({ id }, values),
       }),
-      screenshots: [],
     });
-    toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
+    if (outcome === "opened") {
+      toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
+    }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.target !== event.currentTarget) {

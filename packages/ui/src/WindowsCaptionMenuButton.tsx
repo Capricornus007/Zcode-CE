@@ -2,6 +2,7 @@ import { DesktopCommandIds } from "@zcode/shared";
 import type { UpdateStatePayload } from "@zcode/shared";
 import { useCallback, useEffect, useState } from "react";
 import { useFeedbackStore } from "@/feedback/feedbackStore.js";
+import { useFeedbackEntryAction } from "@/feedback/useFeedbackEntryAction.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { createHelpMenuActionHandlers } from "@/lib/helpMenuActions.js";
@@ -58,12 +59,12 @@ export function WindowsCaptionMenuButton({
   const { intl, locale } = useZCodeIntl();
   const newTaskShortcutLabel = useShortcutCommandLabel("newTask");
   const openWorkspaceShortcutLabel = useShortcutCommandLabel("openWorkspace");
-  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
+  const { runFeedbackEntry } = useFeedbackEntryAction();
   const openFeatureRequest = useFeedbackStore((state) => state.openFeatureRequest);
   const helpMenuActions = createHelpMenuActionHandlers({
     platform,
     intl,
-    openSubmit: openFeedbackSubmit,
+    runFeedbackEntry,
   });
   const [updateState, setUpdateState] = useState<UpdateStatePayload | null>(null);
   const [stdioTapDevState, setStdioTapDevState] = useState({

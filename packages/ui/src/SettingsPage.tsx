@@ -37,6 +37,7 @@ import { toast } from "@/components/ui/toast.js";
 import { DesktopWindowFrame } from "@/DesktopWindowFrame.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
+import { RemoteAssetsSetting } from "@/settings/RemoteAssetsSetting.js";
 import { getPathLeaf } from "@/lib/path.js";
 import { useProviderSettingsView } from "@/hooks/useProviderSettingsView.js";
 import { useUsageEntitlement } from "@/hooks/useUsageEntitlement.js";
@@ -2005,6 +2006,12 @@ export function SettingsPage({
                             remoteTarget={activeWorkspaceTab?.remoteTarget}
                             localWorkspacePath={activeWorkspaceTab?.localWorkspacePath}
                           />
+                        ) : activeSection === "remoteAssets" ? (
+                          // 「远程资产发布根」只作用在桌面端：消费链是 desktop main 的
+                          // desktopRuntimeEnv → remoteCdn 的 overrideBaseUrl 槽位（见
+                          // docs/development/remote-workspace.md §3.1）。Web 侧该分区在
+                          // createSettingsPageConfig 里就被过滤掉，这里不会到达。
+                          <RemoteAssetsSetting />
                         ) : null}
                       </div>
                     </div>

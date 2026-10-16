@@ -87,7 +87,19 @@ const CONTEXT_PROGRESS_TONE_COLORS = [
 const PERCENT_MAX = 100;
 const CACHE_HIT_RATE_DISPLAY_THRESHOLD = 0.78;
 
-function formatContextUsageTokenCount(
+/**
+ * Context 气泡的额度 access 刷新门控（纯函数）：只在气泡**打开**且存在刷新入口时触发。
+ * 组件里的 handleContextOpenChange 携带序列号/refreshing 态，这里抽的是可单测的门控语义。
+ */
+export function refreshContextUsageOnOpen(
+  open: boolean,
+  onAccess: (() => void) | undefined,
+): void {
+  if (!open || !onAccess) return;
+  onAccess();
+}
+
+export function formatContextUsageTokenCount(
   value: number,
   locale: string,
   options: { maximumFractionDigits?: number } = {},
@@ -95,7 +107,7 @@ function formatContextUsageTokenCount(
   return formatCompactTokenNumber(locale, value, options);
 }
 
-function formatContextUsageSummary({
+export function formatContextUsageSummary({
   locale,
   percent,
   size,
@@ -119,7 +131,7 @@ function formatContextUsageSummary({
   )} (${percentageFormatter.format(percent)})`;
 }
 
-function formatContextCacheHitRateLabel(
+export function formatContextCacheHitRateLabel(
   hitRate: number | null | undefined,
   locale: string,
   options: { showBelowThreshold?: boolean } = {},
@@ -168,7 +180,7 @@ const BREAKDOWN_SOURCE_ORDER: Record<ContextUsageBreakdownSource, number> = {
   mcp_tool_schemas: 6,
 };
 
-function buildContextUsageBreakdownSegments(
+export function buildContextUsageBreakdownSegments(
   breakdown: readonly ZCodeContextUsageBreakdownItem[] | undefined,
 ): ContextUsageBreakdownSegment[] {
   const charsBySource = new Map<ContextUsageBreakdownSource, number>();
@@ -197,7 +209,7 @@ function buildContextUsageBreakdownSegments(
     );
 }
 
-function buildContextUsageProgressSegments(segments: readonly ContextUsageBreakdownSegment[]) {
+export function buildContextUsageProgressSegments(segments: readonly ContextUsageBreakdownSegment[]) {
   return segments.map((segment, index) => ({
     id: segment.source,
     percent: segment.percent,

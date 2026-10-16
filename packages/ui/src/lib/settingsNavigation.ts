@@ -123,7 +123,7 @@ function getLocalStorage(): Storage | null {
   }
 }
 
-function readLastSettingsSectionPreference(
+export function readLastSettingsSectionPreference(
   fallbackSection: SettingsSectionId = "general",
 ): SettingsSectionId {
   const storage = getLocalStorage();
@@ -303,7 +303,7 @@ function clearPendingSettingsSectionIntent(): void {
   }
 }
 
-function consumePendingSettingsSection(
+export function consumePendingSettingsSection(
   fallbackSection: SettingsSectionId = "general",
 ): SettingsSectionId {
   if (typeof window === "undefined") {

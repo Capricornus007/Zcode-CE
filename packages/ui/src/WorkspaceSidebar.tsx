@@ -1463,11 +1463,15 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
               }
               style={workspaceScrollMaskStyle}
             >
-              {workspaceTaskToolbar()}
+              {/* web-remote 模式下工具栏经任务区的 beforePinned 槽位渲染（避免双份）；
+                  桌面/普通侧栏直接渲染在滚动区顶部。 */}
+              {!isWebRemoteControlSidebar ? workspaceTaskToolbar() : null}
               {shouldShowPinnedTasks ? (
                 // 归档切换主任务区时不应隐藏 pinned。
                 // pinned 是全局置顶区，归档态保持置顶区可见。
                 <WorkspacePinnedTasksSection
+                  renderBeforePinnedTasks={workspaceTaskToolbar}
+                  renderBeforePinnedTasksVisible={isWebRemoteControlSidebar}
                   workspaceTabs={workspaceTabs}
                   activeWorkspacePath={workspacePath}
                   activeWorkspaceIdentity={workspaceIdentity}

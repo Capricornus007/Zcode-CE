@@ -267,7 +267,14 @@ function extractExecuteResultText(output: unknown): string | null {
 
 export function ExecuteToolCallBlock(context: ToolCallBlockRenderContext) {
   const { intl } = useZCodeIntl();
-  const { toolCallNode, isRunning, statusLabel, errorText, isOfficeMode = false } = context;
+  const {
+    toolCallNode,
+    isRunning,
+    statusLabel,
+    errorText,
+    isOfficeMode = false,
+    isPermissionPreview,
+  } = context;
   const { toolCall } = toolCallNode;
   const secondaryText = getExecuteSecondaryText(toolCall.input);
   const contentParts = getExecuteContentParts(toolCall.input);
@@ -316,7 +323,9 @@ export function ExecuteToolCallBlock(context: ToolCallBlockRenderContext) {
             running={isRunning}
           />
         ) : (
-          !isRunning && (
+          // 权限预览还没执行过：「没有输出」是事实错误 —— 命令尚未产生任何输出流。
+          !isRunning &&
+          !isPermissionPreview && (
             <div className="space-y-1">
               <p className="font-mono text-ui-base text-foreground-subtle">
                 {intl.formatMessage({

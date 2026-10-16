@@ -43,7 +43,6 @@ export function fitComposerToolbar(root: HTMLElement) {
   const content = root.querySelector<HTMLElement>("[data-composer-leading-content]");
   if (!available || !content) return;
   const controls = root.querySelectorAll<HTMLElement>("[data-composer-collapse-priority]");
-  if (!controls.length) return;
   // 每次从完整布局测量，避免各按钮独立 observer 互相抢空间，也覆盖语言与异步入口变化。
   delete root.dataset.composerModelIcon;
   delete root.dataset.composerProviderCompact;
@@ -52,6 +51,8 @@ export function fitComposerToolbar(root: HTMLElement) {
   const gap = Number.parseFloat(getComputedStyle(root).columnGap) || 12;
   const overflow = () => measureOverflow(root, available, content, trailing, gap);
   // 阶梯：每档先看还溢不溢出，不溢出就停在上一档的形态。
+  // 没有可收起控件时跳过折叠档，但 provider 压缩/模型图标两档仍然生效
+  // （那些控件缺席不代表空间够用 —— 比如精简工具栏的宿主）。
   for (const step of COLLAPSE_STEPS) {
     if (overflow() <= 0) return;
     for (const control of controls) {

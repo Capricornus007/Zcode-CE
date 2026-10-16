@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- pinned 列表现在同时承载本地查询、远端主动注入结果和任务操作分发，先集中保持交互一致。 */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import type { ZCodeTaskMeta } from "@zcode/shared";
 import { toast } from "@/components/ui/toast.js";
@@ -37,6 +37,8 @@ interface PinnedTaskItemHandlers {
   onMarkTaskAsUnread: (taskId: string) => void;
   onOpenTaskContextMenu: (taskId: string) => void;
   onOpenFileTree: (task: ZCodeTaskMeta) => void;
+  renderBeforePinnedTasks?: () => ReactNode;
+  renderBeforePinnedTasksVisible?: boolean;
 }
 
 function PinnedTasksSectionTitle({ title }: { title: string }) {
@@ -52,6 +54,10 @@ export function WorkspacePinnedTasksSection({
   mobileActiveTaskKey,
   onSelectTask,
   onOpenFileTree,
+  /** 置顶列表之前的插槽（web-remote 移动端把任务工具栏放这里，见侧栏调用点）。 */
+  renderBeforePinnedTasks,
+  /** 槽位可见性：桌面模式工具栏由滚动区顶部直出，这里不再重复渲染。 */
+  renderBeforePinnedTasksVisible = false,
 }: {
   workspaceTabs: WorkspaceTabState[];
   activeWorkspacePath: string;
@@ -59,6 +65,8 @@ export function WorkspacePinnedTasksSection({
   activeTaskId: string | null;
   taskSortBy: "created" | "updated";
   mobileActiveTaskKey?: string | null;
+  renderBeforePinnedTasks?: () => ReactNode;
+  renderBeforePinnedTasksVisible?: boolean;
   onSelectTask: (
     targetWorkspacePath: string,
     taskId: string,
@@ -475,8 +483,13 @@ export function WorkspacePinnedTasksSection({
     return null;
   }
 
+  const beforePinnedSlot =
+    renderBeforePinnedTasksVisible && renderBeforePinnedTasks ? renderBeforePinnedTasks() : null;
+
   return (
-    <div className="flex flex-col gap-1 px-2 empty:hidden">
+    <>
+      {beforePinnedSlot}
+      <div className="flex flex-col gap-1 px-2 empty:hidden">
       {renamingItemKey !== null ? (
         <TaskRenameDialog
           open
@@ -765,5 +778,6 @@ export function WorkspacePinnedTasksSection({
         </div>
       ) : null}
     </div>
+    </>
   );
 }

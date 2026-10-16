@@ -261,7 +261,11 @@ describe("WebRemoteControlTaskIndex layout", () => {
     ).toBeLessThan(taskIndexSource.indexOf("{model.pinnedTasks.length > 0 ? ("));
     expect(sidebarSource).toContain("const workspaceTaskToolbar");
     expect(sidebarSource).toContain("renderBeforePinnedTasks={workspaceTaskToolbar}");
-    expect(sidebarSource).toContain("{!isWebRemoteControlSidebar ? workspaceTaskToolbar() : null}");
+    // 2026-10 对齐官方（web-remote 三视图收敛进 TaskIndex）：工具栏直出改为
+    // 「web-remote 挂载时不渲染（索引内经 renderBeforePinnedTasks 渲染）」，桌面渲染不变。
+    expect(sidebarSource).toContain(
+      '{!webRemoteTaskIndexMounted ? workspaceTaskToolbar() : null}',
+    );
   });
 
   it("keeps mutable wide remote task actions out of the initial static markup", async () => {

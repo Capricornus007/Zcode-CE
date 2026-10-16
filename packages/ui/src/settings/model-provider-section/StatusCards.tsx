@@ -716,7 +716,10 @@ export function resolveCodingPlanStatusCardTitle({
     // Start provider 上承载的 "ZCode V3 Start Plan" 这类权益仍应显示 Start Plan，
     // 营销名里没有 start plan 的（如 GLM Coding Pro）才露权益名）。
     const levelNamesStartPlan =
-      /start\s*plan/i.test(displayPlanLevel) || /start\s*plan/i.test(rawPlanLevel);
+      /start\s*plan/i.test(displayPlanLevel) ||
+      /start\s*plan/i.test(rawPlanLevel) ||
+      // planLevel 恰为 "Start"（Start provider 本档）： unavailable+retry 态也保留 Start Plan 标题。
+      /^start$/i.test(rawPlanLevel.trim());
     return isStartPlanEntitlementProductId(planProductId) || levelNamesStartPlan
       ? startPlanTitle
       : displayPlanLevel || startPlanTitle;

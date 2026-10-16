@@ -656,9 +656,13 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
   });
   const effectiveTaskViewMode =
     isWebRemoteControlSidebar && taskViewMode === "grouped" ? "workspace" : taskViewMode;
-  // Web 远控侧栏的任务索引可见性：索引承载整个任务区（桌面 registry 行不渲染）。
-  const workspaceTaskIndexVisible =
-    isWebRemoteControlSidebar && !showArchivedTasks && effectiveTaskViewMode === "workspace";
+  // Web 远控侧栏的任务索引挂载：索引承载整个任务区（桌面 registry 行不渲染）。
+  // 归档态也保持挂载（taskViewMode="archived" 传入索引内部渲染），切换归档不换 DOM 节点。
+  const webRemoteTaskIndexMounted =
+    Boolean(webRemoteControlWorkspaceSwitcher) &&
+    (effectiveTaskViewMode === "workspace" ||
+      effectiveTaskViewMode === "timeline" ||
+      effectiveTaskViewMode === "archived");
   const visibleWorkspaceTaskKeys = useMemo(
     () =>
       resolveVisibleWorkspaceTaskKeys({
@@ -1368,7 +1372,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
 
   // Web 远控侧栏的任务索引：整个任务区由它承载（手机单列滚动布局），registry 行在远控模式不渲染。
   // 元素在 JSX 外组装成常量：深层 children 里内联嵌套条件曾把解析器搞挂（2026-10 现场记录）。
-  const webRemoteTaskIndexElement = workspaceTaskIndexVisible ? (
+  const webRemoteTaskIndexElement = webRemoteTaskIndexMounted ? (
     <WebRemoteControlTaskIndex
       switcher={
         // 远控模式由宿主保证注入 switcher（root 装配）；断言仅为类型收窄。
@@ -1406,7 +1410,9 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
       // 这里用设计系统的结构面 token 固定侧栏层级，避免不同合成器把左侧容器混成异常灰块。
       className="flex h-full flex-col overflow-hidden"
     >
-      <div className="h-12 [app-region:drag]"></div>
+      <div
+        className={cn("h-12 [app-region:drag]", isWebRemoteControlSidebar && "max-md:hidden")}
+      ></div>
       <div className="relative flex-1 min-h-0 overflow-hidden">
         <div
           className={cn(
@@ -1468,6 +1474,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                 }
               />
             ) : null} */}
+            {!isWebRemoteControlSidebar ? (
             <Button
               variant="ghost"
               onClick={handleOpenAutomationsMain}
@@ -1483,6 +1490,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
               <CalendarClock className="size-4" />
               {intl.formatMessage({ id: "workspace.openScheduledSettings" })}
             </Button>
+            ) : null}
             <Button
               variant="ghost"
               onClick={handleOpenPluginStoreMain}
@@ -1500,7 +1508,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
             </Button>
           </div>
 
-          {workspaceTaskIndexVisible ? (
+          {webRemoteTaskIndexMounted ? (
             <div
               className="flex min-h-0 flex-1 flex-col max-md:overflow-y-auto"
               data-web-remote-navigation-scroll="true"
@@ -1520,7 +1528,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
             >
               {/* web-remote 模式下工具栏经任务区的 beforePinned 槽位渲染（避免双份）；
                   桌面/普通侧栏直接渲染在滚动区顶部。 */}
-              {!isWebRemoteControlSidebar ? workspaceTaskToolbar() : null}
+              {!webRemoteTaskIndexMounted ? workspaceTaskToolbar() : null}
               {shouldShowPinnedTasks ? (
                 // 归档切换主任务区时不应隐藏 pinned。
                 // pinned 是全局置顶区，归档态保持置顶区可见。

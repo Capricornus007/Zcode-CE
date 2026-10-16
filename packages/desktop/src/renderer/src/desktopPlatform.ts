@@ -1,4 +1,6 @@
-import { recordArmsCustomEventForE2E } from "@zcode/ui";
+// 直连子路径导出而不是 @zcode/ui barrel：barrel 会经 App.tsx 拖入 .svg 等纯前端资产，
+// 使本文件无法在 node 环境（desktopPlatformConnectionSeam 接缝测试）下加载。
+import { recordArmsCustomEventForE2E } from "@zcode/ui/arms-custom-event-observability";
 import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";

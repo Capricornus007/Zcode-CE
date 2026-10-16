@@ -68,7 +68,7 @@ test("核心：文件不存在时写入的决策必须能被再次读取（getRe
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => true,
     });
-    assert.equal(await service.shouldOnboard(), false);
+    assert.equal(await service.shouldOnboard(DEVICE_MID), false);
 
     const records = await service.getRecords();
     assert.notEqual(records, null, "决策写了但读不回来：deviceMid 是空串导致整份文件解析失败");
@@ -95,8 +95,8 @@ test("症状：dismissOnboarding 后重启不再引导（8225921 声称修过的
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => false,
     });
-    assert.equal(await first.shouldOnboard(), true, "全新用户应当引导");
-    await first.dismissOnboarding();
+    assert.equal(await first.shouldOnboard(DEVICE_MID), true, "全新用户应当引导");
+    await first.dismissOnboarding(DEVICE_MID);
     assert.notEqual(await first.getRecords(), null, "关闭决策必须能读回来");
 
     // 重启：新建服务实例重新读盘（同一次进程内的实例缓存不参与判定）。
@@ -104,36 +104,7 @@ test("症状：dismissOnboarding 后重启不再引导（8225921 声称修过的
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => false,
     });
-    assert.equal(await restarted.shouldOnboard(), false, "关闭引导后重启不得再弹");
-  });
-});
-
-test("边界：deviceMid 解析不到非空值时跳过写入，不写必然读不回来的文件", async () => {
-  await withDataDir(async ({ recordPath }) => {
-    const service = createOnboardingRecordService({
-      loadUserId: async () => USER,
-      hasExistingLocalTask: async () => true,
-      // 显式模拟解析失败：返回空串（例如设备身份文件不可写）。
-      resolveDeviceMid: async () => "   ",
-    });
-    // 判定本身不受影响：本机确实已有任务。
-    assert.equal(await service.shouldOnboard(), false);
-    assert.equal(await readRecordOrNull(recordPath), null, "解析不到 deviceMid 时不得写盘");
-    assert.equal(await service.getRecords(), null);
-  });
-});
-
-test("边界：deviceMid 解析抛异常时同样跳过写入", async () => {
-  await withDataDir(async ({ recordPath }) => {
-    const service = createOnboardingRecordService({
-      loadUserId: async () => USER,
-      hasExistingLocalTask: async () => true,
-      resolveDeviceMid: async () => {
-        throw new Error("device state file not writable");
-      },
-    });
-    assert.equal(await service.shouldOnboard(), false);
-    assert.equal(await readRecordOrNull(recordPath), null, "解析抛错时不得写盘");
+    assert.equal(await restarted.shouldOnboard(DEVICE_MID), false, "关闭引导后重启不得再弹");
   });
 });
 
@@ -148,17 +119,12 @@ test("边界：已有文件时以文件内 deviceMid 为权威，不调用解析
         2,
       ),
     );
-    let resolveCalls = 0;
     const service = createOnboardingRecordService({
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => true,
-      resolveDeviceMid: async () => {
-        resolveCalls += 1;
-        return "should-not-be-used";
-      },
     });
-    assert.equal(await service.shouldOnboard(), false);
-    assert.equal(resolveCalls, 0, "已有文件时不得重新解析设备身份");
+    assert.equal(await service.shouldOnboard(DEVICE_MID), false);
+
     const written = await readRecordOrNull(recordPath);
     assert.equal(written?.deviceMid, "existing-mid", "沿用文件内已有 deviceMid");
   });
@@ -171,14 +137,13 @@ test("边界：真实设备身份入口在无文件时生成非空 deviceMid（�
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => true,
     });
-    assert.equal(await service.shouldOnboard(), false);
+    assert.equal(await service.shouldOnboard(DEVICE_MID), false);
 
     const records = await service.getRecords();
     assert.notEqual(records, null);
-    assert.ok(records!.deviceMid.trim().length > 0, "deviceMid 必须非空");
-    // 与设备身份文件同值：记录里的锚点不是另一个身份。
-    const state = JSON.parse(await readFile(deviceStatePath, "utf8")) as { deviceMid?: string };
-    assert.equal(records!.deviceMid, state.deviceMid, "记录锚点必须等于设备身份文件的 deviceMid");
+    // 官方契约：appendRecord/shouldOnboard 的 deviceMid 入参原样落盘
+    // （设备身份由调用侧 platform.getDeviceId 解析后传入，服务不二次解析）。
+    assert.equal(records!.deviceMid, DEVICE_MID);
     assert.ok((await readFile(recordPath, "utf8")).includes(records!.deviceMid));
   });
 });

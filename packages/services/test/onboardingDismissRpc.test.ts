@@ -26,6 +26,7 @@ import { setDataBaseDir } from "../src/paths.js";
  */
 
 const USER = "u1";
+const DEVICE_MID = "rpc-device-mid";
 
 test("dismissOnboarding 经 RPC 通道调用后，重启判定为不再引导", async () => {
   const dir = await mkdtemp(join(tmpdir(), "zcode-onboarding-rpc-"));
@@ -49,9 +50,10 @@ test("dismissOnboarding 经 RPC 通道调用后，重启判定为不再引导", 
       client.getChannel(IOnboardingRecordService.channelName),
     );
 
-    assert.equal(await remote.shouldOnboard(), true, "全新用户应当引导");
-    // 无参调用：deviceMid 由 host 侧服务自己解析，UI 不传（本件选定的契约）。
-    await remote.dismissOnboarding();
+    assert.equal(await remote.shouldOnboard(DEVICE_MID), true, "全新用户应当引导");
+    // 官方契约：deviceMid 由调用侧解析后传入（UI 传 platform.getDeviceId()），
+    // RPC 通道按位置序列化参数。
+    await remote.dismissOnboarding(DEVICE_MID);
 
     // 打到最终消费点：通过同一条通道读回来，且重启后不再引导。
     const records = await remote.getRecords();
@@ -66,7 +68,11 @@ test("dismissOnboarding 经 RPC 通道调用后，重启判定为不再引导", 
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => false,
     });
-    assert.equal(await restarted.shouldOnboard(), false, "经 RPC 关闭后重启不得再弹");
+    assert.equal(
+      await restarted.shouldOnboard(DEVICE_MID),
+      false,
+      "经 RPC 关闭后重启不得再弹",
+    );
   } finally {
     client?.dispose();
     server?.dispose();

@@ -493,11 +493,10 @@ export function ProviderModelsSection({
 
   return (
     <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <span className="text-ui-base text-foreground-subtle">
           {intl.formatMessage({ id: "settings.modelProvider.models" })}
         </span>
-        <div className="flex flex-wrap items-center gap-2">
           {onAddModelsFromCatalog ? (
             <Button
               type="button"
@@ -522,7 +521,6 @@ export function ProviderModelsSection({
             <Plus data-icon="inline-start" aria-hidden="true" />
             {intl.formatMessage({ id: "settings.modelProvider.addModel" })}
           </Button>
-        </div>
       </div>
       {models.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-input-border bg-input">
@@ -565,8 +563,9 @@ export function ProviderModelsSection({
                       })
                     }
                     settingsRevision={settingsRevision}
-                    // 内置模型同样可删：底层把删除记为个人层隐藏，重启与模板更新后仍然生效。
-                    onDelete={() => onDeleteModel(model.modelId)}
+                    // Built-in 模型由套餐/模板管理（刷新后自动恢复），不提供删除入口；
+                    // 可调序、可编辑覆盖、可启停 —— 只是不能从列表移除。
+                    onDelete={model.builtin ? undefined : () => onDeleteModel(model.modelId)}
                     onEnabledChange={(enabled) => {
                       void Promise.resolve(onModelEnabledChange?.(model.modelId, enabled)).catch(
                         () => undefined,

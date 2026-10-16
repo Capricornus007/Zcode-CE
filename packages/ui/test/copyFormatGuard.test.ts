@@ -161,7 +161,7 @@ test("提取器自检：只取字符串取值，注释里的 ** 不算", () => {
  * 不可能一次清完。但不清理不等于允许新增：
  *   · 基线里没有的文件出现任何一对 ⇒ 失败（新写的注释不能带 `**`）；
  *   · 某文件的成对强调数超过基线 ⇒ 失败（已清理的文件不能退回去）；
- *   · 低于基线 ⇒ 通过（清理进度单向推进；基线由 `gen-copy-baseline.cjs --write` 收紧）。
+ *   · 低于基线 ⇒ 通过（清理进度单向推进；基线由 `node --import tsx scripts/gen-copy-baseline.mjs --write` 收紧）。
  *
  * 口径（必须写明，否则下一个人对不上数字）：
  *   · 只统计 git 跟踪的文件 —— 扫全目录会把 `packages/desktop/mock-cdn|bundled-agents|out|dist-release`
@@ -251,7 +251,7 @@ function countPairsIn(body: string): number {
  * 判据是「注释正文」：字符串/模板里的 `` 是产品输出**，不算（见标准 §7.3 ——
  * 飞书卡片消息的 markdown 加粗就属于这一类，清了会把卡片弄坏）。
  */
-function countCommentPairs(filePath: string, source: string): number {
+export function countCommentPairs(filePath: string, source: string): number {
   const masked = maskNonCommentText(filePath, source);
   let count = 0;
 
@@ -297,7 +297,7 @@ function countCommentPairs(filePath: string, source: string): number {
  * 生成物目录都已在 `.gitignore` 里（实测 `git check-ignore` 命中 out/、dist/、mock-cdn/），
  * 所以 `--exclude-standard` 不会把它们带进来。
  */
-function scannedSourceFiles(): string[] {
+export function scannedSourceFiles(): string[] {
   const run = (args: string[]): string[] =>
     execFileSync("git", args, { cwd: repoRoot, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
       .split("\n")

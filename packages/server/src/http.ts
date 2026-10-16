@@ -1,4 +1,7 @@
 /* eslint-disable max-lines -- HTTP、WebSocket 与静态资源路由集中注册，保持同一鉴权顺序。 */
+import type { TopicResourcePeers } from "@zcode/services/node";
+import { ChannelClient } from "@zcode/rpc";
+import { TOPIC_RESOURCE_RELAY_CHANNEL } from "@zcode/shared";
 import { randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import type { Duplex } from "node:stream";
@@ -141,6 +144,7 @@ function setupChannelServer(
   services: ServiceCollection,
   clientMode: "desktop-continuous" | "web-remote-replayable",
   auditContext?: ConnectionAuditContext,
+  resourcePeers?: TopicResourcePeers,
 ) {
   const socket = wrapWebSocket(ws);
   // 连接级审计（B1）：建立与断开各一条，close 带存活时长与连接 id（可把 open/close 配对）。
@@ -186,8 +190,16 @@ function setupChannelServer(
   // 用日志中间件包装，统一记录所有 RPC 调用
   const server = new LoggingChannelServer(rawServer, log);
   const agentService = services.getOptional(IZCodeAgentService);
+  // 反向资源返回路由（官方）：desktop-continuous 客户端在握手协议上带一条反向 channel，
+  // Server 把它登记进 resourcePeers——业务查询（queryConversationCommandsV4 等）带上
+  // 可信 connection 标识时，返回路由按 workspaceIdentity+remoteSessionId 精确命中该客户端。
+  const reverseClient =
+    clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
+  const peer = reverseClient
+    ? resourcePeers?.attach(reverseClient.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL))
+    : undefined;
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(agentService, {
+    ? createZCodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
         connectionId: `server-ws-${randomUUID()}`,
         clientMode,
         role: clientMode === "desktop-continuous" ? "trusted-host-relay" : "terminal-client",
@@ -225,6 +237,8 @@ function setupChannelServer(
         ...(auditContext.tokenLabel ? { tokenLabel: auditContext.tokenLabel } : {}),
       });
     }
+    peer?.dispose();
+    reverseClient?.dispose();
     void connectionScope?.dispose();
     rawServer.dispose();
   });
@@ -238,6 +252,8 @@ function generateId(): string {
 }
 
 export interface HttpServerOptions {
+  /** 反向资源返回路由（官方）：desktop-continuous 连接的资源 peer 登记面。 */
+  topicResourcePeers?: TopicResourcePeers;
   serverId?: string;
   name?: string;
   host?: string;
@@ -1358,7 +1374,7 @@ export function createHttpServer(
     const auditContext = buildConnectionAuditContext(c);
     return {
       onOpen(_event, ws) {
-        setupChannelServer(ws.raw as WebSocket, services, "desktop-continuous", auditContext);
+        setupChannelServer(ws.raw as WebSocket, services, "desktop-continuous", auditContext, options.topicResourcePeers);
       },
     };
   });

@@ -112,6 +112,7 @@ import type { Theme } from "@/useTheme.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import { WorkspaceFileTree } from "@/WorkspaceFileTree.js";
+import { WebRemoteControlTaskIndex } from "@/WebRemoteControlTaskIndex.js";
 import { WorkspaceArchivedTasksFlatSection } from "@/WorkspaceArchivedTasksFlatSection.js";
 import { WorkspaceSidebarFooter } from "@/WorkspaceSidebarFooter.js";
 import { RemoteControlPanelHost } from "@/RemoteControlPanelHost.js";
@@ -245,6 +246,8 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
   onOpenFolderFromWorkspaceMenu,
   onOpenRemoteWorkspace,
   isWebRemoteControl = false,
+  onWebRemoteTaskOpen,
+  onWebRemoteTaskSwitchingChange,
   webRemoteControlWorkspaceSwitcher,
   theme,
   onConnectRemote: _onConnectRemote,
@@ -454,6 +457,12 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
     [expandedWorkspacePaths, workspacePaths],
   );
   const [showArchivedTasks, setShowArchivedTasks] = useState(false);
+  const [webRemoteCollapsedWorkspaceKeys, setWebRemoteCollapsedWorkspaceKeys] = useState(
+    () => new Set<string>(),
+  );
+  const handleWebRemoteWorkspaceGroupKeysChange = useCallback((keys: string[]) => {
+    setWebRemoteCollapsedWorkspaceKeys(new Set(keys));
+  }, []);
   const [archivedActionsContainer, setArchivedActionsContainer] = useState<HTMLDivElement | null>(
     null,
   );
@@ -647,6 +656,9 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
   });
   const effectiveTaskViewMode =
     isWebRemoteControlSidebar && taskViewMode === "grouped" ? "workspace" : taskViewMode;
+  // Web 远控侧栏的任务索引可见性：索引承载整个任务区（桌面 registry 行不渲染）。
+  const workspaceTaskIndexVisible =
+    isWebRemoteControlSidebar && !showArchivedTasks && effectiveTaskViewMode === "workspace";
   const visibleWorkspaceTaskKeys = useMemo(
     () =>
       resolveVisibleWorkspaceTaskKeys({
@@ -971,8 +983,9 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
     },
     previous: lastStableTaskGroupTogglePresentationRef.current,
   });
+  // Web 远控侧栏不提供 grouped 树（移动端单列滚动布局），分组偏好在那里降级为 workspace 视图。
   const activePrimaryTaskMode: PrimaryTaskMode =
-    taskOrganizeBy === "grouped" ? "grouped" : "workspace";
+    !isWebRemoteControlSidebar && taskOrganizeBy === "grouped" ? "grouped" : "workspace";
   const workspaceTaskViewValue = taskOrganizeBy === "chronological" ? "chronological" : "project";
   const showTaskViewFilter = activePrimaryTaskMode === "workspace" || showArchivedTasks;
   const showWorkspaceViewOptions = activePrimaryTaskMode === "workspace" && !showArchivedTasks;
@@ -1353,6 +1366,40 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
     ],
   );
 
+  // Web 远控侧栏的任务索引：整个任务区由它承载（手机单列滚动布局），registry 行在远控模式不渲染。
+  // 元素在 JSX 外组装成常量：深层 children 里内联嵌套条件曾把解析器搞挂（2026-10 现场记录）。
+  const webRemoteTaskIndexElement = workspaceTaskIndexVisible ? (
+    <WebRemoteControlTaskIndex
+      switcher={
+        // 远控模式由宿主保证注入 switcher（root 装配）；断言仅为类型收窄。
+        webRemoteControlWorkspaceSwitcher ?? ({} as never)
+      }
+      activeWorkspacePath={workspacePath}
+      activeWorkspaceIdentity={workspaceIdentity}
+      activeTaskId={activeTaskId}
+      taskSortBy={taskSortBy}
+      taskViewMode={effectiveTaskViewMode}
+      collapsedWorkspaceKeys={webRemoteCollapsedWorkspaceKeys}
+      renderBeforePinnedTasks={workspaceTaskToolbar}
+      archivedActionsContainer={archivedActionsContainer}
+      onToggleWorkspaceCollapsed={(workspaceKey) => {
+        setWebRemoteCollapsedWorkspaceKeys((current) => {
+          const next = new Set(current);
+          if (next.has(workspaceKey)) {
+            next.delete(workspaceKey);
+          } else {
+            next.add(workspaceKey);
+          }
+          return next;
+        });
+      }}
+      onWorkspaceGroupKeysChange={handleWebRemoteWorkspaceGroupKeysChange}
+      onSelectTask={onSelectTask}
+      onTaskOpen={onWebRemoteTaskOpen}
+      onCrossWorkspaceSwitchingChange={onWebRemoteTaskSwitchingChange}
+    />
+  ) : null;
+
   return (
     <aside
       data-testid={TID_SIDEBAR}
@@ -1453,6 +1500,14 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
             </Button>
           </div>
 
+          {workspaceTaskIndexVisible ? (
+            <div
+              className="flex min-h-0 flex-1 flex-col max-md:overflow-y-auto"
+              data-web-remote-navigation-scroll="true"
+            >
+              {webRemoteTaskIndexElement}
+            </div>
+          ) : (
           <div className="relative flex min-h-0 flex-1 flex-col">
             <StickyGroupHeaderSlot header={groupedStickyHeader} />
             <div
@@ -1861,6 +1916,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
               </div>
             </div>
           </div>
+          )}
 
           <WorkspaceSidebarFooter
             // 远控入口（ce.3 · 切片 4 接线）：状态来自 `webService:changed` 广播（不轮询），

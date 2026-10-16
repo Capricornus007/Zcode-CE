@@ -97,6 +97,8 @@ const WorkflowActorSessionContent = memo(function WorkflowActorSessionContent({
       readOnly
       allowWorkspaceFileRewind
       focused={focused}
+      // 非前台面板不上报前台 ARMS 遥测（actor 面板不可见时它不是用户的注意力所在）。
+      telemetryVisible={focused}
       workspacePath={tab.workspacePath}
       workspaceIdentity={tab.workspaceIdentity}
       remoteSessionId={tab.remoteSessionId}

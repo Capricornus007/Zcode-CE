@@ -126,7 +126,9 @@ describe("WorkspaceSidebar task view switcher", () => {
     expect(source).toContain("workspaceTabs={conversationWorkspaceTabs}");
     expect(source).toContain("groupByDate={false}");
     expect(source).toContain('taskRowVariant="default"');
-    expect(source).toContain("projectWorkspaceTabs.map((tab)");
+    // 注册表统一枚举后，project 区的行渲染走 workspaceRows（注册表顺序 + tab 缺口追加），
+    // 不再直接遍历 projectWorkspaceTabs —— 这条守卫跟随架构更新。
+    expect(source).toContain("workspaceRows.length === 0 && hiddenRegistryRowCount === 0");
     expect(source).not.toContain("workspaceTabs.length === 0 ? (");
   });
 

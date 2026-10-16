@@ -292,7 +292,16 @@ function computeWorkflowTimeline(
       (node) => binder.has(phase.id, node.phaseName),
       unlisted,
     );
-    const pills: TimelinePill[] = participantsOfPhase(live.graph, phase.id).map((participant) => {
+    // 开着的留白等待的是「主 agent 的下一步」：那一站的 main 车道不该画出药丸
+    // （等待中的留白本身就是那格的当前站，再画一个 main 药丸读作"main 已经在这站做了什么"）。
+    // 归属判据用 graph.holes 的 phase 字段（byPhase 按留白 siteId 键控，站 id 不等于它）：
+    // 本阶段挂着未补全的留白 ⇒ main 车道的下一步就是等留白，不出药丸。
+    const holeWaiting = (live.graph.holes ?? []).some(
+      (hole) => hole.phase === phase.id && holes.byPhase.get(hole.siteId)?.state !== "filled",
+    );
+    const pills: TimelinePill[] = participantsOfPhase(live.graph, phase.id)
+      .filter((participant) => !(holeWaiting && participant.lane === "main"))
+      .map((participant) => {
       const instance = live.instances[participant.id];
       const lane = laneRefs.get(participant.lane) ?? {
         id: participant.lane,

@@ -1,5 +1,5 @@
 {
-  "total": 4458,
+  "total": 4459,
   "files": {
     "apps/zcode-cli/packages/adapters/src/config/file-config.adapter.ts": 1,
     "apps/zcode-cli/packages/adapters/src/config/schema.ts": 3,
@@ -637,7 +637,7 @@
     "packages/shared/test/zcodeProtocolV4WorkflowRunsReducer.test.ts": 11,
     "packages/shared/test/zcodeProtocolV4WorkspaceHookReview.test.ts": 1,
     "packages/ui/src/App.tsx": 1,
-    "packages/ui/src/PermissionDialog.tsx": 2,
+    "packages/ui/src/PermissionDialog.tsx": 3,
     "packages/ui/src/RemoteControlConnectionSection.tsx": 8,
     "packages/ui/src/RemoteControlImBotTab.tsx": 10,
     "packages/ui/src/RemoteControlPanelHost.tsx": 3,

@@ -13,6 +13,7 @@
  * 2. main 进程只发送一次 init-local 初始化窗口 Host
  * 3. 后续远端 connect / scoped attachment 都由同一 Host 处理
  */
+import { reportHostSessionCreate } from "./hostSessionCreateTelemetry.js";
 import { createHostDatabaseStartup } from "./hostDatabaseStartup.js";
 import { randomUUID } from "node:crypto";
 import {
@@ -692,8 +693,14 @@ async function dispatchOffPeakRun(request: OffPeakRunDispatchRequest): Promise<{
       offPeakRunType,
     });
     // 只有 init 实际新建；绑定首跑和跨票续跑只是原 Session 的后续输入。
-    // 遥测移除（P1）：这里原有 reportHostSessionCreate 上报（source=automation_idle），
-    // 随 hostSessionCreateTelemetry.ts 一并删除；派发逻辑本身不依赖它。
+    if (dispatchKind === "init") {
+      reportHostSessionCreate(parentPort, {
+        sessionId: taskId,
+        messageId: traceId,
+        source: "automation_idle",
+        workspaceIdentity: request.workspaceIdentity,
+      });
+    }
     return { conversationId: taskId, sessionId: taskId };
   } catch (error) {
     if (trackedKey) disposeOffPeakRunSubscription(trackedKey);
@@ -956,8 +963,15 @@ async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
       clientMode: "desktop-continuous",
       automationId: request.automationId,
     });
-    // 遥测移除（P1）：这里原有 reportHostSessionCreate 上报（source=automation_scheduled），
-    // 只在无 targetTaskId 时触发；已随 hostSessionCreateTelemetry.ts 删除。
+    // prompt 创建的定时任务带 targetTaskId，追加原会话不能计成 session_create。
+    if (!request.targetTaskId) {
+      reportHostSessionCreate(parentPort, {
+        sessionId: task.taskId,
+        messageId: promptTraceId,
+        source: "automation_scheduled",
+        workspaceIdentity: request.workspaceIdentity,
+      });
+    }
     return { taskId: task.taskId, sessionId: task.taskId };
   } catch (error) {
     if (trackedKey) disposeCronRunSubscription(trackedKey);

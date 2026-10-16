@@ -14,8 +14,11 @@ services/bootstrap/dynamic-workflow/scripts 四个包）的精确定性与修法
   官方实现 `onboardingRecordService.ts` 无该选项——`appendRecord(deviceMid, entry)` 直接落
   调用方传参（真实 UI 调用方 `OccupationOnboarding` 传 `platform.getDeviceId()`，等价宿主解析）。
 - 修法（同 `onboardingAppendRecordDeviceMid.test.ts` 已提交适配，commit 88a8e211 批次）：
-  断言改为「appendRecord 入参原样落盘」；skip-on-empty 边界改为断言入参原样存储；
-  `onboardingDismissRpc` 与「症状 8225921」用例需传非空 deviceMid 后断言决策可读回。
+  官方契约是 `shouldOnboard(deviceMid)` / `dismissOnboarding(deviceMid)` 均由调用侧传入
+  设备身份（真实 UI 调用方传 `platform.getDeviceId()`）。适配 `onboardingRecordDeviceMid.test.ts`
+  （5 败）：全部调用点补 DEVICE_MID 传参；`resolveDeviceMid` 选项从 mock 中移除（官方无此
+  选项）；两个 skip-on-empty 边界测试改为断言入参原样落盘；`onboardingDismissRpc.test.ts`
+  （1 败）与 `onboardingRecordService.test.ts`（收集失败，导入崩溃）同款处理。
 - 注意：官方 impl 对新文件用 `createFile(deviceMid)` 存调用方原值；已有文件 mismatch 时
   沿用旧值并 warn——这两条官方语义保留。
 

@@ -24,11 +24,12 @@ describe("desktop product identity", () => {
 
   it("ZCODE_ENV=test 使用可与生产版并排安装的 Preview 身份", () => {
     expect(resolveDesktopProductIdentity({ ZCODE_ENV: "test" })).toEqual({
+      // CE 品牌身份（desktop-product-identity.mjs）：与官方 ZCode 并排安装。
       flavor: "preview",
-      appId: "dev.zcode.app.preview",
-      productName: "ZCode Preview",
-      linuxExecutableName: "zcode-preview",
-      linuxPackageName: "zcode-preview",
+      appId: "dev.zcode.app.ce.preview",
+      productName: "ZCode-CE Preview",
+      linuxExecutableName: "zcode-ce-preview",
+      linuxPackageName: "zcode-ce-preview",
       cuaHelperInstallVariant: "preview",
     });
   });
@@ -80,10 +81,11 @@ describe("desktop product identity", () => {
     );
     expect(desktopProductIdentities.production).toEqual({
       flavor: "production",
-      appId: "dev.zcode.app",
-      productName: "ZCode",
-      linuxExecutableName: "zcode",
-      linuxPackageName: "zcode",
+      // CE 品牌身份：与官方 ZCode 并排安装。
+      appId: "dev.zcode.app.ce",
+      productName: "ZCode-CE",
+      linuxExecutableName: "zcode-ce",
+      linuxPackageName: "zcode-ce",
       cuaHelperInstallVariant: null,
     });
   });

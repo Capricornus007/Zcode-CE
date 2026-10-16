@@ -5,6 +5,8 @@ import { utilityProcess as electronUtilityProcess } from "electron";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { HostMessageTypes } from "@zcode/shared";
 import { buildHostProcessEnv, schedulerModulePath } from "./desktopRuntimeEnv.js";
+import { ingestSchedulerSelfResourceSample } from "./processResourceSelfHeapSource.js";
+import { registerSchedulerProcess, unregisterSchedulerProcess } from "./resourceManagerWindow.js";
 import type {
   MainToSchedulerMessage,
   SchedulerToMainMessage,
@@ -66,7 +68,8 @@ export function spawnCronScheduler(deps: CronSchedulerDeps): CronSchedulerHandle
   });
 
   deps.logger.info(`[cron-scheduler] forked scheduler process pid=${child.pid}`);
-  // 遥测移除（P1）：这里原有 registerSchedulerProcess —— 只服务资源遥测的 scheduler 角色归类。
+  // 资源遥测的 scheduler 角色 pid 只有 spawn 点知道，这里登记到进程角色注册表。
+  registerSchedulerProcess(child);
   let isDisposing = false;
   let disposePromise: Promise<void> | null = null;
 
@@ -90,6 +93,13 @@ export function spawnCronScheduler(deps: CronSchedulerDeps): CronSchedulerHandle
 
     if (msg.type === "offpeak-active-count") {
       deps.onOffPeakActiveCountChanged?.(msg.count);
+      return;
+    }
+
+    // scheduler 自采的 60 秒样本：main 只取 heap 作 scheduler 角色事件的 heap 维度，
+    // 非法样本在入口按 schema 丢弃。
+    if (msg.type === "scheduler-resource-sample") {
+      ingestSchedulerSelfResourceSample(msg.sample);
       return;
     }
 
@@ -183,6 +193,7 @@ export function spawnCronScheduler(deps: CronSchedulerDeps): CronSchedulerHandle
   });
 
   child.on("exit", (code) => {
+    unregisterSchedulerProcess(child);
     deps.logger.info(`[cron-scheduler] scheduler process exited code=${code}`);
   });
 

@@ -46,10 +46,14 @@ describe("powershell-command", () => {
     "Windows PowerShell 能还原带空格和脚本元字符的动态值",
     () => {
       const values = ["C:\\Program Files\\Z'Code;测试\\helper.exe", "value with spaces & symbols"];
+      // Windows PowerShell 5.1 的控制台输出默认跟随系统代码页（GBK），[Console]::Out
+      // 写 UTF-8 字符串会被按代码页重编码；跨平台断言用 chcp 65001 + OutputEncoding
+      // 前置，让进程输出与编码器（UTF-8）一致。
       const output = execFileSync(
         "powershell.exe",
         createEncodedPowerShellArgs(
-          "[Console]::Out.Write($zcodeArg0 + [Environment]::NewLine + $zcodeArg1)",
+          "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" +
+            "[Console]::Out.Write($zcodeArg0 + [Environment]::NewLine + $zcodeArg1)",
           values,
         ),
         { encoding: "utf8" },

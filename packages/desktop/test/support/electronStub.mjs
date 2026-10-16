@@ -12,6 +12,14 @@
 export const stubApp = {
   isPackaged: false,
   getVersion: () => "3.14.3-ce.4",
+  // 官方 3.15.1 autoUpdater 会注册 before-quit（Windows 半更新保护 / quitAndInstall 序）。
+  // 桩只记录回调，不执行——darwin-skip 判据测试不关心该生命周期。
+  on(event, listener) {
+    (this._listeners ??= new Map()).set(event, listener);
+  },
+  once(event, listener) {
+    (this._onceListeners ??= new Map()).set(event, listener);
+  },
 };
 
 export const stubBrowserWindow = {

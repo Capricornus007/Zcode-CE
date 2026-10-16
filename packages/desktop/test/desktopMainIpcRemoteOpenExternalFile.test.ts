@@ -139,7 +139,8 @@ describe("OpenExternal 对 file URL 的分流", () => {
     const { listener } = await registerOpenExternalListener();
     const sender = { getURL: vi.fn(() => "about:blank") };
 
-    listener({ sender }, "file:///tmp/report.html#section");
+    // Windows 上 fileURLToPath 只接受盘符绝对路径；用盘符 URL 测 hash 剥离。
+    listener({ sender }, "file:///C:/tmp/report.html#section");
 
     await vi.waitFor(() => expect(h.shellOpenPath).toHaveBeenCalledTimes(1));
     expect(h.shellOpenPath).not.toHaveBeenCalledWith(expect.stringContaining("#"));
@@ -161,7 +162,13 @@ describe("OpenExternal 对 file URL 的分流", () => {
     const { listener, options } = await registerOpenExternalListener();
     const sender = { getURL: vi.fn(() => "about:blank") };
 
-    listener({ sender }, "file://server/share/page.html");
+    // Windows 上 UNC 路径（file://server/share）fileURLToPath 合法，不触发 warn；
+    // POSIX-only 场景用真实非法形态（Windows 保留字符问号）确保转换抛错走 warn 分支。
+    // Windows 上 UNC 路径（file://server/share）fileURLToPath 合法，不触发 warn；
+    // 真正让转换抛错的形态是非 file 协议的合法 URL 混入（isAllowedExternalOpenUrl 已挡），
+    // 这里直接用盘符 URL + 不存在的盘 letter Z: 在 realpath 失败仅 warn 不抛——改断言
+    // openFileUrlInDefaultApp 的 try/catch 语义：用「抛错的 host 形态」file://加端口。
+    listener({ sender }, "file://localhost:1/C:/tmp/page.html");
 
     await vi.waitFor(() => expect(options.logger.warn).toHaveBeenCalledTimes(1));
     expect(h.shellOpenPath).not.toHaveBeenCalled();

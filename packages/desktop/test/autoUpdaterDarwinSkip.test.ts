@@ -92,7 +92,9 @@ test("darwin 正式包无 feed 覆盖：init 不发请求、不注册 IPC，手�
   resetStubState();
   stubApp.isPackaged = true;
   await withPlatform("darwin", async () => {
-    await initAutoUpdater({});
+    // CE 3.15.1 对齐后 init 级跳过由 main/index.ts 调用点以 enabled:false 表达
+    // （spec 136 策略上移）；本测试直接以同一入口参数驱动——断言面不变。
+    await initAutoUpdater({ enabled: false });
     assert.equal(
       stubAutoUpdater.checkForUpdatesCalls,
       0,

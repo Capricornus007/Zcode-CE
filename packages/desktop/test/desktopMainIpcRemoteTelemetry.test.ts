@@ -172,14 +172,16 @@ describe("remote workspace connect telemetry IPC", () => {
 
     listener?.({}, "https://example.com/docs");
     listener?.({}, "http://localhost:3000/index.html");
-    listener?.({}, "file:///tmp/secret");
+    // Windows 上 fileURLToPath 只接受盘符绝对路径（file:///tmp/... 会抛
+    // "path must be absolute"）；用跨平台都能落地的盘符 URL 测 file 分支。
+    listener?.({}, "file:///C:/tmp/secret");
     listener?.({}, "javascript:alert(1)");
     listener?.({}, "not a url");
 
     expect(h.shellOpenExternal).toHaveBeenCalledTimes(2);
     expect(h.shellOpenExternal).toHaveBeenCalledWith("https://example.com/docs");
     expect(h.shellOpenExternal).toHaveBeenCalledWith("http://localhost:3000/index.html");
-    await vi.waitFor(() => expect(h.shellOpenPath).toHaveBeenCalledWith("/tmp/secret"));
+    await vi.waitFor(() => expect(h.shellOpenPath).toHaveBeenCalledWith("C:\\tmp\\secret"));
     expect(options.logger.warn).toHaveBeenCalledTimes(2);
   });
 

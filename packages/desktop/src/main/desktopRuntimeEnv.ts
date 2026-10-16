@@ -1,5 +1,6 @@
 /* eslint-disable max-lines -- desktop runtime/env 解析需要集中维护 main/host/remote assets 的启动边界，拆分会扩大远程连接回归面。 */
 import { existsSync, readFileSync } from "node:fs";
+declare const __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__: Record<string, string> | undefined;
 import { homedir } from "node:os";
 import { join, resolve, win32 } from "node:path";
 import type { ConnectOptions } from "@zcode/server/remote";
@@ -7,13 +8,16 @@ import { listSSHConfigAliasesFromLocalConfig } from "@zcode/services/node";
 import { DEV_HELPER_APP_NAME, HELPER_APP_NAME } from "@zcode/zcode-cua/broker/helperConstants";
 import {
   ZCODE_APP_VERSION_ENV,
+  ZCODE_BUILD_COMMIT_ID_ENV,
   ZCODE_AGENT_RUNTIME,
+  ZCODE_COMMIT,
   ZCODE_DYNAMIC_WORKFLOW_MODE_ENV,
   ZCODE_ENV,
   ZCODE_PRODUCT_FLAVOR,
   ZCODE_RUNTIME_ENV_KEY,
   ZCODE_VERSION,
   buildZCodeToolEnvPassthroughEnv,
+  readZCodeAgentTelemetryEnv,
   resolveRuntimeZCodeEndpointOrigin,
   resolveZaiBusinessBaseUrl,
   resolveZaiOAuthClientId,
@@ -40,7 +44,7 @@ export const desktopRuntimeEnv: ZCodeRuntimeEnv = isLocalDevelopmentRuntime
   : "production";
 // 身份看编译期 flavor 而不是 ZCODE_ENV：ZCODE_PREVIEW_IDENTITY=1 的生产后端构建同样是 Preview，
 // 需要独立的应用名、Electron 数据目录和 Helper 安装子目录才能与正式版并排运行。
-const isPreviewPackagedRuntime = !isLocalDevelopmentRuntime && ZCODE_PRODUCT_FLAVOR === "preview";
+export const isPreviewPackagedRuntime = !isLocalDevelopmentRuntime && ZCODE_PRODUCT_FLAVOR === "preview";
 
 function readRuntimeEnvOverride(name: string): string | undefined {
   return process.env[name]?.trim() || undefined;
@@ -454,7 +458,7 @@ function resolveHostProcessBinaryEnv(
   return undefined;
 }
 
-function resolveWindowsAppInstallDirForDataBaseDirGuard(
+export function resolveWindowsAppInstallDirForDataBaseDirGuard(
   options: {
     platform?: NodeJS.Platform | string;
     isPackaged?: boolean;
@@ -486,7 +490,7 @@ function resolveWindowsAppInstallDirForDataBaseDirGuard(
  * Main 是唯一决策者：对这个键只有「写」和「删」两种动作，绝不原样透传，
  * Host 端的 resolveDynamicWorkflowClientConfig 才能无条件相信读到的值。
  */
-function resolveDynamicWorkflowModeHostEnv(options: {
+export function resolveDynamicWorkflowModeHostEnv(options: {
   inheritedValue: string | undefined;
   isPackaged: boolean;
   isPreview: boolean;
@@ -499,6 +503,26 @@ function resolveDynamicWorkflowModeHostEnv(options: {
     return { [ZCODE_DYNAMIC_WORKFLOW_MODE_ENV]: "alwaysOn" };
   }
   return {};
+}
+
+export function resolvePackagedAgentTelemetryEnv(
+  compiledEnv:
+    | Readonly<Record<string, string>>
+    | undefined = typeof __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__ === "undefined"
+      ? undefined
+      : __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__,
+): Record<string, string> {
+  if (!compiledEnv) {
+    return {};
+  }
+  // 开发版经启动进程继承 OTLP；正式安装包从 Finder/开始菜单启动没有这组环境，Agent 会
+  // 静默落 Noop。构建默认值只允许连接字段进入 Main；身份字段由 Host 可信上下文生成。
+  return readZCodeAgentTelemetryEnv({
+    OTEL_EXPORTER_OTLP_ENDPOINT: compiledEnv.OTEL_EXPORTER_OTLP_ENDPOINT,
+    OTEL_EXPORTER_OTLP_HEADERS: compiledEnv.OTEL_EXPORTER_OTLP_HEADERS,
+    OTEL_SERVICE_NAME: compiledEnv.OTEL_SERVICE_NAME,
+    ZCODE_TELEMETRY_RUNTIME_DISTRIBUTION: compiledEnv.ZCODE_TELEMETRY_RUNTIME_DISTRIBUTION,
+  });
 }
 
 export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>) {
@@ -540,9 +564,20 @@ export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>)
             )
           : undefined;
   const windowsAppInstallDir = resolveWindowsAppInstallDirForDataBaseDirGuard();
-  // 遥测移除（P1）：这里原有 readZCodeAgentTelemetryEnv(rawInheritedEnv) 采集 OTLP 端点/鉴权
-  // 与身份变量，再剔除可伪造的 ZCODE_TELEMETRY_* 字段后定向传给 Host（见下方 return）。
-  // 该链路已整体删除；这些变量现在由 sanitizeZCodeRuntimeEnv 直接拒绝进入子进程 env。
+  // Agent OTLP 连接配置定向注入（telemetry 包已恢复，链路随之回植）：只放行 OTLP 端点/
+  // 鉴权；Desktop 身份由 host 从凭据仓库可信注入，外部环境不得伪造 uid/device/runtime
+  // surface 或绕过本地 identity state 的隔离边界。
+  const agentTelemetryEnv = readZCodeAgentTelemetryEnv(rawInheritedEnv);
+  for (const key of [
+    "ZCODE_TELEMETRY_USER_ID",
+    "ZCODE_TELEMETRY_USER_ID_HASH",
+    "ZCODE_TELEMETRY_USER_SUBJECT_ID",
+    "ZCODE_TELEMETRY_IDENTITY_STATE",
+    "ZCODE_TELEMETRY_DEVICE_MID",
+    "ZCODE_TELEMETRY_RUNTIME_SURFACE",
+  ]) {
+    delete agentTelemetryEnv[key];
+  }
   const inheritedEnv = applySelectedZCodeEnvLinks({
     ...sanitizeZCodeRuntimeEnv(rawInheritedEnv),
     ...buildZCodeToolEnvPassthroughEnv(rawInheritedEnv),
@@ -573,11 +608,14 @@ export function buildHostProcessEnv(hostProcessLocalEnv: Record<string, string>)
     // Preview 与生产版共享任务、配置和凭据，但不同版本的 Helper 不能互相覆盖或触发降级保护。
     // 只隔离 computer-use 下的运行组件，不改写 ZCODE_HOME / ZCODE_DATA_BASE_DIR 业务数据根。
     ...(isPreviewPackagedRuntime ? { ZCODE_CUA_HELPER_INSTALL_VARIANT: "preview" } : {}),
+    ...agentTelemetryEnv,
     // Dynamic Workflow 灰度的本地覆盖：Main 决策后写入，production 包为空对象（继承值已在上面删除）。
     ...dynamicWorkflowModeHostEnv,
     // 模型请求默认 header 由 agent 进程构造，过去只继承 shell env 导致桌面启动时拿不到 app 版本。
     // 这里从 main 进程显式下发，agent 子进程继承 host env 后即可稳定写入请求 header。
     [ZCODE_APP_VERSION_ENV]: ZCODE_VERSION,
+    // agent 侧 telemetry（telemetry/bootstrap.ts）读它上报构建标识；CE 遥测裁剪期误删，随 telemetry 包恢复回植。
+    [ZCODE_BUILD_COMMIT_ID_ENV]: ZCODE_COMMIT,
     ...(dataBaseDir !== homedir() ? { ZCODE_DATA_BASE_DIR: dataBaseDir } : {}),
     ...(windowsAppInstallDir ? { [ZCODE_WINDOWS_APP_INSTALL_DIR_ENV]: windowsAppInstallDir } : {}),
     ...(bundledCuaHelperAppPath

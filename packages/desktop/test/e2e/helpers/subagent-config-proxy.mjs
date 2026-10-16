@@ -8,13 +8,21 @@ import { fileURLToPath } from "node:url";
 if (process.argv.includes("app-server") && process.argv.includes("--stdio")) {
   // 仅由本组 WDIO 预加载的透明 stdio 代理。真实 Host/CLI 完成保存、解析和执行；
   // 故障位于传输边界，不修改业务对象，也不记录其他 RPC 的鉴权或模型凭据。
-  const preload = `--import=${JSON.stringify(fileURLToPath(import.meta.url))}`;
+  // 注入侧（测试/WDIO）可能用 file:// URL 或裸路径两种形态；两种都要从子进程的
+  // NODE_OPTIONS 里摘掉，否则子进程再次加载本代理 ⇒ 无限递归（Windows 上表现为
+  // AssignProcessToJobObject 异常退出码）。
+  const preloadVariants = [
+    `--import=${JSON.stringify(fileURLToPath(import.meta.url))}`,
+    `--import=${JSON.stringify(import.meta.url)}`,
+  ];
   const child = spawn(process.execPath, process.argv.slice(1), {
     stdio: ["pipe", "pipe", "inherit"],
     // 只移除当前代理预加载，保留覆盖采集等其他 Node 参数，防止递归启动代理。
     env: {
       ...process.env,
-      NODE_OPTIONS: (process.env.NODE_OPTIONS ?? "").replace(preload, "").trim(),
+      NODE_OPTIONS: preloadVariants
+        .reduce((acc, variant) => acc.replaceAll(variant, ""), process.env.NODE_OPTIONS ?? "")
+        .trim(),
     },
   });
   const root = process.env.ZCODE_E2E_ARTIFACT_DIR;

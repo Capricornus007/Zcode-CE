@@ -1679,6 +1679,7 @@ function ConversationTurnGroupImpl({
               createdAt={latestAssistantTextRow.createdAt}
               compactForRemoteControl={context.compactForRemoteControl}
               feedback={readAssistantFeedback(latestAssistantTextRow)}
+              copyScope="turn"
               sessionId={context.sessionId}
               onFork={canForkLatestAssistant ? onFork : undefined}
               onRetry={canRetryLatestAssistant ? onRetry : undefined}
@@ -1690,7 +1691,7 @@ function ConversationTurnGroupImpl({
                 "flex items-center gap-1",
                 context.compactForRemoteControl
                   ? "opacity-100"
-                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100 has-[[data-bot-group-delivery]]:opacity-100",
+                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100 has-[[data-bot-group-delivery]]:opacity-100 [@media(hover:none)]:opacity-100",
               )}
             />
           ) : (hasHookActions || !unit.isRunning) && !canRenderAssistantActions ? (
@@ -1700,7 +1701,7 @@ function ConversationTurnGroupImpl({
               className={cn(
                 context.compactForRemoteControl
                   ? "opacity-100"
-                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100 has-[[data-bot-group-delivery]]:opacity-100",
+                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100 has-[[data-bot-group-delivery]]:opacity-100 [@media(hover:none)]:opacity-100",
               )}
             >
               {hasHookActions ? (

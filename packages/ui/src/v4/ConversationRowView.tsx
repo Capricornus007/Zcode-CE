@@ -102,6 +102,7 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
+import { writeTextToClipboard } from "@/lib/clipboardText.js";
 import { logger } from "@/logger.js";
 import { PluginUiModelContextChip, formatPluginDisplayName } from "@/plugin-ui/index.js";
 import type { AssistantPreviewCard } from "@/lib/assistantPreviewCards.js";
@@ -184,31 +185,41 @@ const CopyRowAction = memo(function CopyRowAction({
   rowId,
   label,
   tooltip = label,
+  dataTestId,
 }: {
   text: string;
   rowId: number;
   label: string;
   tooltip?: string;
+  dataTestId?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    if (!text || !navigator.clipboard) return;
+    if (!text) return;
+    // http 远控（手机经 IP 访问）没有 navigator.clipboard；helper 在手势栈内同步回退 execCommand。
     void runUserActionAsync({
       input: { featureId: "conversation.history.feedback", action: "copy", trigger: "button" },
-      operation: () => navigator.clipboard.writeText(text),
+      operation: () => writeTextToClipboard(text),
       completed: { resultSource: "platform_result" },
       failureStage: "clipboard_write",
-    }).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    });
+    }).then(
+      () => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1200);
+      },
+      (error: unknown) => {
+        // 写入失败（无剪贴板 API 且 execCommand 回退也失败）：静默不打勾，
+        // 只记日志，避免 unhandled rejection。
+        logger.warn("[v4-copy] clipboard write failed", error);
+      },
+    );
   }, [text]);
   return (
     <MessageAction
       aria-label={label}
       label={label}
       tooltip={tooltip}
-      data-testid={`v4-copy-${rowId}`}
+      data-testid={dataTestId ?? `v4-copy-${rowId}`}
       disabled={text.length === 0}
       onClick={handleCopy}
     >
@@ -1429,7 +1440,7 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
           "mt-1",
           context.compactForRemoteControl
             ? "opacity-100"
-            : "opacity-0 transition-opacity group-hover/user-row:opacity-100 focus-within:opacity-100",
+            : "opacity-0 transition-opacity group-hover/user-row:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
         )}
       >
         <CopyRowAction
@@ -1488,11 +1499,14 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   sourceCommandIds = EMPTY_SOURCE_COMMAND_IDS,
   onFork,
   onFeedbackChange,
+  copyScope = "row",
   className,
 }: {
   rowId: number;
   entityId?: string;
   text: string;
+  /** "turn"：text 是整轮 assistant 正文合并（轮尾工具栏），文案明确为"复制完整回复"。 */
+  copyScope?: "row" | "turn";
   createdAt: number;
   compactForRemoteControl?: boolean;
   feedback?: AssistantMessageFeedback | null;
@@ -1508,7 +1522,9 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   const { intl, locale } = useZCodeIntl();
   const platform = useOptionalPlatform();
   const [localFeedback, setLocalFeedback] = useState<AssistantMessageFeedback | null>(feedback);
-  const copyLabel = intl.formatMessage({ id: "chat.message.copy" });
+  const copyLabel = intl.formatMessage({
+    id: copyScope === "turn" ? "chat.message.copy.fullResponse" : "chat.message.copy",
+  });
   const likeLabel = intl.formatMessage({
     id: localFeedback === "like" ? "chat.message.liked" : "chat.message.like",
   });
@@ -1583,6 +1599,7 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
         rowId={rowId}
         label={copyLabel}
         tooltip={resolveTooltip(copyLabel)}
+        dataTestId={copyScope === "turn" ? `v4-copy-turn-${rowId}` : undefined}
       />
       {entityId && onFeedbackChange ? (
         <>
@@ -1763,7 +1780,7 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
             "mt-1",
             context.compactForRemoteControl
               ? "opacity-100"
-              : "opacity-0 transition-opacity group-hover/assistant-row:opacity-100 focus-within:opacity-100",
+              : "opacity-0 transition-opacity group-hover/assistant-row:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
           )}
         />
       ) : null}

@@ -1704,9 +1704,7 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
                                             taskListLiveWorkflowCount={
                                               taskGroup?.liveWorkflowCount ?? 0
                                             }
-                                            onShowMoreTasks={() =>
-                                              handleShowMoreWorkspaceTasks(row.workspaceKey)
-                                            }
+                                            onShowMoreTasks={handleShowMoreWorkspaceTasks}
                                             reconnectingRemoteWorkspaceKeys={
                                               reconnectingRemoteWorkspaceKeys
                                             }

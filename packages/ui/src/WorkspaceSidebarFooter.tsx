@@ -45,6 +45,7 @@ import {
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useOpenRewards } from "@/rewards/RewardsProvider.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { RemoteControlEntryButton, type RemoteControlEntry } from "@/RemoteControlEntryButton.js";
 import { useShortcutCommandLabel } from "@/shortcuts/useShortcutBindings.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { normalizeInterfaceMode } from "@/lib/interfaceMode.js";
@@ -106,6 +107,7 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   workspaceRemoteSessionId,
   activeTaskId,
   isDesktop = false,
+  remoteControlEntry,
   banner,
   className,
 }: {
@@ -125,7 +127,11 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   workspacePath?: string;
   workspaceIdentity?: string;
   workspaceRemoteSessionId?: string;
-  activeTaskId?: string | null;
+  activeTaskId?: string | null;  /**
+   * 远控入口（ce.3 · 切片 1）：状态与打开动作**由调用方注入**，footer 不自己取状态。
+   * 不传则不渲染入口（Settings 等复用 footer 的场景无需知道远控）。
+   */
+  remoteControlEntry?: RemoteControlEntry;
   isDesktop?: boolean;
   banner?: ReactNode;
   className?: string;
@@ -473,6 +479,8 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
               compact
             />
           ) : null}
+          {/* 远控入口：账号名右侧、设置按钮之前（spec 决策⑤）。 */}
+          {remoteControlEntry ? <RemoteControlEntryButton entry={remoteControlEntry} /> : null}
           <ControlHintTooltip title={settingsButtonLabel}>
             <Button
               type="button"

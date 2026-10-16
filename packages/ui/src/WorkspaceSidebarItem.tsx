@@ -179,7 +179,7 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   taskListLiveWorkflowCount?: number;
   mobileActiveTaskKey?: string | null;
   isWebRemoteControl?: boolean;
-  onShowMoreTasks: () => void;
+  onShowMoreTasks: (workspaceKey: string) => void;
   reconnectingRemoteWorkspaceKeys: string[];
   remoteWorkspaceErrorByWorkspaceKey: Record<string, string>;
   reconnectingRemoteWorkspaceLogsByWorkspaceKey: Record<string, RemoteConnectionLogEntry[]>;
@@ -206,6 +206,13 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
   isRegistryDerived?: boolean;
 }) {
   const { intl } = useZCodeIntl();
+  // 稳定引用：TaskList 是 memo 组件，内联箭头会打穿行级 memo（reactStableReferences 护栏）。
+  const handleStartRuntime = useCallback(() => {
+    onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity);
+  }, [onStartDraftInWorkspace, tab.workspacePath, tab.workspaceIdentity]);
+  const handleShowMoreTasksForItem = useCallback(() => {
+    onShowMoreTasks(tab.workspacePath);
+  }, [onShowMoreTasks, tab.workspacePath]);
   const workspaceZCodeState = useZCodeSessionStore((state) =>
     selectWorkspaceZCodeState(state, tab.workspacePath, tab.workspaceIdentity),
   );
@@ -1150,7 +1157,7 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
             loading={taskListLoading}
             hasMore={taskListHasMore}
             mobileActiveTaskKey={mobileActiveTaskKey}
-            onShowMore={onShowMoreTasks}
+            onShowMore={handleShowMoreTasksForItem}
             onRenameTask={handleRenameTask}
             onSetTaskPinned={handleSetTaskPinned}
             onArchiveTask={handleArchiveTask}
@@ -1159,8 +1166,8 @@ export const WorkspaceSidebarItem = memo(function WorkspaceSidebarItem({
             runtimeState={runtimeState}
             persistedSessionCount={persistedSessionCount}
             lastActivityAt={lastActivityAt}
-            onStartRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
-            onRetryRuntime={() => onStartDraftInWorkspace(tab.workspacePath, tab.workspaceIdentity)}
+            onStartRuntime={handleStartRuntime}
+            onRetryRuntime={handleStartRuntime}
           />
         </CollapsibleContent>
       </Collapsible>

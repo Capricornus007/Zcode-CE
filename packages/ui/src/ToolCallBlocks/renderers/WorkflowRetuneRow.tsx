@@ -36,19 +36,19 @@ function retuneAsAmendMeta(
 }
 
 export function WorkflowRetuneRow({
-  ceiling,
+  defaultConcurrency,
   onOpen,
   requested,
   runId,
 }: {
-  /** 本机并发天花板（那条 run 的投影读数）；未知时缺席。 */
-  ceiling?: number;
+  /** 本机默认并发（那条 run 的投影读数，run.concurrencyCeiling）；未知时缺席。 */
+  defaultConcurrency?: number;
   /** 打开这条 run 的详情页；宿主没给（只读展示或功能已关闭）时这一行只是记录。 */
   onOpen?: () => void;
   requested: number | null;
   runId: string;
 }) {
-  const row = <WorkflowSettingsChangeRow amend={retuneAsAmendMeta(requested, ceiling)} />;
+  const row = <WorkflowSettingsChangeRow amend={retuneAsAmendMeta(requested, defaultConcurrency)} />;
   if (onOpen === undefined) {
     return (
       <div data-testid="workflow-retune-row" data-workflow-retune-run-id={runId}>

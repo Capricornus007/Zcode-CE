@@ -4,6 +4,18 @@ import type { IPlatformService } from "@zcode/shared";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const entryActionMock = vi.hoisted(() => ({
+  contexts: [] as Array<Record<string, unknown>>,
+}));
+
+vi.mock("@/feedback/useFeedbackEntryAction.js", () => ({
+  useFeedbackEntryAction: () => ({
+    runFeedbackEntry: (context: Record<string, unknown>) => {
+      entryActionMock.contexts.push(context);
+      return "opened";
+    },
+  }),
+}));
 import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
@@ -69,21 +81,12 @@ describe("SessionSubscriptionErrorPanel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "反馈问题" }));
 
-    await waitFor(() => expect(useFeedbackStore.getState().open).toBe(true));
-    expect(useFeedbackStore.getState().submitDraft).toMatchObject({
-      title: "EPERM: operation not permitted",
-      type: "bug",
-      module: "Agent任务执行失败",
-      severity: "P2-中",
-      includeLogs: true,
-      screenshots: [],
-    });
-    expect(useFeedbackStore.getState().submitDraft?.description).toContain(
-      "报错摘要：EPERM: operation not permitted",
-    );
-    expect(useFeedbackStore.getState().submitDraft?.description).toContain("任务 ID: session-1");
-    expect(useFeedbackStore.getState().submitDraft?.description).toContain(
-      "工作区: F:\\ZCode_data",
-    );
+    // 反馈入口改道 runFeedbackEntry（渠道配置裁决）；错误现场作为上下文进入预填链。
+    await waitFor(() => expect(entryActionMock.contexts).toHaveLength(1));
+    const context = entryActionMock.contexts[0] ?? {};
+    expect(String(context.title)).toContain("EPERM: operation not permitted");
+    expect(String(context.description)).toContain("报错摘要：EPERM: operation not permitted");
+    expect(String(context.description)).toContain("任务 ID: session-1");
+    expect(String(context.description)).toContain("工作区: F:\\ZCode_data");
   });
 });

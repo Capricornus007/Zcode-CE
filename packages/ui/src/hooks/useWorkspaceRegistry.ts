@@ -136,7 +136,8 @@ export function useWorkspaceRegistry(params?: {
   const service = baseServices.workspaceRegistryService;
   const pinnedKeys = params?.pinnedKeys ?? EMPTY_PINNED_KEYS;
   const signature = pinnedSignature(pinnedKeys);
-  const view = useSyncExternalStore(subscribe, getSnapshot);
+  // SSR（renderToStaticMarkup 测试/远控静态壳）需要 getServerSnapshot：服务端快照与客户端同源。
+  const view = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
   useEffect(() => {
     // service 换代（web 断线重连会换一份 RPC proxy）必须重新拉取，否则重连后列表会停在旧快照。

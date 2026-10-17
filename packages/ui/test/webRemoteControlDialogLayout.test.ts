@@ -70,6 +70,7 @@ const platformMock = vi.hoisted(() => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => platformMock,
+  useOptionalPlatform: () => platformMock,
 }));
 
 const confirmDialogMock = vi.hoisted(() => vi.fn(async () => true));

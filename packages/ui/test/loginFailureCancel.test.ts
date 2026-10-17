@@ -37,6 +37,7 @@ const storeState = vi.hoisted(() => ({
 // 登录壳新增窗控；夹具提供平台命令，继续聚焦 OAuth 失败/取消交互。
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ executeDesktopCommand: vi.fn().mockResolvedValue(undefined) }),
+  useOptionalPlatform: () => ({ executeDesktopCommand: vi.fn().mockResolvedValue(undefined) }),
 }));
 
 vi.mock("@/hooks/useOAuth.js", () => ({

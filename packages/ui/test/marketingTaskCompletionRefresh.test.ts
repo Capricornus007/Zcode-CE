@@ -14,6 +14,7 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({ zcodeAgentService: h.service }),
+  useOptionalServices: () => ({ zcodeAgentService: h.service }),
 }));
 vi.mock("@/v4/sessionsIndexRegistry.js", () => ({
   acquireSessionsIndex: h.acquire,

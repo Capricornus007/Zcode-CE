@@ -133,6 +133,7 @@ vi.mock("@/hooks/useServices.js", () => ({
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => localServices,
+  useOptionalBaseWorkspaceServices: () => localServices,
   useWorkspaceServicesResolution: () => ({
     services: remoteServices,
     remoteSessionId: null,

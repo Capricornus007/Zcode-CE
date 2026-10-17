@@ -17,6 +17,9 @@ vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({
     providerSettingsService: providerSettingsServiceMock,
   }),
+  useOptionalServices: () => ({
+    providerSettingsService: providerSettingsServiceMock,
+  }),
 }));
 
 vi.mock("@/components/ui/dialog.js", () => ({

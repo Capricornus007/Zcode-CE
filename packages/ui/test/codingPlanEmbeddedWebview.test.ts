@@ -38,6 +38,16 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     registerOAuthState: vi.fn(),
     selectDirectory: vi.fn(),
   }),
+  useOptionalPlatform: () => ({
+    activateOrSetWorkspace: vi.fn(),
+    connectRemote: vi.fn(),
+    getDeviceId: vi.fn(() => Promise.resolve("device-mid-test")),
+    notifyRendererReady: vi.fn(),
+    onOAuthCallback: vi.fn(),
+    openExternal: vi.fn(),
+    registerOAuthState: vi.fn(),
+    selectDirectory: vi.fn(),
+  }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

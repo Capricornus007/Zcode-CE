@@ -32,6 +32,23 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     };
     return () => platform;
   })(),
+  useOptionalPlatform: (() => {
+    const platform = {
+      onBrowserViewScreenshotSurfacePrepare: (
+        listener: (payload: BrowserViewScreenshotSurfacePreparePayload) => void,
+      ) => {
+        h.prepareListeners.add(listener);
+        return () => h.prepareListeners.delete(listener);
+      },
+      onBrowserViewScreenshotSurfaceRelease: (
+        listener: (payload: Omit<BrowserViewScreenshotSurfacePreparePayload, "viewport">) => void,
+      ) => {
+        h.releaseListeners.add(listener);
+        return () => h.releaseListeners.delete(listener);
+      },
+    };
+    return () => platform;
+  })(),
 }));
 
 vi.mock("@/browser-use/UnifiedBrowserView.js", () => ({

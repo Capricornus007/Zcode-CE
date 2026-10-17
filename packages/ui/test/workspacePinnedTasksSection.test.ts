@@ -37,6 +37,14 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
       setTaskUnread: async () => ({}),
     },
   }),
+  useOptionalBaseWorkspaceServices: () => ({
+    legacyTaskService: {
+      archiveTask: async () => ({}),
+      renameTask: async () => ({}),
+      setTaskPinned: async () => ({}),
+      setTaskUnread: async () => ({}),
+    },
+  }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

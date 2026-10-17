@@ -18,6 +18,9 @@ vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({
     zcodeSessionService: { closeSession: closeSessionMock },
   }),
+  useOptionalServices: () => ({
+    zcodeSessionService: { closeSession: closeSessionMock },
+  }),
 }));
 
 vi.mock("@/logger.js", () => ({

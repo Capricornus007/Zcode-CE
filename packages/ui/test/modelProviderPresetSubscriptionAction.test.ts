@@ -109,6 +109,10 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     openExternal: openExternalMock,
     registerOAuthState: registerOAuthStateMock,
   }),
+  useOptionalPlatform: () => ({
+    openExternal: openExternalMock,
+    registerOAuthState: registerOAuthStateMock,
+  }),
 }));
 
 vi.mock("@/hooks/useServices.js", () => ({
@@ -138,6 +142,11 @@ vi.mock("@/hooks/useServices.js", () => ({
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: { activeWorkspacePath: null; tabs: [] }) => unknown) =>
+    selector({
+      activeWorkspacePath: null,
+      tabs: [],
+    }),
+  useOptionalTabStore: (selector: (state: { activeWorkspacePath: null; tabs: [] }) => unknown) =>
     selector({
       activeWorkspacePath: null,
       tabs: [],

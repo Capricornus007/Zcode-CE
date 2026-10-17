@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PrivateDeliveryRetry } from "@/BotsDialog/PrivateDeliveryRetry.js";
 import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
 const mocks = vi.hoisted(() => ({ retryPrivateDelivery: vi.fn() }));
-vi.mock("@/hooks/useServices.js", () => ({ useServices: () => ({ botsService: mocks }) }));
+vi.mock("@/hooks/useServices.js", () => ({ useServices: () => ({ botsService: mocks }) ,
+ useOptionalServices: () => ({ botsService: mocks })}));
 afterEach(() => {
   cleanup();
   vi.resetAllMocks();

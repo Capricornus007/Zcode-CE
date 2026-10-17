@@ -14,6 +14,7 @@ const { useServicesMock } = vi.hoisted(() => ({
 
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: useServicesMock,
+  useOptionalServices: useServicesMock,
 }));
 
 function servicesWithHome(info: () => Promise<{ homedir: string; platform: string }>) {

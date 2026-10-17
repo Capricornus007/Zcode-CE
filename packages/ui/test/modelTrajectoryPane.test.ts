@@ -13,6 +13,7 @@ vi.mock("@/hooks/useModelTrajectory.js", () => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ openInFileManager: vi.fn() }),
+  useOptionalPlatform: () => ({ openInFileManager: vi.fn() }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

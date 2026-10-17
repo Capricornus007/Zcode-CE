@@ -14,6 +14,10 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     openInEditor: mockOpenInEditor,
     openInFileManager: mockOpenInFileManager,
   }),
+  useOptionalPlatform: () => ({
+    openInEditor: mockOpenInEditor,
+    openInFileManager: mockOpenInFileManager,
+  }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

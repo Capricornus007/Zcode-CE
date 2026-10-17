@@ -36,10 +36,17 @@ vi.mock("@/hooks/useServices.js", () => ({
     zcodeAgentService,
     botsService,
   }),
+  useOptionalServices: () => ({
+    broadcastService,
+    settingService,
+    zcodeAgentService,
+    botsService,
+  }),
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({}),
+  useOptionalPlatform: () => ({}),
 }));
 
 describe("useSettings AskUserQuestion runtime preference", () => {

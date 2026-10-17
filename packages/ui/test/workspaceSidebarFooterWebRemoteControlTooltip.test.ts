@@ -38,6 +38,12 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     onDesktopZoomLevelChanged: () => () => {},
     openExternal: vi.fn(),
   }),
+  useOptionalPlatform: () => ({
+    executeDesktopCommand: vi.fn(),
+    getDesktopZoomLevel: () => Promise.resolve({ zoomLevel: 0 }),
+    onDesktopZoomLevelChanged: () => () => {},
+    openExternal: vi.fn(),
+  }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

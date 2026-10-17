@@ -7,6 +7,7 @@ import { usePluginStoreOrder } from "@/hooks/usePluginStoreOrder.js";
 const context = vi.hoisted(() => ({ service: { getSnapshot: vi.fn() } }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({ clientConfigService: context.service }),
+  useOptionalServices: () => ({ clientConfigService: context.service }),
 }));
 vi.mock("@/logger.js", () => ({ logger: { warn: vi.fn() } }));
 afterEach(cleanup);

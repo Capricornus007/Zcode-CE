@@ -215,6 +215,7 @@ vi.mock("@/ControlHintTooltip.js", () => ({
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: { tabs: unknown[] }) => unknown) => selector(mockTabs),
+  useOptionalTabStore: (selector: (state: { tabs: unknown[] }) => unknown) => selector(mockTabs),
 }));
 
 vi.mock("@/store/pluginManagementStore.js", () => ({
@@ -285,6 +286,9 @@ vi.mock("@/hooks/useConfirmDialog.js", () => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({
+    openInFileManager: vi.fn(async () => ({ success: true })),
+  }),
+  useOptionalPlatform: () => ({
     openInFileManager: vi.fn(async () => ({ success: true })),
   }),
 }));

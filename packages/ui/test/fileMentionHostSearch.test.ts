@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
     listWorkspaceFilesRange: vi.fn(),
   },
 }));
-vi.mock("@/hooks/useServices.js", () => ({ useServices: () => ({ fileService: mocks.service }) }));
+vi.mock("@/hooks/useServices.js", () => ({ useServices: () => ({ fileService: mocks.service }) ,
+ useOptionalServices: () => ({ fileService: mocks.service })}));
 
 const entry = (name: string): WorkspaceFileEntry => ({
   name,

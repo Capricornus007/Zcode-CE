@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
     executeDesktopCommand: vi.fn(),
   },
 }));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => mocks.platform }));
+vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => mocks.platform ,
+ useOptionalPlatform: () => mocks.platform}));
 function createMinimalElement(ownerDocument: Document, tagName = "div") {
   const element = {
     addEventListener: () => {},

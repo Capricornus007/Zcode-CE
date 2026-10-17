@@ -34,10 +34,14 @@ vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({
     oauthService: mocks.oauthService,
   }),
+  useOptionalServices: () => ({
+    oauthService: mocks.oauthService,
+  }),
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => mocks.platform,
+  useOptionalPlatform: () => mocks.platform,
 }));
 
 vi.mock("@/store/StoreProvider.js", () => ({

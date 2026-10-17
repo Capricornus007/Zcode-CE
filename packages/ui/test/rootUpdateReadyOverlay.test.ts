@@ -211,6 +211,7 @@ vi.mock("@/store/zcodeSessionStore.js", () => ({
 vi.mock("@/store/TabStoreProvider.js", () => ({
   TabStoreProvider: ({ children }: { children: unknown }) => children,
   useTabStore: (selector: (state: unknown) => unknown) => selector(tabStoreState),
+  useOptionalTabStore: (selector: (state: unknown) => unknown) => selector(tabStoreState),
   useTabStoreApi: () => ({
     getState: () => tabStoreApiState,
   }),

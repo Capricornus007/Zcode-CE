@@ -105,6 +105,7 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => stableServices,
+  useOptionalBaseWorkspaceServices: () => stableServices,
   useWorkspaceServices: () => stableServices,
 }));
 

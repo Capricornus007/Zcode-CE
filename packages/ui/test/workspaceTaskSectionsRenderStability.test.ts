@@ -80,6 +80,7 @@ vi.mock("@/hooks/useLocalWorkspaceScopes.js", () => ({
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => stableBaseServices,
+  useOptionalBaseWorkspaceServices: () => stableBaseServices,
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

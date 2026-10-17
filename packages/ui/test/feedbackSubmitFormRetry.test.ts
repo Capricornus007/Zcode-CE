@@ -104,6 +104,8 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: Record<string, unknown>) => unknown) =>
     selector({ activeWorkspaceIdentity: null, activeWorkspacePath: null }),
+  useOptionalTabStore: (selector: (state: Record<string, unknown>) => unknown) =>
+    selector({ activeWorkspaceIdentity: null, activeWorkspacePath: null }),
 }));
 vi.mock("@/store/zcodeSessionStore.js", () => ({
   selectWorkspaceZCodeState: () => null,

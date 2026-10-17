@@ -98,6 +98,13 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     openCommunity: vi.fn(async () => undefined),
     openExternal: captured.openExternal,
   }),
+  useOptionalPlatform: () => ({
+    captureWindowScreenshot: vi.fn(async () => null),
+    executeDesktopCommand: captured.executeDesktopCommand,
+    exportLogs: captured.exportLogs,
+    openCommunity: vi.fn(async () => undefined),
+    openExternal: captured.openExternal,
+  }),
 }));
 
 vi.mock("@/hooks/useVulnerabilityReportUrl.js", () => ({

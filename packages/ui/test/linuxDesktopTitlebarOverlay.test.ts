@@ -47,6 +47,11 @@ vi.mock("@/hooks/useServices.js", () => ({
       listWorkspaceFiles: vi.fn(async () => []),
     },
   }),
+  useOptionalServices: () => ({
+    fileService: {
+      listWorkspaceFiles: vi.fn(async () => []),
+    },
+  }),
 }));
 
 function renderTaskFindDialog(options: {

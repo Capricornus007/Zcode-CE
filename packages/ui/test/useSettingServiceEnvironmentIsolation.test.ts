@@ -8,6 +8,7 @@ import { useSettings } from "@/hooks/useSettingService.js";
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({}),
+  useOptionalPlatform: () => ({}),
 }));
 
 function createSettings(value: string): AppSettings {

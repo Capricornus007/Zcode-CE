@@ -67,6 +67,7 @@ vi.mock("@/hooks/useZCodeSessionService.js", () => ({
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: { tabs: [] }) => unknown) => selector({ tabs: [] }),
+  useOptionalTabStore: (selector: (state: { tabs: [] }) => unknown) => selector({ tabs: [] }),
 }));
 
 vi.mock("@/store/workspaceHookReviewStore.js", () => ({

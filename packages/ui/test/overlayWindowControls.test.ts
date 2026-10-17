@@ -12,6 +12,7 @@ const { executeDesktopCommand } = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ executeDesktopCommand }),
+  useOptionalPlatform: () => ({ executeDesktopCommand }),
 }));
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({

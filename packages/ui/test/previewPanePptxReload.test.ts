@@ -21,6 +21,10 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     getInstalledEditors: async () => [],
     openInEditor: async () => ({ success: false }),
   }),
+  useOptionalPlatform: () => ({
+    getInstalledEditors: async () => [],
+    openInEditor: async () => ({ success: false }),
+  }),
 }));
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({

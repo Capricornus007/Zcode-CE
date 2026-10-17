@@ -31,6 +31,10 @@ vi.mock("@/hooks/useServices.js", () => ({
     zcodeAgentService: { conversationWorkflowRunArtifactsV4 },
     zcodeSessionService: { closeSession: vi.fn(async () => {}) },
   }),
+  useOptionalServices: () => ({
+    zcodeAgentService: { conversationWorkflowRunArtifactsV4 },
+    zcodeSessionService: { closeSession: vi.fn(async () => {}) },
+  }),
 }));
 
 vi.mock("@/logger.js", () => ({

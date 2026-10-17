@@ -239,6 +239,26 @@ vi.mock("@/store/TabStoreProvider.js", () => ({
       activateTabByPath: activateTabByPathMock,
     });
   },
+  useOptionalTabStore: (selector: (state: Record<string, unknown>) => unknown) => {
+    const activeWorkspaceTab = {
+      id: `workspace:${activeWorkspacePath ?? ""}`,
+      kind: "workspace",
+      label: "workspace",
+      workspacePath: activeWorkspacePath,
+      workspaceIdentity: activeWorkspaceIdentity,
+      remoteSessionId: activeRemoteSessionId,
+      remoteTarget: activeRemoteTarget,
+    };
+    return selector({
+      // Bugfix: useWorkspaceServices 会通过 tabs/activeTabId 识别远程 workspace，
+      // 测试桩也要保持 TabStoreState 的最小真实形态，否则会在渲染阶段先于断言崩溃。
+      activeTabId: activeWorkspaceTab.id,
+      activeWorkspacePath: activeWorkspaceTab.workspacePath,
+      activeWorkspaceIdentity: activeWorkspaceTab.workspaceIdentity,
+      tabs: [activeWorkspaceTab],
+      activateTabByPath: activateTabByPathMock,
+    });
+  },
 }));
 
 vi.mock("@/store/zcodeSessionStore.js", () => ({
@@ -271,6 +291,9 @@ vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({
     openInFileManager: openInFileManagerMock,
   }),
+  useOptionalPlatform: () => ({
+    openInFileManager: openInFileManagerMock,
+  }),
 }));
 
 vi.mock("@/components/ui/toast.js", () => ({
@@ -279,6 +302,39 @@ vi.mock("@/components/ui/toast.js", () => ({
 
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({
+    skillsService: {
+      list: mockSkillsServiceList,
+      setEnabled: mockSkillsServiceSetEnabled,
+    },
+    skillSyncService: {
+      listLocalUserSkillCandidates: vi.fn(async () => ({
+        candidates: [],
+        maxArchiveBytes: 0,
+      })),
+      listRemoteUserSkillStatuses: vi.fn(async () => ({ statuses: [] })),
+      exportSkillsArchive: vi.fn(async () => ({
+        archive: new Uint8Array(),
+        archiveBytes: 0,
+        skills: [],
+      })),
+      checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
+        ok: true,
+        path: "/home/dev/.zcode/skills",
+      })),
+      importSkillsArchive: vi.fn(async () => ({ results: [] })),
+    },
+    mcpSyncService: {},
+    settingsSyncService: {
+      detect: vi.fn(async () => ({ agents: [] })),
+      importSelected: vi.fn(async () => ({
+        successCount: 0,
+        skippedCount: 0,
+        failedCount: 0,
+        taskResults: [],
+      })),
+    },
+  }),
+  useOptionalServices: () => ({
     skillsService: {
       list: mockSkillsServiceList,
       setEnabled: mockSkillsServiceSetEnabled,
@@ -354,6 +410,26 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
     },
   }),
   useBaseWorkspaceServices: () => ({
+    skillSyncService: {
+      listLocalUserSkillCandidates: vi.fn(async () => ({
+        candidates: [],
+        maxArchiveBytes: 0,
+      })),
+      listRemoteUserSkillStatuses: vi.fn(async () => ({ statuses: [] })),
+      exportSkillsArchive: vi.fn(async () => ({
+        archive: new Uint8Array(),
+        archiveBytes: 0,
+        skills: [],
+      })),
+      checkRemoteUserSkillWriteAccess: vi.fn(async () => ({
+        ok: true,
+        path: "/home/dev/.zcode/skills",
+      })),
+      importSkillsArchive: vi.fn(async () => ({ results: [] })),
+    },
+    mcpSyncService: {},
+  }),
+  useOptionalBaseWorkspaceServices: () => ({
     skillSyncService: {
       listLocalUserSkillCandidates: vi.fn(async () => ({
         candidates: [],

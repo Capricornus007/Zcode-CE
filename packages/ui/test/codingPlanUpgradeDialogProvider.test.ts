@@ -30,6 +30,7 @@ vi.mock("@/hooks/useCodingPlanEntryPlanList.js", () => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ reportTelemetryEvent: h.reportTelemetryEvent }),
+  useOptionalPlatform: () => ({ reportTelemetryEvent: h.reportTelemetryEvent }),
 }));
 
 vi.mock("@/settings/CodingPlanUpgradeDialog.js", () => ({

@@ -11,7 +11,8 @@ const h = vi.hoisted(() => ({
     resetEmbeddedBrowserSitePermission: vi.fn(),
   },
 }));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform }));
+vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform ,
+ useOptionalPlatform: () => h.platform}));
 const origin = "https://site.test";
 
 beforeEach(() => {

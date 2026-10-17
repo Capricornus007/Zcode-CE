@@ -57,6 +57,7 @@ vi.mock("@/lib/settingsNavigation.js", async (importOriginal) => ({
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: typeof tabStoreState) => unknown) => selector(tabStoreState),
+  useOptionalTabStore: (selector: (state: typeof tabStoreState) => unknown) => selector(tabStoreState),
 }));
 vi.mock("@/ControlHintTooltip.js", () => ({
   ControlHintTooltip: ({ children }: { children: ReactNode }) => children,

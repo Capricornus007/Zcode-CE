@@ -24,10 +24,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => mocks.platform,
+  useOptionalPlatform: () => mocks.platform,
 }));
 
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({ promptAttachmentTransferService: mocks.service }),
+  useOptionalServices: () => ({ promptAttachmentTransferService: mocks.service }),
 }));
 
 vi.mock("@/i18n/IntlProvider.js", () => ({

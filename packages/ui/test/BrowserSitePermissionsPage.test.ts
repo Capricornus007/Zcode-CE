@@ -12,7 +12,8 @@ const h = vi.hoisted(() => ({
     resetEmbeddedBrowserSitePermission: vi.fn(),
   },
 }));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform }));
+vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform ,
+ useOptionalPlatform: () => h.platform}));
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
 }));

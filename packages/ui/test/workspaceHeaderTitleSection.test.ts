@@ -94,12 +94,18 @@ vi.mock("@/hooks/useGlobalTaskList.js", () => ({
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({}),
+  useOptionalPlatform: () => ({}),
 }));
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   // Bugfix: Header 现在同时读取 workspace services 和 base services；
   // 测试 mock 需要覆盖同模块全部被用到的 hook，避免新增导出后静态渲染直接崩溃。
   useBaseWorkspaceServices: () => ({
+    skillSyncService: {},
+    mcpSyncService: {},
+    pluginSyncService: {},
+  }),
+  useOptionalBaseWorkspaceServices: () => ({
     skillSyncService: {},
     mcpSyncService: {},
     pluginSyncService: {},

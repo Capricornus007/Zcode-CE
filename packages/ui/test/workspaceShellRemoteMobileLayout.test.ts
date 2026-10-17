@@ -165,10 +165,15 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     openCommunity: vi.fn(async () => {}),
     openExternal: vi.fn(),
   }),
+  useOptionalPlatform: () => ({
+    openCommunity: vi.fn(async () => {}),
+    openExternal: vi.fn(),
+  }),
 }));
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => ({}),
+  useOptionalBaseWorkspaceServices: () => ({}),
 }));
 
 vi.mock("@/store/TabStoreProvider.js", () => ({

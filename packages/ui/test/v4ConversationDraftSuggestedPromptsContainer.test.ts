@@ -67,6 +67,7 @@ vi.mock("@/hooks/useSettingService.js", () => {
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ reportTelemetryEvent }),
+  useOptionalPlatform: () => ({ reportTelemetryEvent }),
 }));
 
 vi.mock("@/lib/zcodeDraftSkillInvalidation.js", () => ({

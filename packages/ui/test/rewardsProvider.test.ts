@@ -16,7 +16,8 @@ const h = vi.hoisted(() => ({
 vi.mock("@/store/StoreProvider.js", () => ({
   useZCodeStore: (select: (s: typeof h.state) => unknown) => select(h.state),
 }));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => ({ openExternal: h.external }) }));
+vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => ({ openExternal: h.external }) ,
+ useOptionalPlatform: () => ({ openExternal: h.external })}));
 vi.mock("@/i18n/IntlProvider.js", () => ({ useZCodeIntl: () => ({ locale: "en-US" }) }));
 vi.mock("@/rewards/RewardsWebview.js", () => ({
   RewardsWebview: () => createElement("div", { "data-testid": "rewards-view" }),

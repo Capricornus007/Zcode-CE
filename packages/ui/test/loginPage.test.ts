@@ -17,6 +17,7 @@ const oauthState = vi.hoisted(() => ({
 // 静态渲染也会构造登录页窗控，使用与桌面入口一致的平台依赖。
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ executeDesktopCommand: vi.fn().mockResolvedValue(undefined) }),
+  useOptionalPlatform: () => ({ executeDesktopCommand: vi.fn().mockResolvedValue(undefined) }),
 }));
 
 vi.mock("@/hooks/useOAuth.js", () => ({

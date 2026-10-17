@@ -36,6 +36,10 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     onEmbeddedBrowserPermissionPrompt: () => () => undefined,
     resolveEmbeddedBrowserPermissionPrompt,
   }),
+  useOptionalPlatform: () => ({
+    onEmbeddedBrowserPermissionPrompt: () => () => undefined,
+    resolveEmbeddedBrowserPermissionPrompt,
+  }),
 }));
 
 const { EmbeddedBrowserPermissionPrompts } = await import(

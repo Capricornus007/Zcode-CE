@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({ botsService: mocks, broadcastService: mocks }),
+  useOptionalServices: () => ({ botsService: mocks, broadcastService: mocks }),
 }));
 vi.mock("@/logger.js", () => ({ logger: { warn: vi.fn() } }));
 afterEach(() => {

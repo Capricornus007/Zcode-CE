@@ -29,6 +29,11 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     openInEditor: mockOpenInEditor,
     openInFileManager: mockOpenInFileManager,
   }),
+  useOptionalPlatform: () => ({
+    getInstalledEditors: mockGetInstalledEditors,
+    openInEditor: mockOpenInEditor,
+    openInFileManager: mockOpenInFileManager,
+  }),
 }));
 
 vi.mock("@/hooks/useTaskSessionFilePath.js", () => ({

@@ -41,6 +41,7 @@ vi.mock("@/hooks/useRemoteConnectionLogs.js", () => ({
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({
   useBaseWorkspaceServices: () => ({}),
+  useOptionalBaseWorkspaceServices: () => ({}),
 }));
 
 vi.mock("@/logger.js", () => ({

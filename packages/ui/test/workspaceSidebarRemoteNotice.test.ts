@@ -179,6 +179,14 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
     mcpSyncService: {},
     pluginSyncService: {},
   }),
+  useOptionalBaseWorkspaceServices: () => ({
+    fileService: {
+      readdir: async () => [],
+    },
+    skillSyncService: {},
+    mcpSyncService: {},
+    pluginSyncService: {},
+  }),
   useWorkspaceServices: () => ({
     skillSyncService: {},
     mcpSyncService: {},

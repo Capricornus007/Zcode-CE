@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => mocks.platform,
+  useOptionalPlatform: () => mocks.platform,
 }));
 
 vi.mock("@/hooks/useWorkspaceServices.js", () => ({

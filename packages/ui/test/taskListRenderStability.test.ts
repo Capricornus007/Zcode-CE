@@ -53,6 +53,8 @@ vi.mock("@/store/zcodeSessionStore.js", () => ({
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: { openSettingsTab: () => void }) => unknown) =>
     selector({ openSettingsTab: stableOpenSettingsTab }),
+  useOptionalTabStore: (selector: (state: { openSettingsTab: () => void }) => unknown) =>
+    selector({ openSettingsTab: stableOpenSettingsTab }),
 }));
 
 vi.mock("@/NewTaskButtonGroup.js", () => ({

@@ -19,6 +19,7 @@ vi.mock("@/hooks/useWorkspaceServices.js", () => ({
 }));
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (select: (s: unknown) => unknown) => select(mocks.tabs),
+  useOptionalTabStore: (select: (s: unknown) => unknown) => select(mocks.tabs),
   useTabStoreApi: () => ({ getState: () => mocks.tabs }),
 }));
 vi.mock("@/store/tabStore.js", () => ({ isWorkspaceReadOnly: () => false }));

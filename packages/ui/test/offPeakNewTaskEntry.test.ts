@@ -96,6 +96,7 @@ const h = vi.hoisted(() => {
 vi.mock("@/components/ui/toast.js", () => ({ toast: h.toast }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => h.services,
+  useOptionalServices: () => h.services,
 }));
 vi.mock("@/hooks/useProviderSettingsView.js", () => ({
   useProviderSettingsView: () => ({

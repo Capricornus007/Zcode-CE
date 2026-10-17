@@ -106,10 +106,14 @@ vi.mock("@/i18n/IntlProvider.js", () => ({
 const settingsService = vi.hoisted(() => ({ resolveModelConfig: vi.fn() }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({ providerSettingsService: settingsService }),
+  useOptionalServices: () => ({ providerSettingsService: settingsService }),
 }));
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({
+    openExternal: vi.fn(),
+  }),
+  useOptionalPlatform: () => ({
     openExternal: vi.fn(),
   }),
 }));

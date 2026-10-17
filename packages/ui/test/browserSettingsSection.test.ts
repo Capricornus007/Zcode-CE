@@ -47,9 +47,17 @@ vi.mock("@/hooks/usePlatform.js", () => ({
     importChromeBrowserData: h.importChromeBrowserData,
     clearEmbeddedBrowserData: h.clearEmbeddedBrowserData,
   }),
+  useOptionalPlatform: () => ({
+    importChromeBrowserData: h.importChromeBrowserData,
+    clearEmbeddedBrowserData: h.clearEmbeddedBrowserData,
+  }),
 }));
 vi.mock("@/hooks/useServices.js", () => ({
   useServices: () => ({
+    pluginManagementService: {},
+    skillsService: {},
+  }),
+  useOptionalServices: () => ({
     pluginManagementService: {},
     skillsService: {},
   }),

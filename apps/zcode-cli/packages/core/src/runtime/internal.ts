@@ -90,6 +90,8 @@ export interface AgentRuntimeInternal
   messageHistory: MessageHistory;
   readFileState: ReadFileStateMap;
   cachedTools: ModelToolContract[] | null;
+  /** ToolSearch 激活的延迟工具名（见 runtime/helpers/tool-deferral.ts）。 */
+  readonly activatedDeferredToolNames: Set<string>;
   /** 工作流工具面是否已注册（launch.md「On demand: activation」）；非 onDemand 会话出生即 true。 */
   dynamicWorkflowToolsActivated: boolean;
   dynamicWorkflowActivationSource?: DynamicWorkflowActivationSource;

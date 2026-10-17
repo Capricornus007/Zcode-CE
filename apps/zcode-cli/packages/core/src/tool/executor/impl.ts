@@ -42,6 +42,7 @@ export class ToolExecutorImpl implements ToolExecutor {
       permissionTimeoutMs: options.permissionTimeoutMs,
       logger: options.logger,
       backgroundTaskControlPort: options.backgroundTaskControlPort,
+      toolSearchControlPort: options.toolSearchControlPort,
       executionPort: options.executionPort,
       browserControlPort: options.browserControlPort,
       browserDocumentationRoot: options.browserDocumentationRoot,

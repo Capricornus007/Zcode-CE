@@ -48,6 +48,7 @@ import type {
   ToolBatchEvent,
   ToolExecutionResult,
   ToolRuntimeScope,
+  ToolSearchControlPort,
 } from "../types.js";
 
 export interface BackgroundTaskNotificationCommand {
@@ -89,6 +90,7 @@ export interface ToolExecutorOptions {
   permissionTimeoutMs?: number;
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  toolSearchControlPort?: ToolSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;
@@ -205,6 +207,7 @@ export interface ToolExecutorDeps {
   permissionTimeoutMs?: number;
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  toolSearchControlPort?: ToolSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;

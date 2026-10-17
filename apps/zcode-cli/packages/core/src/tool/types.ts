@@ -134,6 +134,24 @@ export interface BackgroundTaskControlPort {
   ): Promise<BackgroundTaskControlStopResult>;
 }
 
+export interface ToolSearchMatch {
+  name: string;
+  description: string;
+  score: number;
+}
+
+export interface ToolSearchExecutionResult {
+  /** 匹配的延迟工具，按相关性降序；列出的工具全部已激活。 */
+  results: ToolSearchMatch[];
+  /** 本次新激活（恢复声明）的工具名。 */
+  activated: string[];
+}
+
+/** ToolSearch 工具的执行端口；由 runtime 装配（见 runtime/helpers/tool-deferral.ts）。 */
+export interface ToolSearchControlPort {
+  search(query: string, limit?: number): Promise<ToolSearchExecutionResult>;
+}
+
 export interface ToolExecutionContext {
   toolCallId: string;
   /**
@@ -152,6 +170,8 @@ export interface ToolExecutionContext {
   parentSpanId?: string;
   abortSignal: AbortSignal;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  /** 延迟工具发现端口（ToolSearch）；runtime 装配，缺席时 handler 诚实失败。 */
+  toolSearchControlPort?: ToolSearchControlPort;
   emitEvent?: (event: SessionEvent) => Promise<void>;
   executionPort?: ExecutionPort;
   /** browser-use 控制端口；node_repl 的 agent.browsers.* 经此执行。缺省则 browser 不可用。 */

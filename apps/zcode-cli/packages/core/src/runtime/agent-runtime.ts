@@ -172,6 +172,8 @@ export class AgentRuntime {
   private messageHistory: MessageHistory;
   private readFileState: ReadFileStateMap;
   private cachedTools: ModelToolContract[] | null = null;
+  /** ToolSearch 激活的延迟工具名（会话内存活；重启后模型需重新搜索）。 */
+  readonly activatedDeferredToolNames = new Set<string>();
   /** launch.md「On demand: activation」：onDemand 会话出生为 false，`activateDynamicWorkflowTools` 翻为 true。 */
   private dynamicWorkflowToolsActivated: boolean;
   private dynamicWorkflowActivationSource?: DynamicWorkflowActivationSource;

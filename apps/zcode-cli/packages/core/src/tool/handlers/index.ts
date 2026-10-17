@@ -69,6 +69,7 @@ import { evalWorkflowSnippetToolEntry } from "./eval-workflow-snippet.js";
 import { listWorkflowRunsToolEntry } from "./list-workflow-runs.js";
 import { getWorkflowRunToolEntry } from "./get-workflow-run.js";
 import { resumeWorkflowRunToolEntry } from "./resume-workflow-run.js";
+import { toolSearchToolEntry } from "./tool-search.js";
 // import { workflowToolEntry } from "./workflow.js";
 import { createToolRuleNameSet } from "../tool-visibility.js";
 
@@ -140,6 +141,9 @@ export const builtInTools: ToolEntry[] = [
   // `subagent_model`。不进 WORKFLOW_CHILD_DISALLOWED_TOOLS
   // ——那条禁令的理由是 alwaysAsk 在 child 里无窗可弹，只读查询不适用。
   listModelsToolEntry,
+  // 延迟工具发现入口（吸收 pi tool_search）：声明面超预算时由 getTools 动态
+  // 追加到模型可见列表；正常预算内不出现在声明里，但必须注册——执行路径按名查 registry。
+  toolSearchToolEntry,
   // workflowToolEntry,
 ];
 

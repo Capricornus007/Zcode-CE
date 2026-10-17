@@ -11,6 +11,7 @@ import type { HookRunner, SessionId, ToolExecutor, TraceContext } from "../deps.
 import type { AgentRuntimeInternal } from "../internal.js";
 import type { AgentRuntimeDeps } from "../types.js";
 import { resolveRuntimeEmbeddedSearchEnabled } from "../methods/embedded-search-branch.js";
+import { searchAndActivateDeferredTools } from "./tool-deferral.js";
 import { getSessionShellSelectionFromConfig } from "../methods/session-shell-environment.js";
 import { createRuntimeSessionModePort } from "../session-mode-port.js";
 import { shouldSuppressSealedSubagentBashNotification } from "../../runtime-task/notification-policy.js";
@@ -168,6 +169,10 @@ function createRuntimeToolExecutor(
     logger: runtime.logger,
     backgroundTaskControlPort: {
       stopBackgroundTask: runtime.stopBackgroundTask.bind(runtime),
+    },
+    toolSearchControlPort: {
+      search: async (query: string, limit?: number) =>
+        searchAndActivateDeferredTools(runtime, query, limit),
     },
     executionPort: deps.executionPort,
     browserControlPort: browserUseEnabled ? deps.browserControlPort : undefined,

@@ -29,6 +29,7 @@ import { applyRuntimeExecutionState } from "../execution-state.js";
 
 import { mirrorSubagentInteractionEvent } from "../../subagent/tool-event-mirror.js";
 import { orderProviderVisibleToolContracts } from "../../tool/provider-visible-order.js";
+import { resolveToolDeferralPlan } from "../helpers/tool-deferral.js";
 import { projectToolModelContract } from "../../tool/model-contract.js";
 import { rebuildContextPrefix } from "./context-refresh.js";
 import { filterEmbeddedSearchRuntimeVisibleTools } from "./embedded-search-branch.js";
@@ -138,13 +139,28 @@ export function getTools(this: AgentRuntimeInternal, model?: Model): ModelToolCo
   if (this.cachedTools === null) {
     this.cachedTools = filterRuntimeVisibleTools.call(this, this.registry.toContracts());
   }
-  return this.cachedTools
-    .filter((tool) => tool.name !== "WebSearch" || shouldExposeWebSearch.call(this, model))
-    .map((tool) =>
+  const filtered = this.cachedTools.filter(
+    (tool) => tool.name !== "WebSearch" || shouldExposeWebSearch.call(this, model),
+  );
+  // 延迟发现（吸收 pi tool_search）：声明面超预算时只声明预算内 + 已激活的工具，
+  // 并追加 ToolSearch；被降级的 MCP 工具仍注册、可执行，由模型按需搜索激活。
+  const deferral = resolveToolDeferralPlan(this, filtered);
+  if (!deferral.active) {
+    return filtered.map((tool) =>
       projectToolModelContract(tool, this.registry.get(tool.name), {
         model,
       }),
     );
+  }
+  const toolSearchContract = filtered.find((tool) => tool.name === "ToolSearch");
+  const declared = toolSearchContract
+    ? [...deferral.declared, toolSearchContract]
+    : deferral.declared;
+  return declared.map((tool) =>
+    projectToolModelContract(tool, this.registry.get(tool.name), {
+      model,
+    }),
+  );
 }
 
 export function invalidateToolCache(this: AgentRuntimeInternal): void {

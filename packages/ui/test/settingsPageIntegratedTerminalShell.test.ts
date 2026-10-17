@@ -120,6 +120,9 @@ const mockPlatform = {
 
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => mockPlatform,
+  // 组件内 usePlatform 走 useOptionalPlatform；mock 必须同时提供，
+  // 否则 vitest 在模块导出校验阶段直接抛错（整文件 11 例连坐）。
+  useOptionalPlatform: () => mockPlatform,
   useSelectDirectory: () => vi.fn(async () => null),
 }));
 
@@ -170,13 +173,18 @@ vi.mock("@/store/StoreProvider.js", () => ({
     }),
 }));
 
+const mockTabStoreState = {
+  activeWorkspaceIdentity: undefined,
+  activeWorkspacePath: undefined,
+  tabs: [],
+};
+
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      activeWorkspaceIdentity: undefined,
-      activeWorkspacePath: undefined,
-      tabs: [],
-    }),
+    selector(mockTabStoreState),
+  // SettingsPage 的展示子组件用可选版本（不要求 provider）；mock 必须同时提供。
+  useOptionalTabStore: (selector: (state: Record<string, unknown>) => unknown) =>
+    selector(mockTabStoreState),
 }));
 
 vi.mock("@/lib/settingsNavigation.js", () => ({

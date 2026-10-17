@@ -147,12 +147,19 @@ function WorkflowArtifactView({
   const preset = isArtifactPresetKind(artifact.kind);
 
   // 版本步进器的落点。tab 上的 `version` 只是**打开时**的初始值（chip 从不带版本号，
-  // 缺席即最新版）；之后由用户翻。产物换了（同一个 tab 不会，但组件可能被复用）或最新版
-  // 抬升时重置回最新版——正在看历史版本时新版落地，跳走会很突兀，所以只在 id 变化时重置。
-  const [selectedVersion, setSelectedVersion] = useState<number | undefined>(tab.version);
-  useEffect(() => {
-    setSelectedVersion(tab.version);
-  }, [artifact.id, tab.version]);
+  // 缺席即最新版）；之后由用户翻。产物换了（同一个 tab 不会，但组件可能被复用）或
+  // tab 初始版本变化时重置回初始值——正在看历史版本时新版落地，跳走会很突兀，
+  // 所以只在 id 变化时重置。
+  //
+  // 用「选择项自带来源标签」的派生写法，而不是 useEffect 重置：passive effect 在挂载后
+  // 异步执行，慢机器/全量并发下会晚于用户点击的 setState，把刚选的版本覆盖回初始值
+  // （实测：步进器点上一版后仍显示最新版）。标签不匹配时直接派生初始值，无时序窗口。
+  const selectionKey = `${artifact.id}\u0000${tab.version ?? ""}`;
+  const [selection, setSelection] = useState<{ key: string; version?: number }>({
+    key: selectionKey,
+    version: tab.version,
+  });
+  const selectedVersion = selection.key === selectionKey ? selection.version : tab.version;
 
   const availableVersions = useMemo(() => {
     if (artifact.versions !== undefined && artifact.versions.length > 0) {
@@ -254,7 +261,9 @@ function WorkflowArtifactView({
           <span className="text-ui-sm text-foreground-subtle">{kindLabel}</span>
           <ArtifactVersionStepper
             availableVersions={availableVersions}
-            onSelect={setSelectedVersion}
+            onSelect={(nextVersion) =>
+              setSelection({ key: selectionKey, version: nextVersion })
+            }
             version={version}
             versionIndex={versionIndex}
           />

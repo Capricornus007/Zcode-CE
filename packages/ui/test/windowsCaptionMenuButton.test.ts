@@ -95,15 +95,20 @@ vi.mock("@/feedback/feedbackStore.js", () => ({
     }),
 }));
 
+const mockPlatform = {
+  canOpenCommunity: vi.fn(async () => false),
+  captureWindowScreenshot: capturedWindowsCaptionMenu.captureWindowScreenshot,
+  executeDesktopCommand: capturedWindowsCaptionMenu.executeDesktopCommand,
+  exportLogs: capturedWindowsCaptionMenu.exportLogs,
+  openExternal: capturedWindowsCaptionMenu.openExternal,
+  openInFileManager: vi.fn(async () => ({ success: true })),
+};
+
 vi.mock("@/hooks/usePlatform.js", () => ({
-  usePlatform: () => ({
-    canOpenCommunity: vi.fn(async () => false),
-    captureWindowScreenshot: capturedWindowsCaptionMenu.captureWindowScreenshot,
-    executeDesktopCommand: capturedWindowsCaptionMenu.executeDesktopCommand,
-    exportLogs: capturedWindowsCaptionMenu.exportLogs,
-    openExternal: capturedWindowsCaptionMenu.openExternal,
-    openInFileManager: vi.fn(async () => ({ success: true })),
-  }),
+  usePlatform: () => mockPlatform,
+  // 组件内 usePlatform 走 useOptionalPlatform；mock 必须同时提供，
+  // 否则 vitest 在模块导出校验阶段直接抛错（整文件连坐）。
+  useOptionalPlatform: () => mockPlatform,
 }));
 
 describe("WindowsCaptionMenuButton", () => {
@@ -205,12 +210,11 @@ describe("WindowsCaptionMenuButton", () => {
       ?.onSelect?.();
 
     expect(capturedWindowsCaptionMenu.captureWindowScreenshot).not.toHaveBeenCalled();
-    expect(capturedWindowsCaptionMenu.openSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "bug",
-        includeLogs: true,
-        screenshots: [],
-      }),
+    // 反馈入口不再是官方工单弹窗（openSubmit），而是走「反馈与诊断」渠道配置：
+    // 默认 github 渠道 ⇒ 生成预填 issue 链接交给 platform.openExternal。
+    expect(capturedWindowsCaptionMenu.openSubmit).not.toHaveBeenCalled();
+    expect(capturedWindowsCaptionMenu.openExternal).toHaveBeenCalledWith(
+      expect.stringMatching(/github\.com.*\/issues\/new/),
     );
     expect(capturedWindowsCaptionMenu.openFeatureRequest).toHaveBeenCalledTimes(1);
     expect(capturedWindowsCaptionMenu.openExternal).toHaveBeenCalledWith("https://zcode.z.ai/docs");

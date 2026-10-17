@@ -97,6 +97,13 @@ const TEST_PACKAGES = [
 const TEST_FILE_SUFFIXES = [".test.ts", ".test.mjs"];
 
 /**
+ * 单次 spawn 的参数总长上限。Windows CreateProcess 硬上限 32,767 字符；
+ * 这里取 24,000 留出 node/vitest 自身参数、引号包装与长路径展开的余量。
+ * 见下方 vitest 分批逻辑：ui 全量文件路径拼起来约 41K，不分批会 ENAMETOOLONG。
+ */
+const MAX_SPAWN_ARG_CHARS = 24_000;
+
+/**
  * 把 `@zcode/*` 从「构建产物 dist/」重定向到「源码 src/」的模块解析钩子（既有文件，勿另造）。
  *
  * 为什么只有 `apps/zcode-cli` 需要它（CI run 35990943160 的根因）：
@@ -236,17 +243,61 @@ for (const packageDir of TEST_PACKAGES) {
 
   // vitest 风格：必须从仓库根跑——根 vitest.config.ts 注入构建期 define
   // （env.test.ts 的端点断言依赖）并声明 include/exclude 项目分区，包内跑两样都缺。
-  if (vitestFiles.length > 0) {
+  //
+  // 必须分批：Windows 的 CreateProcess 命令行上限是 32,767 字符，ui 的 1,100 个
+  // vitest 文件拼成单次参数已超 41K（实测 spawnSync 返回 ENAMETOOLONG，status=null、
+  // 零输出——整包被静默计为失败，看起来像 vitest 崩溃）。分批阈留足余量给 node
+  // 与 vitest 自身参数；按路径长度累加而不是固定文件数，避免长路径文件再次越界。
+  let vitestFailed = false;
+  for (const batch of batchByArgLength(
+    vitestFiles.map((f) => join(packageDir, f)),
+    MAX_SPAWN_ARG_CHARS,
+  )) {
     const result = spawnSync(
       process.execPath,
-      ["node_modules/vitest/vitest.mjs", "run", ...vitestFiles.map((f) => join(packageDir, f))],
+      ["node_modules/vitest/vitest.mjs", "run", ...batch],
       { cwd: repoRoot, stdio: "inherit", shell: false },
     );
+    // status=null 且 error 存在（如 ENAMETOOLONG/ENOMEM）不能当作成功：
+    // 子进程根本没跑起来，静默放过等于漏跑整批。
     if (result.status !== 0) {
-      failedPackages += 1;
+      vitestFailed = true;
+      if (result.error) {
+        console.error(
+          `[test] ${packageDir}: vitest 批次启动失败（${batch.length} 个文件）: ${result.error.code ?? result.error.message}`,
+        );
+      }
     }
   }
+  if (vitestFailed) {
+    failedPackages += 1;
+  }
   totalTests += files.length;
+}
+
+/**
+ * 按拼接后的参数总长切批，保证每批都低于平台命令行上限。
+ *
+ * 单个路径本身超限时不切割该文件（无法表达），保持原样交给 spawn 报错——
+ * 静默丢弃一个测试文件比整批失败更难发现。
+ */
+function batchByArgLength(args, maxChars) {
+  const batches = [];
+  let current = [];
+  let currentChars = 0;
+  for (const arg of args) {
+    // +1 给分隔空格；Windows 下引号包装会再加 2 字符，阈值已留余量。
+    const cost = arg.length + 1;
+    if (current.length > 0 && currentChars + cost > maxChars) {
+      batches.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push(arg);
+    currentChars += cost;
+  }
+  if (current.length > 0) batches.push(current);
+  return batches;
 }
 
 console.log(`[test] 共 ${totalTests} 个测试文件，${failedPackages} 个包失败`);

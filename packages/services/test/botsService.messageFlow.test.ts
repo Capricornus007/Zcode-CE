@@ -2802,6 +2802,8 @@ describe("botsService messageFlow", () => {
       requestId: "elicit-1",
       action: "accept",
       content: { answer: "fast" },
+      // Bot 链路需要区分「已提交/已处理」文案，noop ACK 不算提交（见 IZCodeTaskService）。
+      reportNoopAckAsNotSubmitted: true,
     });
     expect(broadcastService.send).toHaveBeenCalledWith(
       expect.objectContaining({

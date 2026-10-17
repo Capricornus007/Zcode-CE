@@ -42,7 +42,8 @@ test("公开商店分段只含官方市场，社区目录不进该分段", () =>
 });
 
 test("默认启用集合与官方发行版逐项一致", () => {
-  // 这 10 项必须与官方发行版的集合完全相同；其中 1 项在本仓库没有实体
+  // 这 11 项必须与官方发行版的集合完全相同（visualize 随 UI 插件合入后官方已标
+  // defaultEnabled，见 shared/plugin-marketplaces.ts 的注释）；其中 1 项在本仓库没有实体
   // （image-search：能力在官方服务端且需官方账号鉴权），属于无效条目而非错误 ——
   // 判定链在没有 candidate 时不会执行。删除它会让后续同步上游时产生冲突。
   // 口径与 packages/shared/src/plugin-marketplaces.ts 的 doc comment 一致。
@@ -59,6 +60,7 @@ test("默认启用集合与官方发行版逐项一致", () => {
       "presentations@zcode-plugins-official",
       "skill-creator@zcode-plugins-official",
       "spreadsheets@zcode-plugins-official",
+      "visualize@zcode-plugins-official",
       "zcode-guide@zcode-plugins-official",
     ].sort(),
   );

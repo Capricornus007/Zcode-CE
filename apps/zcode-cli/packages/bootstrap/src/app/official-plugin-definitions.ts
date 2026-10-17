@@ -146,6 +146,11 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../node-repl-host",
       "../../../node-repl-host",
     ],
+    // 与 zcode-cua 同款裁决：office 技能在 runtime require('@trycua/cua-driver')，
+    // 驱动只存在于 node-repl-host 的 node_modules —— seed 不带 node_modules 时
+    // dev 链首次 CUA 调用即报 Cannot find package（devChainAgentPayloads 钉住）。
+    // dev/desktop 的 staging 只落最小闭包（无 devDeps），不会把源树开发依赖拖进用户 cache。
+    runtimeTopLevelPaths: ["node_modules"],
     version: "0.6.1",
   },
   {

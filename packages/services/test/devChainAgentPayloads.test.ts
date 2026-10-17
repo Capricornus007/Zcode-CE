@@ -172,8 +172,8 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
       ["presentations", "pptxgenjs.cjs"],
       ["spreadsheets", "exceljs.cjs"],
     ]) {
-      const entry = cache[`${plugin}@0.1.7`];
-      assert.ok(entry, `seed 后 cache 缺少 ${plugin}@0.1.7`);
+      const entry = cache[`${plugin}@0.1.8`];
+      assert.ok(entry, `seed 后 cache 缺少 ${plugin}@0.1.8`);
       assert.ok(
         entry.officeNodeFiles.includes(file),
         `seed 后 cache 缺少 ${plugin}/scripts/office-node/${file}（stage 出文件 ≠ 运行时还在）`,
@@ -183,8 +183,8 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
     // pdf 载荷同理：pdfkit/fontkit 的 esbuild bundle 必须活到 seed 之后（缺了它，插件会以
     // "已启用但第一次调用就 MODULE_NOT_FOUND" 的形式暴露 —— task-6 实测过这个形态）。
     for (const file of ["pdfkit.cjs", "fontkit.cjs"]) {
-      const entry = cache["pdf@0.1.7"];
-      assert.ok(entry, "seed 后 cache 缺少 pdf@0.1.7");
+      const entry = cache["pdf@0.1.8"];
+      assert.ok(entry, "seed 后 cache 缺少 pdf@0.1.8");
       assert.ok(
         entry.pdfNodeFiles.includes(file),
         `seed 后 cache 缺少 pdf/scripts/pdf-node/${file}`,
@@ -227,8 +227,8 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
       return;
     }
 
-    const host = cache["node-repl-host@0.6.0"];
-    assert.ok(host, "seed 后 cache 缺少 node-repl-host@0.6.0");
+    const host = cache["node-repl-host@0.6.1"];
+    assert.ok(host, "seed 后 cache 缺少 node-repl-host@0.6.1");
     // ③ 的主判据在 staged 树；cache 侧再核一次，防「staging 干净但 seed 又把源树 devDeps 拖进来」。
     assert.deepEqual(
       host.nodeModulesEntries.filter((name) => devDependencyNames.includes(name)),
@@ -243,7 +243,7 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
       "cache",
       "zcode-plugins-official",
       "node-repl-host",
-      "0.6.0",
+      "0.6.1",
       "dist",
       "mcp",
       "server.js",

@@ -45,7 +45,11 @@
 //   - **会话静默登记**：dispose 时记下每个会话是否还有在写的 turn。修订一个在飞前驱时，amend
 //     要据它判断「此刻数出来的消息条数可不可信」，才谈得上接续那条未完的 ask。
 
-import type { SessionId, WorkflowEscalatePort } from "@zcode/contracts";
+import type {
+  SessionId,
+  WorkflowEscalatePort,
+  WorkflowSubmitPort,
+} from "@zcode/contracts";
 import type { TurnResult } from "@zcode/core";
 import {
   GENERIC_SUBMIT_PROFILE,
@@ -229,7 +233,7 @@ class AgentRuntimeWorkflowDriver implements WorkflowDriver {
     const ref: SessionRef = { id: sessionId };
     // 会话级 submit 端口（实现体在 workflow-driver-submit-bridge.ts，与紧随其后的升级端口
     // 逐条对称）：closure 绑定本会话，模型无法覆盖路由身份（instance 取自 currentInstance）。
-    const submitPort = makeSessionSubmitPort(this.submitHost, sessionId);
+    const submitPort = this.makeSubmitPort(sessionId);
     // 升级端口同构：同样按会话 closure 绑定，同样恒注入（见 ActorRuntimeFactory 的字段注释）。
     // persona 一并入 closure：有效名是**冻结**的（引擎在 createActor 时定下，此后不变），
     // 所以在这里算一次比每次 escalate 现查便宜，也不会中途换名。
@@ -562,6 +566,10 @@ class AgentRuntimeWorkflowDriver implements WorkflowDriver {
    * 造一个会话级升级端口；实现体在 workflow-driver-escalation.ts（{@link makeSessionEscalatePort}），
    * 与 {@link makeSessionSubmitPort} 逐条对称的论证也写在那边。
    */
+  private makeSubmitPort(sessionId: SessionId): WorkflowSubmitPort {
+    return makeSessionSubmitPort(this.submitHost, sessionId);
+  }
+
   private makeEscalatePort(
     sessionId: SessionId,
     actor: ActorRef,

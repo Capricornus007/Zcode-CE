@@ -38,7 +38,17 @@ async function fixture(files, fn) {
     }
     return await fn(cwd);
   } finally {
-    await rm(cwd, { recursive: true, force: true });
+    // Windows 上刚退出的 git 子进程可能仍短暂持有 cwd 句柄（EBUSY）；
+    // 带退避重试而不是让清理噪音把绿测报红。
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        await rm(cwd, { recursive: true, force: true });
+        break;
+      } catch (error) {
+        if (error.code !== "EBUSY" || attempt >= 10) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+      }
+    }
   }
 }
 

@@ -79,7 +79,14 @@ async function addFormalCase(
   await writeJson(
     root,
     `packages/desktop/test/e2e/fixtures/upstream/conversation-session/${caseName}.json`,
-    { version: 1, fixtures: [providerEntry(defaultRequest)] },
+    // case-local fixture 的信封与真实 upstream 产物同形：caseName/spec 是身份字段
+    //（contract 的 CASE_FIXTURE_*_MISMATCH 校验读这里），缺失会被判为残缺 case。
+    {
+      version: 1,
+      caseName,
+      spec,
+      fixtures: [providerEntry(defaultRequest)],
+    },
   );
   await writeJson(
     root,

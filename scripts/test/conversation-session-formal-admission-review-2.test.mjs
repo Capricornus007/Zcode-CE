@@ -99,8 +99,20 @@ function codes(result, caseName) {
   ).map((reason) => reason.code);
 }
 
-test("rejects provider and static file symlinks that escape trusted roots", async () => {
+test("rejects provider and static file symlinks that escape trusted roots", async (t) => {
+  // Windows 无开发者模式/管理员权限时 symlink 创建直接 EPERM，防护逻辑无从被触发；
+  // 这是平台能力差异而非实现回归，按能力探测跳过（Linux/macOS 与开启开发者模式的
+  // Windows 上仍完整执行）。
   const root = await makeRoot();
+  const symlinkAvailable = await import("node:fs/promises")
+    .then((fs) => fs.symlink(join(root, "probe-link-target.txt"), join(root, "probe-link.txt")))
+    .then(() => true)
+    .catch(() => false);
+  if (!symlinkAvailable) {
+    await rm(root, { recursive: true, force: true }).catch(() => undefined);
+    t.skip("symlink 创建被平台拒绝（EPERM），无法构造逃逸场景");
+    return;
+  }
   const provider = await addFormalCase(root, "provider-symlink-escape");
   await writeJson(root, "outside-provider.json", { version: 1, fixtures: [] });
   const providerLink =
@@ -150,7 +162,12 @@ test("requires providerRequestPolicy none for an empty case-local contract", asy
   await writeJson(
     root,
     "packages/desktop/test/e2e/fixtures/upstream/conversation-session/implicit-empty-contract.json",
-    { version: 1, fixtures: [] },
+    {
+      version: 1,
+      caseName: "implicit-empty-contract",
+      spec: implicit.defaultManifest.spec,
+      fixtures: [],
+    },
   );
   await writeJson(
     root,
@@ -162,7 +179,12 @@ test("requires providerRequestPolicy none for an empty case-local contract", asy
   await writeJson(
     root,
     "packages/desktop/test/e2e/fixtures/upstream/conversation-session/explicit-empty-contract.json",
-    { version: 1, fixtures: [] },
+    {
+      version: 1,
+      caseName: "explicit-empty-contract",
+      spec: explicit.defaultManifest.spec,
+      fixtures: [],
+    },
   );
   await writeJson(
     root,

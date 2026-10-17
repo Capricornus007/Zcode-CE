@@ -16,6 +16,7 @@ import {
   projectMessagesForMediaBudget,
   readRawFinishReason,
 } from "../helpers/index.js";
+import { applyCrossProviderMessageHygiene } from "../helpers/cross-provider-message-hygiene.js";
 import type { RunModelTextRequestOptions, RuntimeModelTextResult } from "../types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { modelRequestTokenLimitLogContext } from "./model-token-limits.js";
@@ -42,6 +43,38 @@ export async function runModelTextRequest(
     providerId: model.providerId,
     modelId: model.modelId,
   };
+  // 跨 provider 清洗（吸收 pi transform-messages）：换模型后历史里的异源 thinking
+  // 与中断留下的孤儿工具调用/结果，都必须在进入 provider 前修正，否则严格 provider
+  // 直接拒绝整次请求。插在媒体投影之前——清洗只动 role/block 配对，不引入新媒体。
+  const hygieneProjection = applyCrossProviderMessageHygiene(
+    options.messages,
+    executionModelSelection,
+    options.sourceEntries,
+  );
+  if (
+    hygieneProjection.diagnostics.droppedReasoningBlockCount > 0 ||
+    hygieneProjection.diagnostics.synthesizedOrphanToolResultCount > 0 ||
+    hygieneProjection.diagnostics.droppedOrphanToolResultCount > 0
+  ) {
+    this.logger?.info("Cross-provider message hygiene applied", {
+      ...traceContextToLogContext(options.traceContext),
+      event: "model.request.cross_provider_hygiene",
+      module: "core.runtime",
+      targetModel: `${model.providerId}/${model.modelId}`,
+      ...hygieneProjection.diagnostics,
+    });
+  }
+  const hygieneOptions: RunModelTextRequestOptions =
+    hygieneProjection.messages === options.messages && !options.sourceEntries
+      ? options
+      : {
+          ...options,
+          messages: hygieneProjection.messages,
+          ...(options.sourceEntries
+            ? { sourceEntries: hygieneProjection.sourceEntries }
+            : {}),
+        };
+  options = hygieneOptions;
   // 闲时 turn 只覆盖了父 runtime 的默认模型，foreground child 重新建
   // request 时仍读取 session 配置，导致 provider options/capability 与本轮模型分叉。
   // turn 快照存在时必须整体采用快照，不能用 `??` 回退到用户模型的字段。

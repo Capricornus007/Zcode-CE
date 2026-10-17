@@ -751,6 +751,34 @@ async function runModelBackedTurnStepImpl(
     throw exhaustedError;
   }
   completeOutputTokenRecovery(state.turnRequestState);
+  // 截断保护（吸收 pi failToolCallsFromTruncatedMessage）：finishReason=length 说明
+  // 输出被 token 上限截断，消息里全部工具调用的参数都可能被流式 JSON 修复成
+  // "能解析但静默不完整"的形状——一个都不执行，回填错误结果让模型用完整参数重新发起。
+  // 注意此分支要求 executableToolCalls 非空：纯文本 length 已由上方
+  // outputTokenContinuation 链处理（continue 续写 / exhausted 报错）。
+  if (result.finishReason === "length" && executableToolCalls.length > 0) {
+    state.toolCallCount += executableToolCalls.length;
+    if (commitAssistantToTurnRequest(this, state, result, executableToolCalls)) {
+      recordModelHistoryRound(state);
+    }
+    this.logger?.warn("Tool calls failed after output token truncation", {
+      ...traceContextToLogContext(modelTraceContext),
+      event: "model.response.length_truncated_tool_calls_rejected",
+      module: "core.runtime",
+      status: "failed",
+      toolCallCount: executableToolCalls.length,
+      toolNames: executableToolCalls.map((toolCall) => toolCall.name),
+    });
+    return await executeToolCallsForModelStep.call(this, state, {
+      assistantCreatedAt,
+      assistantMessageId,
+      modelTraceContext,
+      result,
+      toolCalls: executableToolCalls,
+      streamedToolResults,
+      suppressExecutionReason: "output_token_limit",
+    });
+  }
   if (executableToolCalls.length === 0) {
     return await finishModelStepWithoutToolCalls.call(this, state, {
       assistantPersistenceAnchor,

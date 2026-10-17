@@ -37,6 +37,13 @@ export async function executeToolCallsForModelStep(
     result: RuntimeModelTextResult;
     streamedToolResults?: StreamedToolExecutionResult[];
     toolCalls: ModelToolCall[];
+    /**
+     * 截断保护（吸收 pi failToolCallsFromTruncatedMessage）：设置后本批工具
+     * 一律不执行，全部合成错误结果交还模型重新发起。用于 finishReason=length——
+     * 输出被 token 上限截断时，流式 JSON 修复可能产出"能解析但静默不完整"的参数，
+     * 执行它们比拒绝执行危险得多。
+     */
+    suppressExecutionReason?: "output_token_limit";
   },
 ): Promise<"continue" | "break"> {
   const model = state.model;
@@ -129,7 +136,14 @@ export async function executeToolCallsForModelStep(
   );
   let pendingExecutionResults: ToolExecutionResult[] = [];
   state.turnMachine = new TurnMachineImpl(state.turnMachine.startToolExecution());
-  if (pendingToolCalls.length > 0) {
+  if (options.suppressExecutionReason === "output_token_limit") {
+    // 全部工具（含流式已执行的只读工具）统一按"未执行"结算：
+    // 截断响应里的参数完整性不可信，真实结果同样可能来自被截断的参数；
+    // 丢弃换一次重新发起，好过把可疑结果当权威事实喂给模型。
+    pendingExecutionResults = coreToolCalls.map((toolCall) =>
+      createTruncatedToolCallResult(toolCall, toolParts.get(toolCall.id)?.startedAt),
+    );
+  } else if (pendingToolCalls.length > 0) {
     const pendingSchedule =
       pendingToolCalls.length === coreToolCalls.length
         ? schedule
@@ -289,3 +303,33 @@ export async function executeToolCallsForModelStep(
   return "continue";
 }
 
+
+/**
+ * 截断响应中工具调用的统一错误结果。
+ *
+ * 文案面向模型：说明未执行的因果（输出 token 上限截断、参数可能不完整），
+ * 并给出可操作的指令（用完整参数重新发起）。流式期间已执行的只读工具同样
+ * 按此结算——其结果可能来自被截断的参数，丢弃比误导更安全。
+ */
+export function createTruncatedToolCallResult(
+  toolCall: ToolCall,
+  startedAtMs?: number,
+): ToolExecutionResult {
+  const message =
+    `Tool call "${toolCall.name}" was not executed: the response hit the output token limit, ` +
+    "so its arguments may be truncated. Re-issue the tool call with complete arguments.";
+  const completedAt = new Date();
+  return {
+    toolCallId: toolCall.id,
+    toolName: toolCall.name,
+    success: false,
+    output: message,
+    error: {
+      type: "tool_call_not_executed_output_limit",
+      message,
+    },
+    durationMs: 0,
+    startedAt: new Date(startedAtMs ?? completedAt.getTime()),
+    completedAt,
+  };
+}

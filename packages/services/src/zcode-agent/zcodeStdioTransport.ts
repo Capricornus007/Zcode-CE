@@ -174,6 +174,20 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
     }
     // app 关闭时 host 必须等进程树的 SIGTERM/SIGKILL 兜底跑完；
     // 即使根 child 已在 EOF 窗口内退出，也要用预先保存的快照回收后代。
+    //
+    // deadline 下限：绝对 deadline 从 cleanup 起点算，但起点到这里的快照与 EOF 等待
+    // 是变动成本（高负载下 CIM 查询 + EOF 合计可达 3s+，实测剩给 waiter 仅 ~950ms）。
+    // force taskkill 自身就要 ~0.95s，于是 deadline 定时器先触发，把「正在结束」的进程
+    // 报成残留并触发整轮重试。这里保证 waiter 至少拿到一次完整 force + 观察窗口；
+    // 只有真正卡死的进程树才会用满这个下限。
+    const minimumWaiterBudgetMs =
+      PROCESS_TREE_FORCE_AFTER_MS +
+      PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS +
+      PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS;
+    const effectiveWindowsCleanupDeadlineAtMs =
+      windowsCleanupDeadlineAtMs === undefined
+        ? undefined
+        : Math.max(windowsCleanupDeadlineAtMs, Date.now() + minimumWaiterBudgetMs);
     const terminationResult = await terminateProcessTreeAndWait(this.child, {
       ...(this.options?.ownedProcessGroupId
         ? { ownedProcessGroupId: this.options.ownedProcessGroupId }
@@ -189,7 +203,9 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
       // Windows 等待式清理的绝对 deadline 是 force 余量 + taskkill 上限 + exit 宽限。
       // taskkill 上限见上方常量注释：高负载下需要 2s 才能完成，因此 deadline 为 4.25s。
       windowsTaskkillTimeoutMs: PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS,
-      ...(windowsCleanupDeadlineAtMs === undefined ? {} : { windowsCleanupDeadlineAtMs }),
+      ...(effectiveWindowsCleanupDeadlineAtMs === undefined
+        ? {}
+        : { windowsCleanupDeadlineAtMs: effectiveWindowsCleanupDeadlineAtMs }),
       // 前一次 cleanup 若报告残留，app quit 的最终重试不能再等待完整
       // graceful 窗口；直接进入 force，确保仍落在 main 给 Host 的退出预算内。
       forceAfterMs: Math.max(forceBudgetMs - (Date.now() - cleanupStartedAtMs), 0),
@@ -199,9 +215,12 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
     // exitCode/signalCode 追加 root PID，会把成功回收误报为残留并触发无效重试。
     const remainingPids = terminationResult.remainingPids;
     await this.stderrCollector.waitForDrain(
-      windowsCleanupDeadlineAtMs === undefined
+      effectiveWindowsCleanupDeadlineAtMs === undefined
         ? undefined
-        : Math.max(0, Math.min(EXIT_STDERR_DRAIN_MS, windowsCleanupDeadlineAtMs - Date.now())),
+        : Math.max(
+            0,
+            Math.min(EXIT_STDERR_DRAIN_MS, effectiveWindowsCleanupDeadlineAtMs - Date.now()),
+          ),
     );
     if (remainingPids.length > 0) {
       // 只写 warning 后把 cleanup 当成功会让 manager 随即释放 ownership，

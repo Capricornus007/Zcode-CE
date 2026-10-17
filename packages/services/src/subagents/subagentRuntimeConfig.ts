@@ -27,6 +27,19 @@ interface ConfigReader {
 type Profiles = Map<string, ReturnType<typeof parseAgentProfileFromMarkdown>>;
 type Scope<T> = ReturnType<typeof createSubagentConfigScope<T>>;
 
+/**
+ * 缓存键的大小写策略。
+ *
+ * Windows（NTFS）与 macOS（默认 APFS）文件系统大小写不敏感：只改文件名大小写的重命名
+ * 不是「删除+新增」，watcher 会以旧、新两种大小写各投递一次事件，而两次 readFile 都会
+ * 成功读到同一个文件。若缓存按原字符串建键，同一文件会留下两条 profile
+ * （回归用例：filename-only case rename）。Linux 允许 `A.md` 与 `a.md` 共存，
+ * 必须保持精确键，不能无条件小写。
+ */
+const CACHE_KEY_CASE_INSENSITIVE =
+  process.platform === "win32" || process.platform === "darwin";
+const cacheKey = (path: string) => (CACHE_KEY_CASE_INSENSITIVE ? path.toLowerCase() : path);
+
 async function listDocuments(root: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true }).catch(
     (error: NodeJS.ErrnoException) => {
@@ -52,14 +65,16 @@ async function loadDocuments(
       : new Map<string, ReturnType<typeof parseAgentProfileFromMarkdown>>();
   const updates =
     changes ?? new Map((await listDocuments(root)).map((path) => [path, "read" as const]));
+  // 删除先行且逐条执行：同一批次里可能同时出现旧大小写 unlink 与新大小写 add，
+  // 归一化后是同一个键，交给 Promise.all 并发会与随后的写入竞争。
+  for (const [path, action] of updates) {
+    if (action === "remove") next.delete(cacheKey(path));
+  }
   await Promise.all(
     [...updates].map(async ([path, action]) => {
-      if (action === "remove") {
-        next.delete(path);
-        return;
-      }
+      if (action === "remove") return;
       if (!(await context.waitForStableFile(path))) {
-        next.delete(path);
+        next.delete(cacheKey(path));
         return;
       }
       context.signal.throwIfAborted();
@@ -69,13 +84,13 @@ async function loadDocuments(
         throw error;
       });
       if (content === undefined) {
-        next.delete(path);
+        next.delete(cacheKey(path));
         return;
       }
       context.signal.throwIfAborted();
       const parsed = parseAgentProfileFromMarkdown({ content, path, source });
       if (parsed.diagnostic) logger.warn(undefined, "Agent profile diagnostic", parsed.diagnostic);
-      next.set(path, parsed);
+      next.set(cacheKey(path), parsed);
     }),
   );
   return next;

@@ -1,5 +1,5 @@
 {
-  "total": 4459,
+  "total": 4461,
   "files": {
     "apps/zcode-cli/packages/adapters/src/config/file-config.adapter.ts": 1,
     "apps/zcode-cli/packages/adapters/src/config/schema.ts": 3,
@@ -540,6 +540,7 @@
     "packages/services/src/conversation-share/conversationSharePublicProjection.ts": 1,
     "packages/services/src/cua-permission-broker/cuaPipSessionService.ts": 1,
     "packages/services/src/cua-permission-broker/cuaProductHelperSpawnEnv.ts": 1,
+    "packages/services/src/cua-product-helper-agent-env.ts": 2,
     "packages/services/src/node.ts": 4,
     "packages/services/src/official-mcp/officialMcpCredentials.ts": 6,
     "packages/services/src/plugin-ui-bridge/pluginUiBridgeService.ts": 1,

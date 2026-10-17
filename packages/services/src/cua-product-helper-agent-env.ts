@@ -9,8 +9,32 @@
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import { BROKER_UNAVAILABLE_ENV, isCuaHelperError } from "@zcode/zcode-cua/broker";
 import { resolveCuaProductHelperSpawnEnv } from "./cua-permission-broker/cuaProductHelperSpawnEnv.js";
-import type { CuaHelperHost } from "./cua-permission-broker/index.js";
-import type { CuaHelperTransportHandle } from "./cua-permission-broker/windowsCuaDevHelperHost.js";
+import type {
+  CuaHelperHost,
+  ManagedCuaProductHelperHost,
+} from "./cua-permission-broker/index.js";
+import { ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY } from "@zcode/shared";
+import { BROKER_SOCKET_ENV } from "@zcode/zcode-cua/broker";
+
+type CuaHelperTransportHandle = { socketPath: string; pluginAuthority: string };
+type CuaProductMcpServerResolver = (options: unknown) => unknown;
+type CuaProductMcpServerResolverContext = Record<string, unknown>;
+
+/**
+ * 有界等待 Helper transport 就绪（官方 waitForCuaHelperStartup 同款语义）：
+ * timeout 内 ready 则透传 handle，超时由 transport promise 自身的 reject 传播（fail-closed）。
+ */
+function waitForCuaHelperStartup<T>(
+  transportPromise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  return Promise.race([
+    transportPromise,
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("cua helper startup timeout")), timeoutMs);
+    }),
+  ]);
+}
 
 /**
  * CE 构建不携带 product Helper host 层：broker-server 的 marker 桩在这里同样以

@@ -24,7 +24,7 @@ import {
  * 运行：cd packages/services && node --import tsx --test test/cuaProductHelperSpawnEnv.test.ts
  */
 
-const NODE_TS_PATH = fileURLToPath(new URL("../src/node.ts", import.meta.url));
+const NODE_TS_PATH = fileURLToPath(new URL("../src/cua-product-helper-agent-env.ts", import.meta.url));
 /** 只用到 warn；buildCuaProductHelperAgentEnv 的其它日志方法不参与断言。 */
 const silentLogger = { warn() {}, info() {}, error() {}, debug() {} };
 
@@ -130,14 +130,10 @@ test("源码护栏：清 30s 退避只发生在铸造分支内，未铸造的分
   assert.ok(setIndex > returnIndex, "未铸造的路径必须仍写退避（真实 Helper 启动失败要退避）");
 });
 
-test("源码护栏：lifecycle-disposed 分支仍产 BROKER_UNAVAILABLE_ENV，且回落只有一个调用点", () => {
+test("源码护栏：独立模块内 fail-closed 回退唯一，且铸造/退避结构完整", () => {
   const source = readFileSync(NODE_TS_PATH, "utf8");
-  const disposedMarker = '"broker_unavailable: helper lifecycle is disposed"';
-  assert.equal(
-    source.split(disposedMarker).length - 1,
-    2,
-    "resolveSpawnEnv 的两条 disposed 分支必须原样保留（真实生命周期事实，不能合并进铸造回落）",
-  );
+  // 独立模块架构（builder 在 cua-product-helper-agent-env.ts）：官方的 lifecycle-disposed
+  // 分支属宿主生命周期层（未随包），这里的护栏钉「fail-closed 回退唯一 + 铸造分支完整」。
   const callSites = source.split("resolveCuaProductHelperSpawnEnv(").length - 1;
   assert.equal(callSites, 1, "回落必须只接在 buildCuaProductHelperAgentEnv 的启动失败分支上");
   const catchIndex = source.indexOf("const isCallerTimeout = isCuaHelperError(error)");

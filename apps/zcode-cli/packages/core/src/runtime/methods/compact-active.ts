@@ -7,6 +7,8 @@ import {
   SessionEventType,
   createChildTraceContext,
   isCoreError,
+  CoreErrorType,
+  createCoreError,
   createMessageId,
   createPartId,
   traceContextToLogContext,
@@ -65,6 +67,7 @@ import {
   buildCompactSummaryRequestMessages,
   createCompactContextExceededFinishError,
   createCompactPromptTooLongError,
+  compactSummaryShrinkViolation,
   formatCompactSummaryOrThrow,
   persistCompactTimelineEvent,
 } from "./compact-active-helpers.js";
@@ -517,6 +520,23 @@ async function compactActiveConversationImpl(
         ),
       );
       const persistedSummary = `${summary}${fileListAnnex}`;
+      // 收缩校验（吸收 DSH compaction-basic region.ts:417-421）：摘要必须比被遮蔽区
+      // 更小，否则是退化输出（复读原文/模板膨胀）——落盘只会让上下文变大，拒绝并走重试。
+      // 小于 1024 token 的迷你会话（手动 /compact）不做此校验：此时"更小"没有统计意义。
+      const shadowedTokenCount = estimateRuntimeEntryTokens(entriesForSummary, {
+        useMidConversationSystem,
+      });
+      const summaryTokenCount = estimateRuntimeEntryTokens(
+        [{ kind: "message", message: { role: "user", content: persistedSummary } }] as never,
+        { useMidConversationSystem },
+      );
+      if (compactSummaryShrinkViolation(shadowedTokenCount, summaryTokenCount)) {
+        throw createCoreError(
+          CoreErrorType.ModelError,
+          "Compact summary did not shrink the summarized region; discarded instead of persisted",
+          { recoverable: true, retryable: true },
+        );
+      }
       const planFileReferenceEntry = this.fileSystemPort
         ? await readApprovedPlanFileReferenceEntry({
             abortSignal: options.abortSignal,

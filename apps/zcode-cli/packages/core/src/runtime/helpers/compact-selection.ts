@@ -350,7 +350,9 @@ function truncateRuntimeEntriesForCompactRetry(
   dropCount = Math.min(dropCount, groups.length - 1);
   if (dropCount < 1) return null;
 
-  const sliced = groups.slice(dropCount).flat().map(cloneRuntimeEntry);
+  const sliced = trimLeadingOrphanToolResults(
+    groups.slice(dropCount).flat().map(cloneRuntimeEntry),
+  );
   if (sliced.length === 0) return null;
 
   const needsMarker = sliced[0] && runtimeEntryRole(sliced[0]) === "assistant";
@@ -368,6 +370,22 @@ function truncateRuntimeEntriesForCompactRetry(
       : []),
     ...sliced,
   ];
+}
+
+/**
+ * 切口安全防线（吸收 DSH compaction/src/tool-pairing.ts 的"工具对平衡边界"纪律）：
+ * 保留区域不得以「其 assistant 调用已被丢弃的 tool result」开头——那会在请求里制造
+ * 孤儿结果，严格 provider 直接拒绝整次请求。按整轮丢弃时结构上不会发生（轮以
+ * assistant 开头、工具结果随轮同留同弃）；这道修剪兜底未来切点逻辑的回归。
+ */
+export function trimLeadingOrphanToolResults(
+  entries: readonly RuntimeMessageEntry[],
+): RuntimeMessageEntry[] {
+  let start = 0;
+  while (start < entries.length && runtimeEntryRole(entries[start]!) === "tool") {
+    start += 1;
+  }
+  return start === 0 ? [...entries] : entries.slice(start);
 }
 
 function isRuntimeContextPrefixEntry(entry: RuntimeMessageEntry): boolean {

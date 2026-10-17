@@ -19,6 +19,19 @@ export const COMPACT_TOOL_USE_DENIAL_MESSAGE = "Tool use is not allowed during c
 export const COMPACT_TOOL_USE_DENIAL_REASON =
   "compaction agent should only produce text summary";
 
+/**
+ * 收缩校验判定（吸收 DSH region.ts:417-421）：摘要必须比被遮蔽区更小。
+ * 迷你会话（< minShadowedTokens，通常是手动 /compact）没有统计意义，跳过校验。
+ */
+export function compactSummaryShrinkViolation(
+  shadowedTokens: number,
+  summaryTokens: number,
+  options: { minShadowedTokens?: number } = {},
+): boolean {
+  if (shadowedTokens < (options.minShadowedTokens ?? 1024)) return false;
+  return summaryTokens >= shadowedTokens;
+}
+
 /** 摘要被输出上限截断的统一文案（吸收 pi：length 同样拒绝落盘）。 */
 export const COMPACT_SUMMARY_TRUNCATED_MESSAGE =
   "Compact summary hit the output token limit and was truncated; discarded instead of persisted";

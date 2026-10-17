@@ -208,6 +208,7 @@ import type {
   ZCodeAgentSendPromptParams,
   ZCodeAgentServiceEvent,
   ZCodeAgentSessionSubscribeParams,
+  ZCodeAgentSessionCaptchaCapabilityParams,
   ZCodeAgentSessionTarget,
   ZCodeAgentSessionRuntimePreferencesRequest,
   ZCodeAgentTaskTokenUsageParams,
@@ -862,6 +863,35 @@ function userInputRequestKey(params: ZCodeAgentSessionTarget & { requestId: stri
   return `${sessionEventKey(params)}\u0000${params.requestId}`;
 }
 
+/**
+ * spec 130 §4.3 白名单合并：渲染层应答里的验证码头只有两个合法名字，其余（含前缀相似、
+ * 任意注入头）一律丢弃；名字按 trim + 小写比较、写回归一规范名，值 trim。
+ * 精确匹配（Map 键）而不是 startsWith——两个方向的相似名都必须被拒（验收用例 F10 钉住）。
+ */
+const CAPTCHA_VERIFICATION_HEADER_WHITELIST = [
+  "X-Aliyun-Captcha-Verify-Param",
+  "X-Aliyun-Captcha-Verify-Region",
+] as const;
+
+function mergeCaptchaVerificationHeaders(
+  rendererHeaders: Record<string, string> | undefined,
+): Record<string, string> {
+  if (!rendererHeaders) {
+    return {};
+  }
+  const canonicalByLower = new Map<string, string>(
+    CAPTCHA_VERIFICATION_HEADER_WHITELIST.map((name) => [name.toLowerCase(), name]),
+  );
+  const merged: Record<string, string> = {};
+  for (const [rawName, rawValue] of Object.entries(rendererHeaders)) {
+    if (typeof rawName !== "string" || typeof rawValue !== "string") continue;
+    const canonical = canonicalByLower.get(rawName.trim().toLowerCase());
+    if (!canonical) continue;
+    merged[canonical] = rawValue.trim();
+  }
+  return merged;
+}
+
 function providerRuntimeHeadersRequestKey(
   params: ZCodeAgentSessionTarget & { requestId: string },
 ): string {
@@ -1292,8 +1322,17 @@ export function createZCodeAgentService(
     seqStates: sessionEventSequenceStates.size,
     pendingPermissions: pendingPermissions.size,
     pendingUserInputs: pendingUserInputs.size,
+    // 曾漏记：转发中的验证码请求是唯一按 requestId 键、永不复用的 pending，
+    // 漏删即无界增长（验收用例「等待态」直接读这个计数断言出清）。
+    pendingProviderRuntimeHeaders: pendingProviderRuntimeHeaders.size,
   }));
   const pendingProviderRuntimeHeaders = new Map<string, PendingProviderRuntimeHeadersRequest>();
+  // spec §4.4（docs/development/130-start-plan-captcha-spec.md）两道快速失败判据的状态面：
+  // - sessionSubscribedKeys：会话事件 emitter 是否有活着的订阅者（首末订阅者回调维护）；
+  // - sessionCaptchaCapabilityCounts：本会话「验证码求解能力声明」的计数（订阅即声明，
+  //   计数而非 Set —— 两个组件同时声明时只 dispose 一个不得误撤，见验收用例「计数语义」）。
+  const sessionSubscribedKeys = new Set<string>();
+  const sessionCaptchaCapabilityCounts = new Map<string, number>();
   const pendingSessionRuntimePreferences = new Map<
     string,
     PendingSessionRuntimePreferencesRequest
@@ -1682,7 +1721,12 @@ export function createZCodeAgentService(
     if (existing) {
       return existing;
     }
-    const created = new Emitter<ZCodeAgentServiceEvent>();
+    const created = new Emitter<ZCodeAgentServiceEvent>({
+      // spec §4.4 第一道判据的计数基础：会话事件 emitter 的首末订阅者回调
+      // 维护「本会话有活着的订阅者」集合。转发守卫据此区分 Bot/无 pane 场景。
+      onWillAddFirstListener: () => sessionSubscribedKeys.add(key),
+      onDidRemoveLastListener: () => sessionSubscribedKeys.delete(key),
+    });
     sessionEmitters.set(key, created);
     return created;
   }
@@ -2533,9 +2577,13 @@ export function createZCodeAgentService(
             workspacePath: workspace.workspacePath,
           });
           const accountAccess = parsed.data.accountAccess;
+          // spec 130 §4.2/§4.4：start-plan 的验证码挑战必须由渲染层求解，host 不得短路自答
+          //（官方 `Ze.mode !== "start-plan"` 守卫的 CE 落地；写反会让渲染层永远收不到请求）。
+          const requiresRendererInteraction = accountAccess?.mode === "start-plan";
           if (
             accountRequestAuthService &&
             accountAccess &&
+            !requiresRendererInteraction &&
             !requiresRequestVerification(accountAccess)
           ) {
             // Account API Key / Team Runtime Key 不需要 Renderer 交互。Host 按 Model
@@ -2546,7 +2594,35 @@ export function createZCodeAgentService(
             });
             return;
           }
-          if (!requestVerificationInteractionAvailable) {
+          if (requiresRendererInteraction) {
+            // §4.4 第一道判据：无会话事件订阅者（Bot / 无 pane 后台会话）⇒ 快速失败，
+            // 绝不悬挂到 CLI 侧 180s 超时。稳定码供分支判定，文案供人看懂。
+            const sessionKey = sessionEventKey({
+              ...workspace,
+              sessionId: parsed.data.sessionId,
+            });
+            if (!sessionSubscribedKeys.has(sessionKey)) {
+              pendingProviderRuntimeHeaders.delete(pendingKey);
+              void pending.client.respond(pending.protocolRequestId, {
+                headersApplied: false,
+                errorMessage:
+                  "ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE: no session subscriber; captcha challenge cannot be completed",
+              });
+              return;
+            }
+            // §4.4 第二道判据：订阅者不能求解验证码（CE Bot 链路正是这种形态——
+            // 订阅会话事件但无法渲染验证码）⇒ 同样快速失败，码区分于「无订阅者」。
+            if (!sessionCaptchaCapabilityCounts.get(sessionKey)) {
+              pendingProviderRuntimeHeaders.delete(pendingKey);
+              void pending.client.respond(pending.protocolRequestId, {
+                headersApplied: false,
+                errorMessage:
+                  "ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING: session subscriber cannot solve captcha challenges",
+              });
+              return;
+            }
+          }
+          if (!requestVerificationInteractionAvailable && !requiresRendererInteraction) {
             pendingProviderRuntimeHeaders.delete(pendingKey);
             void pending.client.respond(pending.protocolRequestId, {
               headersApplied: false,
@@ -5478,15 +5554,20 @@ export function createZCodeAgentService(
     async respondProviderRuntimeHeaders(
       params: ZCodeAgentRespondProviderRuntimeHeadersParams,
     ): Promise<void> {
-      const key = providerRuntimeHeadersRequestKey(params);
+      // spec 130：UI 应答方（CE 验证码附件）以嵌套 workspace 引用回传目标工作区，
+      // 接口的顶层 sessionTarget 字段可能缺席 —— 路由键按两者合成，任一形态都能命中。
+      const key = providerRuntimeHeadersRequestKey({
+        ...params,
+        workspacePath: params.workspacePath ?? params.workspace?.workspacePath ?? "",
+      });
       const pending = pendingProviderRuntimeHeaders.get(key);
+      // 幂等语义（spec §4.3）：弹窗重放 / 桌面与手机端并发应答都属正常路径，
+      // pending 已出清（应答完成或已被取消）时安静返回，不抛错给 UI。
       if (!pending) {
-        throw new Error(`ZCode provider runtime headers request not found: ${params.requestId}`);
+        return;
       }
       if (pending.responding) {
-        throw new Error(
-          `ZCode provider runtime headers response already pending: ${params.requestId}`,
-        );
+        return;
       }
       // 不能在等待账号 IO 前删除 pending，否则新合入的取消通知找不到请求；
       // 保留身份直到解析完成，同时避免 workspace/session 两个消费者重复应答。
@@ -5524,10 +5605,7 @@ export function createZCodeAgentService(
       const requestHeaders = {
         ...accountRequestAuth?.headers,
       };
-      Object.assign(
-        requestHeaders,
-        allowRequestVerificationHeaders(params.response.runtimeProviderHeaders ?? {}),
-      );
+      Object.assign(requestHeaders, mergeCaptchaVerificationHeaders(params.response.runtimeProviderHeaders));
       const requestAuth =
         accountRequestAuth?.apiKey || Object.keys(requestHeaders).length > 0
           ? {
@@ -5558,6 +5636,29 @@ export function createZCodeAgentService(
       } else {
         logger.warn(undefined, "ZCode provider runtime headers 应用失败", logContext);
       }
+    },
+
+    onDynamicSessionCaptchaCapability(params: ZCodeAgentSessionCaptchaCapabilityParams) {
+      // spec §4.4 第二道判据的声明通道：订阅即声明、退订即撤销（Event 形态）。
+      // 计数而非身份集合：会话面板与弹窗各持一份声明时，只 dispose 一个不得误撤。
+      const key = sessionEventKey(params);
+      return (listener: () => void) => {
+        sessionCaptchaCapabilityCounts.set(key, (sessionCaptchaCapabilityCounts.get(key) ?? 0) + 1);
+        let disposed = false;
+        return {
+          dispose() {
+            if (disposed) return;
+            disposed = true;
+            const current = sessionCaptchaCapabilityCounts.get(key) ?? 0;
+            if (current <= 1) {
+              sessionCaptchaCapabilityCounts.delete(key);
+            } else {
+              sessionCaptchaCapabilityCounts.set(key, current - 1);
+            }
+            void listener;
+          },
+        };
+      };
     },
 
     onDynamicProviderRuntimeHeadersRequest(params: ZCodeAgentSessionTarget) {

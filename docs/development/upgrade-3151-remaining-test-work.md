@@ -34,9 +34,18 @@ unavailable 分支漏用）。可先修 `resolveCodingPlanStatusCardTitle` 的�
 
 测试钉 `buildCuaProductHelperAgentEnv`（src/node.js 内 broker env 组装器，约 742 行 CE 块，
 见 commit d20deeb1 的 node.ts:1119-1299 + 555-610 常量/WeakMap），官方对齐时被回退。
-修法：从 `git show d20deeb1:packages/services/src/node.ts` 回植该块 + 依赖导入
-（cua-permission-broker/cuaProductHelperSpawnEnv.js 的 mint/resolve/canRun 已在树）。
-已提交的测试适配（141a2801）移除了 stale import，回植后需恢复 import 并跑通 10 用例。
+修法（已探明坐标）：
+- 源：`git show d20deeb1:packages/services/src/node.ts` 的 553-1299 行（常量
+  CUA_PRODUCT_HELPER_AGENT_ENV_RETRY_MS=30s / CUA_HELPER_HEALTH_TIMEOUT_MS=30s、
+  WeakMaps、trackCuaProductHelperStartup、has/clear helper、buildCuaProductHelperAgentEnv
+  主函数 1119-1299）+ cuaHelperStartErrorDetail（1301-1313）。
+- 依赖导入：`./cua-permission-broker/index.js` 的 BROKER_UNAVAILABLE_ENV /
+  clearCuaProductHelperAgentEnvUnavailable / hasCuaProductHelperAgentEnvUnavailable /
+  CuaHelperHost / CuaHelperTransportHandle；`./cua-permission-broker/cuaProductHelperSpawnEnv.js`
+  的 resolveCuaProductHelperSpawnEnv / mintCuaProductHelperEnv（该文件已在树）。
+- 回植位置：当前 node.ts 的 `return (` 前（与 webRemoteTaskIndexElement 同层做法）。
+- 回植后恢复测试 import（`from "../src/node.js"`）并跑通 10 用例。
+已提交的测试适配（141a2801）移除了 stale import，其余 6 个纯函数用例已过。
 
 ## 4. packages/services · devChainAgentPayloads（1 败）
 

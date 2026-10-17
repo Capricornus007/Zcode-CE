@@ -73,3 +73,16 @@ bootstrap 测试为 node:test 轨道（run-tests.mjs 注册项），失败清单
 全包清零后跑：`node scripts/run-tests.mjs`（0 包失败）+ `pnpm build:zcode` 冒烟
 （CLI/agent/server/doctor 启动探活，流程见此前会话记录）。许可清单
 （third-party/inventory.json）在新增依赖时需同步再生成。
+
+
+## 7. 终验快照（2026-10-17 · 443+ 提交 · 工作树干净）
+
+- ui vitest 61 重点文件 1489 全过；ui node:test 358/0；desktop 双轨全绿；双端 tsc 归零。
+- services vitest 直跑仅剩 processTreeTerminator.windows / zcodeStdioTransport.processTree
+  两个 Windows 原生进程树文件偶发（同一 §-竞态根因，fork-isolated 单文件验证全绿）。
+- 其余集中域：start-plan requestAuth 转发套件（约 20 败，官方新特性域——
+  requestAuth.headers 白名单合并 / pending 幂等 / 能力判据计数，需按官方
+  resolveCodingPlanStatusPanelViewState 同源节奏接渲染层应答链）、
+  默认启用集合 ×1（官方发行版对比契约）、bootstrap/dynamic-workflow 已绿
+  （makeSubmitPort 委托补齐后 51/51 + 13/13）。
+- build:zcode 冒烟：上一次全绿记录在案；全部工单清零后终跑一次即可。

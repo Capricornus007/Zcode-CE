@@ -205,7 +205,11 @@ export async function autoCompactIfNeeded(
     model: context.model,
   });
   const { messages: activeMessages, sourceEntries } = activeProjection;
-  const tokenOverride = buildProviderUsageTokenOverride(activeMessages, sourceEntries);
+  const tokenOverride = buildProviderUsageTokenOverride(
+    activeMessages,
+    sourceEntries,
+    this.logger,
+  );
   const decision = shouldAutoCompact({
     messages: activeMessages,
     config,
@@ -313,9 +317,10 @@ export async function autoCompactIfNeeded(
   }
 }
 
-function buildProviderUsageTokenOverride(
+export function buildProviderUsageTokenOverride(
   messages: RunModelTextRequestOptions["messages"],
   sourceEntries: readonly (RuntimeMessageEntry | undefined)[],
+  logger?: { warn(message: string, context?: Record<string, unknown>): void },
 ): AutoCompactTokenOverride | undefined {
   const latestUsage = findLatestCommittedAssistantUsage(sourceEntries);
   if (!latestUsage || latestUsage.messageIndex >= messages.length) {
@@ -330,6 +335,19 @@ function buildProviderUsageTokenOverride(
   // 不再依赖可能失效的绝对 message cursor。若 output 是否存在已被历史归一化抹平，
   // 则 provider input 只覆盖 assistant 之前的请求，assistant 本身仍进入本地增量。
   const providerBaseTokenCount = baseline.contextUsageTokens ?? baseline.inputTokens;
+  // 锚点防低估（吸收 DSH token-meter:158-171）：provider usage 明显小于本地启发式
+  // 估算（< 50%）时不可信——低估会推迟压缩直到真溢出。整体回退启发式估算，
+  // 95% 硬顶与 reactive compact 兜底不受影响。
+  const heuristicAnchorTokens = estimateMessageTokens(messages.slice(0, incrementalStartIndex));
+  if (providerBaseTokenCount < heuristicAnchorTokens * 0.5) {
+    logger?.warn("Provider usage is far below the local heuristic anchor; distrusting it", {
+      event: "compact.usage_anchor.distrust",
+      heuristicAnchorTokens,
+      module: "core.runtime",
+      providerBaseTokenCount,
+    });
+    return undefined;
+  }
   return {
     baseTokenCount: providerBaseTokenCount,
     cacheReadTokens: baseline.cacheReadTokens,
@@ -396,7 +414,11 @@ export async function reactiveCompactAfterContextExceeded(
     return "skipped";
   }
 
-  const tokenOverride = buildProviderUsageTokenOverride(activeMessages, sourceEntries);
+  const tokenOverride = buildProviderUsageTokenOverride(
+    activeMessages,
+    sourceEntries,
+    this.logger,
+  );
   const contextWindow = context.model.properties.contextWindow;
 
   this.logger?.warn("Reactive compact started after model context overflow", {

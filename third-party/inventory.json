@@ -1637,7 +1637,7 @@
     "packages/services/src/bots/storageMigration.ts": "d6b806bd77f4f3ba070559c6bc48bd64e20848c14a0639fefb95c3d1bf96baf6",
     "packages/services/src/bots/taskFailureMessage.ts": "ca18d0f1372daf9ed0d673b54f02222f3ab8eb346fca4170283efc818467b30d",
     "packages/services/src/bots/taskStreamHub.ts": "ae8d38d374216465927bfbf956e5576e20bebb66172707d77084d18905dde3d7",
-    "packages/services/src/bots/telegramChannelRuntime.ts": "f69daf5b29a24f67f249de25699c2180e75404787a20e3b45fe3126735634cb2",
+    "packages/services/src/bots/telegramChannelRuntime.ts": "7a53cafa0fc107bef259d54f7a0452da13e1daaf5893b6c3e882cf5c5863e755",
     "packages/services/src/bots/topicContinuation.ts": "ee122db713a8c728021b8002a54f8f765c3e1fcb8f8776a60a47d24e512ec5cc",
     "packages/services/src/bots/topicHistory.ts": "e808201b53484920815d35bdc92f18484ac1b98b68ec013b7214a042e2a618fe",
     "packages/services/src/bots/topicHistoryAttachment.ts": "b9f11e012e6b3d9a9b839e7e9d826b37aef1dfdd7867dbe0ae9877014f484365",
@@ -33019,7 +33019,7 @@
         },
         {
           "file": "packages/services/src/bots/telegramChannelRuntime.ts",
-          "sha256": "f69daf5b29a24f67f249de25699c2180e75404787a20e3b45fe3126735634cb2"
+          "sha256": "7a53cafa0fc107bef259d54f7a0452da13e1daaf5893b6c3e882cf5c5863e755"
         },
         {
           "file": "packages/services/src/bots/topicContinuation.ts",

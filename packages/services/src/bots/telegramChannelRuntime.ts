@@ -60,6 +60,11 @@ export function createTelegramChannelRuntime(deps: TelegramChannelRuntimeDeps) {
 
   const runtimes = new Map<string, RuntimeEntry>();
   const refreshQueue = createLatestRuntimeRefreshQueue();
+  // R1（task-95）命令菜单清理的账本：上游对禁用 bot 每次 reconcile 都发 deleteMyCommands。
+  // 契约：从未启用过的 bot 零出网（它从未注册过命令）；启用→禁用只清一次（用户可感知行为保留）；
+  // 重新启用后账目重置，再次禁用仍会清一次。
+  const telegramEverEnabledBotIds = new Set<string>();
+  const telegramClearedCommandBotIds = new Set<string>();
 
   async function getConnectionFingerprint(bot: BotConfig): Promise<string> {
     const credential = bot.credentialRef
@@ -354,6 +359,8 @@ export function createTelegramChannelRuntime(deps: TelegramChannelRuntimeDeps) {
     }
     for (const bot of currentConfig.bots) {
       if (bot.provider === "telegram" && bot.enabled && bot.credentialRef) {
+        telegramEverEnabledBotIds.add(bot.id);
+        telegramClearedCommandBotIds.delete(bot.id);
         await syncCommands(bot);
         if (!isLatest()) {
           return;
@@ -373,7 +380,14 @@ export function createTelegramChannelRuntime(deps: TelegramChannelRuntimeDeps) {
         }
         startPolling(bot, fingerprint);
       } else if (bot.provider === "telegram" && !bot.enabled) {
-        await syncCommands(bot);
+        // 只在「曾经启用过且尚未清过」时清一次；一直禁用的 bot 从不出网。
+        if (
+          telegramEverEnabledBotIds.has(bot.id) &&
+          !telegramClearedCommandBotIds.has(bot.id)
+        ) {
+          telegramClearedCommandBotIds.add(bot.id);
+          await syncCommands(bot);
+        }
         deps.statusSink.setRuntimeStatus({
           botId: bot.id,
           provider: "telegram",

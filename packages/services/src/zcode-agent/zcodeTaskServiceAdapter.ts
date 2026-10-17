@@ -2596,8 +2596,14 @@ export function createZCodeTaskServiceAdapter(
           sessionId: params.taskId,
         }),
       });
-      assertV4CommandAckOk("resolveInteraction", ack, `permission ${params.requestId}`);
-      return true;
+      const permissionAck = assertV4CommandAckOk(
+        "resolveInteraction",
+        ack,
+        `permission ${params.requestId}`,
+      );
+      // noop = interaction 已被别端收口（先到先得）：命令真实发出但本次提交未生效，
+      // Bot 链路据此回复「已处理」而不是谎报成功。
+      return permissionAck.status !== "noop";
     },
 
     async respondElicitation(params): Promise<boolean> {
@@ -2626,7 +2632,16 @@ export function createZCodeTaskServiceAdapter(
           sessionId: params.taskId,
         }),
       });
-      assertV4CommandAckOk("resolveInteraction", ack, `elicitation ${params.requestId}`);
+      const elicitationAck = assertV4CommandAckOk(
+        "resolveInteraction",
+        ack,
+        `elicitation ${params.requestId}`,
+      );
+      if (elicitationAck.status === "noop") {
+        // noop 时本次应答未生效：不投递 replayable 应答事件（别端的收口事件已在链上），
+        // 也不得当作已提交。
+        return false;
+      }
       if (params.clientMode === "web-remote-replayable") {
         // 语义保真（原 agentService.respondUserInput 的 web-remote-replayable 分支）：
         // 手机远控应答后，桌面/其它 observer 需要显式响应事件清理同一 requestId 的弹窗；

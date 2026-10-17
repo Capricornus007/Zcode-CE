@@ -19,6 +19,10 @@ export const COMPACT_TOOL_USE_DENIAL_MESSAGE = "Tool use is not allowed during c
 export const COMPACT_TOOL_USE_DENIAL_REASON =
   "compaction agent should only produce text summary";
 
+/** 摘要被输出上限截断的统一文案（吸收 pi：length 同样拒绝落盘）。 */
+export const COMPACT_SUMMARY_TRUNCATED_MESSAGE =
+  "Compact summary hit the output token limit and was truncated; discarded instead of persisted";
+
 export function createCompactPromptTooLongError(options: {
   attempt: number;
   cause?: unknown;
@@ -97,6 +101,15 @@ export function formatCompactSummaryOrThrow(
   runtime: AgentRuntimeInternal,
   result: RuntimeModelTextResult,
 ): string {
+  // 截断保护（吸收 pi compaction.ts:618-638 的摘要失败判据）：finishReason=length
+  // 意味着摘要本身被 max_tokens 截断——落盘半份摘要比不压缩更危险（静默丢失尾部上下文）。
+  // retryable 让 auto compact 的既有重试链（最多 3 次）先尝试自然恢复。
+  if (result.finishReason === "length") {
+    throw createCoreError(CoreErrorType.ModelError, COMPACT_SUMMARY_TRUNCATED_MESSAGE, {
+      recoverable: true,
+      retryable: true,
+    });
+  }
   const compactToolCalls = runtime.extractToolCallsFromResult(result);
   if (compactToolCalls.length > 0) {
     throw createCoreError(CoreErrorType.ModelError, COMPACT_TOOL_USE_DENIAL_MESSAGE, {

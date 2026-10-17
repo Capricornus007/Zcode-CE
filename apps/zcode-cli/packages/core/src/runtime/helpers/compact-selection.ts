@@ -20,6 +20,9 @@ interface CompactRetryLogger {
   warn(message: string, context?: Record<string, unknown>): void;
 }
 
+/** 近端保留的 token 预算（吸收 pi keepRecentTokens 默认值 20K）。 */
+export const COMPACT_PRESERVE_RECENT_TOKEN_BUDGET = 20_000;
+
 export interface CompactEntrySelection {
   entriesForSummary: RuntimeMessageEntry[];
   groupsPreserved: number;
@@ -34,8 +37,22 @@ export function selectCompactEntries(input: {
 }): CompactEntrySelection {
   const split = splitRuntimeEntriesForCompactSelection(input.entries, input.trigger);
   const baseGroupsToPreserve = split.shouldPreserveRecent && split.groups.length > 1 ? 1 : 0;
+  // pi keepRecentTokens 对应物（吸收 compaction.ts:446-501 的"按 token 预算保留近端"）：
+  // 保留预算内的最近完整轮次，而不是固定 1 轮。小轮次对话能多留几轮真实上下文，
+  // 摘要只需覆盖更早的历史，压缩后的连续性显著更好。
+  // 轮次（assistant+其工具结果）是 ZCode 的最小合法切分单位，单轮超预算时仍整轮
+  // 保留——pi 会在用户轮内部切 split-turn，ZCode 的轮结构不允许拆开配对。
+  const budgetGroupsToPreserve = split.shouldPreserveRecent
+    ? Math.min(
+        countRecentGroupsWithinPreserveTokenBudget(split.groups),
+        // 总结侧必须保有 ≥2 个轮次（hasEnoughRuntimeEntriesToCompact 的下限），
+        // 否则压缩会永久 skip 导致 overflow 无自动出口。
+        Math.max(baseGroupsToPreserve, split.groups.length - 2),
+      )
+    : 0;
   const requestedGroupsToPreserve = Math.max(
     baseGroupsToPreserve,
+    budgetGroupsToPreserve,
     positiveInt(input.minimumGroupsToPreserve) ?? 0,
   );
   const maxGroupsToPreserve = Math.max(0, split.groups.length - 1);
@@ -274,6 +291,25 @@ function estimateCompactGroupTokens(
       useMidConversationSystem: options.useMidConversationSystem,
     }),
   );
+}
+
+/**
+ * 保留预算（pi keepRecentTokens=20K 的对应值）：从最新轮次向前累计估算 token，
+ * 超出预算即停。至少保留最新 1 轮（单轮超预算不可拆，见 selectCompactEntries 注释）。
+ */
+function countRecentGroupsWithinPreserveTokenBudget(
+  groups: readonly RuntimeMessageEntry[][],
+): number {
+  if (groups.length === 0) return 0;
+  const estimates = estimateCompactGroupTokens(groups);
+  let used = 0;
+  let count = 1;
+  for (let index = groups.length - 1; index >= 1; index -= 1) {
+    used += estimates[index] ?? 0;
+    if (used > COMPACT_PRESERVE_RECENT_TOKEN_BUDGET) break;
+    count += 1;
+  }
+  return count;
 }
 
 function truncateRuntimeEntriesForCompactRetry(

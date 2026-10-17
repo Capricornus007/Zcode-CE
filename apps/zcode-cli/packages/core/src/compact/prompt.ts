@@ -108,12 +108,28 @@ When summarizing the conversation focus on typescript code changes and also reme
 When you are using compact - please focus on test output and code changes. Include file reads verbatim.
 </example>`;
 
-export function buildCompactPrompt(customInstructions: string | undefined): string {
+export function buildCompactPrompt(
+  customInstructions: string | undefined,
+  options: { previousSummary?: string } = {},
+): string {
   const customInstructionBlock = customInstructions?.trim()
     ? `\n\nAdditional Instructions:\n${customInstructions}`
     : "";
+  // 增量摘要（吸收 pi compaction.ts:540-579）：存在上一次压缩摘要时，把它作为
+  // 权威基底要求增量更新，而不是每次从零重总结——从零总结会随压缩次数放大细节漂移，
+  // 已裁决的约束/口径/未完成工作容易被悄悄丢掉。
+  const previousSummaryBlock = options.previousSummary?.trim()
+    ? `\n\nPrior Compaction Context:
+A previous compaction summary exists below. Treat it as the authoritative baseline for everything it covers:
+preserve its still-relevant decisions, constraints, security instructions, file lists and unfinished work,
+updating only the sections invalidated by the newer conversation. Do not drop user constraints or
+security-relevant instructions it preserves.
+<previous-summary>
+${options.previousSummary.trim()}
+</previous-summary>`
+    : "";
 
-  return `${NO_TOOLS_PREAMBLE}${BASE_COMPACT_PROMPT}${customInstructionBlock}${NO_TOOLS_TRAILER}`;
+  return `${NO_TOOLS_PREAMBLE}${BASE_COMPACT_PROMPT}${customInstructionBlock}${previousSummaryBlock}${NO_TOOLS_TRAILER}`;
 }
 
 export function formatCompactSummary(text: string | undefined): string {
@@ -141,7 +157,7 @@ export function buildCompactSummaryMessage(
     compactionCount?: number;
   } = {},
 ): string {
-  let message = `This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+  let message = `${PREVIOUS_COMPACT_SUMMARY_PREFIX}
 
 ${formatCompactSummary(summary)}`;
 
@@ -168,4 +184,107 @@ ${formatCompactSummary(summary)}`;
   }
 
   return message;
+}
+
+/** 压缩摘要消息的统一前缀；下一次压缩据此识别"上一次的摘要"做增量更新。 */
+export const PREVIOUS_COMPACT_SUMMARY_PREFIX =
+  "This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.";
+
+/**
+ * 判断一条消息文本是否为上一次压缩留下的摘要（buildCompactSummaryMessage 的产物）。
+ */
+export function isPreviousCompactSummaryMessage(text: string | undefined): boolean {
+  return (text?.trimStart().startsWith(PREVIOUS_COMPACT_SUMMARY_PREFIX)) === true;
+}
+
+export interface CompactFileListPaths {
+  read: string[];
+  modified: string[];
+}
+
+const COMPACT_FILE_LIST_TOOL_NAMES: Record<string, keyof CompactFileListPaths> = {
+  Read: "read",
+  Edit: "modified",
+  Write: "modified",
+};
+
+function compactToolCallFilePath(input: unknown): string | undefined {
+  if (typeof input !== "object" || input === null) return undefined;
+  const filePath = (input as { file_path?: unknown }).file_path;
+  return typeof filePath === "string" && filePath.trim().length > 0
+    ? filePath.trim()
+    : undefined;
+}
+
+/**
+ * 从被摘要消息的工具调用里收集文件清单（吸收 pi compaction/utils.ts:16-84）。
+ * 长任务跨多次压缩后最容易丢的就是"动过哪些文件"；清单随摘要逐次累积继承，
+ * 模型在压缩后仍能直接找到现场。Read 记 read，Edit/Write 记 modified。
+ */
+export function collectFilePathsFromCompactToolCalls(messages: readonly {
+  role: string;
+  toolCalls?: readonly { name: string; input: unknown }[];
+}[]): CompactFileListPaths {
+  const read = new Set<string>();
+  const modified = new Set<string>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    for (const toolCall of message.toolCalls ?? []) {
+      const target = COMPACT_FILE_LIST_TOOL_NAMES[toolCall.name];
+      if (!target) continue;
+      const filePath = compactToolCallFilePath(toolCall.input);
+      if (!filePath) continue;
+      (target === "read" ? read : modified).add(filePath);
+    }
+  }
+  return { read: [...read], modified: [...modified] };
+}
+
+const COMPACT_FILE_LIST_BLOCK = /<(read-files|modified-files)>([\s\S]*?)<\/\1>/gu;
+
+/**
+ * 从既有摘要文本里解析文件清单（继承语义：上次压缩已经累积的清单不因本次重总结丢失）。
+ */
+export function extractCompactFileListPaths(summaryText: string): CompactFileListPaths {
+  const read = new Set<string>();
+  const modified = new Set<string>();
+  for (const match of summaryText.matchAll(COMPACT_FILE_LIST_BLOCK)) {
+    const target = match[1] === "read-files" ? read : modified;
+    for (const line of (match[2] ?? "").split("\n")) {
+      const filePath = line.trim().replace(/^-\s*/, "").trim();
+      if (filePath) target.add(filePath);
+    }
+  }
+  return { read: [...read], modified: [...modified] };
+}
+
+export function mergeCompactFileLists(
+  base: CompactFileListPaths,
+  extra: CompactFileListPaths,
+): CompactFileListPaths {
+  return {
+    read: [...new Set([...base.read, ...extra.read])],
+    modified: [...new Set([...base.modified, ...extra.modified])],
+  };
+}
+
+/**
+ * 摘要附件：结构化文件清单。挂在摘要正文之后（不进 <summary> 解析路径），
+ * 下一次压缩通过 extractCompactFileListPaths 继承。
+ */
+export function buildCompactFileListAnnex(paths: CompactFileListPaths): string {
+  const sections: string[] = [];
+  if (paths.read.length > 0) {
+    sections.push(
+      `<read-files>\n${paths.read.map((filePath) => `- ${filePath}`).join("\n")}\n</read-files>`,
+    );
+  }
+  if (paths.modified.length > 0) {
+    sections.push(
+      `<modified-files>\n${paths.modified
+        .map((filePath) => `- ${filePath}`)
+        .join("\n")}\n</modified-files>`,
+    );
+  }
+  return sections.length > 0 ? `\n${sections.join("\n")}` : "";
 }

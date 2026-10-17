@@ -10,6 +10,7 @@ import {
   createMessageId,
   createPartId,
   traceContextToLogContext,
+  modelMessageContentToText,
   buildCompactPrompt,
   mergeCompactInstructions,
   buildCompactSummaryMessage,
@@ -17,6 +18,13 @@ import {
   createCompactBoundaryId,
   getUsageTotalTokens,
 } from "../deps.js";
+import {
+  buildCompactFileListAnnex,
+  collectFilePathsFromCompactToolCalls,
+  extractCompactFileListPaths,
+  isPreviousCompactSummaryMessage,
+  mergeCompactFileLists,
+} from "../../compact/prompt.js";
 import type { SessionEvent, TraceContext } from "../deps.js";
 import { resolveModelRequestSessionTypeFromTaskType } from "./model-request-session-type.js";
 import {
@@ -268,8 +276,9 @@ async function compactActiveConversationImpl(
       });
       // P4：项目级域包（compact.domainInstructions）与运行时 customInstructions
       // 叠加——域指令不因一次 /compact 带参数而丢失。
-      const compactPrompt = buildCompactPrompt(
-        mergeCompactInstructions(this.config.compact?.domainInstructions, customInstructions),
+      const baseCompactInstructions = mergeCompactInstructions(
+        this.config.compact?.domainInstructions,
+        customInstructions,
       );
       let result: RuntimeModelTextResult;
       let compactPromptTooLongAttempts = 0;
@@ -311,6 +320,13 @@ async function compactActiveConversationImpl(
       };
 
       while (true) {
+        // 增量摘要（吸收 pi compaction.ts:540-579）：上一次压缩的摘要在被总结范围内时，
+        // 作为 <previous-summary> 权威基底注入提示词。重选/重试会改变总结范围，
+        // 因此每次内层迭代都按当前 entriesToSummarize 重新解析。
+        const previousSummaryText = extractPreviousCompactSummaryText(entriesToSummarize);
+        const compactPrompt = buildCompactPrompt(baseCompactInstructions, {
+          previousSummary: previousSummaryText,
+        });
         const requestMessages = buildCompactSummaryRequestMessages(
           entriesForSummary,
           compactPrompt,
@@ -487,7 +503,20 @@ async function compactActiveConversationImpl(
       }
 
       const summary = formatCompactSummaryOrThrow(this, result);
-      const persistedSummary = summary;
+      // 文件清单随摘要累积（吸收 pi compaction/utils.ts:16-84）：本次总结范围内的
+      // Read/Edit/Write 调用 + 上次摘要已累积的清单（继承），一并挂到持久化摘要之后。
+      const previousSummaryForAnnex = extractPreviousCompactSummaryText(entriesToSummarize);
+      const fileListAnnex = buildCompactFileListAnnex(
+        mergeCompactFileLists(
+          collectFilePathsFromCompactToolCalls(
+            entriesToSummarize.flatMap((entry) =>
+              entry.kind === "attachment" ? [] : [entry.message],
+            ),
+          ),
+          extractCompactFileListPaths(previousSummaryForAnnex ?? ""),
+        ),
+      );
+      const persistedSummary = `${summary}${fileListAnnex}`;
       const planFileReferenceEntry = this.fileSystemPort
         ? await readApprovedPlanFileReferenceEntry({
             abortSignal: options.abortSignal,
@@ -690,6 +719,20 @@ async function compactActiveConversationImpl(
 
 function isAutoCompactRetryableError(error: unknown): boolean {
   return isCoreError(error) ? error.retryable : true;
+}
+
+/** 从被总结条目里找上一次压缩的摘要文本（取最新一条；无则 undefined）。 */
+function extractPreviousCompactSummaryText(
+  entries: readonly RuntimeMessageEntry[],
+): string | undefined {
+  for (let index = entries.length - 1; index >= 0; index -= 1) {
+    const entry = entries[index];
+    if (!entry || entry.kind === "attachment") continue;
+    if (entry.message.role !== "user") continue;
+    const text = modelMessageContentToText(entry.message.content);
+    if (isPreviousCompactSummaryMessage(text)) return text;
+  }
+  return undefined;
 }
 
 function canUseCompactSummaryTruncationFallback(trigger: CompactTrigger): boolean {

@@ -48,6 +48,7 @@ test("respondPermission：noop ⇒ 返回 false（本次提交未生效，Bot �
     requestId: "req-1",
     optionId: "allow",
     response: { decision: "allow" } as never,
+    reportNoopAckAsNotSubmitted: true,
   });
   assert.equal(calls.length, 1, "命令必须真实发出一次");
   assert.equal(submitted, false, "noop 表示 interaction 已被别端收口，不得当作已提交");
@@ -72,6 +73,7 @@ test("respondElicitation：noop ⇒ 返回 false（且不投递 replayable 应�
     workspacePath: "/tmp/workspace",
     requestId: "req-2",
     action: "accept",
+    reportNoopAckAsNotSubmitted: true,
   });
   assert.equal(calls.length, 1, "命令必须真实发出一次");
   assert.equal(submitted, false, "noop 时本次应答未生效，不得当作已提交");

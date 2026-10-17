@@ -1603,7 +1603,7 @@
     "packages/services/src/bots/botRemoteRuntimeServices.ts": "74bfcb89b3ddb3f8c1ffa30f3a17d12cc542ecc0b52673ff793900e82260fe59",
     "packages/services/src/bots/botRemoteWorkspaceBridge.ts": "52469b4c9f188bbae8ecbd500f5e075e02c729e5a2de884cb253f2c4078cab49",
     "packages/services/src/bots/bots.ts": "f2899dedcd7fb73c73c88d2b6195f8ad073c1e27346e25455be81fff13538418",
-    "packages/services/src/bots/botsService.ts": "5ac55cba111bc0113151f0839ee3b651310256af150ec30970d6bc8f694dcd30",
+    "packages/services/src/bots/botsService.ts": "908003efd1cc82892e438be702ac3077d618bb85c14377b90d360808ecddb100",
     "packages/services/src/bots/channelMentionResolver.ts": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909",
     "packages/services/src/bots/channelReply.ts": "70d094491011cde5b0c6e435fc91de911b3824610c0b3aefc2eb70add97c18bd",
     "packages/services/src/bots/channelRuntime.ts": "d318d5b3020f3f6cee781005c4930c65ef4d618f3f4262a5ef5b22914eca4993",
@@ -32883,7 +32883,7 @@
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "5ac55cba111bc0113151f0839ee3b651310256af150ec30970d6bc8f694dcd30"
+          "sha256": "908003efd1cc82892e438be702ac3077d618bb85c14377b90d360808ecddb100"
         },
         {
           "file": "packages/services/src/bots/channelMentionResolver.ts",

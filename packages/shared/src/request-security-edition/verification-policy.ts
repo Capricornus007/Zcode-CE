@@ -26,8 +26,13 @@ export function allowRequestVerificationHeaders(
 ): Record<string, string> {
   return {};
 }
-export function requiresRequestVerification(_access: { mode: string } | undefined): boolean {
-  return false;
+/**
+ * CE 版（spec 130，docs/development/130-start-plan-captcha-spec.md）：start-plan 的
+ * 验证码挑战需要渲染层交互（host 不得短路自答），其余账号形态零交互。
+ * 官方开源版为恒 false（不启用该链路）；两版测试按此判据分支。
+ */
+export function requiresRequestVerification(access: { mode: string } | undefined): boolean {
+  return access?.mode === "start-plan";
 }
 export function isRequestVerificationMessage(_message: string): boolean {
   return false;

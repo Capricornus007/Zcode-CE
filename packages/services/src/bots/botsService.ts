@@ -4656,6 +4656,8 @@ export function createBotsService(
       requestId: pending.requestId,
       action,
       content,
+      // noop（别端已收口）按未提交返回，Bot 回复「已处理」而非谎报已提交。
+      reportNoopAckAsNotSubmitted: true,
     });
     // 修复原因：v4 resolveInteraction 才是业务确认点。若在 ACK 前写 handledAt，
     // 瞬时失败后的同一按钮重试会被误判为已处理，Agent 将永久停在等待用户输入。
@@ -9686,6 +9688,7 @@ export function createBotsService(
               requestId: option.requestId,
               optionId: option.optionId,
               response: option.response,
+              reportNoopAckAsNotSubmitted: true,
             });
             // 修复原因：权限和问答必须以同一个 v4 ACK 为提交点。ACK 失败前不能持久化
             // handledAt，否则 Telegram/文本序号按钮无法重试，runtime 仍会继续等待权限。
@@ -9766,6 +9769,7 @@ export function createBotsService(
               requestId: command.requestId,
               optionId: command.optionId,
               response: pendingOption.response,
+              reportNoopAckAsNotSubmitted: true,
             });
             if (!submitted)
               return [createOutbound(message.actor, msg(auth.locale, "permissionHandled"))];
@@ -9797,6 +9801,7 @@ export function createBotsService(
                 decision: "deny",
                 reason: "Denied by bot command",
               },
+              reportNoopAckAsNotSubmitted: true,
             });
             if (!submitted)
               return [createOutbound(message.actor, msg(auth.locale, "permissionHandled"))];

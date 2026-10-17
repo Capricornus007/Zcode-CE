@@ -56,9 +56,12 @@ describe("ZCodeStdioTransport process tree result", () => {
     // stderr drain 只能使用 250ms，不能重新借到整个 Windows 进程树窗口。
     expect(performance.now() - startedAt).toBeLessThan(3_500);
     expect(terminateProcessTreeAndWaitMock).toHaveBeenCalledOnce();
+    // deadline = Date.now() + force 2s + taskkill 2s + exit 宽限 250ms。
+    // taskkill 预算是 2s：高负载 Windows 上 taskkill /T /F 实测需 ~1.0-1.1s，
+    // 按 1s 中止会把正常收口误报成残留（见 zcodeStdioTransport.ts 常量注释）。
     expect(terminateProcessTreeAndWaitMock).toHaveBeenCalledWith(
       child,
-      expect.objectContaining({ windowsCleanupDeadlineAtMs: 13_250 }),
+      expect.objectContaining({ windowsCleanupDeadlineAtMs: 14_250 }),
     );
     expect(child.exitCode).toBeNull();
   });

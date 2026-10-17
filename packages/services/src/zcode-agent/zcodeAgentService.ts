@@ -1332,6 +1332,7 @@ export function createZCodeAgentService(
   // - sessionCaptchaCapabilityCounts：本会话「验证码求解能力声明」的计数（订阅即声明，
   //   计数而非 Set —— 两个组件同时声明时只 dispose 一个不得误撤，见验收用例「计数语义」）。
   const sessionSubscribedKeys = new Set<string>();
+  const workspaceHeadersSubscribedKeys = new Set<string>();
   const sessionCaptchaCapabilityCounts = new Map<string, number>();
   const pendingSessionRuntimePreferences = new Map<
     string,
@@ -1763,7 +1764,12 @@ export function createZCodeAgentService(
     if (existing) {
       return existing;
     }
-    const created = new Emitter<ZCodeProviderRuntimeHeadersRequestParams>();
+    const created = new Emitter<ZCodeProviderRuntimeHeadersRequestParams>({
+      // §4.4 第一道判据的 workspace 面：桌面常驻应答方（每 tab 一个）订阅这里，
+      // 与 session 级订阅同权 —— 任一存在即视为「有渲染层」。
+      onWillAddFirstListener: () => workspaceHeadersSubscribedKeys.add(key),
+      onDidRemoveLastListener: () => workspaceHeadersSubscribedKeys.delete(key),
+    });
     providerRuntimeHeadersWorkspaceEmitters.set(key, created);
     return created;
   }
@@ -2601,7 +2607,9 @@ export function createZCodeAgentService(
               ...workspace,
               sessionId: parsed.data.sessionId,
             });
-            if (!sessionSubscribedKeys.has(sessionKey)) {
+            const workspaceKey = resolveWorkspaceKey(workspace);
+            const hasWorkspaceAnswerer = workspaceHeadersSubscribedKeys.has(workspaceKey);
+            if (!sessionSubscribedKeys.has(sessionKey) && !hasWorkspaceAnswerer) {
               pendingProviderRuntimeHeaders.delete(pendingKey);
               void pending.client.respond(pending.protocolRequestId, {
                 headersApplied: false,
@@ -2612,7 +2620,9 @@ export function createZCodeAgentService(
             }
             // §4.4 第二道判据：订阅者不能求解验证码（CE Bot 链路正是这种形态——
             // 订阅会话事件但无法渲染验证码）⇒ 同样快速失败，码区分于「无订阅者」。
-            if (!sessionCaptchaCapabilityCounts.get(sessionKey)) {
+            // 能力判据只约束「仅 session 订阅」的形态（Bot 链路：订阅会话事件但无法求解验证码）；
+            // workspace 常驻应答方按官方流直转（桌面 tab 背后是声明过能力的会话面板）。
+            if (!hasWorkspaceAnswerer && !sessionCaptchaCapabilityCounts.get(sessionKey)) {
               pendingProviderRuntimeHeaders.delete(pendingKey);
               void pending.client.respond(pending.protocolRequestId, {
                 headersApplied: false,

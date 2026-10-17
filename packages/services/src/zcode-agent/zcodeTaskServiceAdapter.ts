@@ -2601,9 +2601,13 @@ export function createZCodeTaskServiceAdapter(
         ack,
         `permission ${params.requestId}`,
       );
-      // noop = interaction 已被别端收口（先到先得）：命令真实发出但本次提交未生效，
-      // Bot 链路据此回复「已处理」而不是谎报成功。
-      return permissionAck.status !== "noop";
+      // 官方语义：noop = 晚到应答/已收口，幂等成功（resolveInteraction 先到先得）。
+      // Bot 调用方（reportNoopAckAsNotSubmitted）例外：它需要区分「已提交/已处理」
+      // 两种回复文案，noop 时回复「已处理」而不是谎报已提交。
+      if (permissionAck.status === "noop" && params.reportNoopAckAsNotSubmitted) {
+        return false;
+      }
+      return true;
     },
 
     async respondElicitation(params): Promise<boolean> {
@@ -2638,9 +2642,9 @@ export function createZCodeTaskServiceAdapter(
         `elicitation ${params.requestId}`,
       );
       if (elicitationAck.status === "noop") {
-        // noop 时本次应答未生效：不投递 replayable 应答事件（别端的收口事件已在链上），
-        // 也不得当作已提交。
-        return false;
+        // 官方语义：noop 幂等成功。Bot 调用方例外（见 respondPermission 同款注释），
+        // 且 noop 时本次应答未生效：不投递 replayable 应答事件（别端收口事件已在链上）。
+        return !params.reportNoopAckAsNotSubmitted;
       }
       if (params.clientMode === "web-remote-replayable") {
         // 语义保真（原 agentService.respondUserInput 的 web-remote-replayable 分支）：

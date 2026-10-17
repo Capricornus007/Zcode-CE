@@ -28,9 +28,11 @@ const STDIO_EOF_EXIT_WAIT_MS = 1_800;
 const DISPOSE_STDERR_DRAIN_MS = 3_250;
 const E2E_COVERAGE_STDIO_EOF_EXIT_WAIT_MS = 5_000;
 const PROCESS_TREE_FORCE_AFTER_MS = 2_000;
-// 2s：taskkill /T /F 在高负载开发机（数十个 node 进程）上枚举+终止整棵树可超过 1s，
-// 超时中止 taskkill 会让目标存活、waiter 把"正在死"报成残留（Windows 现场实测）。
+// 2s：taskkill /T /F 在高负载开发机（数十个 node 进程）上枚举+终止整棵树实测需
+// ~1.0-1.1s；按 1s 中止会让目标存活、waiter 把"正在死"报成残留并触发整轮 3.25s 重试。
 // 与 processTreeWaiter 的 DEFAULT_WINDOWS_TASKKILL_TIMEOUT_MS 对齐。
+// 代价：卡死进程树的绝对 deadline 由 3.25s 变为 4.25s，可能超出 Host 3.5s service
+// phase 并留下 warning；但一次干净收口 4.25s 严格优于"报残留→多轮重试"的 10s+。
 const PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS = 2_000;
 const PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS = 250;
 const processTreeLogger = createServiceLogger("zcode-agent-process-tree");
@@ -185,7 +187,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
       ...(processTreeSnapshot ? { snapshot: processTreeSnapshot } : {}),
       log: processTreeLogger,
       // Windows 等待式清理的绝对 deadline 是 force 余量 + taskkill 上限 + exit 宽限。
-      // 将命令上限控制在 1s，使完整 cleanup 仍落在 Host service phase 的 3.5s 内。
+      // taskkill 上限见上方常量注释：高负载下需要 2s 才能完成，因此 deadline 为 4.25s。
       windowsTaskkillTimeoutMs: PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS,
       ...(windowsCleanupDeadlineAtMs === undefined ? {} : { windowsCleanupDeadlineAtMs }),
       // 前一次 cleanup 若报告残留，app quit 的最终重试不能再等待完整

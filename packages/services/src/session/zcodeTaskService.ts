@@ -410,6 +410,11 @@ export interface IZCodeTaskService {
     requestId: string;
     optionId: string;
     response: ZCodePermissionResponse;
+    /**
+     * CE Bot 链路专用：noop ACK（interaction 已被别端收口）按「未提交」返回 false，
+     * Bot 据此回复「已处理」而非谎报已提交。缺省沿用官方幂等成功语义（true）。
+     */
+    reportNoopAckAsNotSubmitted?: boolean;
   }): Promise<boolean>;
 
   /** 响应用户问答请求（Elicitation） */
@@ -421,6 +426,7 @@ export interface IZCodeTaskService {
     requestId: string;
     action: "accept" | "decline" | "cancel";
     content?: Record<string, unknown>;
+    reportNoopAckAsNotSubmitted?: boolean;
     clientMode?: ZCodeTaskClientMode;
   }): Promise<boolean>;
 

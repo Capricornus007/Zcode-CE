@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { buildCuaProductHelperAgentEnv } from "../src/cua-product-helper-agent-env.js";
 import { BROKER_SOCKET_ENV, BROKER_UNAVAILABLE_ENV, CuaHelperError } from "@zcode/zcode-cua/broker";
 import { ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY } from "@zcode/shared";
 import {

@@ -282,10 +282,12 @@ export const CodeBlock = ({
   const [mermaidPreviewSvg, setMermaidPreviewSvg] = useState<string | null>(null);
   const [mermaidPreviewOpen, setMermaidPreviewOpen] = useState(false);
   const canRenderMermaidCode = renderMermaid && shouldRenderMermaidCodeBlock(language, code);
-  // ```qimen 围栏：门控语义与 mermaid 一致（流式期间按代码块展示），解析失败回退。
+  // ```qimen 围栏：与 mermaid 同一门控语义——解析始终进行（有效即占位），
+  // 流式期间只渲染「生成中」占位（规避 Streamdown 流式拆块的半 JSON 抖动），
+  // 完成后渲染原生盘面；解析失败回退普通代码块。
   const qimenPanDocument = useMemo(
-    () => (renderQimenPan && language === "qimen" ? parseQimenPanDocument(code) : null),
-    [code, language, renderQimenPan],
+    () => (language === "qimen" ? parseQimenPanDocument(code) : null),
+    [code, language],
   );
   const documentVisibilityRevision = useDocumentVisibilityRevision(canRenderMermaidCode);
   const mermaidAutoRenderDecision = useMemo(() => {
@@ -348,7 +350,17 @@ export const CodeBlock = ({
         {children}
         <div className={cn("p-2 pt-0 pb-3", contentClassName)}>
           {qimenPanDocument ? (
-            <QimenPanBlock document={qimenPanDocument} />
+            renderQimenPan ? (
+              <QimenPanBlock document={qimenPanDocument} />
+            ) : (
+              // 流式期间：JSON 未收敛，不渲染半截盘面，给稳定占位。
+              <div
+                className="markdown-image-loading-shimmer flex min-h-24 items-center justify-center rounded-lg border border-border bg-surface text-ui-sm text-foreground-subtle"
+                data-qimen-pan-pending=""
+              >
+                {intl.formatMessage({ id: "chat.qimenPan.rendering" })}
+              </div>
+            )
           ) : shouldRenderMermaid ? (
             <MermaidBlock
               code={code}

@@ -67,6 +67,12 @@ export const qimenPanPalaceSchema = z.object({
   xianqian: z.string().optional(),
   /** 立太极取数（洛书/先天/河图/天干数）。 */
   qushu: z.string().optional(),
+  /** 读象（取象翻译，点击宫位展开显示）。 */
+  duxiang: z.string().optional(),
+  /** 值符星落宫徽标（星名合显口径已在生产方处理）。 */
+  zhifu: z.boolean().optional(),
+  /** 值使门落宫徽标。 */
+  zhishi: z.boolean().optional(),
   /** 中宫寄宫说明（如「寄坤」）。 */
   note: z.string().optional(),
 });
@@ -93,6 +99,24 @@ export const qimenPanDocumentSchema = z.object({
     })
     .optional(),
   palaces: z.array(qimenPanPalaceSchema).min(1).max(9),
+  /** 用神定位（测项参数在场面时才有）：高亮主用神宫，标注日干/时干宫。 */
+  yongshen: z
+    .object({
+      category: z.string().optional(),
+      gong: z.number().int().min(1).max(9),
+      dayGanGong: z.number().int().min(1).max(9).optional(),
+      hourGanGong: z.number().int().min(1).max(9).optional(),
+      items: z
+        .array(
+          z.object({
+            name: z.string(),
+            label: z.string().optional(),
+            gong: z.number().int().min(1).max(9),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
 });
 
 export type QimenPanDocument = z.infer<typeof qimenPanDocumentSchema>;

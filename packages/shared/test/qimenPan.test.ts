@@ -78,6 +78,40 @@ describe("qimen pan fence contract", () => {
     expect(doc.palaces).toHaveLength(1);
   });
 
+  it("parses yongshen locator and per-palace duxiang/zhifu fields (2026-10 增量)", () => {
+    const doc = qimenPanDocumentSchema.parse({
+      protocolVersion: 1,
+      yongshen: {
+        category: "财运",
+        gong: 8,
+        dayGanGong: 7,
+        hourGanGong: 1,
+        items: [
+          { name: "生门", label: "财", gong: 8 },
+          { name: "戊", label: "本钱", gong: 3 },
+        ],
+      },
+      palaces: [
+        { gong: 8, name: "艮", door: "生门", duxiang: "好事有折", zhifu: true },
+        { gong: 1, star: "芮禽", zhifu: true, zhishi: true },
+      ],
+    });
+    expect(doc.yongshen?.gong).toBe(8);
+    expect(doc.yongshen?.items).toHaveLength(2);
+    expect(doc.palaces[0]?.duxiang).toBe("好事有折");
+    expect(doc.palaces[1]?.zhifu).toBe(true);
+  });
+
+  it("rejects out-of-range yongshen gong", () => {
+    expect(
+      qimenPanDocumentSchema.safeParse({
+        protocolVersion: 1,
+        yongshen: { gong: 12 },
+        palaces: [{ gong: 1 }],
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects missing protocolVersion / bad gong / >9 palaces", () => {
     const { protocolVersion: _drop, ...noVersion } = realPanFixture;
     expect(qimenPanDocumentSchema.safeParse(noVersion).success).toBe(false);

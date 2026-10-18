@@ -377,6 +377,10 @@ import { createZCodeTaskServiceAdapter } from "./zcode-agent/zcodeTaskServiceAda
 import { createZCodeSessionService } from "./zcode-session/zcodeSessionService.js";
 import { createZCodeTaskIndexSyncer } from "./zcode-agent/zcodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
+import {
+  IWorkspaceRegistryService,
+  createWorkspaceRegistryService,
+} from "./session/workspaceRegistry.js";
 import { createBotsService } from "./bots/botsService.js";
 import { createBotRemoteWorkspaceService } from "./bots/botRemoteWorkspaceBridge.js";
 import type { SessionMessageSendRequested } from "#src/session/sessionMailbox.js";
@@ -2397,6 +2401,15 @@ export function createLocalServices(options: {
     .register(IZCodeTaskService, zcodeTaskService)
     .register(IZCodeAgentService, zcodeAgentService)
     .register(IZCodeSessionService, zcodeSessionService)
+    // 工作区注册表（M1.3）：侧栏枚举的唯一真相源。服务必须注册进 ServiceCollection，
+    // 否则 RemoteServiceAccess 的频道调用会得到 "Service not registered"，
+    // 界面只能显示「工作区列表读取失败」。只读，不拉起任何 Agent runtime。
+    .register(
+      IWorkspaceRegistryService,
+      createWorkspaceRegistryService({
+        listEntries: () => taskIndexRepo.listWorkspaceRegistryEntries(),
+      }),
+    )
     .register(ICuaPermissionService, cuaPermissionService)
     .register(ICuaPipSessionService, cuaPipSessionService)
     .register(IConversationShareService, conversationShareService)

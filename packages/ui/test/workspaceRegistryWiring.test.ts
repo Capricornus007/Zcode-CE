@@ -554,3 +554,20 @@ test("新增文案在 zh-CN 与 en-US 都存在", () => {
     assert.equal(typeof enUS[key], "string", "en-US 缺文案：" + key);
   }
 });
+
+test("注册表服务在 Local Host 注册，并经 RemoteServiceAccess 暴露给 RPC 客户端", () => {
+  // 只有 UI 的 hook 不够：服务不注册 ⇒ 频道调用报 "Service not registered"；
+  // 客户端不建 proxy ⇒ workspaceRegistryService 恒为 undefined。两种都表现为
+  // 侧栏「工作区列表读取失败：workspace-registry service unavailable」。
+  const nodeSource = readSource("../services/src/node.ts");
+  assert.match(nodeSource, /IWorkspaceRegistryService/);
+  assert.match(nodeSource, /createWorkspaceRegistryService\(\{/);
+  assert.match(nodeSource, /listEntries: \(\) => taskIndexRepo\.listWorkspaceRegistryEntries\(\)/);
+
+  const clientSource = readSource("../client/src/remoteServiceAccess.ts");
+  assert.match(clientSource, /IWorkspaceRegistryService/);
+  assert.match(
+    clientSource,
+    /this\.workspaceRegistryService = ProxyChannel\.toService<IWorkspaceRegistryService>/,
+  );
+});

@@ -129,3 +129,13 @@ bootstrap 不写 runtimeConfig），用户侧表现为「自动档消失、设�
 同一形态的断线还有工具策略：`AppSettings.dangerousCommandPolicy` 可保存但无人读取，
 `ToolExecutorDeps.dangerousCommandPolicy` 是死字段。已按同一链路回植并加
 `dangerousCommandPolicyWiring.test.ts`，见 `docs/development/143-dangerous-command-policy-wiring.md`。
+
+### 工作区注册表 RPC 接线（2026-10-18 补）
+
+`4f7c1a3b`（3.15.1 升级 2b·1）把 `packages/services/src/node.ts` 与
+`packages/client/src/remoteServiceAccess.ts` 整文件取官方版，官方版没有 CE 的工作区注册表：
+Local Host 不注册 `IWorkspaceRegistryService`，RPC 客户端也没有 `workspaceRegistryService`
+proxy。运行日志实测 `Unknown channel: workspace-registry` → 侧栏
+「工作区列表读取失败：Channel name 'workspace-registry' timed out after 1000ms」。
+已恢复服务注册与客户端出口，`workspaceRegistryWiring.test.ts` 增加两段源码护栏；
+接线说明同步到 `docs/development/workspace-registry.md`。

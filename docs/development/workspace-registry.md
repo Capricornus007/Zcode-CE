@@ -82,17 +82,19 @@
 
 ## 5. 实现落点与护栏
 
-| 环节                   | 落点                                                                                                                                                                    |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 枚举与回填             | `packages/services/src/session/workspaceRegistryRepo.ts`；迁移表定义 `packages/services/src/session/tasksDatabase/workspace-registry-v1.ts`                             |
-| 默认视图规则（纯函数） | `packages/shared/src/workspace-registry.ts`（30 天窗口 ∪ 置顶）                                                                                                         |
-| 服务与频道             | `packages/services/src/session/workspaceRegistry.ts`（`workspace-registry`）                                                                                            |
-| `/api/server-info`     | `packages/server/src/http.ts`（显式 `workspaces` 仍优先；注册表读失败回落当前目录并告警，不返回 500）                                                                   |
-| 客户端列表             | `packages/ui/src/hooks/useWorkspaceRegistry.ts`、`workspaceSidebarRows.ts`、`packages/ui/src/WorkspaceSidebar.tsx`（注册表补列行**不物化成 tab、不写回设置**）          |
-| 未启动态               | `packages/ui/src/hooks/useWorkspaceRuntimeStates.ts`、`packages/ui/src/WorkspaceRuntimeNotice.tsx`、`packages/ui/src/TaskList.tsx`                                      |
-| **护栏**               | ① 「列出 50 个工作区不产生任何子进程」；② 被动订阅必须显式携带 `runtimePolicy: "existing-only"`；③ 未启动态必须先于「暂无任务」分支；④ 补列行不得改变设置里的工作区列表 |
+| 环节                   | 落点                                                                                                                                                                                                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 枚举与回填             | `packages/services/src/session/workspaceRegistryRepo.ts`；迁移表定义 `packages/services/src/session/tasksDatabase/workspace-registry-v1.ts`                                                                                                                |
+| 默认视图规则（纯函数） | `packages/shared/src/workspace-registry.ts`（30 天窗口 ∪ 置顶）                                                                                                                                                                                            |
+| 服务与频道             | `packages/services/src/session/workspaceRegistry.ts`（`workspace-registry`）；`createLocalServices` 在 `packages/services/src/node.ts` 注册该服务，`listEntries` 走 `TaskIndexRepo.listWorkspaceRegistryEntries`                                           |
+| `/api/server-info`     | `packages/server/src/http.ts`（显式 `workspaces` 仍优先；注册表读失败回落当前目录并告警，不返回 500）                                                                                                                                                      |
+| 客户端出口             | `packages/client/src/remoteServiceAccess.ts` 的 `workspaceRegistryService` proxy；UI 消费面 `packages/ui/src/hooks/useWorkspaceRegistry.ts`、`workspaceSidebarRows.ts`、`packages/ui/src/WorkspaceSidebar.tsx`（注册表补列行**不物化成 tab、不写回设置**） |
+| 未启动态               | `packages/ui/src/hooks/useWorkspaceRuntimeStates.ts`、`packages/ui/src/WorkspaceRuntimeNotice.tsx`、`packages/ui/src/TaskList.tsx`                                                                                                                         |
+| **护栏**               | ① 「列出 50 个工作区不产生任何子进程」；② 被动订阅必须显式携带 `runtimePolicy: "existing-only"`；③ 未启动态必须先于「暂无任务」分支；④ 补列行不得改变设置里的工作区列表                                                                                    |
 
 护栏测试：`packages/services/test/workspaceRegistryService.test.ts`、`packages/server/test/serverInfoRegistry.test.ts`、`packages/ui/test/workspaceRegistryWiring.test.ts`、`packages/shared/test/workspaceRegistry.test.ts`、`packages/services/test/workspaceRegistryRepo.test.ts`。
+
+**服务注册与客户端出口缺一不可**：只注册服务而 `RemoteServiceAccess` 没有 proxy，UI 里 `workspaceRegistryService` 恒为 `undefined`；只加 proxy 而 Local Host 没注册，RPC 会返回 `Service not registered`。两种都表现为侧栏「工作区列表读取失败：workspace-registry service unavailable」，并回落到本客户端显式列出的工作区。`workspaceRegistryWiring.test.ts` 现在同时钉住这两段。
 
 **为什么注册表补列行不写回设置**：物化就等于造出第二份真相源。补列行不可拖拽、不可移除，按最近活动降序追加在现有 tab 之后，既有排序与拖拽语义不变。
 

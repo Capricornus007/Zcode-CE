@@ -14,6 +14,7 @@ import {
   IZCodeTaskService,
   IZCodeAgentService,
   IZCodeSessionService,
+  IWorkspaceRegistryService,
   ICuaPermissionService,
   IConversationShareService,
   IBotsService,
@@ -71,6 +72,8 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly windowControllerService: IWindowControllerService;
   readonly zcodeAgentService: IZCodeAgentService;
   readonly zcodeSessionService: IZCodeSessionService;
+  /** 侧栏枚举唯一真相源；旧 host 未注册频道时调用报错，UI 回落到显式列出。 */
+  readonly workspaceRegistryService: IWorkspaceRegistryService;
   // cuaPermissionService 在 IServiceAccessor 上是可选（远端/bots host 不提供），但桌面 renderer
   // 经 RPC 一定能拿到（main host 始终注册此 descriptor；非 macOS / 未启用时方法返回 available:false）。
   readonly cuaPermissionService: ICuaPermissionService;
@@ -153,6 +156,11 @@ export class RemoteServiceAccess implements IServiceAccessor {
     );
     this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
       channelClient.getChannel(IZCodeSessionService.channelName),
+    );
+    // 少这一条 proxy 时 useWorkspaceRegistry 永远拿不到服务，侧栏固定显示
+    // 「工作区列表读取失败」——服务端注册了也没有出口。
+    this.workspaceRegistryService = ProxyChannel.toService<IWorkspaceRegistryService>(
+      channelClient.getChannel(IWorkspaceRegistryService.channelName),
     );
     this.cuaPermissionService = ProxyChannel.toService<ICuaPermissionService>(
       channelClient.getChannel(ICuaPermissionService.channelName),

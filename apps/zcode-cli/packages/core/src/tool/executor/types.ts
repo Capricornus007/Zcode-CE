@@ -49,6 +49,7 @@ import type {
   ToolExecutionResult,
   ToolRuntimeScope,
   ToolSearchControlPort,
+  KbSearchControlPort,
 } from "../types.js";
 
 export interface BackgroundTaskNotificationCommand {
@@ -91,6 +92,7 @@ export interface ToolExecutorOptions {
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
   toolSearchControlPort?: ToolSearchControlPort;
+  kbSearchControlPort?: KbSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;
@@ -208,6 +210,7 @@ export interface ToolExecutorDeps {
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
   toolSearchControlPort?: ToolSearchControlPort;
+  kbSearchControlPort?: KbSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;

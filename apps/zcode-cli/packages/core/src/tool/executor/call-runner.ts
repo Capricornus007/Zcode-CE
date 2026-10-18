@@ -412,6 +412,7 @@ async function executeToolCallImpl(
         abortSignal: executionAbortController.signal,
         backgroundTaskControlPort: deps.backgroundTaskControlPort,
         toolSearchControlPort: deps.toolSearchControlPort,
+        kbSearchControlPort: deps.kbSearchControlPort,
         emitEvent,
         executionPort: deps.executionPort,
         browserControlPort: deps.browserControlPort,

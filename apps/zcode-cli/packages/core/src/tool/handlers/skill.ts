@@ -10,12 +10,17 @@ import {
   SkillOutputSchema,
   createCoreError,
   DYNAMIC_WORKFLOW_SKILL_NAME,
+  type SkillReference,
   type SkillRuntimeInput,
 } from "@zcode/contracts";
 import type { ToolEntry, ToolHandler } from "../types.js";
 
 /** 技能正文的默认字节上限；超出部分由 adapter 从尾部截掉。 */
 export const MAX_SKILL_BYTES = 100_000;
+
+/** references 清单注入上限（140 §P1-6）：条目数与整段字节双上限。 */
+export const MAX_SKILL_REFERENCES = 80;
+export const MAX_SKILL_REFERENCE_BLOCK_BYTES = 8_192;
 
 /**
  * `dynamic-workflows` 技能的字节上限（docs/dynamic-workflow/authoring.md「The skill」）。
@@ -74,12 +79,15 @@ export const skillHandler: ToolHandler = async (input, context) => {
     source: loaded.metadata.source,
   });
 
+  const referenceBlock = formatSkillReferences(loaded.references);
+
   return [
     `<skill_content name="${loaded.metadata.name}">`,
     `# Skill: ${loaded.metadata.name}`,
     "",
     expandSkillContextVariables(loaded.content, loaded.baseDirectory),
     "",
+    ...(referenceBlock ? [referenceBlock] : []),
     `Base directory for this skill: ${loaded.baseDirectory}`,
     "Relative paths in this skill are relative to this base directory.",
     loaded.truncated ? "[Skill content truncated]" : "",
@@ -88,6 +96,40 @@ export const skillHandler: ToolHandler = async (input, context) => {
     .filter((line) => line.length > 0)
     .join("\n");
 };
+
+/**
+ * 把 adapter 枚举的 references 渲染成一段紧凑清单（140 §P1-6）。
+ * 只列路径、大小与首标题，让模型知道「有什么、多大」，不复制正文。
+ * 超过 80 项或 8 KiB 时截断，并明确告知剩余数量。
+ */
+export function formatSkillReferences(
+  references: readonly SkillReference[] | undefined,
+): string | null {
+  if (!references || references.length === 0) return null;
+  const lines = ["[references]"];
+  let bytes = Buffer.byteLength(lines[0]!);
+  let shown = 0;
+  for (const reference of references) {
+    if (shown >= MAX_SKILL_REFERENCES) break;
+    const title = reference.title ? ` — # ${reference.title}` : "";
+    const line = `- ${reference.relativePath} — ${formatReferenceSize(reference.sizeBytes)}${title}`;
+    const nextBytes = bytes + Buffer.byteLength(line) + 1;
+    if (nextBytes > MAX_SKILL_REFERENCE_BLOCK_BYTES) break;
+    lines.push(line);
+    bytes = nextBytes;
+    shown += 1;
+  }
+  if (shown < references.length) {
+    lines.push(`另有 ${references.length - shown} 个未列出，用 Glob 查 references/ 目录。`);
+  }
+  return lines.join("\n");
+}
+
+function formatReferenceSize(sizeBytes: number): string {
+  if (sizeBytes < 1024) return `${sizeBytes} B`;
+  if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
+  return `${(sizeBytes / (1024 * 1024)).toFixed(2)} MB`;
+}
 
 function expandSkillContextVariables(content: string, baseDirectory: string): string {
   // 只有 Skill 工具加载后才有明确的当前 skill 目录，因此变量替换限定在这里完成。

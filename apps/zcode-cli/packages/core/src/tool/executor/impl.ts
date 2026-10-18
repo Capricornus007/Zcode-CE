@@ -43,6 +43,7 @@ export class ToolExecutorImpl implements ToolExecutor {
       logger: options.logger,
       backgroundTaskControlPort: options.backgroundTaskControlPort,
       toolSearchControlPort: options.toolSearchControlPort,
+      kbSearchControlPort: options.kbSearchControlPort,
       executionPort: options.executionPort,
       browserControlPort: options.browserControlPort,
       browserDocumentationRoot: options.browserDocumentationRoot,

@@ -3,8 +3,8 @@
 // ============================================================
 
 import { realpathSync } from "node:fs";
-import { open, readFile, realpath, stat } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { open, readdir, readFile, realpath, stat } from "node:fs/promises";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import type {
   SkillContent,
   SkillDiagnostic,
@@ -12,6 +12,7 @@ import type {
   SkillMetadata,
   SkillOperationOptions,
   SkillPort,
+  SkillReference,
   SkillRoot,
 } from "@zcode/contracts";
 import { resolveDefaultSkillRoots, type SkillRootResolutionOptions } from "./roots.js";
@@ -27,6 +28,10 @@ const SAFE_FRONTMATTER_KEYS = new Set([
 ]);
 const DEFAULT_MAX_SKILL_BYTES = 100_000;
 const MAX_PLUGIN_MANIFEST_SEARCH_DEPTH = 5;
+/** references 清单上限：handler 侧还会按 80 项 / 8 KiB 收敛，这里只防超大目录拖慢加载。 */
+const MAX_SKILL_REFERENCE_FILES = 200;
+const MAX_SKILL_REFERENCE_DEPTH = 3;
+const REFERENCE_TITLE_READ_BYTES = 4_096;
 const PLUGIN_MANIFEST_RELATIVE_PATHS = [
   ".zcode-plugin/plugin.json",
   ".claude-plugin/plugin.json",
@@ -118,6 +123,7 @@ export class NodeSkillAdapter implements SkillPort {
       : await readFile(metadata.path);
     const rawContent = buffer.toString("utf8");
     const content = stripFrontmatter(rawContent).trim();
+    const references = await listSkillReferences(metadata.directory);
 
     return {
       metadata,
@@ -126,6 +132,7 @@ export class NodeSkillAdapter implements SkillPort {
       bytesRead: buffer.byteLength,
       sizeBytes: info.size,
       truncated,
+      ...(references.length > 0 ? { references } : {}),
     };
   }
 
@@ -370,10 +377,7 @@ function readBlockScalar(
     line.trim().length === 0 ? "" : line.slice(indent ?? 0),
   );
   return {
-    value:
-      style === "folded"
-        ? foldBlockScalarLines(contentLines)
-        : contentLines.join("\n").trim(),
+    value: style === "folded" ? foldBlockScalarLines(contentLines) : contentLines.join("\n").trim(),
     nextIndex: index,
   };
 }
@@ -452,6 +456,59 @@ function safeRealpathSync(path: string): string | undefined {
     return realpathSync(path);
   } catch {
     return undefined;
+  }
+}
+
+/**
+ * 枚举 `<skill>/references/**` 下的 Markdown 清单（140 §P1-6）。
+ *
+ * 只读、不落盘；符号链接一律跳过（plugin 技能目录不可信，链接可指向根外）。
+ * 失败按空清单处理：references 索引是增益，不能阻断技能正文加载。
+ */
+async function listSkillReferences(skillDirectory: string): Promise<SkillReference[]> {
+  const referencesRoot = join(skillDirectory, "references");
+  const collected: SkillReference[] = [];
+
+  const visit = async (directory: string, depth: number): Promise<void> => {
+    if (depth > MAX_SKILL_REFERENCE_DEPTH || collected.length >= MAX_SKILL_REFERENCE_FILES) return;
+    let entries;
+    try {
+      entries = await readdir(directory, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      if (collected.length >= MAX_SKILL_REFERENCE_FILES) return;
+      if (entry.isSymbolicLink()) continue;
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        await visit(path, depth + 1);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".md")) continue;
+      const info = await stat(path).catch(() => null);
+      if (!info) continue;
+      collected.push({
+        relativePath: relative(skillDirectory, path).split(sep).join("/"),
+        sizeBytes: info.size,
+        ...(await readReferenceTitle(path)),
+      });
+    }
+  };
+
+  await visit(referencesRoot, 0);
+  return collected;
+}
+
+async function readReferenceTitle(path: string): Promise<{ title?: string }> {
+  try {
+    const buffer = await readFirstBytes(path, REFERENCE_TITLE_READ_BYTES);
+    const heading = /^#\s+(.+)$/m.exec(buffer.toString("utf8"));
+    const title = heading?.[1]?.trim();
+    return title ? { title: title.slice(0, 120) } : {};
+  } catch {
+    return {};
   }
 }
 

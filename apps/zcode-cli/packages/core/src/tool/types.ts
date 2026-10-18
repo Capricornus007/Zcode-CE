@@ -18,6 +18,8 @@ import type {
   HttpClientPort,
   ImageProcessorPort,
   JsonSchema,
+  KbSearchInput,
+  KbSearchOutput,
   Model,
   ModelCatalogPort,
   ModelContentProtection,
@@ -152,6 +154,14 @@ export interface ToolSearchControlPort {
   search(query: string, limit?: number): Promise<ToolSearchExecutionResult>;
 }
 
+/**
+ * KbSearch 工具的执行端口（140 §P1-5）：runtime 持有 kb 语料索引与召回缓存，
+ * handler 只做参数解析与结果格式化，不直接触碰文件系统或 embedding 端点。
+ */
+export interface KbSearchControlPort {
+  search(request: KbSearchInput): Promise<KbSearchOutput>;
+}
+
 export interface ToolExecutionContext {
   toolCallId: string;
   /**
@@ -172,6 +182,8 @@ export interface ToolExecutionContext {
   backgroundTaskControlPort?: BackgroundTaskControlPort;
   /** 延迟工具发现端口（ToolSearch）；runtime 装配，缺席时 handler 诚实失败。 */
   toolSearchControlPort?: ToolSearchControlPort;
+  /** 知识卡检索端口（KbSearch）；runtime 装配，缺席时 handler 诚实失败。 */
+  kbSearchControlPort?: KbSearchControlPort;
   emitEvent?: (event: SessionEvent) => Promise<void>;
   executionPort?: ExecutionPort;
   /** browser-use 控制端口；node_repl 的 agent.browsers.* 经此执行。缺省则 browser 不可用。 */

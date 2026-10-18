@@ -7,7 +7,13 @@ import type { ContextSection } from "../types.js";
 import { estimateTokens } from "../utils.js";
 
 const DEFAULT_SKILL_METADATA_BUDGET = 20_000;
-const MAX_DESCRIPTION_CHARS = 250;
+/**
+ * 单行描述字符上限。250 会把长描述的尾部触发词切掉（奇门 349 字，尾部含
+ * 「盲测复盘库 / 231 案例 / 十一体系诊断路由 / 杨公风水 1080 局」），而这些词
+ * 恰是区分相近体系的判据。400 在 60 技能快照下只增加约 1.8 K 字符，仍在 20 K
+ * 预算内（docs/development/140-qimen-skill-leverage.md P0-2）。
+ */
+const MAX_DESCRIPTION_CHARS = 400;
 
 interface SkillsSectionOptions {
   outcome: SkillLoadOutcome;
@@ -49,10 +55,7 @@ const SHORT_DESCRIPTION_CHARS = 120;
  *   ③ 仍放不下 → 头部尽量多的短描述行 + 尾部 names-only（保字母序，确定性）。
  */
 function buildSkillsContent(skills: SkillMetadata[], budget: number): string {
-  const lines = [
-    "The following skills are available for use with the Skill tool:",
-    "",
-  ];
+  const lines = ["The following skills are available for use with the Skill tool:", ""];
 
   const sortedSkills = [...skills].sort((a, b) =>
     skillDisplayName(a).localeCompare(skillDisplayName(b)),
@@ -72,7 +75,9 @@ function buildSkillsContent(skills: SkillMetadata[], budget: number): string {
   const namesOnlyFrom = (from: number) =>
     sortedSkills
       .slice(from)
-      .map((skill) => `- ${skillDisplayName(skill)}${bareAliasSuffix(skill)} (file: ${skill.path})`);
+      .map(
+        (skill) => `- ${skillDisplayName(skill)}${bareAliasSuffix(skill)} (file: ${skill.path})`,
+      );
   const truncatedNote =
     "Descriptions truncated for the least-fitting tail; load a skill to see its full SKILL.md:";
 

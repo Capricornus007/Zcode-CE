@@ -4,20 +4,28 @@ import { modelMessageContentToText } from "../deps.js";
 import { scanMemoryManifest } from "../../memory/recall/index.js";
 import { scoreMemoryEntries } from "../../memory/recall/score.js";
 import {
-  cosineSimilarity,
+  cosineSimilarityQuantized,
   EMBEDDING_BATCH_LIMIT,
   fetchEmbeddings,
   fuseRecallScoresFull,
   readEmbeddingEndpointConfig,
+  vectorNorm,
 } from "../../memory/recall/embedding.js";
 import {
-  decodeVector,
-  encodeVector,
-  parseVectorStoreFile,
-  vectorStorePath,
-  type PersistedVectorFile,
+  loadQuantizedVectors,
+  quantizeVector,
+  readVectorStoreIndex,
+  vectorFamily,
+  vectorStoreLayout,
+  type QuantizedVector,
 } from "../../memory/recall/vector-store.js";
+import { scheduleVectorPersist, vectorStoreSlot } from "../../memory/recall/vector-persistence.js";
 import type { MemoryManifestEntry } from "../../memory/recall/types.js";
+
+export {
+  flushVectorStores,
+  resetVectorStoresForTesting,
+} from "../../memory/recall/vector-persistence.js";
 
 /**
  * 记忆召回提醒的构建（turn 级，吸收 Hermes 的 prefetch 模式）。
@@ -69,8 +77,8 @@ interface CacheSlot {
 
 /** manifest 扫描缓存：runtime → (rootDir → 槽)；kb 卡语料与 memory 语料各自缓存。 */
 const manifestCache = new WeakMap<object, Map<string, CacheSlot>>();
-/** 条目向量缓存：runtime → (缓存键 → 向量)；键含 mtime+description，内容变更自动失效。 */
-const vectorCache = new WeakMap<object, Map<string, number[]>>();
+/** 条目向量缓存：runtime → (缓存键 → int8 量化向量)；键含 mtime+description，内容变更自动失效。 */
+const vectorCache = new WeakMap<object, Map<string, QuantizedVector>>();
 /** 查询向量备忘：同一 runtime 内同 query 文本复用上次向量——memory 与 kb 两语料
  * 在同一 turn 用同一查询各调一次 rankRecallCorpus，不备忘会双花一次 embedding
  * 请求（每次几百 ms 落在 TTFT 上）。query 变了自然失效（键含全文）。 */
@@ -84,69 +92,8 @@ function vectorCacheKey(rootDir: string, entry: MemoryManifestEntry): string {
   return `${rootDir}\u0000${entry.filename}\u0000${entry.mtimeMs}\u0000${entry.description ?? ""}`;
 }
 
-// ── P7 向量盘档：进程内缓存重启即丢，盘档让重暖从数十轮降为一次加载。 ──
-const PERSIST_DEBOUNCE_MS = 5_000;
-
-interface DiskSlot {
-  loadPromise: Promise<void> | null;
-  store: PersistedVectorFile | null;
-  dirty: boolean;
-  timer?: ReturnType<typeof setTimeout>;
-  fileSystem?: FileSystemPort;
-}
-
-const diskSlots = new Map<string, DiskSlot>();
-
-function diskSlotFor(storePath: string): DiskSlot {
-  let slot = diskSlots.get(storePath);
-  if (!slot) {
-    slot = { loadPromise: null, store: null, dirty: false };
-    diskSlots.set(storePath, slot);
-  }
-  return slot;
-}
-
-function schedulePersist(slot: DiskSlot, storePath: string, fileSystem: FileSystemPort): void {
-  slot.fileSystem = fileSystem;
-  if (slot.timer !== undefined) return;
-  slot.timer = setTimeout(() => {
-    slot.timer = undefined;
-    void persistSlot(slot, storePath);
-  }, PERSIST_DEBOUNCE_MS);
-  slot.timer.unref?.();
-}
-
-async function persistSlot(slot: DiskSlot, storePath: string): Promise<void> {
-  if (!slot.dirty || !slot.store || !slot.fileSystem) return;
-  slot.dirty = false;
-  try {
-    await slot.fileSystem.writeTextFile({ path: storePath, content: JSON.stringify(slot.store), atomic: true });
-  } catch {
-    slot.dirty = true; // 写失败留脏位，下个窗口再试；盘档是加速器，失败不阻断召回。
-  }
-}
-
-/** 立即落盘所有脏槽（测试与进程收尾用）。 */
-export async function flushVectorStores(): Promise<void> {
-  for (const [storePath, slot] of diskSlots) {
-    if (slot.timer !== undefined) {
-      clearTimeout(slot.timer);
-      slot.timer = undefined;
-    }
-    await persistSlot(slot, storePath);
-  }
-}
-
-/** 测试隔离：清空盘档内存态（不删文件）。 */
-export function resetVectorStoresForTesting(): void {
-  for (const slot of diskSlots.values()) {
-    if (slot.timer !== undefined) clearTimeout(slot.timer);
-  }
-  diskSlots.clear();
-}
-
 /** 融合档取全部条目向量：命中缓存直取，缺的先从盘档补水、再按 64 条/批在
- * 预算内增量补——每批完成立即入缓存与盘档（中断不丢批次）。 */
+ * 预算内增量补——每批完成立即入缓存并标记脏家族（中断不丢批次）。 */
 async function ensureEntryVectors(
   runtime: object,
   endpoint: NonNullable<ReturnType<typeof readEmbeddingEndpointConfig>>,
@@ -154,7 +101,7 @@ async function ensureEntryVectors(
   deadlineAt: number,
   fileSystem: FileSystemPort,
   rootDir: string,
-): Promise<Map<string, number[]>> {
+): Promise<Map<string, QuantizedVector>> {
   let cache = vectorCache.get(runtime);
   if (!cache) {
     cache = new Map();
@@ -164,25 +111,25 @@ async function ensureEntryVectors(
   for (const key of cache.keys()) {
     if (!liveKeys.has(key)) cache.delete(key); // 语料演化：清掉已消失/已变更条目的旧向量
   }
-  // P7 盘档：按 corpus×模型分文件，加载单飞；失败按空盘档处理（静默重算）。
-  const storePath = vectorStorePath(rootDir, endpoint.model ?? "embedding-3");
-  const slot = diskSlotFor(storePath);
+  // P7 v2 盘档：按 corpus×模型×家族分片，加载单飞；失败按空盘档处理（静默重算）。
+  const model = endpoint.model ?? "embedding-3";
+  const layout = vectorStoreLayout(rootDir, model);
+  const slot = vectorStoreSlot(layout, model);
+  slot.root = rootDir;
   if (slot.loadPromise === null) {
     slot.loadPromise = (async () => {
-      try {
-        const read = await fileSystem.readTextFile({ path: storePath });
-        slot.store = parseVectorStoreFile(read.content, endpoint.model ?? "embedding-3");
-      } catch {
-        slot.store = { version: 1, model: endpoint.model ?? "embedding-3", vectors: {} };
-      }
+      const index = await readVectorStoreIndex(fileSystem, layout, model, rootDir);
+      slot.index = index;
+      slot.diskVectors = index ? await loadQuantizedVectors(fileSystem, layout, index) : new Map();
     })();
   }
   await slot.loadPromise;
-  if (slot.store !== null) {
+  if (slot.diskVectors) {
     for (const entry of entries) {
-      if (cache.has(vectorCacheKey(rootDir, entry))) continue;
-      const decoded = decodeVector(slot.store.vectors[vectorCacheKey(rootDir, entry)] ?? "");
-      if (decoded !== null) cache.set(vectorCacheKey(rootDir, entry), decoded);
+      const key = vectorCacheKey(rootDir, entry);
+      if (cache.has(key)) continue;
+      const fromDisk = slot.diskVectors.get(key);
+      if (fromDisk) cache.set(key, fromDisk);
     }
   }
   const missing = entries.filter((entry) => !cache.has(vectorCacheKey(rootDir, entry)));
@@ -197,19 +144,17 @@ async function ensureEntryVectors(
         { signal: AbortSignal.timeout(remaining) },
       );
       batch.forEach((entry, j) => {
-        cache!.set(vectorCacheKey(rootDir, entry), vectors[j]!);
-        if (slot.store !== null) {
-          slot.store.vectors[vectorCacheKey(rootDir, entry)] = encodeVector(vectors[j]!);
-          slot.dirty = true;
-        }
+        const key = vectorCacheKey(rootDir, entry);
+        cache!.set(key, quantizeVector(vectors[j]!));
+        slot.dirtyFamilies.add(vectorFamily(key));
       });
     } catch {
       break; // 预算尽/端点故障：保留已缓存批次，其余下轮续补
     }
   }
-  // 落盘调度一次/调用（批次内不重复挂表）：kb 规模（数千卡≈数十 MB JSON）
-  // 下每批一写会把 stringify-写盘变成热路径；防抖窗口本就跨 turn，无丢失代价。
-  if (slot.dirty) schedulePersist(slot, storePath, fileSystem);
+  slot.cache = cache;
+  // 落盘调度一次/调用（批次内不重复挂表）：只重写脏家族分片，不再重写整份盘档。
+  if (slot.dirtyFamilies.size > 0) scheduleVectorPersist(slot, fileSystem);
   return cache;
 }
 
@@ -227,11 +172,7 @@ export function latestRealUserText(entries: readonly RuntimeMessageEntry[]): str
   // legacy_synthetic 而非 real_user），没有 real_user 条目——退回首个任务文本
   // 作为召回查询（P3：子代理共享主记忆召回的查询面）。
   for (const entry of entries) {
-    if (
-      entry &&
-      "message" in entry &&
-      entry.metadata?.inputPresentation === "coordinator_input"
-    ) {
+    if (entry && "message" in entry && entry.metadata?.inputPresentation === "coordinator_input") {
       const text = modelMessageContentToText(entry.message.content).trim();
       if (text) return text;
     }
@@ -258,6 +199,11 @@ export interface RankRecallCorpusInput {
   minScore?: number;
   /** 清单条数上限（默认 200=memory 档；kb 卡语料必须放宽）。 */
   fileLimit?: number;
+  /**
+   * 已装载的清单（kb 档由 kb-corpus 的落盘索引提供）。给出时跳过目录扫描：
+   * 语料版本与索引新鲜度由调用方裁决，这里只做排序与向量融合。
+   */
+  manifest?: readonly MemoryManifestEntry[];
 }
 
 /**
@@ -269,32 +215,38 @@ export async function rankRecallCorpus(
   input: RankRecallCorpusInput,
 ): Promise<MemoryManifestEntry[] | null> {
   const topK = input.topK ?? TOP_K;
-  let roots = manifestCache.get(input.runtime);
-  if (!roots) {
-    roots = new Map();
-    manifestCache.set(input.runtime, roots);
-  }
-  const now = Date.now();
-  let slot = roots.get(input.rootDir);
-  if (!slot || now - slot.at > SCAN_TTL_MS) {
-    try {
-      slot = {
-        entries: await scanMemoryManifest({
-          fileSystem: input.fileSystem,
-          rootDir: input.rootDir,
-          ...(input.fileLimit !== undefined ? { fileLimit: input.fileLimit } : {}),
-        }),
-        at: now,
-      };
-      roots.set(input.rootDir, slot);
-    } catch {
-      return null;
+  let entries: readonly MemoryManifestEntry[];
+  if (input.manifest) {
+    entries = input.manifest;
+  } else {
+    let roots = manifestCache.get(input.runtime);
+    if (!roots) {
+      roots = new Map();
+      manifestCache.set(input.runtime, roots);
     }
+    const now = Date.now();
+    let slot = roots.get(input.rootDir);
+    if (!slot || now - slot.at > SCAN_TTL_MS) {
+      try {
+        slot = {
+          entries: await scanMemoryManifest({
+            fileSystem: input.fileSystem,
+            rootDir: input.rootDir,
+            ...(input.fileLimit !== undefined ? { fileLimit: input.fileLimit } : {}),
+          }),
+          at: now,
+        };
+        roots.set(input.rootDir, slot);
+      } catch {
+        return null;
+      }
+    }
+    entries = slot.entries;
   }
-  if (slot.entries.length === 0) return null;
+  if (entries.length === 0) return null;
 
-  const lexical = scoreMemoryEntries(input.query, slot.entries, {
-    topK: slot.entries.length,
+  const lexical = scoreMemoryEntries(input.query, entries, {
+    topK: entries.length,
     minScore: input.minScore ?? 0.1,
   });
   const endpoint = readEmbeddingEndpointConfig();
@@ -308,7 +260,7 @@ export async function rankRecallCorpus(
     const cache = await ensureEntryVectors(
       input.runtime,
       endpoint,
-      slot.entries,
+      entries,
       deadlineAt,
       input.fileSystem,
       input.rootDir,
@@ -321,21 +273,30 @@ export async function rankRecallCorpus(
       [queryVector] = await fetchEmbeddings(endpoint, [input.query], {
         signal: AbortSignal.timeout(remaining),
       });
-      if (queryVector) queryVectorCache.set(input.runtime, { query: input.query, vector: queryVector });
+      if (queryVector)
+        queryVectorCache.set(input.runtime, { query: input.query, vector: queryVector });
     }
     if (!queryVector) {
       if (lexical.length === 0) return null;
       return lexical.slice(0, topK).map((item) => item.entry);
     }
     const cosineByFilename = new Map<string, number>();
-    for (const entry of slot.entries) {
+    const queryNormValue = vectorNorm(queryVector);
+    for (const entry of entries) {
       const vector = cache.get(vectorCacheKey(input.rootDir, entry));
-      if (vector) cosineByFilename.set(entry.filename, cosineSimilarity(queryVector, vector));
+      if (vector) {
+        cosineByFilename.set(
+          entry.filename,
+          cosineSimilarityQuantized(queryVector, queryNormValue, vector),
+        );
+      }
     }
-    const lexicalScoreByFilename = new Map(lexical.map((item) => [item.entry.filename, item.score]));
-    const fused = fuseRecallScoresFull(slot.entries, lexicalScoreByFilename, cosineByFilename);
+    const lexicalScoreByFilename = new Map(
+      lexical.map((item) => [item.entry.filename, item.score]),
+    );
+    const fused = fuseRecallScoresFull(entries, lexicalScoreByFilename, cosineByFilename);
     if (lexical.length === 0 && (fused[0]?.score ?? 0) < SEMANTIC_FLOOR) return null; // 纯语义档：全都不相关
-    const byFilename = new Map(slot.entries.map((entry) => [entry.filename, entry]));
+    const byFilename = new Map(entries.map((entry) => [entry.filename, entry]));
     const rankedEntries = fused
       .slice(0, topK)
       .map((item) => byFilename.get(item.filename))

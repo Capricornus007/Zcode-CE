@@ -37,6 +37,7 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
   "selection_side_chat",
   "queued_system_notification",
   "shell_environment_change",
+  "skill_digest",
 ] as const;
 
 export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
@@ -152,6 +153,8 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     true,
     "sr.resume_referenced_session_context",
   ),
+  // 压缩边界重注入的技能 digest（标题 + 硬约束 + 命令），不是技能正文第二副本。
+  skill_digest: descriptor("history_continuity", "resume_history", true, "sr.skill_digest"),
   plan_file_reference: descriptor(
     "history_continuity",
     "resume_history",

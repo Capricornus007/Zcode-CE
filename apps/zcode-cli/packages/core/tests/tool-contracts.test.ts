@@ -57,6 +57,9 @@ const DIRECT_BRANCH_EXPECTED_PROVIDER_TOOL_ORDER = [
   "SendMessage",
   "ReadSessionContext",
   "ReplyToChannel",
+  // 知识卡主动检索（140 §P1-5）：与 Skill 同族的只读工具，注册在 Skill 之后，
+  // 排序集合未收录，因此按注册序落在主会话工具簇尾部。
+  "KbSearch",
   "CreateWorkflow",
   // 修订入口紧随 CreateWorkflow 注册（docs/dynamic-workflow/launch.md「The `AmendWorkflow` tool」）。
   "AmendWorkflow",
@@ -420,7 +423,9 @@ describe("tool contract declarations", () => {
     expect(agentDescription).not.toContain("ID or name");
     expect(agentDescription).not.toContain(".claude/agents");
     expect(agentDescription).not.toContain("When you launch multiple agents for independent work");
-    expect(agentDescription).toContain("Available agent types are listed in <system-reminder> messages in the conversation.");
+    expect(agentDescription).toContain(
+      "Available agent types are listed in <system-reminder> messages in the conversation.",
+    );
     expect(agentDescription).not.toContain("- general-purpose:");
     expect(agentDescription).not.toContain("- Explore:");
     expect(agentDescription).not.toContain("model:");
@@ -1181,7 +1186,9 @@ describe("tool contract declarations", () => {
 
     const agentDescription = byName.get("Agent")?.description ?? "";
     expect(agentDescription).not.toContain("Tools: Glob, Grep");
-    expect(agentDescription).toContain("Available agent types are listed in <system-reminder> messages in the conversation.");
+    expect(agentDescription).toContain(
+      "Available agent types are listed in <system-reminder> messages in the conversation.",
+    );
     expect(agentDescription).not.toContain("(Tools:");
     expect(agentDescription).not.toContain("<system-reminder>\n");
 

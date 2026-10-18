@@ -1,5 +1,13 @@
 # Tool Change Chain Spec
 
+## KbSearch 主动检索（2026-10-18）
+
+新增只读工具 `KbSearch`：按需检索 `.zcode/kb-cards`，返回源锚点而非正文。与每轮
+`kb_recall` 注入共用 `kb-corpus` 索引与 `rankRecallCorpus` 融合排序，只增加模型可见的
+工具面与 handler/端口装配；不改变权限核心、审批分支、session event、compact 或
+desktop continuous / web replayable 投递。语料超过生成器护栏时显式告警且不截断
+（`docs/development/140-qimen-skill-leverage.md` §P0-1）。合同见 [19-kb-search.md](./19-kb-search.md)。
+
 ## 工具内部模型请求的会话归因（2026-09-30）
 
 WebSearch、WebFetch processing、ReadSessionContext 的内部模型请求继承发起工具的宿主

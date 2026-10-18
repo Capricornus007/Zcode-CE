@@ -77,6 +77,18 @@ export interface SkillLoadOutcome {
   totalDiscovered: number;
 }
 
+/**
+ * 技能 references 目录下的单个参考文件（140 §P1-6）。
+ * 只描述「可读什么」，不含正文：模型据大小与标题决定 Read 哪个文件。
+ */
+export interface SkillReference {
+  /** 相对技能目录的路径，POSIX 分隔符。 */
+  relativePath: string;
+  sizeBytes: number;
+  /** 文件首个 Markdown 一级标题（缺省时省略）。 */
+  title?: string;
+}
+
 export interface SkillContent {
   metadata: SkillMetadata;
   content: string;
@@ -84,6 +96,11 @@ export interface SkillContent {
   bytesRead: number;
   sizeBytes: number;
   truncated: boolean;
+  /**
+   * `<skill.directory>/references/**` 下的 Markdown 清单。
+   * 适配器无法枚举时省略；Skill handler 按 80 项 / 8 KiB 截断后注入。
+   */
+  references?: SkillReference[];
 }
 
 export interface SkillDiscoverRequest {

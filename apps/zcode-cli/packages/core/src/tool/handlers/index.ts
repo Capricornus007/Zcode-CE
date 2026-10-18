@@ -37,6 +37,7 @@ import {
 } from "./agent.js";
 import { isSubagentDispatchToolName } from "../compat.js";
 import { skillToolEntry } from "./skill.js";
+import { kbSearchToolEntry } from "./kb-search.js";
 import { todoReadToolEntry, todoWriteToolEntry } from "./todo.js";
 import {
   cronCreateToolEntry,
@@ -115,6 +116,7 @@ export const builtInTools: ToolEntry[] = [
   agentToolEntry,
   taskToolEntry,
   skillToolEntry,
+  kbSearchToolEntry,
   jsToolEntry,
   createWorkflowToolEntry,
   amendWorkflowToolEntry,
@@ -210,6 +212,8 @@ interface RegisterBuiltInToolsOptions {
   /** browser-use 说明和 agent.browsers 注入由官方 browser-use 插件 + 宿主 browser bridge 共同启用。 */
   includeBrowserUse?: boolean;
   embeddedSearchEnabled?: boolean;
+  /** 知识卡检索（KbSearch）：需要工作区文件系统与 `.zcode/kb-cards` 语料；缺席即不注册。 */
+  includeKbSearch?: boolean;
   allowedTools?: readonly string[];
   disallowedTools?: readonly string[];
   silentDuplicateWarnings?: boolean;
@@ -241,6 +245,9 @@ export function registerBuiltInTools(
       continue;
     }
     if (entry.metadata.name === "Skill" && options.includeSkill === false) {
+      continue;
+    }
+    if (entry.metadata.name === "KbSearch" && options.includeKbSearch === false) {
       continue;
     }
     if (entry.metadata.name === "SendMessage" && options.includeSendMessage !== true) {

@@ -25,6 +25,31 @@ export function cosineSimilarity(a: readonly number[], b: readonly number[]): nu
   return denom > 0 ? dot / denom : 0;
 }
 
+/** 查询向量的 L2 范数；同一查询对全部条目只算一次。 */
+export function vectorNorm(vector: readonly number[]): number {
+  let sumSquares = 0;
+  for (const value of vector) sumSquares += value * value;
+  return Math.sqrt(sumSquares);
+}
+
+/**
+ * 查询（float32）与 int8 量化条目的余弦（140 §P1-4）。
+ * 量化条目的 scale/norm 已在解码时算好；这里只做点积与反量化。
+ */
+export function cosineSimilarityQuantized(
+  query: readonly number[],
+  queryNorm: number,
+  quantized: { data: Int8Array; scale: number; norm: number },
+): number {
+  if (query.length === 0 || query.length !== quantized.data.length) return 0;
+  if (queryNorm === 0 || quantized.norm === 0) return 0;
+  let dot = 0;
+  for (let index = 0; index < query.length; index += 1) {
+    dot += query[index]! * quantized.data[index]!;
+  }
+  return (dot * quantized.scale) / (queryNorm * quantized.norm);
+}
+
 /**
  * 全量融合（v3 架构，2026-10-02 bench 实证）：对全部条目做
  * 余弦×cosineWeight + 归一化词法×(1-cosineWeight)，词法零重叠条目按词法 0 分参与。

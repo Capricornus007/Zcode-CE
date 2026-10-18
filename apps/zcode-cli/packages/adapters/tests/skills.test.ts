@@ -93,6 +93,36 @@ describe("NodeSkillAdapter", () => {
     }
   });
 
+  it("loads references index with relative path, size and first heading", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "zcode-skills-"));
+    const skillDir = join(dir, ".zcode", "skills", "ref-skill");
+    const referencesDir = join(skillDir, "references");
+
+    try {
+      await mkdir(join(referencesDir, "sub"), { recursive: true });
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        ["---", "name: ref-skill", "description: Has references", "---", "", "# Ref"].join("\n"),
+      );
+      await writeFile(join(referencesDir, "04-应期.md"), "# 应期与运筹\n\n正文");
+      await writeFile(join(referencesDir, "sub", "05-案例.md"), "# 案例\n\n正文");
+      await writeFile(join(referencesDir, "notes.txt"), "不是 markdown");
+
+      const adapter = createNodeSkillAdapter({ homeDirectory: join(dir, "home") });
+      const loaded = await adapter.loadSkill({ name: "ref-skill", workingDirectory: dir });
+
+      const refs = loaded.references ?? [];
+      expect(refs.map((ref) => ref.relativePath)).toEqual([
+        "references/04-应期.md",
+        "references/sub/05-案例.md",
+      ]);
+      expect(refs[0]?.title).toBe("应期与运筹");
+      expect(refs[0]?.sizeBytes).toBeGreaterThan(0);
+    } finally {
+      await rm(dir, { force: true, recursive: true });
+    }
+  });
+
   it("discovers user skills imported as directory symlinks", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-skills-"));
     const sourceSkill = join(dir, "external-skills", "linked-skill");

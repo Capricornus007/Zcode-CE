@@ -8,10 +8,12 @@ import {
   traceContextToLogContext,
 } from "../deps.js";
 import type { HookRunner, SessionId, ToolExecutor, TraceContext } from "../deps.js";
+import type { KbSearchInput } from "@zcode/contracts";
 import type { AgentRuntimeInternal } from "../internal.js";
 import type { AgentRuntimeDeps } from "../types.js";
 import { resolveRuntimeEmbeddedSearchEnabled } from "../methods/embedded-search-branch.js";
 import { searchAndActivateDeferredTools } from "./tool-deferral.js";
+import { searchKbCorpus } from "../methods/kb-search.js";
 import { getSessionShellSelectionFromConfig } from "../methods/session-shell-environment.js";
 import { createRuntimeSessionModePort } from "../session-mode-port.js";
 import { shouldSuppressSealedSubagentBashNotification } from "../../runtime-task/notification-policy.js";
@@ -77,6 +79,8 @@ function registerRuntimeBuiltInTools(runtime: AgentRuntimeInternal, deps: AgentR
     // node_repl/browser-use 由 ZCode 官方 browser-use 插件启停推导出的 runtimeFeatures 控制。
     includeNodeRepl: nodeReplEnabled,
     includeBrowserUse: browserUseEnabled,
+    // KbSearch 需要文件系统（语料索引与卡目录）；无文件系统的受限 runtime 不暴露。
+    includeKbSearch: Boolean(deps.fileSystemPort),
     embeddedSearchEnabled: resolveRuntimeEmbeddedSearchEnabled(runtime),
     allowedTools: resolveBuiltInToolAllowlist(runtime.config),
     // workflow_child 的结构性禁用（CreateWorkflow/SaveWorkflow 因 alwaysAsk 隐形挂起；
@@ -174,6 +178,21 @@ function createRuntimeToolExecutor(
       search: async (query: string, limit?: number) =>
         searchAndActivateDeferredTools(runtime, query, limit),
     },
+    // KbSearch（140 §P1-5）：与每轮 kb_recall 共用索引与召回缓存；文件系统缺席时
+    // 不装配端口，handler 诚实报「能力不可用」。
+    ...(deps.fileSystemPort
+      ? {
+          kbSearchControlPort: {
+            search: (request: KbSearchInput) =>
+              searchKbCorpus({
+                runtime,
+                fileSystem: deps.fileSystemPort!,
+                workingDirectory: runtime.workingDirectory,
+                request,
+              }),
+          },
+        }
+      : {}),
     executionPort: deps.executionPort,
     browserControlPort: browserUseEnabled ? deps.browserControlPort : undefined,
     browserDocumentationRoot: browserUseEnabled

@@ -1,4 +1,4 @@
-# 138 · ```qimen / ```liuren 围栏原生盘面渲染
+# 138 · `qimen / `liuren 围栏原生盘面渲染
 
 ## 背景与决策
 
@@ -90,3 +90,6 @@ B) mermaid 式围栏 → 原生组件；C) v4 协议新 row kind。**决策：�
   schema；fixture 即来自实排。
 - 移动端：宫格 `min-h-24 md:min-h-28`，窄屏（手机远控）压缩高度，md 起恢复桌面尺寸。
 
+## 后续
+
+知识调用层（检索 / 路由 / 长会话 / 执行）的改造见 [140-qimen-skill-leverage.md](./140-qimen-skill-leverage.md)；本文的围栏契约不变。

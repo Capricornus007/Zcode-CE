@@ -5,7 +5,9 @@ import { createContextBuilder } from "../src/context/index.js";
 import { registerBuiltInTools } from "../src/tool/handlers/index.js";
 import {
   MAX_SKILL_BYTES,
+  MAX_SKILL_REFERENCES,
   SKILL_RESULT_WRAPPER_BYTES,
+  formatSkillReferences,
   skillHandler,
   skillToolEntry,
   WORKFLOW_SKILL_MAX_BYTES,
@@ -47,7 +49,8 @@ describe("Skill integration", () => {
     });
 
     const result = builder.build();
-    const system = result.systemMessages.find((message) => message.role === "system")?.content ?? "";
+    const system =
+      result.systemMessages.find((message) => message.role === "system")?.content ?? "";
     const skillReminder =
       result.metaUserAttachments.find((attachment) => attachment.source === "skills_listing")
         ?.content ?? "";
@@ -197,6 +200,76 @@ describe("Skill integration", () => {
 
     expect(registry.has("Read")).toBe(true);
     expect(registry.has("Skill")).toBe(false);
+  });
+
+  it("appends the references index after the skill body (140 §P1-6)", async () => {
+    const loaded = await skillHandler(
+      { skill: "demo-skill" },
+      contextWithSkillPort({
+        async discoverSkills(): Promise<SkillLoadOutcome> {
+          return skillOutcome;
+        },
+        async loadSkill(): Promise<SkillContent> {
+          return {
+            metadata: skillOutcome.skills[0]!,
+            content: "# Demo Skill\n\nFollow this workflow.",
+            baseDirectory: "/workspace/.zcode/skills/demo-skill",
+            bytesRead: 37,
+            sizeBytes: 37,
+            truncated: false,
+            references: [
+              {
+                relativePath: "references/04-应期与运筹.md",
+                sizeBytes: 12_288,
+                title: "应期与运筹",
+              },
+              { relativePath: "references/易海游龙.md", sizeBytes: 2_890_000, title: "易海游龙" },
+            ],
+          };
+        },
+      }),
+    );
+
+    expect(loaded).toContain("[references]");
+    expect(loaded).toContain("references/04-应期与运筹.md — 12.0 KB — # 应期与运筹");
+    expect(loaded).toContain("references/易海游龙.md — 2.76 MB");
+    expect(loaded.indexOf("[references]")).toBeLessThan(loaded.indexOf("Base directory"));
+  });
+
+  it("caps the references block at 80 entries and keeps the omitted count", () => {
+    const references = Array.from({ length: 100 }, (_, index) => ({
+      relativePath: `references/${String(index).padStart(3, "0")}.md`,
+      sizeBytes: 1024,
+      title: `第${index}节`,
+    }));
+    const block = formatSkillReferences(references);
+    expect(block).toBeTruthy();
+    expect(block!.split("\n").filter((line) => line.startsWith("- "))).toHaveLength(
+      MAX_SKILL_REFERENCES,
+    );
+    expect(block).toContain("另有 20 个未列出");
+  });
+
+  it("omits the references block when the adapter cannot enumerate", async () => {
+    const loaded = await skillHandler(
+      { skill: "demo-skill" },
+      contextWithSkillPort({
+        async discoverSkills(): Promise<SkillLoadOutcome> {
+          return skillOutcome;
+        },
+        async loadSkill(): Promise<SkillContent> {
+          return {
+            metadata: skillOutcome.skills[0]!,
+            content: "body",
+            baseDirectory: "/workspace/.zcode/skills/demo-skill",
+            bytesRead: 4,
+            sizeBytes: 4,
+            truncated: false,
+          };
+        },
+      }),
+    );
+    expect(loaded).not.toContain("[references]");
   });
 });
 

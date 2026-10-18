@@ -6,10 +6,12 @@ import {
   resetVectorStoresForTesting,
 } from "../src/runtime/methods/memory-recall-reminder.js";
 import {
-  decodeVector,
-  encodeVector,
-  vectorStorePath,
+  decodeQuantizedVector,
+  encodeQuantizedVector,
+  quantizeVector,
+  vectorStoreLayout,
 } from "../src/memory/recall/vector-store.js";
+import { cosineSimilarityQuantized, vectorNorm } from "../src/memory/recall/embedding.js";
 import type { FileSystemPort } from "@zcode/contracts";
 
 /**
@@ -242,11 +244,24 @@ test("向量缓存：同 runtime 第二轮只重嵌查询，不重嵌条目", as
   const runtime = {};
   const fs = makeFileSystem(FILES);
   try {
-    await buildMemoryRecallReminderBody({ runtime, fileSystem: fs, memoryRoot: "memory", entries: userInput("惦记的那个人") });
-    await buildMemoryRecallReminderBody({ runtime, fileSystem: fs, memoryRoot: "memory", entries: userInput("惦记的那个人") });
+    await buildMemoryRecallReminderBody({
+      runtime,
+      fileSystem: fs,
+      memoryRoot: "memory",
+      entries: userInput("惦记的那个人"),
+    });
+    await buildMemoryRecallReminderBody({
+      runtime,
+      fileSystem: fs,
+      memoryRoot: "memory",
+      entries: userInput("惦记的那个人"),
+    });
     // 第一轮：条目批（2条）+ 查询批（1条）；第二轮：条目走缓存、查询向量走
     // 同 runtime memo（同 query 复用，防 memory/kb 双花）——零嵌入请求。
-    assert.deepEqual(stub.batches.map((b) => b.length), [2, 1]);
+    assert.deepEqual(
+      stub.batches.map((b) => b.length),
+      [2, 1],
+    );
   } finally {
     stub.restore();
     ENV.clear();
@@ -281,20 +296,23 @@ test("embedding 预算：端点慢时按预算快速降级，不拖死 turn", as
 
 // ── P7 向量盘档持久化 ──
 
-test("P7 序列化：Float32×base64 往返，精度 1e-6 内", () => {
+test("P7 v2 序列化：int8 量化往返，误差不超过 scale；坏输入按未缓存处理", () => {
   const vector = [0.1, -0.5, 0.999999, 3.25, -1e-8, 0];
-  const decoded = decodeVector(encodeVector(vector));
+  const decoded = decodeQuantizedVector(encodeQuantizedVector(quantizeVector(vector)));
   assert.ok(decoded !== null);
-  assert.equal(decoded.length, vector.length);
+  assert.equal(decoded.data.length, vector.length);
   for (let i = 0; i < vector.length; i += 1) {
-    assert.ok(Math.abs(decoded[i]! - vector[i]!) < 1e-6);
+    assert.ok(Math.abs(decoded.data[i]! * decoded.scale - vector[i]!) <= decoded.scale + 1e-9);
   }
+  // 量化后余弦仍保持方向（同一向量自相似 ≈ 1）
+  const self = cosineSimilarityQuantized(vector, vectorNorm(vector), decoded);
+  assert.ok(Math.abs(self - 1) < 1e-3, `自相似应接近 1，实际 ${self}`);
   // 坏输入按未缓存处理
-  assert.equal(decodeVector("not-base64!!"), null);
-  assert.equal(decodeVector(""), null);
+  assert.equal(decodeQuantizedVector("not-base64!!"), null);
+  assert.equal(decodeQuantizedVector(""), null);
 });
 
-test("P7 重启补水：落盘后新 runtime 只嵌查询，不重嵌条目", async () => {
+test("P7 v2 重启补水：落盘后新 runtime 只嵌查询，不重嵌条目", async () => {
   resetVectorStoresForTesting();
   ENV.set();
   const storage = new Map<string, string>();
@@ -302,15 +320,39 @@ test("P7 重启补水：落盘后新 runtime 只嵌查询，不重嵌条目", as
   const stub = stubFetch((texts) => texts.map((t) => (t.includes("惦记") ? [1, 0] : [0, 1])));
   try {
     // 第一次进程：嵌入 2 条目 + 查询
-    await buildMemoryRecallReminderBody({ runtime: {}, fileSystem: fs, memoryRoot: "mem-p7", entries: userInput("惦记的那个人") });
+    await buildMemoryRecallReminderBody({
+      runtime: {},
+      fileSystem: fs,
+      memoryRoot: "mem-p7",
+      entries: userInput("惦记的那个人"),
+    });
     await flushVectorStores();
-    const storePath = vectorStorePath("mem-p7", "embedding-3");
-    assert.ok(storage.has(storePath), "盘档文件必须已写入");
-    // 模拟重启：清空进程内盘档槽（文件仍在 storage），新 runtime 从文件补水
+    const layout = vectorStoreLayout("mem-p7", "embedding-3");
+    assert.ok(
+      [...storage.keys()].some(
+        (path) => path.startsWith(layout.dir) && path.endsWith("index.json"),
+      ),
+      "盘档索引必须已写入",
+    );
+    assert.ok(
+      [...storage.keys()].some(
+        (path) => path.startsWith(layout.dir) && path.endsWith("other.json"),
+      ),
+      "家族分片必须已写入",
+    );
+    // 模拟重启：清空进程内盘档槽（文件仍在 storage），新 runtime 从分片补水
     resetVectorStoresForTesting();
-    await buildMemoryRecallReminderBody({ runtime: {}, fileSystem: fs, memoryRoot: "mem-p7", entries: userInput("惦记的那个人") });
+    await buildMemoryRecallReminderBody({
+      runtime: {},
+      fileSystem: fs,
+      memoryRoot: "mem-p7",
+      entries: userInput("惦记的那个人"),
+    });
     // 第一轮 [2条目,1查询]；重启后仅 [1查询]
-    assert.deepEqual(stub.batches.map((b) => b.length), [2, 1, 1]);
+    assert.deepEqual(
+      stub.batches.map((b) => b.length),
+      [2, 1, 1],
+    );
   } finally {
     stub.restore();
     ENV.clear();
@@ -325,7 +367,12 @@ test("P7 键失效：description 变更的条目单独重算，其余直取盘�
   const fs = makeFileSystem(FILES, storage);
   const stub = stubFetch((texts) => texts.map((t) => (t.includes("惦记") ? [1, 0] : [0, 1])));
   try {
-    await buildMemoryRecallReminderBody({ runtime: {}, fileSystem: fs, memoryRoot: "mem-p7b", entries: userInput("惦记的那个人") });
+    await buildMemoryRecallReminderBody({
+      runtime: {},
+      fileSystem: fs,
+      memoryRoot: "mem-p7b",
+      entries: userInput("惦记的那个人"),
+    });
     await flushVectorStores();
     resetVectorStoresForTesting();
     // 语料演化：改 gold 条目的 description（mtime 不变，键含 description 即失效）
@@ -335,9 +382,17 @@ test("P7 键失效：description 变更的条目单独重算，其余直取盘�
         : f,
     );
     const fs2 = makeFileSystem(evolved, storage);
-    await buildMemoryRecallReminderBody({ runtime: {}, fileSystem: fs2, memoryRoot: "mem-p7b", entries: userInput("惦记的那个人") });
+    await buildMemoryRecallReminderBody({
+      runtime: {},
+      fileSystem: fs2,
+      memoryRoot: "mem-p7b",
+      entries: userInput("惦记的那个人"),
+    });
     // 重启后：1 条目（改写的那条）+ 1 查询
-    assert.deepEqual(stub.batches.map((b) => b.length), [2, 1, 1, 1]);
+    assert.deepEqual(
+      stub.batches.map((b) => b.length),
+      [2, 1, 1, 1],
+    );
   } finally {
     stub.restore();
     ENV.clear();

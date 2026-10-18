@@ -20,14 +20,22 @@ const skill = (name: string, description: string): SkillMetadata =>
     whenToUse: undefined,
   }) as unknown as SkillMetadata;
 
-const LONG_DESCRIPTION = "紫微斗数断盘技能，覆盖十二宫位、四化飞星、大限流年推演，含占州派与飞星派双轨口径，支持合盘与流月细化。".repeat(2);
+const LONG_DESCRIPTION =
+  "紫微斗数断盘技能，覆盖十二宫位、四化飞星、大限流年推演，含占州派与飞星派双轨口径，支持合盘与流月细化。".repeat(
+    2,
+  );
 
 function makeSkills(count: number): SkillMetadata[] {
-  return Array.from({ length: count }, (_, i) => skill(`skill-${String(i).padStart(3, "0")}`, LONG_DESCRIPTION));
+  return Array.from({ length: count }, (_, i) =>
+    skill(`skill-${String(i).padStart(3, "0")}`, LONG_DESCRIPTION),
+  );
 }
 
 test("预算内：全量描述原样（不回归）", () => {
-  const section = buildSkillsSection({ outcome: { skills: makeSkills(3) } as never, metadataBudget: 10_000 });
+  const section = buildSkillsSection({
+    outcome: { skills: makeSkills(3) } as never,
+    metadataBudget: 10_000,
+  });
   assert.ok(section?.content.includes("紫微斗数断盘技能"));
   assert.ok(section!.content.includes("skill-000"));
 });
@@ -56,7 +64,10 @@ test("大幅超预算：头部保描述、尾部降 names-only，全部技能仍
     assert.ok(line, `${s.name} 必须仍然可见（names-only 也可见）`);
     if (line!.includes(`${s.name}: `)) withDescription += 1;
   }
-  assert.ok(withDescription > 0 && withDescription < skills.length, `应混合档，实际带描述 ${withDescription}/${skills.length}`);
+  assert.ok(
+    withDescription > 0 && withDescription < skills.length,
+    `应混合档，实际带描述 ${withDescription}/${skills.length}`,
+  );
   assert.ok(content.includes("Descriptions truncated"), "降级说明行应在");
 });
 
@@ -65,4 +76,24 @@ test("确定性：同一输入两次构建逐字节一致（会话内前缀稳�
   const a = buildSkillsSection({ outcome: { skills } as never, metadataBudget: 9_000 })?.content;
   const b = buildSkillsSection({ outcome: { skills } as never, metadataBudget: 9_000 })?.content;
   assert.equal(a, b);
+});
+
+test("描述上限 400：350 字的长描述不再被 250 截断（140 §P0-2）", () => {
+  // 奇门实测 349 字，尾部差异点（盲测/案例/体系路由）必须进清单。
+  const description = `${"前".repeat(320)}TAIL_TRIGGER`;
+  const section = buildSkillsSection({
+    outcome: { skills: [skill("qimen-duanpan", description)] } as never,
+    metadataBudget: 10_000,
+  });
+  assert.ok(section?.content.includes("TAIL_TRIGGER"), "350 字描述的尾部触发词必须可见");
+  assert.ok(section!.content.length <= 10_000);
+});
+
+test("描述超过 400：仍按 400 截断，预算不被超长描述拖垮", () => {
+  const description = `${"前".repeat(500)}BEYOND_400`;
+  const section = buildSkillsSection({
+    outcome: { skills: [skill("long-skill", description)] } as never,
+    metadataBudget: 10_000,
+  });
+  assert.ok(!section?.content.includes("BEYOND_400"), "400 字之后的尾部应被截掉");
 });

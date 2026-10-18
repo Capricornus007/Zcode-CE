@@ -33,6 +33,7 @@ import {
   defaultCompactPhaseForTrigger,
   defaultCompactReasonForTrigger,
   buildPostCompactReadStateReminderEntries,
+  buildSkillDigestReminderEntries,
   countCompactPreservedRuntimeMessages,
   buildPostCompactRuntimeEntries,
   compactFailureReasonFromError,
@@ -552,6 +553,8 @@ async function compactActiveConversationImpl(
           preservedEntries,
           readFileState: this.readFileState,
         }),
+        // 140 §P2-7：技能正文会随历史摘要化，压缩边界补一份 digest（不是全文）。
+        ...buildSkillDigestReminderEntries(activeEntries),
       ];
 
       const modelCompleteEvent = this.createEvent(

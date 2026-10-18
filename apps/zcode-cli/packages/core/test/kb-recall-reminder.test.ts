@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { beforeEach } from "node:test";
 
 import { buildKbRecallReminderBody } from "../src/runtime/methods/kb-recall-reminder.js";
 import { resetVectorStoresForTesting } from "../src/runtime/methods/memory-recall-reminder.js";
+import { resetKbCorpusCacheForTesting } from "../src/memory/recall/kb-corpus.js";
 import type { FileSystemPort } from "@zcode/contracts";
 
 /**
@@ -45,7 +46,17 @@ function fsWith(files: Record<string, string>): FileSystemPort {
       const name = path.split("/").pop() ?? "";
       const content = files[name];
       if (content === undefined) throw new Error(`read: ${path}`);
-      return { path, content, encoding: "utf8", bytesRead: content.length, sizeBytes: content.length, truncated: false, startLine: 1, lineCount: 1, totalLines: 1 };
+      return {
+        path,
+        content,
+        encoding: "utf8",
+        bytesRead: content.length,
+        sizeBytes: content.length,
+        truncated: false,
+        startLine: 1,
+        lineCount: 1,
+        totalLines: 1,
+      };
     },
     async readTextFile({ path }) {
       throw new Error(`readTextFile: ${path}`);
@@ -55,6 +66,12 @@ function fsWith(files: Record<string, string>): FileSystemPort {
 
 const userInput = (text: string) =>
   [{ message: { role: "user", content: text }, metadata: { source: "real_user" } }] as never;
+
+// 语料缓存按工作目录隔离；同一测试文件复用 W:\proj，必须在用例间清空。
+beforeEach(() => {
+  resetKbCorpusCacheForTesting();
+  resetVectorStoresForTesting();
+});
 
 test("词法档：术语问题命中对应知识卡，渲染源锚点", async () => {
   resetVectorStoresForTesting();
@@ -113,7 +130,10 @@ test("共享管线：embedding 全量融合对 kb 卡同样生效（口语化零
       workingDirectory: "W:\\proj",
       entries: userInput("我老婆的事在盘里怎么读"),
     });
-    assert.ok(body?.includes("user-marital-status.md#已婚口径"), `余弦应救回已婚口径卡，实际: ${body}`);
+    assert.ok(
+      body?.includes("user-marital-status.md#已婚口径"),
+      `余弦应救回已婚口径卡，实际: ${body}`,
+    );
   } finally {
     globalThis.fetch = realFetch;
     delete process.env.ZCODE_MEMORY_EMBEDDING_URL;

@@ -11,6 +11,15 @@ import {
 
 const MANIFEST_FILE_LIMIT = 200;
 const MANIFEST_PREVIEW_LINE_LIMIT = 30;
+/**
+ * 清单读取并发上限（140 §P1-3 实测）。
+ *
+ * 旧实现 `Promise.allSettled(paths.map(...))` 会对全部文件同时发起 stat + 读 30 行：
+ * F:\智能体 的 24,778 张卡实测只成功 8,189 条，其余被 EMFILE 等 IO 错误拒绝后静默丢弃
+ * （allSettled 的 rejected 分支被过滤）。并发泡既掩盖了语料覆盖缺口，也让失败看起来
+ * 像「没有这张卡」。16 路足以打满本地磁盘，又不会触碰句柄上限。
+ */
+const MANIFEST_READ_CONCURRENCY = 16;
 
 export async function scanMemoryManifest(input: {
   fileSystem: FileSystemPort;
@@ -24,11 +33,7 @@ export async function scanMemoryManifest(input: {
 }): Promise<MemoryManifestEntry[]> {
   try {
     const paths = await collectMemoryPaths(input.fileSystem, input.rootDir, input.signal);
-    const settled = await Promise.allSettled(
-      paths.map((filePath) =>
-        readManifestEntry(input.fileSystem, input.rootDir, filePath, input.signal),
-      ),
-    );
+    const settled = await readManifestEntriesBounded(paths, input);
     return settled
       .filter(
         (result): result is PromiseFulfilledResult<MemoryManifestEntry> =>
@@ -40,6 +45,41 @@ export async function scanMemoryManifest(input: {
   } catch {
     return [];
   }
+}
+
+/** 有界并发读取清单条目：结果顺序与 paths 一致。 */
+async function readManifestEntriesBounded(
+  paths: readonly string[],
+  input: { fileSystem: FileSystemPort; rootDir: string; signal?: AbortSignal },
+): Promise<Array<PromiseSettledResult<MemoryManifestEntry>>> {
+  const settled: Array<PromiseSettledResult<MemoryManifestEntry>> = new Array(paths.length);
+  let cursor = 0;
+  const worker = async (): Promise<void> => {
+    while (cursor < paths.length) {
+      const index = cursor;
+      cursor += 1;
+      if (input.signal?.aborted) {
+        settled[index] = { status: "rejected", reason: new Error("aborted") };
+        continue;
+      }
+      try {
+        settled[index] = {
+          status: "fulfilled",
+          value: await readManifestEntry(
+            input.fileSystem,
+            input.rootDir,
+            paths[index]!,
+            input.signal,
+          ),
+        };
+      } catch (error) {
+        settled[index] = { status: "rejected", reason: error };
+      }
+    }
+  };
+  const workers = Math.min(MANIFEST_READ_CONCURRENCY, paths.length);
+  await Promise.all(Array.from({ length: workers }, worker));
+  return settled;
 }
 
 export async function getMemoryRecallManifest(input: {

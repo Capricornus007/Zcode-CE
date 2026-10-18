@@ -3312,7 +3312,9 @@ export function createZCodeAgentService(
       return active;
     }
 
+    const clientStartedAt = Date.now();
     const client = await processManager.getClient(params);
+    const processStartupMs = Date.now() - clientStartedAt;
     wireClient(client, params, "chat");
 
     // processManager 会按 workspaceKey 对并发启动 single-flight。await 期间若另一条
@@ -3379,7 +3381,14 @@ export function createZCodeAgentService(
     try {
       // 新建或重启 runtime 在允许任何 session 工作前追平缓存；同步期间的新开关
       // 会因 entry 已登记而进入同一 workspace 串行队列，不会丢失提交顺序。
+      const policySyncStartedAt = Date.now();
       await entry.interactionPreferencesReady;
+      logger.info(undefined, "为只读会话控制面启动 ZCode agent", {
+        policySyncMs: Date.now() - policySyncStartedAt,
+        processStartupMs,
+        workspaceKey,
+        workspacePath: params.workspacePath,
+      });
     } catch (error) {
       if (activeClientsByWorkspaceKey.get(workspaceKey) === entry) {
         activeClientsByWorkspaceKey.delete(workspaceKey);
@@ -3388,10 +3397,6 @@ export function createZCodeAgentService(
     } finally {
       delete entry.interactionPreferencesReady;
     }
-    logger.info(undefined, "为只读会话控制面启动 ZCode agent", {
-      workspaceKey,
-      workspacePath: params.workspacePath,
-    });
     return entry;
   }
 

@@ -39,3 +39,25 @@
 - `packages/services/test/zcodeAgentService.v4.test.ts` 48/48；
 - `pnpm typecheck` 通过。
 - 未执行：重启后真实日志对比（需重新构建 host 后观察 `timings` 与 `git.refresh` 频率）。
+
+## 追加观测：readPresentation 的 1.9s 不是进程启动
+
+重启后 `为只读会话控制面启动 ZCode agent` 日志：
+
+```
+processStartupMs: 222–289ms
+policySyncMs:     3125–7578ms
+readPresentation: { clientMs: 0, syncMs: 2037, requestMs: 882–6570 }
+```
+
+结论：
+
+1. **CLI 进程启动只要 ~0.25s**；耗时在 `interactionPreferencesReady`（askUser 偏好 + Off-Peak + 动态工作流策略），以及同一条 client 上的 `providerUpdateAccountConfig`。
+2. `readPresentation` 的 `clientMs` 为 0 说明它复用了模型启动路径已经创建的 client；`syncMs` / `requestMs` 在等同一进程上的策略/Provider 配置同步。
+3. 尝试过“只读路径不等待策略同步 / 把 provider 同步挪到 presentation 之后”，实测无效：模型启动路径仍会并发触发同一批同步，presentation RPC 排在 CLI 的同步请求之后，反而出现 `requestMs 6570`，已回滚。
+
+下一步（未做）：
+
+- 给三个策略同步分别计时，确认是 `providerUpdateAccountConfig`、Off-Peak 还是动态工作流；
+- 若 provider 配置是阻塞源，考虑启动顺序：先让 presentation 通过，再启动模型执行路径；或对未变更 revision 跳过整包重发；
+- 不在没有分段证据前再做“跳过等待”类改动。

@@ -30,11 +30,13 @@ import {
 import { useGuidedTerminalSend } from "@/lib/guidedTerminalSendContext.js";
 import { FileDisplayIcon, resolveFileDisplayDescriptor } from "@/lib/fileDisplay.js";
 import { isMermaidLanguage, shouldRenderMermaidCodeBlock } from "@/lib/mermaidLanguage.js";
+import { parseQimenPanDocument } from "@zcode/shared";
 import {
   getCurrentMermaidDocumentVisibility,
   resolveMermaidAutoRenderDecision,
 } from "@/lib/mermaidRenderBudget.js";
 import { MermaidBlock } from "@/components/ai-elements/mermaid-block.js";
+import { QimenPanBlock } from "@/components/ai-elements/qimen-pan-block.js";
 import { DiagramPreviewDialog } from "@/components/ai-elements/diagram-preview-dialog.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
@@ -55,6 +57,12 @@ type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   wrapLongLines?: boolean;
   fontSizePx?: number;
   renderMermaid?: boolean;
+  /**
+   * ```qimen 围栏 → 原生盘面组件（spec: docs/development/136-qimen-pan-fence.md）。
+   * 与 renderMermaid 同一门控语义：流式期间传 false，先按代码块展示，完成后再渲染。
+   * JSON 解析失败自动回退 CodeViewer，绝不出错。
+   */
+  renderQimenPan?: boolean;
   /** 正文独立限高，避免滚动时把 Header 的复制/换行按钮一起卷走。 */
   contentClassName?: string;
   /**
@@ -260,6 +268,7 @@ export const CodeBlock = ({
   wrapLongLines = false,
   fontSizePx = 14,
   renderMermaid = true,
+  renderQimenPan = true,
   focusedRange = null,
   focusRequestId,
   markedLines,
@@ -273,6 +282,11 @@ export const CodeBlock = ({
   const [mermaidPreviewSvg, setMermaidPreviewSvg] = useState<string | null>(null);
   const [mermaidPreviewOpen, setMermaidPreviewOpen] = useState(false);
   const canRenderMermaidCode = renderMermaid && shouldRenderMermaidCodeBlock(language, code);
+  // ```qimen 围栏：门控语义与 mermaid 一致（流式期间按代码块展示），解析失败回退。
+  const qimenPanDocument = useMemo(
+    () => (renderQimenPan && language === "qimen" ? parseQimenPanDocument(code) : null),
+    [code, language, renderQimenPan],
+  );
   const documentVisibilityRevision = useDocumentVisibilityRevision(canRenderMermaidCode);
   const mermaidAutoRenderDecision = useMemo(() => {
     if (!canRenderMermaidCode) {
@@ -333,7 +347,9 @@ export const CodeBlock = ({
       <CodeBlockContainer className={className} language={language} {...props}>
         {children}
         <div className={cn("p-2 pt-0 pb-3", contentClassName)}>
-          {shouldRenderMermaid ? (
+          {qimenPanDocument ? (
+            <QimenPanBlock document={qimenPanDocument} />
+          ) : shouldRenderMermaid ? (
             <MermaidBlock
               code={code}
               theme={appTheme}

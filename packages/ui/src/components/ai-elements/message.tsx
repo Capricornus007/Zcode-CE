@@ -1568,6 +1568,7 @@ export const MessageResponse = memo(
               fontSizePx={codePreviewSettings.fontSizePx}
               language={language}
               renderMermaid={!renderStreaming}
+              renderQimenPan={!renderStreaming}
               theme={codeBlockTheme}
               appTheme={theme}
               wrapLongLines={wrapLongLines}

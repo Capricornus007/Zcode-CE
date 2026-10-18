@@ -211,17 +211,40 @@ let failedPackages = 0;
 
 generateTestPrerequisites();
 
-for (const packageDir of TEST_PACKAGES) {
-  const files = collectTests(packageDir);
-  if (files.length === 0) {
-    console.log(`[test] ${packageDir}: 无测试文件，跳过`);
-    continue;
+// 预收集全部包的测试清单：先算总盘子，包完成行才能输出「N/M 包 · n/total 文件」
+// 的进度。收集只是目录扫描，成本可忽略；失败计数与既有语义完全一致。
+const dryRun = process.argv.includes("--dry-run");
+const plan = TEST_PACKAGES.map((packageDir) => ({ packageDir, files: collectTests(packageDir) }));
+for (const { packageDir, files } of plan) {
+  if (files.length === 0) console.log(`[test] ${packageDir}: 无测试文件，跳过`);
+}
+const runnablePlan = plan.filter((entry) => entry.files.length > 0);
+const totalPlannedFiles = runnablePlan.reduce((sum, entry) => sum + entry.files.length, 0);
+
+if (dryRun) {
+  for (const { packageDir, files } of runnablePlan) {
+    const vitestCount = files.filter((f) => isVitestStyle(packageDir, f)).length;
+    console.log(
+      `[test] 将执行 ${packageDir}: ${files.length} 个测试文件（node:test ${files.length - vitestCount} / vitest ${vitestCount}）`,
+    );
   }
+  console.log(
+    `[test] 共 ${runnablePlan.length} 个包 / ${totalPlannedFiles} 个测试文件（--dry-run，未执行）`,
+  );
+  process.exit(0);
+}
+
+let completedPackages = 0;
+let completedFiles = 0;
+
+for (const { packageDir, files } of runnablePlan) {
+  const packageStartedAt = Date.now();
   const nodeTestFiles = files.filter((f) => !isVitestStyle(packageDir, f));
   const vitestFiles = files.filter((f) => isVitestStyle(packageDir, f));
   console.log(
     `[test] ${packageDir}: ${files.length} 个测试文件（node:test ${nodeTestFiles.length} / vitest ${vitestFiles.length}）`,
   );
+  let failedNodePackages = false;
 
   // node:test 风格：维持原执行路径。
   // cwd 必须是包目录：ui 的 @/* 别名依赖 tsconfig paths，node 直跑不认。
@@ -238,6 +261,7 @@ for (const packageDir of TEST_PACKAGES) {
     });
     if (result.status !== 0) {
       failedPackages += 1;
+      failedNodePackages = true;
     }
   }
 
@@ -273,6 +297,15 @@ for (const packageDir of TEST_PACKAGES) {
     failedPackages += 1;
   }
   totalTests += files.length;
+  // 包级进度行：等待方（后台日志 tail / 等待中的模型）据此播报进度，
+  // 替代盲等。失败也计入进度——进度反映"跑完了多少"，不是"过了多少"。
+  completedPackages += 1;
+  completedFiles += files.length;
+  const elapsedS = ((Date.now() - packageStartedAt) / 1000).toFixed(1);
+  const packageFailed = (nodeTestFiles.length > 0 && failedNodePackages > 0) || vitestFailed;
+  console.log(
+    `[test] ${packageFailed ? "✗" : "✓"} ${packageDir} 完成：${files.length} 文件 ${elapsedS}s ｜ 进度 ${completedPackages}/${runnablePlan.length} 包 · ${completedFiles}/${totalPlannedFiles} 文件`,
+  );
 }
 
 /**

@@ -1906,7 +1906,23 @@ export function createZCodeAgentService(
   ): Promise<void> {
     const route = resolveV4UnsubscribeRoute(params, topicPrefix);
     if (!route) return;
-    const client = await getReadOnlyClient(params, params.runtimePolicy);
+    let client: ZCodeProtocolClient;
+    try {
+      // 取消订阅不应为了发一条清理请求而拉起新 runtime。keep-warm 过期后旧实现
+      // start-if-needed 会重新冷启动 CLI，日志里表现为 unsubscribe 2–4s；此时
+      // 运行时已停，本地 route 直接遗忘即可。
+      client = await getReadOnlyClient(params, "existing-only");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE
+      ) {
+        if (isCurrentV4SubscriptionRoute(route)) forgetV4SubscriptionRoute(route);
+        return;
+      }
+      throw error;
+    }
     // getReadOnlyClient 可能在 await 中拉起新 runtime；restart listener 已清旧 route，且新
     // runtime 可能复用相同 key/subId。必须以对象身份复核，不能拿局部旧 route 发给新 CLI。
     if (!isCurrentV4SubscriptionRoute(route)) return;
@@ -4202,19 +4218,29 @@ export function createZCodeAgentService(
       });
       try {
         let presentation: ZCodeWorkspacePresentation | undefined;
+        // 分段计时：慢在“冷启动 CLI”还是“provider 配置同步/实际 RPC”，决定优化方向。
+        let clientMs = 0;
+        let syncMs = 0;
+        let requestMs = 0;
         for (let attempt = 0; attempt < 2; attempt += 1) {
+          const clientStartedAt = Date.now();
           const client = await getReadOnlyClient(params);
+          clientMs = Date.now() - clientStartedAt;
           try {
+            const syncStartedAt = Date.now();
             await ensureAccountProviderConfigSynced({
               client,
               reason: "workspace_read_presentation",
               workspace: params,
             });
+            syncMs = Date.now() - syncStartedAt;
+            const requestStartedAt = Date.now();
             presentation = await client.request(
               zcodeProtocolMethods.workspaceReadPresentation,
               { workspace: buildWorkspaceRef(params) },
               zcodeWorkspacePresentationSchema,
             );
+            requestMs = Date.now() - requestStartedAt;
             break;
           } catch (error) {
             if (attempt > 0 || !isClosedStdioTransportError(error)) {
@@ -4244,6 +4270,7 @@ export function createZCodeAgentService(
         }
         logger.info(undefined, "ZCode Protocol workspace/readPresentation 完成", {
           durationMs: Date.now() - startedAt,
+          timings: { clientMs, syncMs, requestMs },
           slashCommandCount: presentation.slashCommands.length,
           workspaceKey: resolveWorkspaceKey(params),
           workspacePath: params.workspacePath,

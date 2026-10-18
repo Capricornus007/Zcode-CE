@@ -1,5 +1,10 @@
 import { resolve } from "node:path";
-import type { GitBranchComparison, GitFileChange, GitChangeSectionId } from "@zcode/shared";
+import type {
+  GitBranchComparison,
+  GitFileChange,
+  GitChangeSectionId,
+  GitRefreshResult,
+} from "@zcode/shared";
 import { isPathInWorkspaceScope, normalizeGitPath, toWorkspaceRelativeGitPath } from "./config.js";
 import { filterCommitMessageFilesByCurrentSession } from "./commitMessageFileScope.js";
 import type { IGitService } from "./git.js";
@@ -172,6 +177,23 @@ export function createGitService(options?: {
   commitMessageGenerator?: GitCommitMessageGenerator;
 }): IGitService {
   const repo = options?.repo ?? createGitCliRepo();
+  // UI 会在挂载/聚焦/切 tab 时并发或相邻触发 refresh；每次 git status 在 Windows
+  // 大仓库上约 0.8–1.4s。1s 内的重复读取直接复用结果，写操作后主动失效。
+  const REFRESH_CACHE_TTL_MS = 1_000;
+  const refreshCache = new Map<string, { at: number; result: GitRefreshResult }>();
+  const refreshInFlight = new Map<string, Promise<GitRefreshResult>>();
+  const refreshKey = (params: {
+    workspacePath: string;
+    includeIdentity?: boolean;
+    includeBranchComparison?: boolean;
+  }): string =>
+    `${params.workspacePath}\u0000${params.includeIdentity === true}\u0000${params.includeBranchComparison === true}`;
+  const invalidateRefreshCache = (workspacePath: string): void => {
+    const prefix = `${workspacePath}\u0000`;
+    for (const key of refreshCache.keys()) {
+      if (key.startsWith(prefix)) refreshCache.delete(key);
+    }
+  };
 
   return {
     async getRepositorySummary(params) {
@@ -200,15 +222,19 @@ export function createGitService(options?: {
     },
 
     async switchBranch(params) {
-      return await repo.switchBranch(params.workspacePath, params.targetBranchName);
+      const result = await repo.switchBranch(params.workspacePath, params.targetBranchName);
+      invalidateRefreshCache(params.workspacePath);
+      return result;
     },
 
     async createBranchAndSwitch(params) {
-      return await repo.createBranchAndSwitch(
+      const result = await repo.createBranchAndSwitch(
         params.workspacePath,
         params.branchName,
         params.startPoint,
       );
+      invalidateRefreshCache(params.workspacePath);
+      return result;
     },
 
     async getChanges(params) {
@@ -241,14 +267,17 @@ export function createGitService(options?: {
 
     async stagePaths(params) {
       await repo.stage(params.workspacePath, params.paths);
+      invalidateRefreshCache(params.workspacePath);
     },
 
     async unstagePaths(params) {
       await repo.unstage(params.workspacePath, params.paths);
+      invalidateRefreshCache(params.workspacePath);
     },
 
     async discardPaths(params) {
       await repo.discard(params.workspacePath, params.paths, params.staged ?? false);
+      invalidateRefreshCache(params.workspacePath);
     },
 
     async generateCommitMessage(params) {
@@ -302,6 +331,7 @@ export function createGitService(options?: {
       const result = await repo.commit(params.workspacePath, params.message, params.paths, {
         stagedOnly: params.stagedOnly,
       });
+      invalidateRefreshCache(params.workspacePath);
       const status = await repo.getStatus(params.workspacePath);
       return {
         commitHash: result.commitHash,
@@ -311,6 +341,7 @@ export function createGitService(options?: {
 
     async push(params) {
       const result = await repo.push(params.workspacePath);
+      invalidateRefreshCache(params.workspacePath);
       return result;
     },
 
@@ -319,39 +350,57 @@ export function createGitService(options?: {
     },
 
     async refresh(params) {
-      const statusPromise = repo.getStatus(params.workspacePath);
-      const identityPromise = params.includeIdentity
-        ? repo.getIdentity(params.workspacePath)
-        : Promise.resolve(null);
-      const branchComparisonPromise = params.includeBranchComparison
-        ? repo.getBranchComparison(params.workspacePath)
-        : Promise.resolve(null);
-      const [status, identity, branchComparisonSnapshot] = await Promise.all([
-        statusPromise,
-        identityPromise,
-        branchComparisonPromise,
-      ]);
-      const branchComparison: GitBranchComparison | null = branchComparisonSnapshot
-        ? {
-            baseRef: branchComparisonSnapshot.baseRef,
-            headRef: branchComparisonSnapshot.headRef,
-            comparisonLabel: branchComparisonSnapshot.comparisonLabel,
-            changes: branchComparisonSnapshot.changes
-              .map((change) => toBranchComparisonChange(branchComparisonSnapshot, change))
-              .filter((change): change is GitFileChange => Boolean(change)),
-          }
-        : null;
+      const key = refreshKey(params);
+      const cached = refreshCache.get(key);
+      if (cached && Date.now() - cached.at <= REFRESH_CACHE_TTL_MS) {
+        return cached.result;
+      }
+      const inFlight = refreshInFlight.get(key);
+      if (inFlight) return inFlight;
 
-      // UI 的自动刷新原本会并发调用 summary、unstaged、staged 三个 RPC，
-      // 每个 RPC 都重新执行一次 git status。agent 批量写文件时这会把 renderer 卡在
-      // 重复的 Git I/O 和 RPC 日志上。refresh 在一次 status 快照里切出三份数据。
-      return {
-        summary: status.summary,
-        identity,
-        unstagedChanges: getChangesForSource(status, "unstaged"),
-        stagedChanges: getChangesForSource(status, "staged"),
-        branchComparison,
-      };
+      const promise = (async (): Promise<GitRefreshResult> => {
+        const statusPromise = repo.getStatus(params.workspacePath);
+        const identityPromise = params.includeIdentity
+          ? repo.getIdentity(params.workspacePath)
+          : Promise.resolve(null);
+        const branchComparisonPromise = params.includeBranchComparison
+          ? repo.getBranchComparison(params.workspacePath)
+          : Promise.resolve(null);
+        const [status, identity, branchComparisonSnapshot] = await Promise.all([
+          statusPromise,
+          identityPromise,
+          branchComparisonPromise,
+        ]);
+        const branchComparison: GitBranchComparison | null = branchComparisonSnapshot
+          ? {
+              baseRef: branchComparisonSnapshot.baseRef,
+              headRef: branchComparisonSnapshot.headRef,
+              comparisonLabel: branchComparisonSnapshot.comparisonLabel,
+              changes: branchComparisonSnapshot.changes
+                .map((change) => toBranchComparisonChange(branchComparisonSnapshot, change))
+                .filter((change): change is GitFileChange => Boolean(change)),
+            }
+          : null;
+
+        // UI 的自动刷新原本会并发调用 summary、unstaged、staged 三个 RPC，
+        // 每个 RPC 都重新执行一次 git status。agent 批量写文件时这会把 renderer 卡在
+        // 重复的 Git I/O 和 RPC 日志上。refresh 在一次 status 快照里切出三份数据。
+        const result: GitRefreshResult = {
+          summary: status.summary,
+          identity,
+          unstagedChanges: getChangesForSource(status, "unstaged"),
+          stagedChanges: getChangesForSource(status, "staged"),
+          branchComparison,
+        };
+        refreshCache.set(key, { at: Date.now(), result });
+        return result;
+      })();
+      refreshInFlight.set(key, promise);
+      try {
+        return await promise;
+      } finally {
+        refreshInFlight.delete(key);
+      }
     },
   };
 }

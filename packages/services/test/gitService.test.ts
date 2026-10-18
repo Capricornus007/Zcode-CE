@@ -185,6 +185,25 @@ afterAll(async () => {
 });
 
 describeIfGit("gitService", () => {
+  it("1s 内重复 refresh 复用同一份 status 快照", async () => {
+    const workspacePath = "/repo/packages/app";
+    const getStatus = vi.fn().mockResolvedValue({
+      resolution: { repoRoot: "/repo", workspaceInRepoPath: "packages/app" },
+      summary: createSummary(),
+      entries: [],
+      stagedStats: new Map(),
+      unstagedStats: new Map(),
+      untrackedStats: new Map(),
+    });
+    const service = createGitService({ repo: createMockRepo({ getStatus }) });
+
+    const first = await service.refresh({ workspacePath });
+    const second = await service.refresh({ workspacePath });
+
+    expect(getStatus).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
+  });
+
   it("lists local branches and marks the current branch", async () => {
     const workspacePath = "/repo/packages/app";
     const listLocalBranches = vi.fn().mockResolvedValue({

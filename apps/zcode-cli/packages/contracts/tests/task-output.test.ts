@@ -9,18 +9,16 @@ describe("TaskOutput contracts", () => {
   it("exposes the canonical provider description", () => {
     expect(TASK_OUTPUT_PROVIDER_DESCRIPTION).toBe(
       [
-        "DEPRECATED: Background tasks return their output file path in the tool result, and you receive a <task-notification> with the same path when the task completes.",
-        "- For bash tasks: prefer using the Read tool on that output file path — it contains stdout/stderr.",
-        "- For local_agent tasks: use the Agent tool result directly. Do NOT Read the .output file — it is a symlink to the full subagent conversation transcript (JSONL) and will overflow your context window.",
-        "- For remote_agent tasks: prefer using the Read tool on the output file path — it contains the streamed remote session output (same as bash).",
+        "Wait for a background task and retrieve its output (background shell, agent, or remote session).",
         "",
-        "- Retrieves output from a running or completed task (background shell, agent, or remote session)",
-        "- Takes a task_id parameter identifying the task",
-        "- Returns the task output along with status information",
-        "- Use block=true (default) to wait for task completion",
-        "- Use block=false for non-blocking check of current status",
-        "- Task IDs can be found using the /tasks command",
-        "- Works with all task types: background shells, async agents, and remote sessions",
+        "PREFERRED way to wait on any long-running background task: call with block=true instead of sleeping in a loop (e.g. \"sleep 300 && tail the log\"). The wait is event-driven — it returns as soon as the task completes or the timeout elapses, and a <task-notification> with the output file path is also delivered on exit. timeout is capped at 600000 ms (10 minutes); for longer tasks, call again to keep waiting.",
+        "",
+        "Reading results:",
+        "- For bash tasks: the output file path contains stdout/stderr — prefer the Read tool on that path.",
+        "- For local_agent tasks: use the Agent tool result directly. Do NOT Read the .output file — it is a symlink to the full subagent conversation transcript (JSONL) and will overflow your context window.",
+        "- For remote_agent tasks: prefer Read on the output file path — it contains the streamed remote session output (same as bash).",
+        "",
+        "Also supports block=false for a non-blocking status check. Task IDs can be found using the /tasks command. Works with all task types: background shells, async agents, and remote sessions.",
       ].join("\n"),
     );
   });

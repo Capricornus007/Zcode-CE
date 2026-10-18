@@ -70,6 +70,7 @@ import {
   recordMainTurnCacheHitUsage,
   recordMainTurnModelUsage,
 } from "./turn-model-step-usage.js";
+import { firstModelTokenAt } from "./usage-observability.js";
 import { estimateCurrentModelInputTokens } from "./compact.js";
 import {
   resolveModelStepMaxOutputTokens,
@@ -638,6 +639,9 @@ async function runModelBackedTurnStepImpl(
     supportsTurnFileChanges && toolCalls.length === 0
       ? buildTurnFileChangeSummary(this.currentTurnFileChanges)
       : undefined;
+  // DSH sessionStats 口径：解码时长从首个非空 text/reasoning delta 起算。
+  // 用 modelStartedAt 会把 TTFT/prefill 算进去，系统性低估 tok/s。
+  const firstTokenAt = firstModelTokenAt(state.events, networkEventStartIndex);
   const modelCompleteEvent = this.createEvent(
     SessionEventType.ModelComplete,
     {
@@ -657,6 +661,7 @@ async function runModelBackedTurnStepImpl(
         ? { contextUsageBreakdown: result.contextUsageBreakdown }
         : {}),
       toolCallCount: toolCalls.length,
+      ...(firstTokenAt !== undefined ? { firstTokenAt } : {}),
     },
     modelTraceContext,
   );

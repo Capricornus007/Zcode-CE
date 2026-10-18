@@ -203,6 +203,18 @@ export const sessionUsageStateSchema = z.object({
     cacheReadTokens: z.number(),
     cacheWriteTokens: z.number(),
   }),
+  /**
+   * 解码吞吐事实（CE 线增量，对齐 DSH sessionStats）：
+   * `tokens` = 有首 token 的完成步 outputTokens 之和；
+   * `ms` = 这些步「首 token → assistant message 完成」的墙钟之和。
+   * 旧 CLI 不提供，UI 回落到本地流式估算。
+   */
+  decode: z
+    .object({
+      tokens: z.number().nonnegative(),
+      ms: z.number().nonnegative(),
+    })
+    .optional(),
 });
 export type SessionUsageState = z.infer<typeof sessionUsageStateSchema>;
 

@@ -834,6 +834,12 @@ export interface ModelCompletePayload {
   stopReason: string;
   /** 当前模型请求组装出的完整 tool call 数量；旧事件可能缺失。 */
   toolCallCount?: number;
+  /**
+   * 本步首个非空 text/reasoning delta 的时间（epoch ms，CE 线增量）。
+   * 与 `event.timestamp` 一起构成 DSH 口径的解码时长：首 token → assistant 完成。
+   * 纯 tool-call 步没有首 token，缺省。
+   */
+  firstTokenAt?: number;
   usage: TokenUsage | ModelUsage;
 }
 

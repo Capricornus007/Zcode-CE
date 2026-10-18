@@ -7400,7 +7400,7 @@ const enUS: Record<string, string> = {
   "chat.toolbar.thoughtLevel.auto.description":
     "Top level; drops one level on tool-continuation turns. Applies to new sessions.",
   "chat.toolbar.streamSpeed.title":
-    "Output speed counts model streaming time only (excludes tool runs and waits); cache hit is the session cumulative stat",
+    "Output speed is measured from the first token to reply completion (excludes tool runs and waits); cache hit is the session cumulative stat",
   "chat.toolbar.streamSpeed.cache": "cache hit",
   "codeBlock.sendToTerminal": "Send to terminal (won't run until you press Enter there)",
   "codeBlock.sendToTerminalElevated":

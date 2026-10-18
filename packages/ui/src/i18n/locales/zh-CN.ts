@@ -7043,7 +7043,7 @@ const zhCN: Record<string, string> = {
   "chat.toolbar.thoughtLevel.auto.description":
     "档位顶格；工具续跑自动降一档。设置对新建会话生效。",
   "chat.toolbar.streamSpeed.title":
-    "输出速度仅计模型流式时间（不含工具执行与等待）；缓存命中为会话累计统计",
+    "输出速度按首 token 到回复完成计算（不含工具执行与等待）；缓存命中为会话累计统计",
   "chat.toolbar.streamSpeed.cache": "缓存命中",
   "codeBlock.sendToTerminal": "发送到终端（不会自动执行，需你在终端里按回车）",
   "codeBlock.sendToTerminalElevated":

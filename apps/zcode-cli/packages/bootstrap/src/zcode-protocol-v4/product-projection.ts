@@ -255,6 +255,8 @@ export interface SessionUsageSeed {
     maxTokens: number | null;
   };
   cumulative?: Partial<SessionUsageState["cumulative"]>;
+  /** 冷恢复种子若带解码事实则沿用；缺省保留当前投影值。 */
+  decode?: SessionUsageState["decode"];
 }
 
 interface ContextWindowProjectionState {
@@ -684,6 +686,8 @@ export class ProductProjection {
       cacheReadTokens: seed.cumulative?.cacheReadTokens ?? current.cumulative.cacheReadTokens,
       cacheWriteTokens: seed.cumulative?.cacheWriteTokens ?? current.cumulative.cacheWriteTokens,
     };
+    // usage 是键级整体替换；不显式带上 decode，任何一次 seed 都会把已有解码事实冲掉。
+    const decode = seed.decode ?? current.decode;
     if (this.contextWindowState.touchedByEvent) {
       // 同类守卫：显式 ModelSelected.contextWindow（含 null）是日志权威容量，
       // hydration seed 只能补回更准确的 token 事实，不得覆盖 maxTokens 或重新显示 null。
@@ -698,6 +702,7 @@ export class ProductProjection {
               }
             : null,
           cumulative,
+          ...(decode ? { decode } : {}),
         },
       };
       return;
@@ -720,6 +725,7 @@ export class ProductProjection {
             ? null
             : { ...seededContextWindow, maxTokens: seededContextWindow.maxTokens },
         cumulative,
+        ...(decode ? { decode } : {}),
       },
     };
   }
@@ -4871,6 +4877,22 @@ export class ProductProjection {
     this.contextWindowState.usedTokens = usedTokens;
     const maxTokens = payload.contextWindow ?? this.contextWindowState.maxTokens;
     const cumulative = this.snapshot.usage.cumulative;
+    // DSH sessionStats 口径：只把「有首 token 且有 outputTokens」的完成步计入解码吞吐。
+    // 纯 tool-call 步没有首 token，不能计入；否则分母缺失会把速度算成 0 或无穷大。
+    const decodeTokens = usage.outputTokens;
+    const decode =
+      payload.firstTokenAt !== undefined &&
+      Number.isFinite(payload.firstTokenAt) &&
+      decodeTokens !== undefined &&
+      Number.isFinite(decodeTokens) &&
+      decodeTokens >= 0
+        ? {
+            tokens: (this.snapshot.usage.decode?.tokens ?? 0) + decodeTokens,
+            ms:
+              (this.snapshot.usage.decode?.ms ?? 0) +
+              Math.max(0, event.timestamp.getTime() - payload.firstTokenAt),
+          }
+        : this.snapshot.usage.decode;
     deltas.push({
       op: "state.updated",
       patch: {
@@ -4896,6 +4918,7 @@ export class ProductProjection {
             cacheReadTokens: cumulative.cacheReadTokens + (usage.cacheReadTokens ?? 0),
             cacheWriteTokens: cumulative.cacheWriteTokens + (usage.cacheWriteTokens ?? 0),
           },
+          ...(decode ? { decode } : {}),
         },
       },
     });

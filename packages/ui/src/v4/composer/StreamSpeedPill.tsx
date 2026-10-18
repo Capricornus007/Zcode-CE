@@ -65,6 +65,19 @@ function windowSpeed(samples: StepSample[]): number | null {
   return totalMs > 0 ? (totalTokens / totalMs) * 1000 : null;
 }
 
+/**
+ * DSH sessionStats 口径的解码速度：Σ outputTokens / Σ(首 token → 完成)。
+ * CLI 提供 `usage.decode` 时这就是唯一权威值；只有旧 CLI 才回落到本地流式估算。
+ */
+export function decodeTokensPerSecond(
+  decode: SessionUsageState["decode"] | null | undefined,
+): number | null {
+  if (!decode) return null;
+  if (!Number.isFinite(decode.tokens) || !Number.isFinite(decode.ms)) return null;
+  if (decode.tokens <= 0 || decode.ms <= 0) return null;
+  return (decode.tokens / decode.ms) * 1000;
+}
+
 /** 样本有效性：时长区间内、token 量够、隐含速度不超解码合理上限（防冲刷伪象）。 */
 export function isPlausibleStepSample(tokens: number, ms: number): boolean {
   if (!Number.isFinite(tokens) || !Number.isFinite(ms) || tokens < MIN_STEP_TOKENS) return false;
@@ -195,9 +208,8 @@ export interface StreamSpeedPillProps {
   cacheLabel: string;
 }
 
-/** 常驻显示：无样本时速度显示 "--"，流式中显示实时估算（尾随 ·），空闲显示最近窗口精确均值。
- * 缓存命中段复用运行时自己的 hitRate（usage.contextWindow.cache），有数据才显示——
- * 不设 78% 展示阈值：本药丸的定位是通道效率监控，低命中恰恰是要看见的信号。 */
+/** 常驻显示：`usage.decode` 在场时显示 DSH 口径的权威解码速度；旧 CLI 没有该字段时
+ * 回落到本地流式估算（尾随 ·）与最近窗口均值。缓存命中段仍复用运行时 hitRate。 */
 export const StreamSpeedPill = memo(function StreamSpeedPill({
   usage,
   streamingChars,
@@ -205,7 +217,11 @@ export const StreamSpeedPill = memo(function StreamSpeedPill({
   title,
   cacheLabel,
 }: StreamSpeedPillProps) {
-  const { speed, live } = useStreamSpeed(usage, streamingChars, active);
+  const decodedSpeed = decodeTokensPerSecond(usage?.decode);
+  const local = useStreamSpeed(usage, streamingChars, active);
+  // 有权威解码事实时不再用字符估算/滑窗（两者会因到达批次抖动而偏离 DSH）。
+  const speed = decodedSpeed ?? local.speed;
+  const live = decodedSpeed === null && local.live;
   const hitRate = usage?.contextWindow?.cache?.hitRate ?? null;
   const cacheText =
     hitRate !== null && Number.isFinite(hitRate)

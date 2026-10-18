@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isPlausibleStepSample, smoothLiveEstimate } from "../src/v4/composer/StreamSpeedPill.tsx";
+import {
+  decodeTokensPerSecond,
+  isPlausibleStepSample,
+  smoothLiveEstimate,
+} from "../src/v4/composer/StreamSpeedPill.tsx";
 
 /**
  * 速度药丸 v3 防冲刷回归：重连重放/缓冲一次性冲刷会把数千字符在数百毫秒内
@@ -50,4 +54,19 @@ test("实时估算：向上一读数收敛一半（抗单批次抖动）", () =>
 test("实时估算：负值/非有限值防御", () => {
   assert.equal(smoothLiveEstimate(null, -5), 0);
   assert.equal(smoothLiveEstimate(50, Number.NaN), 50); // NaN 收敛回上一读数
+});
+
+test("DSH 口径：Σtokens / Σ(首 token→完成) 的毫秒分母", () => {
+  // 1000 tokens / 2s = 500 tok/s；与 DSH decodeSpeed 的除法一致。
+  assert.equal(decodeTokensPerSecond({ tokens: 1000, ms: 2000 }), 500);
+  // 低于 10 tok/s 时 UI 保留一位小数，但函数本身不取整。
+  assert.ok(Math.abs((decodeTokensPerSecond({ tokens: 3, ms: 2000 }) ?? 0) - 1.5) < 1e-9);
+});
+
+test("DSH 口径：缺失/零值/非有限值不伪造速度", () => {
+  assert.equal(decodeTokensPerSecond(undefined), null);
+  assert.equal(decodeTokensPerSecond(null), null);
+  assert.equal(decodeTokensPerSecond({ tokens: 0, ms: 2000 }), null);
+  assert.equal(decodeTokensPerSecond({ tokens: 100, ms: 0 }), null);
+  assert.equal(decodeTokensPerSecond({ tokens: Number.NaN, ms: 2000 }), null);
 });

@@ -10170,3 +10170,62 @@ describe("userInput 行的 epilogueStart（热路径）", () => {
     expect(rows[1]).not.toHaveProperty("epilogueStart");
   });
 });
+
+describe("usage.decode（DSH sessionStats 口径）", () => {
+  it("按首 token→完成的 outputTokens/毫秒累计，无首 token 的步不改写事实", () => {
+    const log = new EventLog();
+    const firstTokenAt = 1_700_000_100_000;
+    log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
+    log.push(SessionEventType.TurnStarted, { turnNumber: 1, input: "speed" }, { turnId: "turn-1" });
+    log.push(
+      SessionEventType.ModelStreaming,
+      { kind: "text_delta", delta: "Hello", done: false },
+      { turnId: "turn-1", timestampMs: firstTokenAt },
+    );
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "Hello",
+        stopReason: "end_turn",
+        querySource: "main_turn",
+        firstTokenAt,
+        usage: { inputTokens: 10, outputTokens: 100, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      },
+      { turnId: "turn-1", timestampMs: firstTokenAt + 2_000 },
+    );
+    // 纯工具步：没有首 token，不能把 outputTokens 纳入速度分子，也不能清空已有事实。
+    log.push(
+      SessionEventType.ModelComplete,
+      {
+        content: "",
+        stopReason: "tool_use",
+        querySource: "main_turn",
+        usage: { inputTokens: 10, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      },
+      { turnId: "turn-1", timestampMs: firstTokenAt + 3_000 },
+    );
+
+    const snapshot = runAll(log.events).projection.getSnapshot();
+
+    expect(snapshot.usage.decode).toEqual({ tokens: 100, ms: 2_000 });
+    expect(conversationSnapshotSchema.parse(snapshot).usage.decode).toEqual({
+      tokens: 100,
+      ms: 2_000,
+    });
+  });
+
+  it("冷恢复 seed 带 decode 时沿用该事实", () => {
+    const projection = new ProductProjection("session-1", "epoch-1");
+
+    projection.seedUsage({
+      contextWindow: {
+        usedTokens: 100,
+        maxTokens: 200_000,
+        autoCompactThresholdTokens: null,
+      },
+      decode: { tokens: 20, ms: 1_000 },
+    });
+
+    expect(projection.getSnapshot().usage.decode).toEqual({ tokens: 20, ms: 1_000 });
+  });
+});

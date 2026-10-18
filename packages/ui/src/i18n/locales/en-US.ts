@@ -7397,6 +7397,8 @@ const enUS: Record<string, string> = {
 
   // ── CE 线增量键（社区版专属功能文案；官方底座之上追加，勿并入官方段）──
   "chat.toolbar.thoughtLevel.value.auto": "Auto",
+  "chat.toolbar.thoughtLevel.auto.description":
+    "Top level; drops one level on tool-continuation turns. Applies to new sessions.",
   "chat.toolbar.streamSpeed.title":
     "Output speed counts model streaming time only (excludes tool runs and waits); cache hit is the session cumulative stat",
   "chat.toolbar.streamSpeed.cache": "cache hit",

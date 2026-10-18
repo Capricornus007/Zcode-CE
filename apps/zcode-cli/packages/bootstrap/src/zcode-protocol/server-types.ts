@@ -85,6 +85,8 @@ export interface ZCodeProtocolSessionRecord {
   app: ZCodeApp;
   subagentRuntimeConfigEnabled?: boolean;
   memoryEnabled: boolean;
+  /** 自适应思考档（experimental）：子会话 inherit 用；默认关。 */
+  adaptiveReasoningEnabled: boolean;
   nativeSearchEnhancementsEnabled: boolean;
   modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
   createdAt: number;

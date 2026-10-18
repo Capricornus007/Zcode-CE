@@ -2088,6 +2088,8 @@ export type ZCodeModelContextBudgetStrategy = z.infer<typeof zcodeModelContextBu
 export const zcodeSessionRuntimePreferencesResultSchema = z
   .object({
     nativeSearchEnhancementsEnabled: z.boolean(),
+    // 自适应思考档（experimental）：工具续跑步自动降一档。缺省=关（兼容旧 Host）。
+    adaptiveReasoningEnabled: z.boolean().optional(),
     subagentRuntimeConfigEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().default(false),
     askUserQuestionAutoResolutionEnabled: z.boolean().default(true),

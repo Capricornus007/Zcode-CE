@@ -7040,6 +7040,8 @@ const zhCN: Record<string, string> = {
 
   // ── CE 线增量键（社区版专属功能文案；官方底座之上追加，勿并入官方段）──
   "chat.toolbar.thoughtLevel.value.auto": "自动",
+  "chat.toolbar.thoughtLevel.auto.description":
+    "档位顶格；工具续跑自动降一档。设置对新建会话生效。",
   "chat.toolbar.streamSpeed.title":
     "输出速度仅计模型流式时间（不含工具执行与等待）；缓存命中为会话累计统计",
   "chat.toolbar.streamSpeed.cache": "缓存命中",

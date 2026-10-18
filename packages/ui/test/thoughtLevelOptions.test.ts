@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ZCodeConfigOption } from "@zcode/shared";
 import {
+  AUTO_THOUGHT_LEVEL_VALUE,
   getNextThoughtLevelValue,
   getThoughtLevelLabel,
   isNoThoughtLevel,
+  withAutoThoughtLevelOption,
 } from "@/chat-input-toolbar/thoughtLevelOptions.js";
 import zhCN from "@/i18n/locales/zh-CN.js";
 import enUS from "@/i18n/locales/en-US.js";
@@ -15,6 +17,7 @@ const option: ZCodeConfigOption = {
   currentValue: "",
 };
 const expectedLabels = [
+  [["auto"], "自动", "Auto"],
   [["disabled", "false", "no", "none", "nothink", "no-think", "no_think", "off"], "关闭", "Off"],
   [["enable", "enabled", "on", "true"], "开启", "On"],
   [["minimal"], "极低", "Minimal"],
@@ -90,5 +93,65 @@ describe("思考档位配置顺序", () => {
     expect(isNoThoughtLevel({ value: " NOTHINK ", name: "自定义名称" })).toBe(true);
     expect(isNoThoughtLevel({ value: "custom", name: "off" })).toBe(false);
     expect(isNoThoughtLevel({ value: "minimal", name: "none" })).toBe(false);
+  });
+});
+
+describe("「自动」思考档预设", () => {
+  it("≥2 个真实档位时插到首位，且不重复插入", () => {
+    const entries = withAutoThoughtLevelOption({
+      ...option,
+      options: [
+        { value: "low", name: "low" },
+        { value: "high", name: "high" },
+      ],
+    });
+    expect(entries.map((entry) => entry.value)).toEqual([AUTO_THOUGHT_LEVEL_VALUE, "low", "high"]);
+    expect(withAutoThoughtLevelOption({ ...option, options: entries }).map((e) => e.value)).toEqual(
+      entries.map((entry) => entry.value),
+    );
+  });
+
+  it("使用调用方传入的本地化说明（不内嵌中文）", () => {
+    const entries = withAutoThoughtLevelOption(
+      {
+        ...option,
+        options: [
+          { value: "low", name: "low" },
+          { value: "high", name: "high" },
+        ],
+      },
+      "Localized description",
+    );
+    expect(entries[0]?.description).toBe("Localized description");
+  });
+
+  it("单档 / 零档不伪造「自动」（没有可降的目标档）", () => {
+    expect(withAutoThoughtLevelOption({ ...option, options: [] })).toEqual([]);
+    expect(
+      withAutoThoughtLevelOption({ ...option, options: [{ value: "high", name: "high" }] }),
+    ).toEqual([{ value: "high", name: "high" }]);
+  });
+
+  it("auto 参与循环，且循环顺序以插入后的列表为准", () => {
+    const entries = withAutoThoughtLevelOption({
+      ...option,
+      options: [
+        { value: "low", name: "low" },
+        { value: "high", name: "high" },
+      ],
+    });
+    expect(getNextThoughtLevelValue({ ...option, currentValue: "low", options: entries })).toBe(
+      "high",
+    );
+    expect(getNextThoughtLevelValue({ ...option, currentValue: "high", options: entries })).toBe(
+      AUTO_THOUGHT_LEVEL_VALUE,
+    );
+    expect(
+      getNextThoughtLevelValue({
+        ...option,
+        currentValue: AUTO_THOUGHT_LEVEL_VALUE,
+        options: entries,
+      }),
+    ).toBe("low");
   });
 });

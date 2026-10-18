@@ -6,7 +6,11 @@ import {
   type BotsConfigFile,
 } from "@zcode/shared";
 import type { ICredentialService } from "../credential/credential.js";
-import { startFeishuBotWebSocket, type FeishuWebSocketClient } from "./providers/feishuProvider.js";
+import {
+  FeishuSdkUnavailableError,
+  startFeishuBotWebSocket,
+  type FeishuWebSocketClient,
+} from "./providers/feishuProvider.js";
 import {
   acquireFeishuWebSocketLock,
   assertBotCallbackSucceeded,
@@ -162,6 +166,13 @@ export function createFeishuChannelRuntime(deps: FeishuChannelRuntimeDeps) {
           status: "error",
           message: `Feishu WebSocket failed: ${error instanceof Error ? error.message : String(error)}`,
         });
+        // Modified by ZCode: 缺 SDK 是永久性条件（本仓库不随包分发
+        // @larksuiteoapi/node-sdk），重试永远不会成功。继续 5s 自旋只会刷日志、
+        // 并把用户面永久停在一个不会自愈的 error 上。这里直接退出 runBot，
+        // 让状态停在上面那条可操作错误上。（3.15.1 升级整取官方版时被冲掉，重植。）
+        if (error instanceof FeishuSdkUnavailableError) {
+          return;
+        }
         retryAfterError = true;
       } finally {
         if (client) {

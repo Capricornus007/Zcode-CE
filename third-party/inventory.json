@@ -1610,7 +1610,7 @@
     "packages/services/src/bots/commandOrder.ts": "5420e0faec7d72d8691b410318d5562e29affb48ccc151fc951f756df9e57f7d",
     "packages/services/src/bots/commandParser.ts": "fc176ceb68f12d475e41de20fff4fb8ed704ed3c8bee70332c67b67181829a98",
     "packages/services/src/bots/config.ts": "be93598984c0e73e129a0f1135d9baf490d6207ffa91dd804df58d6afa3fc542",
-    "packages/services/src/bots/feishuChannelRuntime.ts": "fcaeef764909e93fe2cf0c3f0582303c899120108117be23b6e0e4adbc055b1a",
+    "packages/services/src/bots/feishuChannelRuntime.ts": "235842f4c90c6080f7fb2b84bb3d2f826852448a79ddbb55d51603daf92496e0",
     "packages/services/src/bots/groupAdminAttention.ts": "747f60553685e52bc69a136abd5f469f0ff4c16f650c783caef97411cb05c1f8",
     "packages/services/src/bots/groupDeliveryThrottle.ts": "ff5a0a8faea74cf79a916d52b1936b99f61662f0d585b6687a1dca08606d8386",
     "packages/services/src/bots/groupQueueCard.ts": "d5b3d0551bfd66962fdb2eade805d75babffd3dfbb9f89f023c7c8f5dc2bf3d5",
@@ -1622,7 +1622,7 @@
     "packages/services/src/bots/providers/feishuAppRegistration.ts": "f89a488e742e078de7a810da18517039135f0633980b77f73618a83ba96fb72f",
     "packages/services/src/bots/providers/feishuDisplayNameCache.ts": "46a3d943e3b3cb17fe2378abeb39d4fca14f205e9971219b39140b5bcad6b7bf",
     "packages/services/src/bots/providers/feishuGroupMessages.ts": "8f533592134bb8d514e729a3acd13735a34cb4572cdd3bd9056d17cd01ab4b02",
-    "packages/services/src/bots/providers/feishuProvider.ts": "5815869519829496b96e4565263b2305efdc5854ae639980f5f23622380259f5",
+    "packages/services/src/bots/providers/feishuProvider.ts": "161a7a41a706ace6b0ec7fe1ae077faa8c267d3b61f9eda6a1080027e0d326c8",
     "packages/services/src/bots/providers/groupInputReaction.ts": "2dfae7a686d125a0600adc4dc06aa166137b424f65c78393946ba0b14d8ba59b",
     "packages/services/src/bots/providers/groupMemberDirectory.ts": "c36d1bcb2ae37295f7403396615e6d5f7d2e13154fd93ed53cb377b023f7d3d8",
     "packages/services/src/bots/providers/providerRequest.ts": "8412040408c61525b4e1291e1721556febdcf80b5b39584f06b9eae47b8d314b",
@@ -2939,7 +2939,7 @@
     "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
     "scripts/native-search-tools-config.mjs": "06e9d2b066a22f4bb731fb7356d786b52cf08e20dd6faf91e1a82b167d7462e8",
     "scripts/remote-native-search-tools-config.mjs": "2ddb7054e219ea487596cbdcb83d5c7eac9f239cfe169cfac22e3759d95d7c35",
-    "third-party/copied-components.json": "7a4b7cc75f005f77d37df3c036b008c4fcbfb4237eeddeeda739f70eaf2ab61d",
+    "third-party/copied-components.json": "abd7aa42e8540fd20fd017c95a565ca8723eb5c24026b8ac3e72725b8f579f3d",
     "third-party/embedded-components.json": "1160d4b37e297584099e640998b75599a9ac237dc39dc29d49f2a538e514bb4e",
     "third-party/native-search/licenses/00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce.txt": "00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce",
     "third-party/native-search/licenses/01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f.txt": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f",
@@ -32850,7 +32850,9 @@
       "scope": "Bot Channel (IM bot) subsystem: packages/services/src/bots/** (27 files, 13830 lines at upstream) plus packages/shared/src/bots.ts (558 lines) — the shared schema/type contract for that subsystem. The Apache-2.0 basis covers these copied sources. The Feishu channel lazily imports @larksuiteoapi/node-sdk, which is a separately registered npm dependency (MIT), not part of this copy. Two files in this directory (attachmentPathGuard.ts, attachmentUrlGuard.ts) are ZCode-CE originals added for SSRF and path-traversal hardening, not upstream copies.",
       "license": "Apache-2.0",
       "modifiedFiles": [
-        "packages/services/src/bots/botsService.ts"
+        "packages/services/src/bots/botsService.ts",
+        "packages/services/src/bots/feishuChannelRuntime.ts",
+        "packages/services/src/bots/providers/feishuProvider.ts"
       ],
       "files": [
         {
@@ -32911,7 +32913,7 @@
         },
         {
           "file": "packages/services/src/bots/feishuChannelRuntime.ts",
-          "sha256": "fcaeef764909e93fe2cf0c3f0582303c899120108117be23b6e0e4adbc055b1a"
+          "sha256": "235842f4c90c6080f7fb2b84bb3d2f826852448a79ddbb55d51603daf92496e0"
         },
         {
           "file": "packages/services/src/bots/groupAdminAttention.ts",
@@ -32959,7 +32961,7 @@
         },
         {
           "file": "packages/services/src/bots/providers/feishuProvider.ts",
-          "sha256": "5815869519829496b96e4565263b2305efdc5854ae639980f5f23622380259f5"
+          "sha256": "161a7a41a706ace6b0ec7fe1ae077faa8c267d3b61f9eda6a1080027e0d326c8"
         },
         {
           "file": "packages/services/src/bots/providers/groupInputReaction.ts",

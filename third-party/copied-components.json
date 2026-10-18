@@ -409,7 +409,9 @@
     "scope": "Bot Channel (IM bot) subsystem: packages/services/src/bots/** (27 files, 13830 lines at upstream) plus packages/shared/src/bots.ts (558 lines) — the shared schema/type contract for that subsystem. The Apache-2.0 basis covers these copied sources. The Feishu channel lazily imports @larksuiteoapi/node-sdk, which is a separately registered npm dependency (MIT), not part of this copy. Two files in this directory (attachmentPathGuard.ts, attachmentUrlGuard.ts) are ZCode-CE originals added for SSRF and path-traversal hardening, not upstream copies.",
     "license": "Apache-2.0",
     "modifiedFiles": [
-      "packages/services/src/bots/botsService.ts"
+      "packages/services/src/bots/botsService.ts",
+      "packages/services/src/bots/feishuChannelRuntime.ts",
+      "packages/services/src/bots/providers/feishuProvider.ts"
     ]
   },
   {

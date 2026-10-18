@@ -12,6 +12,12 @@ import {
   readGroupMessage,
   readGroupMentionText,
 } from "#src/bots/providers/feishuGroupMessages.js";
+// 重植（3.15.1 升级整取官方版时冲掉，恢复 origin/main 接线）：用户展示名缓存
+// 收敛到 feishuDisplayNameCache.ts（R1：写入时清过期项，避免 bot+user 维度无界增长）。
+import {
+  readCachedUserDisplayName,
+  writeUserDisplayName,
+} from "#src/bots/providers/feishuDisplayNameCache.js";
 /* eslint-disable max-lines -- Feishu provider 集中承载鉴权、消息解析、卡片发送和 reaction typing 适配，后续按能力拆分。 */
 import { botTopicMessageSchema } from "@zcode/shared";
 import { readTopicHistory, TopicHistoryPermissionError } from "#src/bots/topicHistory.js";
@@ -42,6 +48,24 @@ export interface FeishuWebSocketClient {
   close(): void;
   /** SDK 自动重连耗尽后的终态；旧测试替身可不提供。 */
   terminated?: Promise<void>;
+}
+
+/**
+ * Modified by ZCode: 飞书/Lark 渠道需要 @larksuiteoapi/node-sdk，而本仓库不随包分发它。
+ * 这是一个永久性条件（不是网络抖动），调用方必须据此进入终态而不是重试。
+ * （3.15.1 升级整取官方版时被冲掉，按 origin/main 形态重植。）
+ */
+export class FeishuSdkUnavailableError extends Error {
+  readonly code = "feishu_sdk_unavailable";
+
+  constructor() {
+    super(
+      "Feishu/Lark channel requires the optional dependency @larksuiteoapi/node-sdk, " +
+        "which this build does not bundle. Install it in the runtime that hosts the bot " +
+        "(npm i @larksuiteoapi/node-sdk@1.64.0) or use the webhook channel instead.",
+    );
+    this.name = "FeishuSdkUnavailableError";
+  }
 }
 
 const FEISHU_APP_ID_PATTERN = /^cli_[0-9a-fA-F]{16}$/;
@@ -109,7 +133,8 @@ interface FeishuUserInfoResponse {
 
 const accessTokenCache = new Map<string, { token: string; expiresAt: number }>();
 const typingReactionIds = new Map<string, string>();
-const userDisplayNameCache = new Map<string, { name: string | null; expiresAt: number }>();
+// userDisplayNameCache 已收敛到 feishuDisplayNameCache.ts（R1：写入时清过期项，
+// 避免按 bot+user 维度无界增长）。
 const FEISHU_ELICITATION_FORM_FIELD_NAME = "answer";
 const FEISHU_ELICITATION_FORM_VALUE_PREFIX = "__form__:";
 const FEISHU_ELICITATION_CUSTOM_OPTION_ID = "__custom__";
@@ -1625,8 +1650,8 @@ async function readFeishuUserDisplayName(
     return null;
   }
   const cacheKey = `${getFeishuDomainProvider(bot)}:${bot.feishuAppId ?? ""}:${bot.credentialRef ?? ""}:${trimmedUserId}`;
-  const cached = userDisplayNameCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
+  const cached = readCachedUserDisplayName(cacheKey);
+  if (cached.hit) {
     return cached.name;
   }
   const token = await readTenantAccessToken(bot, deps);
@@ -1652,10 +1677,9 @@ async function readFeishuUserDisplayName(
   const name = resolveFeishuUserDisplayName(payload);
   // Bugfix: 飞书消息事件只稳定携带 sender_id，不携带发送者名称。
   // 这里缓存通讯录查询结果，避免同一个用户连续发消息时每条都请求 contact API。
-  userDisplayNameCache.set(cacheKey, {
-    name,
-    expiresAt: Date.now() + 10 * 60_000,
-  });
+  // R1：写入统一走 feishuDisplayNameCache（写入时清过期项，避免按 bot+user 维度
+  // 无界增长），注释与判据见该模块。
+  writeUserDisplayName(cacheKey, name);
   return name;
 }
 
@@ -1833,7 +1857,22 @@ export async function startFeishuBotWebSocket(params: {
     throw new Error("Feishu WebSocket startup aborted.");
   }
   // SDK 全量源码会常驻 Host；只有实际启动长连接才加载，卡片和 HTTP 路径不承担这份开销。
-  const Lark = await import("@larksuiteoapi/node-sdk");
+  //
+  // Modified by ZCode: 本仓库不随包分发 @larksuiteoapi/node-sdk（可选能力，需用户自己的
+  // 飞书企业账号）。上游未声明该依赖的缺失路径 —— 缺包时这里会抛裸的 ERR_MODULE_NOT_FOUND，
+  // 文案既不说明原因、也无法操作，且调用方（feishuChannelRuntime）会每 5s 无限重试一个
+  // 永久性条件。这里转成可操作错误（点名缺哪个包 + 本版本未随包分发），调用方据此进终态。
+  // （3.15.1 升级整取官方版时被冲掉，按 origin/main 形态重植。）
+  let Lark: typeof import("@larksuiteoapi/node-sdk");
+  try {
+    Lark = await import("@larksuiteoapi/node-sdk");
+  } catch (error) {
+    const code = (error as { code?: unknown })?.code;
+    if (code === "ERR_MODULE_NOT_FOUND" || code === "MODULE_NOT_FOUND") {
+      throw new FeishuSdkUnavailableError();
+    }
+    throw error;
+  }
   // 加载期间 channel 可能已停用，迟到的模块不能重新创建连接。
   if (signal?.aborted) {
     throw new Error("Feishu WebSocket startup aborted.");

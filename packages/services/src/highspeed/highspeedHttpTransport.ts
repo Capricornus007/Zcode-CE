@@ -110,6 +110,7 @@ export function createHighspeedHttpTransport(options: {
         requestId,
         startedAt,
         response,
+        requestSummary: summarizeDrawRequestBody(params.body),
         parse: params.parse,
       });
     } finally {
@@ -154,6 +155,7 @@ async function readHighspeedResponse<T>(params: {
   requestId: string | undefined;
   startedAt: number;
   response: Response;
+  requestSummary?: Record<string, string>;
   parse: (payload: unknown) => { success: true; data: T } | { success: false; error: Error };
 }): Promise<T> {
   const responseHeaders = readDiagnosticHeaders(params.response.headers);
@@ -229,6 +231,7 @@ function logResponseFailure(
     requestId: string | undefined;
     startedAt: number;
     response: Response;
+    requestSummary?: Record<string, string>;
   },
   message: string,
   context: Record<string, unknown>,
@@ -241,8 +244,18 @@ function logResponseFailure(
     durationMs: Date.now() - params.startedAt,
     status: params.response.status,
     statusText: params.response.statusText,
+    ...(params.requestSummary ? { request: params.requestSummary } : {}),
     ...context,
   });
+}
+
+/**
+ * draw body 的失败日志摘要：仅 task_id/provider/model 三个定位字段（spec §日志允许
+ * 「可用于定位的非敏感摘要」；不含任务内容与任何凭据）。2026-10-18 排障实录：服务端
+ * 连续 21 次 3001 parameter error 而日志看不到客户端到底发了什么，只能盲猜契约。
+ */
+function summarizeDrawRequestBody(body: HighspeedDrawRequest | undefined) {
+  return body ? { task_id: body.task_id, provider: body.provider, model: body.model } : undefined;
 }
 
 function sanitizeLogUrl(url: string): string {

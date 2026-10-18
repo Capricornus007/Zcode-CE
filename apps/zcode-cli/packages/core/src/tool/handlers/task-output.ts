@@ -36,6 +36,9 @@ const TASK_OUTPUT_PERSIST_THRESHOLD_CHARS = 100_000;
 const TASK_OUTPUT_RESULT_BUDGET_BYTES = 400_000;
 const TASK_OUTPUT_PERSIST_PREVIEW_CHARS = 2_000;
 const TASK_OUTPUT_POLL_INTERVAL_MS = 100;
+/** 等待期心跳：每 15s 发一次 ToolCallProgress（实时 elapsedMs），
+ * 让 UI 的"正在获取任务输出"显示已等待时长，而不是一个看起来卡死的转圈。 */
+const TASK_OUTPUT_PROGRESS_HEARTBEAT_MS = 15_000;
 const TASK_OUTPUT_ERROR_CODE = {
   TASK_ID_REQUIRED: 1,
   TASK_NOT_FOUND: 2,
@@ -185,6 +188,11 @@ export function formatTaskOutputModelContent(output: unknown): string {
     if (task.exitCode !== undefined && task.exitCode !== null) {
       blocks.push(`<exit_code>${task.exitCode}</exit_code>`);
     }
+    if (parsed.retrieval_status === "timeout") {
+      blocks.push(
+        "<hint>Task is still running. Call TaskOutput again (block=true) to keep waiting; prefer shorter windows (e.g. 120000 ms) and narrate the latest output tail to the user between calls, so a long wait never looks stuck.</hint>",
+      );
+    }
     if (task.output.trim()) {
       // 没有真实完整文件时，task_id 不是可读取路径，不能把它伪装成
       // “Full output”；此时保留原文，由外层的大结果 artifact 机制继续处理。
@@ -238,11 +246,17 @@ async function waitForTask(
   context: ToolExecutionContext,
 ): Promise<RuntimeTaskSnapshot | undefined> {
   const startedAt = Date.now();
+  let lastHeartbeatAt = startedAt;
   while (Date.now() - startedAt < timeoutMs) {
     throwIfAborted(context.abortSignal);
     const task = context.runtimeTaskRegistry?.get(taskId);
     if (!task) return undefined;
     if (!isTaskActive(task.status)) return task;
+    const now = Date.now();
+    if (now - lastHeartbeatAt >= TASK_OUTPUT_PROGRESS_HEARTBEAT_MS) {
+      lastHeartbeatAt = now;
+      await emitWaitingProgress(context, now - startedAt);
+    }
     await delay(TASK_OUTPUT_POLL_INTERVAL_MS);
   }
   return context.runtimeTaskRegistry?.get(taskId);
@@ -262,7 +276,10 @@ function markTaskNotified(task: RuntimeTaskSnapshot, context: ToolExecutionConte
   );
 }
 
-async function emitWaitingProgress(context: ToolExecutionContext): Promise<void> {
+async function emitWaitingProgress(
+  context: ToolExecutionContext,
+  elapsedMs = 0,
+): Promise<void> {
   if (!context.emitEvent) return;
 
   await context.emitEvent({
@@ -276,7 +293,7 @@ async function emitWaitingProgress(context: ToolExecutionContext): Promise<void>
     payload: {
       toolCallId: context.toolCallId as never,
       toolName: TASK_OUTPUT_TOOL_NAME,
-      elapsedMs: 0,
+      elapsedMs,
     },
   });
 }

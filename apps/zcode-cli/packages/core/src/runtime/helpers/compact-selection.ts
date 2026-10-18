@@ -34,6 +34,8 @@ export function selectCompactEntries(input: {
   entries: readonly RuntimeMessageEntry[];
   minimumGroupsToPreserve?: number;
   trigger: CompactTrigger;
+  /** 148⑥：覆盖默认 20K 保留预算（pi per-model budget 的全局档）；缺省行为不变。 */
+  preserveRecentTokenBudget?: number;
 }): CompactEntrySelection {
   const split = splitRuntimeEntriesForCompactSelection(input.entries, input.trigger);
   const baseGroupsToPreserve = split.shouldPreserveRecent && split.groups.length > 1 ? 1 : 0;
@@ -44,7 +46,10 @@ export function selectCompactEntries(input: {
   // 保留——pi 会在用户轮内部切 split-turn，ZCode 的轮结构不允许拆开配对。
   const budgetGroupsToPreserve = split.shouldPreserveRecent
     ? Math.min(
-        countRecentGroupsWithinPreserveTokenBudget(split.groups),
+        countRecentGroupsWithinPreserveTokenBudget(
+          split.groups,
+          input.preserveRecentTokenBudget,
+        ),
         // 总结侧必须保有 ≥2 个轮次（hasEnoughRuntimeEntriesToCompact 的下限），
         // 否则压缩会永久 skip 导致 overflow 无自动出口。
         Math.max(baseGroupsToPreserve, split.groups.length - 2),
@@ -79,6 +84,7 @@ export function selectCompactEntriesAfterPromptTooLong(input: {
   trigger: CompactTrigger;
   useMidConversationSystem?: boolean;
   currentGroupsPreserved: number;
+  preserveRecentTokenBudget?: number;
 }): CompactEntrySelection | null {
   const split = splitRuntimeEntriesForCompactSelection(input.entries, input.trigger);
   if (!split.shouldPreserveRecent || split.groups.length < 2) {
@@ -113,6 +119,7 @@ export function selectCompactEntriesAfterPromptTooLong(input: {
     entries: input.entries,
     minimumGroupsToPreserve: nextGroupsPreserved,
     trigger: input.trigger,
+    preserveRecentTokenBudget: input.preserveRecentTokenBudget,
   });
   return hasEnoughRuntimeEntriesToCompact(nextSelection.entriesForSummary) ? nextSelection : null;
 }
@@ -122,6 +129,7 @@ export function selectCompactEntriesForInitialPromptTooLong(input: {
   promptTooLongCause: unknown;
   trigger: CompactTrigger;
   useMidConversationSystem?: boolean;
+  preserveRecentTokenBudget?: number;
 }): CompactEntrySelection | null {
   const split = splitRuntimeEntriesForCompactSelection(input.entries, input.trigger);
   if (!split.shouldPreserveRecent || split.groups.length <= 3) {
@@ -151,6 +159,7 @@ export function selectCompactEntriesForInitialPromptTooLong(input: {
     entries: input.entries,
     minimumGroupsToPreserve: 1 + additionalGroupsToPreserve,
     trigger: input.trigger,
+    preserveRecentTokenBudget: input.preserveRecentTokenBudget,
   });
   return hasEnoughRuntimeEntriesToCompact(nextSelection.entriesForSummary) ? nextSelection : null;
 }
@@ -299,6 +308,7 @@ function estimateCompactGroupTokens(
  */
 function countRecentGroupsWithinPreserveTokenBudget(
   groups: readonly RuntimeMessageEntry[][],
+  budget: number = COMPACT_PRESERVE_RECENT_TOKEN_BUDGET,
 ): number {
   if (groups.length === 0) return 0;
   const estimates = estimateCompactGroupTokens(groups);
@@ -306,10 +316,31 @@ function countRecentGroupsWithinPreserveTokenBudget(
   let count = 1;
   for (let index = groups.length - 1; index >= 1; index -= 1) {
     used += estimates[index] ?? 0;
-    if (used > COMPACT_PRESERVE_RECENT_TOKEN_BUDGET) break;
+    if (used > budget) break;
     count += 1;
   }
   return count;
+}
+
+/**
+ * 148⑥：解析近端保留预算——byModel[modelId] > 全局覆盖 > 默认 20K。
+ * modelId 取 compact 摘要模型；非法值（非正整数）不静默钳制，直接回落默认。
+ */
+export function resolveCompactPreserveRecentTokenBudget(input: {
+  config?: {
+    preserveRecentTokenBudget?: number;
+    preserveRecentTokenBudgetByModel?: Record<string, number>;
+  };
+  modelId?: string;
+}): number {
+  const byModel =
+    input.modelId === undefined
+      ? undefined
+      : input.config?.preserveRecentTokenBudgetByModel?.[input.modelId];
+  return (
+    positiveInt(byModel ?? input.config?.preserveRecentTokenBudget) ??
+    COMPACT_PRESERVE_RECENT_TOKEN_BUDGET
+  );
 }
 
 function truncateRuntimeEntriesForCompactRetry(

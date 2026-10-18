@@ -40,8 +40,14 @@ hook results
 | max auto failures | `3` | 自动 compact 失败熔断。 |
 | prompt-too-long retries | `3` | compact 请求自身超窗时丢旧 API round 重试。 |
 | streaming summary retries | `2` | summary 流式请求无有效文本时重试。 |
+| 近端保留预算 | `20_000` | 保留最近完整轮次的 token 预算；可被 config `compact.preserveRecentTokenBudget`（全局）与 `compact.preserveRecentTokenBudgetByModel`（按摘要模型 modelId）覆盖。 |
 
 这些阈值不声明环境变量入口。调试、运维 override 需要通过 config file、CLI/session override 或测试注入完成，避免把临时调参路径扩散成长期环境变量契约。
+
+### 摘要请求剥离 reasoning 与保留预算（pi 吸收，spec 148）
+
+- 摘要请求（`buildCompactSummaryRequestMessages`）投影后剥离历史 assistant 消息里的 reasoning 块：thinking 签名只对产生它的模型有效，对摘要模型是无效负载，原样携带只会撑大摘要请求（148②，吸收 pi 1.2.0）。live 请求、跨模型卫生、token 估算与 post-compact 保留轮不受影响。
+- 近端保留预算不是常量契约：`AutoCompactPolicyConfig.preserveRecentTokenBudget`（全局）与 `preserveRecentTokenBudgetByModel`（按摘要 modelId）覆盖默认 20K，解析顺序 byModel > 全局 > 默认，非法值回落默认（148⑥，吸收 pi 0.86 per-model compaction budget）。同一轮压缩的初始选择与 prompt-too-long 重选共用同一份解析结果。
 
 ### 固定边界策略
 

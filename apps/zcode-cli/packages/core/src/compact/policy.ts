@@ -41,6 +41,14 @@ export interface AutoCompactPolicyConfig {
    * （/compact 命令参数）与其叠加而非互斥。
    */
   domainInstructions?: string;
+  /**
+   * 148⑥（吸收 pi 0.86 per-model compaction budget）：近端保留 token 预算，
+   * 覆盖 compact-selection 的默认 20K（COMPACT_PRESERVE_RECENT_TOKEN_BUDGET）。
+   * preserveRecentTokenBudgetByModel 按摘要模型 modelId 精确覆盖（同名模型跨
+   * provider 共享键）；解析顺序 byModel[modelId] > 全局 > 默认常量，缺省行为不变。
+   */
+  preserveRecentTokenBudget?: number;
+  preserveRecentTokenBudgetByModel?: Record<string, number>;
 }
 
 /** P4：项目级域包与运行时 /compact 参数合并（均非空时以空行分隔，域包在前）。 */

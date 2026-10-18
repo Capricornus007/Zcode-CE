@@ -40,6 +40,7 @@ import {
   estimateRuntimeEntryTokens,
   getRuntimeEntriesToSummarize,
   hasEnoughRuntimeEntriesToCompact,
+  resolveCompactPreserveRecentTokenBudget,
   selectCompactEntries,
   selectCompactEntriesAfterPromptTooLong,
   selectCompactEntriesForInitialPromptTooLong,
@@ -199,11 +200,18 @@ async function compactActiveConversationImpl(
   const useMidConversationSystem =
     this.config.midConversationSystem?.mode === "force" ||
     compactModel.properties.supportsMidConversationSystem;
+  // 148⑥：近端保留预算按摘要模型解析（byModel[modelId] > 全局 > 默认 20K）。
+  // 重选路径（prompt-too-long）复用同一份预算，保证同一轮压缩口径一致。
+  const preserveRecentTokenBudget = resolveCompactPreserveRecentTokenBudget({
+    config: this.config.compact,
+    modelId: compactModel.modelId,
+  });
   const initialSelection = selectInitialCompactEntriesForActiveConversation({
     activeEntries,
     initialPromptTooLongCause: options.initialPromptTooLongCause,
     trigger,
     useMidConversationSystem,
+    preserveRecentTokenBudget,
   });
   let currentSelection = initialSelection;
   let preservedEntries = currentSelection.preservedEntries;
@@ -294,6 +302,7 @@ async function compactActiveConversationImpl(
           promptTooLongCause: cause,
           trigger,
           useMidConversationSystem,
+          preserveRecentTokenBudget,
         });
         if (!reselected) return false;
 
@@ -767,10 +776,12 @@ function selectInitialCompactEntriesForActiveConversation(input: {
   initialPromptTooLongCause?: unknown;
   trigger: CompactTrigger;
   useMidConversationSystem?: boolean;
+  preserveRecentTokenBudget?: number;
 }) {
   const baseSelection = selectCompactEntries({
     entries: input.activeEntries,
     trigger: input.trigger,
+    preserveRecentTokenBudget: input.preserveRecentTokenBudget,
   });
   if (input.initialPromptTooLongCause === undefined) {
     return baseSelection;
@@ -782,6 +793,7 @@ function selectInitialCompactEntriesForActiveConversation(input: {
       promptTooLongCause: input.initialPromptTooLongCause,
       trigger: input.trigger,
       useMidConversationSystem: input.useMidConversationSystem,
+      preserveRecentTokenBudget: input.preserveRecentTokenBudget,
     }) ?? baseSelection
   );
 }

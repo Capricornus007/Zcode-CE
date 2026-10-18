@@ -99,7 +99,7 @@ export function buildCompactSummaryRequestMessages(
   compactPrompt: string,
   options: { useMidConversationSystem?: boolean } = {},
 ): RunModelTextRequestOptions["messages"] {
-  return buildProviderRequestMessages({
+  const projected = buildProviderRequestMessages({
     entries: [
       ...entriesForSummary,
       { message: { role: "user" as const, content: compactPrompt } },
@@ -108,6 +108,16 @@ export function buildCompactSummaryRequestMessages(
     skipCacheWrite: true,
     useMidConversationSystem: options.useMidConversationSystem,
   }).messages;
+  // 148②（吸收 pi 1.2.0）：摘要请求剥离历史 reasoning 块。thinking 签名只对产生它的
+  // 模型有效，对摘要模型是无效负载；重放的推理也不在真实上下文里，原样携带只会把
+  // 摘要请求撑大（极端时比被摘要的历史还大）。live 请求与跨模型卫生（148①）不受影响：
+  // 预算估算（estimateRuntimeEntryTokens）与 post-compact 保留轮仍按 live 口径。
+  return projected.map((message) => {
+    if (message.role !== "assistant" || !Array.isArray(message.content)) return message;
+    const withoutReasoning = message.content.filter((block) => block.type !== "reasoning");
+    if (withoutReasoning.length === message.content.length) return message;
+    return { ...message, content: withoutReasoning };
+  });
 }
 
 export function formatCompactSummaryOrThrow(

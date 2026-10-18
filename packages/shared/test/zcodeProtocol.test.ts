@@ -1144,6 +1144,65 @@ describe("ZCode Protocol", () => {
     expect(event.payload.background).toBe(true);
   });
 
+  it("parses CE side-effect capability keys on tool.started and permission.requested", () => {
+    // 回归：strict payload schema 漏声明 CE 契约键（contracts ToolCallStartedPayload
+    // 的 readOnly/sideEffectScope、PermissionRequestedPayload 的 fullAccessSupported）
+    // 时，host 校验把整条 session/event 丢弃（实测每天数百条 tool.updated 被丢）。
+    const started = zcodeSessionEventSchema.parse({
+      eventId: "evt_tool_started_ce_keys",
+      seq: 14,
+      sessionId: "sess_parent",
+      timestamp: 15,
+      traceId: "trace_parent",
+      turnId: "turn_parent",
+      type: "tool.updated",
+      payload: {
+        kind: "started",
+        toolCallId: "call_ce_keys",
+        startedAt: 15,
+        readOnly: true,
+        sideEffectScope: "workspace",
+      },
+    });
+    const requested = zcodeSessionEventSchema.parse({
+      eventId: "evt_permission_requested_full_access",
+      seq: 15,
+      sessionId: "sess_parent",
+      timestamp: 16,
+      traceId: "trace_parent",
+      turnId: "turn_parent",
+      type: "permission.requested",
+      payload: {
+        toolCallId: "call_ce_keys",
+        toolName: "Bash",
+        riskLevel: "medium",
+        reason: "Run tests",
+        input: { command: "pnpm test" },
+        fullAccessSupported: true,
+        options: [
+          {
+            optionId: "allow_once",
+            kind: "allowOnce",
+            name: "Allow once",
+            response: { decision: "allow" },
+          },
+        ],
+      },
+    });
+
+    expect(started.payload.readOnly).toBe(true);
+    expect(started.payload.sideEffectScope).toBe("workspace");
+    expect(requested.payload.fullAccessSupported).toBe(true);
+    // 键仍在 strict 管控下：拼错的枚举值必须被拒，而不是静默放行。
+    expect(() =>
+      zcodeSessionEventSchema.parse({
+        ...started,
+        eventId: "evt_tool_started_bad_scope",
+        payload: { ...started.payload, sideEffectScope: "galaxy" },
+      }),
+    ).toThrow();
+  });
+
   it("parses subagent mirrored permission events with routing metadata", () => {
     const requested = zcodeSessionEventSchema.parse({
       eventId: "evt_subagent_permission_requested",

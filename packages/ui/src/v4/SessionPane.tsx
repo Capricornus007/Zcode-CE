@@ -4188,9 +4188,17 @@ export function SessionPane({
   ensureDraftPrewarmConfigBeforeSendRef.current = ensureDraftPrewarmConfigBeforeSend;
 
   const followupModeSyncKeyRef = useRef<string | null>(null);
+  // setFollowupMode 对 detached 子会话（subagent 子会话 pane 等）必然 sessionNotFound：
+  // 它们不在命令收件箱注册表（command-inbox 无该 session 的 record）。收到该终态后按
+  // 会话熔断，否则每个 snapshot revision 都重发一次（实测每秒一条
+  // "setFollowupMode 被拒绝 proto.sessionNotFound"）。
+  const followupModeSyncUnsyncableRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     const targetSessionId = sessionId ?? prewarmSessionId;
     if (!targetSessionId || !appFollowupMode || snapshotRevision === null) return;
+    // 观察视图（subagent 右侧详情等）按 readOnly 契约不发送配置命令。
+    if (readOnly) return;
+    if (followupModeSyncUnsyncableRef.current.has(targetSessionId)) return;
     if (snapshotSessionId !== targetSessionId) return;
     if (snapshotFollowupMode === appFollowupMode) {
       followupModeSyncKeyRef.current = `${targetSessionId}:${appFollowupMode}:synced`;
@@ -4202,14 +4210,18 @@ export function SessionPane({
     // 交互行为的用户事实源是 app 设置页；v4 投影 followupMode 只是
     // CLI/runtime 同步结果。这里把设置变更补发成既有 setFollowupMode 命令，
     // 避免 composer 再暴露一个同义“追加模式”入口造成上下游分叉。
-    void configCommandBarrier.enqueue(() =>
-      dispatchConfigCas("setFollowupMode", { mode: appFollowupMode }),
-    );
+    void configCommandBarrier.enqueue(async () => {
+      const ack = await dispatchConfigCas("setFollowupMode", { mode: appFollowupMode });
+      if (ack?.status === "rejected" && (ack.reasonCode ?? "").includes("sessionNotFound")) {
+        followupModeSyncUnsyncableRef.current.add(targetSessionId);
+      }
+    });
   }, [
     appFollowupMode,
     configCommandBarrier,
     dispatchConfigCas,
     prewarmSessionId,
+    readOnly,
     sessionId,
     snapshotFollowupMode,
     snapshotRevision,

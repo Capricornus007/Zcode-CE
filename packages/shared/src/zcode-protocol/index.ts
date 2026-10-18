@@ -1670,6 +1670,13 @@ const zcodeToolCallBasePayloadSchema = z
     childSessionId: nonEmptyString.optional(),
     childToolCallId: nonEmptyString.optional(),
     description: z.string().optional(),
+    // CE 契约（contracts ToolCallStartedPayload）：解析后的副作用能力。CLI 每次
+    // tool.updated started 都携带；strict schema 漏声明时 host 校验整条丢弃
+    // （实测每天数百条 "丢弃无效 ZCode Protocol session event"）。
+    readOnly: z.boolean().optional(),
+    sideEffectScope: z
+      .enum(["none", "workspace", "git", "network", "system", "session", "userInteraction"])
+      .optional(),
   })
   .strict();
 
@@ -1751,6 +1758,10 @@ export const zcodePermissionRequestedEventPayloadSchema = z
     options: z.array(zcodePermissionOptionSchema).min(1),
     childSessionId: nonEmptyString.optional(),
     background: z.boolean().optional(),
+    // CE 契约（contracts PermissionRequestedPayload.fullAccessSupported）：会话模式
+    // 支持"本次会话不再询问"时 CLI 携带 true；漏声明会让整条权限请求事件被 strict
+    // 校验丢弃（与 tool.updated 的 readOnly/sideEffectScope 同根因）。
+    fullAccessSupported: z.boolean().optional(),
   })
   .strict();
 export const zcodePermissionResolvedEventPayloadSchema = z

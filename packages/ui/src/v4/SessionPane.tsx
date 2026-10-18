@@ -3115,6 +3115,22 @@ export function SessionPane({
             ...(reasoningLevel ? { reasoningLevel } : {}),
             waitBudgetMs: HIGHSPEED_SEND_WAIT_BUDGET_MS,
           });
+          // 成功路径此前零日志：RPC「OK」覆盖 accelerated 与全部 fallback（draw-miss/cooldown/
+          // automation/unavailable…），排障时无法区分「服务端没发卡」和「冷却跳过」（2026-10-18
+          // 判别实验实证：切 GLM-5.3 后 prepareTurn OK 但当轮无卡，是 miss 还是别的无从判断）。
+          logger.info(
+            result.kind === "accelerated"
+              ? "[highspeed] 抽中加速卡，本轮走加速网关"
+              : "[highspeed] 未用加速，本轮按普通模型发送",
+            {
+              kind: result.kind,
+              ...(result.kind === "fallback" ? { reason: result.reason } : {}),
+              cardId: result.card?.cardId,
+              nextDrawAt: result.nextDrawAt,
+              model,
+              taskId,
+            },
+          );
           if (result.kind === "accelerated") {
             // Bug 根因：该查询只决定节省时间展示，却曾在抽中后同步 await；monitor 侧 15s 超时把
             // 1s 发送承诺拉长到最多 16s（新会话首发尤其明显：空 session 已建、正文长期未发）。

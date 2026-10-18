@@ -1709,7 +1709,7 @@
     "packages/ui/src/components/ai-elements/prompt-input-primitives.tsx": "2412c8a868445a649264724ef8c6b75a97eb87aa3f790ca012c8e6a8b460a632",
     "packages/ui/src/components/ai-elements/prompt-input-textarea.tsx": "4798574a8f2fc8584a1c5585d9dd878dd19d76bd05603e77948ec12180649def",
     "packages/ui/src/components/ai-elements/prompt-input.tsx": "68a92e07c27774e9c1d63bccd12ec3ff38b4f89dd245b20bfffbbd052e6101c4",
-    "packages/ui/src/components/ai-elements/qimen-pan-block.tsx": "8dd938413d81f1f9aaab10f47be5c3b8571b2b8f0288b0c6c423b20d04471f0d",
+    "packages/ui/src/components/ai-elements/qimen-pan-block.tsx": "57f9d1b859598ee6d98f93d27c4a43387ea74b92553e5463511e72a37f802a67",
     "packages/ui/src/components/ai-elements/queue.tsx": "9d84f6e15708519ec65e258d9843dc5f4d76f106fc85155f7dcf51f89474b695",
     "packages/ui/src/components/ai-elements/reasoning.tsx": "a10a38c7b3ca633e9b5480ad94f9c7a1fdd52bc5526ae0801e3e6ed141f2b604",
     "packages/ui/src/components/ai-elements/sandbox.tsx": "f521400dbaebe4c2a2fbcdcb8c18f98980c566169233beb137b22a093b44bbf0",
@@ -21680,7 +21680,7 @@
         },
         {
           "file": "packages/ui/src/components/ai-elements/qimen-pan-block.tsx",
-          "sha256": "8dd938413d81f1f9aaab10f47be5c3b8571b2b8f0288b0c6c423b20d04471f0d"
+          "sha256": "57f9d1b859598ee6d98f93d27c4a43387ea74b92553e5463511e72a37f802a67"
         },
         {
           "file": "packages/ui/src/components/ai-elements/queue.tsx",

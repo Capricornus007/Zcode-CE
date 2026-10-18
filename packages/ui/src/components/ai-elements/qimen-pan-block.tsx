@@ -48,7 +48,8 @@ const PalaceCell = memo(function PalaceCell({
   return (
     <div
       className={cn(
-        "relative flex min-h-28 flex-col gap-0.5 rounded-lg border bg-card p-2",
+        // 窄屏（手机远控）压低宫格高度，md 起恢复桌面尺寸。
+        "relative flex min-h-24 flex-col gap-0.5 rounded-lg border bg-card p-2 md:min-h-28",
         // 四害红边与用神 ring 并存：ring 不占 border 色，病灶信号不被高亮覆盖。
         hasSihai ? "border-destructive/50" : "border-border",
         badgeYongshen && "ring-2 ring-warning/60",
@@ -233,7 +234,7 @@ export const QimenPanBlock = memo(function QimenPanBlock({
             <div
               key={gong}
               aria-hidden
-              className="min-h-28 rounded-lg border border-dashed border-border/60"
+              className="min-h-24 rounded-lg border border-dashed border-border/60 md:min-h-28"
             />
           );
         })}

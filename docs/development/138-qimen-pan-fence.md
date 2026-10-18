@@ -45,10 +45,22 @@ B) mermaid 式围栏 → 原生组件；C) v4 协议新 row kind。**决策：�
   值符值使徽标）+ `build_yongshen_payload(result, category)`（与 format_yongshen_locator
   同源）+ `--json [测项]` 参数。
 - `.agents/skills/qimen-duanpan/SKILL.md`：调度约定（--json → ```qimen 围栏原样输出 →
-  围栏后文本详断）。
+  围栏后文本详断；未指定时间用会话当前时间；默认拆补；多盘对照连排多围栏）。
 - `.agents/skills/qimen-jiaoxue/SKILL.md`：视觉教学由 PNG（已退役）切到原生围栏。
 - `.agents/skills/mingli-hecan/SKILL.md`：奇门回退命令补 `--json`+围栏约定。
 - `liuren-duanpan` 用大六壬独立排盘工具，盘结构不同，不适用本契约（未来可做 `liuren` 围栏）。
+
+### 会话层接线（新会话与长会话，2026-10 第三批）
+
+- **新会话可见性**：F:\智能体 `AGENTS.md` 两处登记——排盘工具表奇门行改 `--json`+围栏、
+  「奇门遁甲断卦（自动执行）」流程第 2/3 步改为 `--json` + 围栏输出（AGENTS.md 每会话必载，
+  技能未触发时约定仍在场）。
+- **长会话召回**：约定落为 `qimen-duanpan/references/14-原生盘面输出约定.md`，经
+  `gen_kb_cards.py` 切成 4 张知识卡（排盘与输出/围栏输出三铁律/盘面自动渲染项/断盘边界）
+  进 `.zcode/kb-cards/`——kb_recall 语义召回层在上下文压缩后仍可召回约定。
+- **分享页**：`ConversationShareReadonlyTimeline` 复用同一 `MessageResponse`，qimen 围栏
+  在公开分享页同样原生渲染（围栏内容属受保护代码区间，`normalizeConversationShareMarkdown`
+  不改写）。
 
 ## 验证
 
@@ -58,4 +70,5 @@ B) mermaid 式围栏 → 原生组件；C) v4 协议新 row kind。**决策：�
   值符徽标与日干标注 / 点击展开读象并可收起 / 缺宫虚线壳。
 - 端到端：`python -X utf8 排盘.py 2026 10 18 13 --json 财运` 实排（阴遁6局）通过 shared
   schema；fixture 即来自实排。
+- 移动端：宫格 `min-h-24 md:min-h-28`，窄屏（手机远控）压缩高度，md 起恢复桌面尺寸。
 

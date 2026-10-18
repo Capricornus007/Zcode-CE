@@ -93,6 +93,7 @@ import { ChatPromptEditor } from "@/prompt-editor/ChatPromptEditor.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
+import { StreamSpeedPill } from "@/v4/composer/StreamSpeedPill.js";
 import type { AppSlashCommand } from "@/slashCommandHelpers.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
@@ -2144,6 +2145,15 @@ function ConversationComposerImpl({
   // 避免每个 token 批次都重建 Tooltip/Select 子树。
   const composerUsage = snapshot?.usage ?? null;
   const composerPhase = snapshot?.control.phase ?? null;
+  // 速度药丸的数据面：流式文本字符数（assistantText + reasoning 行），
+  // 每个 delta 批次随 snapshot 更新。放在 memo 外——它必须逐批次重渲染。
+  const streamingChars = useMemo(() => {
+    let total = 0;
+    for (const row of snapshot?.rows.window ?? []) {
+      if (row.kind === "assistantText" || row.kind === "reasoning") total += row.text.length;
+    }
+    return total;
+  }, [snapshot]);
   const handleSelectModelTrace = useCallback(
     (nextProvider: string, nextModel: string, sourceModel: ModelSelectionSource | null) =>
       runUserAction({
@@ -2436,7 +2446,20 @@ function ConversationComposerImpl({
           appSlashCommands={appSlashCommands}
           enableMentionPanel
           leadingActions={leadingActionsNode}
-          submitControl={submitControlNode}
+          submitControl={
+            // 重植说明：3.15.1 整版覆盖本文件时把速度药丸接线冲掉（组件/i18n/测试均幸存，
+            // 仅此处渲染丢失），按 main 版形态（44f5411f…b2fece1d）原样恢复。
+            <>
+              <StreamSpeedPill
+                usage={composerUsage}
+                streamingChars={streamingChars}
+                active={composerPhase === "running"}
+                title={intl.formatMessage({ id: "chat.toolbar.streamSpeed.title" })}
+                cacheLabel={intl.formatMessage({ id: "chat.toolbar.streamSpeed.cache" })}
+              />
+              {submitControlNode}
+            </>
+          }
           className="p-0"
           shellClassName={
             highspeedCard

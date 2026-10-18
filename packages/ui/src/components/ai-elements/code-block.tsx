@@ -30,7 +30,8 @@ import {
 import { useGuidedTerminalSend } from "@/lib/guidedTerminalSendContext.js";
 import { FileDisplayIcon, resolveFileDisplayDescriptor } from "@/lib/fileDisplay.js";
 import { isMermaidLanguage, shouldRenderMermaidCodeBlock } from "@/lib/mermaidLanguage.js";
-import { parseQimenPanDocument } from "@zcode/shared";
+import { parseLiurenPanDocument, parseQimenPanDocument } from "@zcode/shared";
+import { LiurenPanBlock } from "@/components/ai-elements/liuren-pan-block.js";
 import {
   getCurrentMermaidDocumentVisibility,
   resolveMermaidAutoRenderDecision,
@@ -58,7 +59,7 @@ type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   fontSizePx?: number;
   renderMermaid?: boolean;
   /**
-   * ```qimen 围栏 → 原生盘面组件（spec: docs/development/136-qimen-pan-fence.md）。
+   * 命理盘面围栏（```qimen / ```liuren）→ 原生组件（spec: docs/development/138-qimen-pan-fence.md）。
    * 与 renderMermaid 同一门控语义：流式期间传 false，先按代码块展示，完成后再渲染。
    * JSON 解析失败自动回退 CodeViewer，绝不出错。
    */
@@ -282,13 +283,20 @@ export const CodeBlock = ({
   const [mermaidPreviewSvg, setMermaidPreviewSvg] = useState<string | null>(null);
   const [mermaidPreviewOpen, setMermaidPreviewOpen] = useState(false);
   const canRenderMermaidCode = renderMermaid && shouldRenderMermaidCodeBlock(language, code);
-  // ```qimen 围栏：与 mermaid 同一门控语义——解析始终进行（有效即占位），
+  // 命理盘面围栏（qimen/liuren）：与 mermaid 同一门控语义——解析始终进行（有效即占位），
   // 流式期间只渲染「生成中」占位（规避 Streamdown 流式拆块的半 JSON 抖动），
   // 完成后渲染原生盘面；解析失败回退普通代码块。
-  const qimenPanDocument = useMemo(
-    () => (language === "qimen" ? parseQimenPanDocument(code) : null),
-    [code, language],
-  );
+  const panDocument = useMemo(() => {
+    if (language === "qimen") {
+      const doc = parseQimenPanDocument(code);
+      return doc ? ({ kind: "qimen", doc } as const) : null;
+    }
+    if (language === "liuren") {
+      const doc = parseLiurenPanDocument(code);
+      return doc ? ({ kind: "liuren", doc } as const) : null;
+    }
+    return null;
+  }, [code, language]);
   const documentVisibilityRevision = useDocumentVisibilityRevision(canRenderMermaidCode);
   const mermaidAutoRenderDecision = useMemo(() => {
     if (!canRenderMermaidCode) {
@@ -349,9 +357,13 @@ export const CodeBlock = ({
       <CodeBlockContainer className={className} language={language} {...props}>
         {children}
         <div className={cn("p-2 pt-0 pb-3", contentClassName)}>
-          {qimenPanDocument ? (
+          {panDocument ? (
             renderQimenPan ? (
-              <QimenPanBlock document={qimenPanDocument} />
+              panDocument.kind === "qimen" ? (
+                <QimenPanBlock document={panDocument.doc} />
+              ) : (
+                <LiurenPanBlock document={panDocument.doc} />
+              )
             ) : (
               // 流式期间：JSON 未收敛，不渲染半截盘面，给稳定占位。
               <div

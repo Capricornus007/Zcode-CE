@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-qimen-pan-fence",
+  "spec": "./test/e2e/conversation-session/conversation-session-qimen-pan-fence.test.ts",
+  "fixtures": [
+    {
+      "id": "qimen-pan-fence-title",
+      "description": "qimen 盘面 case 内的标题生成固定响应。",
+      "metadata": {
+        "kind": "common",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "标题不是本 case 的产品语义；固定响应避免标题请求误命中主请求。"
+      },
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "bodyIncludes": ["Generate a concise title"]
+      },
+      "response": {
+        "statusCode": 200,
+        "statusMessage": "OK",
+        "text": {
+          "id": "qimen-pan-fence-title",
+          "model": "deepseek-v4-flash",
+          "inputTokens": 64,
+          "outputTokens": 8,
+          "text": "{\"title\":\"Qimen Pan Fence\"}"
+        }
+      }
+    },
+    {
+      "id": "qimen-pan-fence-main",
+      "description": "助手回复携带 ```qimen 围栏（九宫盘 JSON），锁定 renderer 围栏→原生盘面全链。",
+      "metadata": {
+        "kind": "main",
+        "timingPolicy": "fast-text",
+        "source": "synthetic",
+        "syntheticReason": "围栏渲染是纯 renderer 语义，固定载荷即可精确断言 DOM，无需真实模型。"
+      },
+      "maxMatches": 1,
+      "match": {
+        "method": "POST",
+        "pathIncludes": "/messages",
+        "lastUserMessageIncludes": ["E2E_QIMEN_PAN_FENCE"],
+        "bodyExcludes": ["Generate a concise title"]
+      },
+      "response": {
+        "statusCode": 200,
+        "statusMessage": "OK",
+        "headers": {
+          "cache-control": "no-cache",
+          "content-type": "text/event-stream; charset=utf-8"
+        },
+        "body": "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"qimen-pan-fence-main\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"deepseek-v4-flash\",\"content\":[],\"stop_reason\":null,\"stop_sequence\":null,\"usage\":{\"input_tokens\":128,\"output_tokens\":0}}}\n\nevent: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\nevent: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"起局如下（E2E_QIMEN_PAN_FENCE_PAN）：\\n\\n```qimen\\n{\\\"protocolVersion\\\":1,\\\"title\\\":\\\"阴遁6局·拆补·上元\\\",\\\"palaces\\\":[{\\\"gong\\\":1,\\\"name\\\":\\\"坎\\\",\\\"star\\\":\\\"天蓬\\\",\\\"door\\\":\\\"休门\\\",\\\"shen\\\":\\\"值符\\\",\\\"tianGan\\\":\\\"壬\\\",\\\"diGan\\\":\\\"癸\\\"},{\\\"gong\\\":9,\\\"name\\\":\\\"离\\\",\\\"door\\\":\\\"景门\\\",\\\"geju\\\":{\\\"name\\\":\\\"月奇朱雀\\\",\\\"luck\\\":\\\"吉\\\"},\\\"sihai\\\":[\\\"空亡\\\"],\\\"kongwang\\\":true}]}}\\n```\\n\\n详断：用神离宫，月奇朱雀吉格，但临空亡，待实空之期。\"}}\n\nevent: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\",\"stop_sequence\":null},\"usage\":{\"input_tokens\":128,\"output_tokens\":96}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+      }
+    }
+  ]
+}

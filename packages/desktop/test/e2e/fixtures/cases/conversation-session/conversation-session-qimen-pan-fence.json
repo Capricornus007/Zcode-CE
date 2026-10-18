@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "caseName": "conversation-session-qimen-pan-fence",
+  "spec": "./test/e2e/conversation-session/conversation-session-qimen-pan-fence.test.ts",
+  "providerFixtures": [
+    "./test/e2e/fixtures/upstream/common.json",
+    "./test/e2e/fixtures/upstream/conversation-session/conversation-session-qimen-pan-fence.json"
+  ],
+  "fileFixtures": [],
+  "requests": [
+    {
+      "id": "qimen-pan-fence-title",
+      "kind": "common",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "标题不是本 case 的产品语义；固定响应避免标题请求误命中主请求。"
+    },
+    {
+      "id": "qimen-pan-fence-main",
+      "kind": "main",
+      "source": "synthetic",
+      "timingPolicy": "fast-text",
+      "syntheticReason": "围栏渲染是纯 renderer 语义，固定载荷即可精确断言 DOM，无需真实模型。"
+    }
+  ]
+}

@@ -70,4 +70,24 @@ describe("MessageResponse qimen fence wiring", () => {
     const html = renderMarkdown("```ts\nconst a = 1;\n```");
     expect(html).not.toContain('data-qimen-pan=""');
   });
+
+  it("liuren fence renders the native 六壬 pan (三传/四课/神煞)", () => {
+    const liurenJson = JSON.stringify({
+      protocolVersion: 1,
+      title: "乙丑日 未时",
+      meta: { method: "贼克法", kongwang: ["戌", "亥"] },
+      sike: [{ jiang: "蛇", shang: "丑", xia: "乙", xiaLabel: "干" }],
+      sanchuan: [
+        { position: "初传", zhi: "丑", liuqin: "财" },
+        { position: "中传", zhi: "戌", kongwang: true },
+        { position: "末传", zhi: "未" },
+      ],
+    });
+    const html = renderMarkdown(`\`\`\`liuren\n${liurenJson}\n\`\`\``);
+    expect(html).toContain('data-liuren-pan=""');
+    expect(html).toContain('data-liuren-chuan="初传"');
+    expect(html).toContain('data-liuren-ke="1"');
+    // 原始 JSON 不再以代码正文出现（外层容器保留 data-language 属正常）
+    expect(html).not.toContain("protocolVersion");
+  });
 });

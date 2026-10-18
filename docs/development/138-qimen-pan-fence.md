@@ -1,4 +1,4 @@
-# 138 · ```qimen 围栏原生盘面渲染
+# 138 · ```qimen / ```liuren 围栏原生盘面渲染
 
 ## 背景与决策
 
@@ -37,6 +37,24 @@ B) mermaid 式围栏 → 原生组件；C) v4 协议新 row kind。**决策：�
   解析失败回退普通代码块。
 - 色彩全部走主题语义 token（success/destructive/warning/foreground），深浅色自动适配；
   字号全部 `text-ui-*`（DESIGN.md 强制）。
+
+## 六壬围栏（```liuren，2026-10 第三批）
+
+- 契约：`packages/shared/src/liuren-pan.ts`。领域结构：**三传**（初/中/末：天将/支/遁干/
+  六亲/综合旺衰，初传金色强调）+ **四课**（干阳/干阴/支阳/支阴四列：天将乘上神、遁干注下、
+  下神为日干/日支或上一位上神）。空亡支红边+「空」角标；神煞 chips 渲染截断 16 项+汇总
+  （实排可达 90+ 项，载荷全量保留供模型读取）。
+- 组件 `liuren-pan-block.tsx`；`code-block.tsx` 的围栏解析泛化为 qimen/liuren 双语言，
+  占位/门控/回退语义完全一致（`renderQimenPan` 同时管两类，prop 名保留避免调用面churn）。
+- 生产方：`大六壬/工具/排盘.py` `build_liuren_payload(r)` + `--json`（stdout 重定向抑制
+  paipan 的内嵌打印；位置参数剔除 `--json` 标志防其被误当本命）。技能侧
+  `liuren-duanpan` SKILL.md + `references/14-原生盘面输出约定.md`（kb 召回源）+
+  AGENTS.md 六壬行。占时口径=地支索引 1-12 不是小时数（R1 错因防线，约定内重申）。
+- E2E 回归护栏：`conversation-session-qimen-pan-fence.test.ts` —— 合成 SSE fixture
+  （fixtures/upstream/cases 双 JSON，case 名由 spec 文件名推导）脚本化 assistant 回复
+  携带 ```qimen 围栏，断言真实会话时间线出现 `data-qimen-pan` 与宫格 DOM、原始 JSON
+  不再以代码正文出现。防「升级整版覆盖 renderer 冲掉接线」类事故（速度药丸教训）在
+  最终消费点的回归。
 
 ## 跨仓配套（F:\智能体）
 

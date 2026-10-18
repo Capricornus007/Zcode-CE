@@ -4,6 +4,7 @@ import type { CollaborationMode } from "../interfaces/session.port.js";
 import type { McpServerConfig } from "../interfaces/mcp.port.js";
 import type { HooksRuntimeConfig, HooksRuntimeConfigPatch } from "../hooks/index.js";
 import type { PluginConfig, PluginOptionValues } from "../plugins/index.js";
+import type { DangerousCommandPolicy } from "@zcode/shared";
 
 // ============================================================
 // Config Key Types
@@ -258,6 +259,8 @@ export interface RuntimeConfig {
   };
   toolConcurrency: ToolConcurrencyConfig;
   modelAnomalyGuard: ModelAnomalyGuardConfig;
+  /** 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   hooks: HooksRuntimeConfig;
   ui: {
     locale: UiLocale;
@@ -281,6 +284,7 @@ export interface RuntimeConfigPatch {
   logging?: Partial<RuntimeConfig["logging"]>;
   toolConcurrency?: Partial<RuntimeConfig["toolConcurrency"]>;
   modelAnomalyGuard?: Partial<RuntimeConfig["modelAnomalyGuard"]>;
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   hooks?: HooksRuntimeConfigPatch;
   ui?: Partial<RuntimeConfig["ui"]>;
 }

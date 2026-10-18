@@ -25,7 +25,7 @@ import type {
   WorkspaceHookBundleSnapshot,
   WorkspaceId,
 } from "@zcode/contracts";
-import type { ZCodeProviderAccountAccess } from "@zcode/shared";
+import type { DangerousCommandPolicy, ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
 import type { RuntimeMessageEntry } from "../agent/message-history.js";
 import type {
@@ -141,6 +141,8 @@ export interface AgentRuntimeConfig {
   compact?: AutoCompactPolicyConfig;
   /** CE 线增量（experimental）：自适应思考档——工具续跑步自动降一档。缺省=关。 */
   adaptiveReasoning?: { enabled?: boolean };
+  /** 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   /** CE 线增量（experimental）：缓存保活器——会话空闲超阈值时发同前缀迷你请求刷新
    * provider 侧 prompt cache，消除长空档后下一请求的预填充跳升。默认关。 */
   cacheKeepAlive?: { enabled?: boolean; idleThresholdMs?: number };

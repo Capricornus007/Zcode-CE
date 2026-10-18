@@ -87,6 +87,7 @@ import {
   type ZCodeSessionPersistence,
   type ZCodeWorkspaceRef,
   type ZCodeStateUpdatedNotification,
+  type DangerousCommandPolicy,
 } from "@zcode/shared";
 import {
   buildSessionSnapshot,
@@ -161,6 +162,8 @@ interface SessionStartupPreferences {
   memoryEnabled: boolean;
   /** 自适应思考档（experimental）：工具续跑步降一档；默认关。 */
   adaptiveReasoningEnabled: boolean;
+  /** 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
   nativeSearchEnhancementsEnabled: boolean;
   resolveInitialBashShellSelection: () => Promise<ExecutionShellSelection | undefined>;
@@ -3317,6 +3320,7 @@ async function resolveSessionStartupPreferences(
       memoryEnabled: source.parent.memoryEnabled,
       subagentRuntimeConfigEnabled: source.parent.subagentRuntimeConfigEnabled,
       adaptiveReasoningEnabled: source.parent.adaptiveReasoningEnabled,
+      dangerousCommandPolicy: source.parent.dangerousCommandPolicy,
       modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
       nativeSearchEnhancementsEnabled: source.parent.nativeSearchEnhancementsEnabled,
       resolveInitialBashShellSelection: async () => inheritedShellSelection,
@@ -3337,6 +3341,7 @@ async function resolveSessionStartupPreferences(
     subagentRuntimeConfigEnabled: runtimePreferences.subagentRuntimeConfigEnabled,
     memoryEnabled: runtimePreferences.memoryEnabled,
     adaptiveReasoningEnabled: runtimePreferences.adaptiveReasoningEnabled === true,
+    dangerousCommandPolicy: runtimePreferences.dangerousCommandPolicy,
     modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     nativeSearchEnhancementsEnabled: runtimePreferences.nativeSearchEnhancementsEnabled,
     resolveInitialBashShellSelection: async () => {
@@ -3440,6 +3445,10 @@ async function createRecord(
       ...(startupPreferences.adaptiveReasoningEnabled
         ? { adaptiveReasoning: { enabled: true } }
         : {}),
+      // 工具策略：只在用户配置了禁用/自定义条目时写入，缺省严格默认。
+      ...(startupPreferences.dangerousCommandPolicy
+        ? { dangerousCommandPolicy: startupPreferences.dangerousCommandPolicy }
+        : {}),
       // desktop-continuous session/create 由 UI 先解析 ~/.zcode/.agents 的 enabled MCP，
       // 但 protocol app-server 自己不会读取 UI/main 侧的 MCP store；之前 createRecord 没把
       // params.mcpServers 注入 runtimeConfig，导致日志里 runtimeHasMcpConfig=false，工具永远不启动。
@@ -3519,6 +3528,7 @@ async function createRecord(
     memoryEnabled: startupPreferences.memoryEnabled,
     subagentRuntimeConfigEnabled: startupPreferences.subagentRuntimeConfigEnabled,
     adaptiveReasoningEnabled: startupPreferences.adaptiveReasoningEnabled,
+    dangerousCommandPolicy: startupPreferences.dangerousCommandPolicy,
     modelContextBudgetStrategy: startupPreferences.modelContextBudgetStrategy,
     nativeSearchEnhancementsEnabled: startupPreferences.nativeSearchEnhancementsEnabled,
     ...(parentSessionId ? { parentSessionId } : {}),

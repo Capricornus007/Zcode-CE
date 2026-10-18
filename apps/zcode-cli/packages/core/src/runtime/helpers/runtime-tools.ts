@@ -205,6 +205,8 @@ function createRuntimeToolExecutor(
     pdfDocumentPort: deps.pdfDocumentPort,
     embeddedSearchBackend: runtime.config.embeddedSearchBackend,
     nativeSearchEnhancementsEnabled: runtime.config.nativeSearchEnhancementsEnabled,
+    // 工具策略：以前只存在于 settings 与 executor 类型里，装配点没传 ⇒ 设置页永不生效。
+    dangerousCommandPolicy: runtime.config.dangerousCommandPolicy,
     skillPort: deps.skillPort,
     subagentPort: runtime.subagentPort,
     coordinatorResponsePort: deps.coordinatorResponsePort,

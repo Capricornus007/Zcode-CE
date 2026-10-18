@@ -28,6 +28,7 @@ import {
   type ZCodeSessionMode,
   type ZCodeSessionPersistence,
   type ZCodeWorkspaceRef,
+  type DangerousCommandPolicy,
 } from "@zcode/shared";
 import type { ZCodeApp, ZCodeAppOptions } from "../app/types.js";
 import type { V4InteractionRegistry } from "../zcode-protocol-v4/interaction-registry.js";
@@ -87,6 +88,8 @@ export interface ZCodeProtocolSessionRecord {
   memoryEnabled: boolean;
   /** 自适应思考档（experimental）：子会话 inherit 用；默认关。 */
   adaptiveReasoningEnabled: boolean;
+  /** 工具策略：子会话 inherit 用；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   nativeSearchEnhancementsEnabled: boolean;
   modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
   createdAt: number;

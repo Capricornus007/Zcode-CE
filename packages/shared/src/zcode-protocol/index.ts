@@ -83,7 +83,10 @@ import {
 import { browserClientModeSchema, browserCommandSchema } from "../browser-use/commands.js";
 import { browserCommandResultSchema } from "../browser-use/result.js";
 import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
-import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
+import {
+  dangerousCommandPolicySchema,
+  integratedTerminalShellSelectionSchema,
+} from "../validationAppSettings.js";
 import {
   zcodeSyntheticUserMessageSourceSchema as legacyZcodeSyntheticUserMessageSourceSchema,
   zcodeDeliveryKindSchema,
@@ -2090,6 +2093,8 @@ export const zcodeSessionRuntimePreferencesResultSchema = z
     nativeSearchEnhancementsEnabled: z.boolean(),
     // 自适应思考档（experimental）：工具续跑步自动降一档。缺省=关（兼容旧 Host）。
     adaptiveReasoningEnabled: z.boolean().optional(),
+    // 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。
+    dangerousCommandPolicy: dangerousCommandPolicySchema.optional(),
     subagentRuntimeConfigEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().default(false),
     askUserQuestionAutoResolutionEnabled: z.boolean().default(true),

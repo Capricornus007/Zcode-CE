@@ -8,7 +8,6 @@ import {
   isChatComposerSubmissionBlocked,
   isChatTaskRunning,
   shouldShowChatSubmitSpinner,
-  shouldShowChatThinkingShimmer,
 } from "../src/lib/chatStatus.js";
 
 describe("deriveChatComposerStatusFromTaskRuntime", () => {
@@ -111,16 +110,5 @@ describe("canForkFromTaskRuntimeStatus", () => {
     expect(canForkFromTaskRuntimeStatus("streaming")).toBe(false);
     expect(canForkFromTaskRuntimeStatus("notReady")).toBe(false);
     expect(canForkFromTaskRuntimeStatus("failed")).toBe(false);
-  });
-});
-
-describe("shouldShowChatThinkingShimmer", () => {
-  it("shows thinking only while creating or streaming", () => {
-    expect(shouldShowChatThinkingShimmer("creating")).toBe(true);
-    expect(shouldShowChatThinkingShimmer("streaming")).toBe(true);
-  });
-
-  it("does not show thinking while restoring", () => {
-    expect(shouldShowChatThinkingShimmer("restoring")).toBe(false);
   });
 });

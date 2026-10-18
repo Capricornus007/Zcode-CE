@@ -145,6 +145,13 @@ export function mergeConfigs(...configs: PrioritizedConfig[]): RuntimeConfigPatc
         ...config.modelAnomalyGuard,
       };
     }
+    // 工具策略：后层字段覆盖前层，数组整体替换（与设置页保存语义一致）。
+    if (config.dangerousCommandPolicy) {
+      result.dangerousCommandPolicy = {
+        ...result.dangerousCommandPolicy,
+        ...config.dangerousCommandPolicy,
+      };
+    }
     if (config.hooks) {
       result.hooks = mergeHooksConfig(previousHooks, config.hooks);
     }

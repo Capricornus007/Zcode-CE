@@ -125,3 +125,7 @@
 bootstrap 不写 runtimeConfig），用户侧表现为「自动档消失、设置不生效」。已回植并用
 `packages/ui/test/adaptiveReasoningWiring.test.ts` 钉死六个消费点；细节见
 `docs/development/142-adaptive-reasoning-restore.md`。
+
+同一形态的断线还有工具策略：`AppSettings.dangerousCommandPolicy` 可保存但无人读取，
+`ToolExecutorDeps.dangerousCommandPolicy` 是死字段。已按同一链路回植并加
+`dangerousCommandPolicyWiring.test.ts`，见 `docs/development/143-dangerous-command-policy-wiring.md`。

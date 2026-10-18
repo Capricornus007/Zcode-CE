@@ -97,6 +97,8 @@ DSH 可借鉴项来源：`.reverse/100-dsh-021/REPORT.md`（DSH 0.1.7→0.2.1-al
 | **Bot Channel 的第三方渠道实现**（weixin / feishu / lark 之外的留位渠道 dingding/discord/wecom） | 上游跟进 | 上游也只留位、无实现证据                                                        | TELEMETRY-AUDIT §8          |
 | **README 的"更新至 v3.14.3"措辞**                                                                | 文档     | 那是官方仓库自己的更新日志，不是产品文档                                        | FEATURE-DIFF §5.2           |
 | **Docker 镜像发布**（`ghcr.io/<org>/zcode-ce-server`）                                           | 工程     | 用户决定：维护与上传成本不值；仓库根 `Dockerfile` + `compose.yaml` 本地构建可用 | 用户 2026-09-25             |
+| **崩溃记录附加到反馈**（pi 0.86 的 /bug 附件）                                                    | 上游跟进 | 崩溃诊断已是结构化单行并到达唯一 sink（Host `zcodeAgentProcessManager` 解析落日志）；CE 反馈仅 like/dislike、无报告上传通道，CLI 侧再落盘会造出第二所有者。重启条件：出现报告/上传通道时重开（[148 §⑦](./148-pi-absorption-batch2.md)） | 148 号 spec                 |
+| **cache 保活 per-model 阈值**（pi 0.86 的模型级 cache lifetime）                                   | 上游跟进 | 12min 全局阈值落在 bench/cache-ttl-probe 实测存活窗内，无任何模型实测偏离；保活命中率观测（148⑤）是前置证据，有实证再加配置面（[148 §⑤](./148-pi-absorption-batch2.md)） | 148 号 spec                 |
 
 ## 已知与上游的**有意偏离**（不是欠账，是决策）
 

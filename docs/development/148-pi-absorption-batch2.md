@@ -42,7 +42,7 @@
 
 - 以 zod4 原生转换器 `z.toJSONSchema(ZCodeConfigFileSchema, { target: "draft-7", io: "input" })` 生成，产物 `docs/schema/zcode-config-v2.schema.json`，`$id` 对齐既有测试约定的 URL。不用 `zod-to-json-schema`：其 3.25.2 按 zod3 的 `def.typeName` 分发解析器，对 zod4 classic schema（`_def.typeName === undefined`）产出空 body，实测该库无法序列化本 schema。
 - 棘轮护栏：单测对比「产物文件 = 当前 schema 生成结果」，漂移即红；`UPDATE_CONFIG_SCHEMA=1` 重写。config 结构变化必须重生成，否则测试拦截。
-- 编辑器用法写入产物头注释与 CLI 配置文档：用户可把 `$schema` 指向本地文件路径或 file URL。
+- 编辑器用法写入 CLI 配置文档（`docs/design/v2/local-setting-migrations.md`「Config JSON Schema for Editor Support」小节）：产物是纯 JSON（无注释位），用户可把 `$schema` 指向本地文件路径、file URL 或 canonical `$id`；`.gitattributes` 对 `docs/schema/*.json` 强制 `eol=lf`，防止 autocrlf 克隆让快照假红。
 
 ## 边界
 
@@ -51,10 +51,16 @@
 - ⑧ schema 是快照产物；不支持 zod 无法表达的字段级 JSON Schema 语义（与 `contracts/src/tools/json-schema.ts` 同一限制）。
 - ⑦ 的「不做」带重启条件：出现报告/上传通道时重开。
 
-## 验证
+- 编辑器用法写入 CLI 配置文档（`docs/design/v2/local-setting-migrations.md`「Config JSON Schema for Editor Support」小节）：产物是纯 JSON（无注释位），用户可把 `$schema` 指向本地文件路径、file URL 或 canonical `$id`；`.gitattributes` 对 `docs/schema/*.json` 强制 `eol=lf`，防止 autocrlf 克隆让快照假红。
 
-- `core/test/compact-pi-absorptions.*` 新增②用例（摘要请求无 reasoning 块、prompt 与工具块保留）；
-- `core/test/compact-policy.*` / selection 用例新增⑥（缺省 20K 不变、全局覆盖、per-model 覆盖优先）；
-- `core/test/cache-keep-alive.*` 断言⑤新字段；
-- `adapters/tests/config*schema*` 棘轮用例⑧；
-- `pnpm --dir apps/zcode-cli typecheck`、受影响包测试；根 `pnpm typecheck`。
+## 验证（2026-10-18 实测）
+
+| 项 | 结果 |
+|----|------|
+| 新增 vitest：`packages/core/tests/compact-summary-reasoning-omit.test.ts`（②×2）、`compact-preserve-budget-config.test.ts`（⑥×2）、`cache-keep-alive-ratio.test.ts`（⑤×2） | **6/6 通过** |
+| ⑧ 棘轮 `packages/adapters/tests/config-schema-snapshot.test.ts`（真实 vitest） | **通过**；`UPDATE_CONFIG_SCHEMA=1` 重生成 → 无变量复跑逐字节一致 |
+| tsc `--noEmit`：core / bootstrap / adapters | **均 0 错误**；CLI 全量 turbo typecheck 18/24 任务成功，唯一失败 `@zcode/tui#build` 为沙箱 spawn EPERM（非类型错误） |
+| oxlint 改动文件 | **0 errors**（1 条既有 warning：`compact-active.ts` 未使用 `executionMaxOutputTokens`，不在本批 diff 内） |
+| oxfmt `--check` | 本机沙箱阻断（外部 formatter spawn EPERM），未跑成 |
+| 既有失败基线 | core 全量 vitest 本机基线 162 failed/49 文件（threads 池 + 沙箱 spawn 限制）；stash 本批改动前后对照一致（runtime-compact+compact-preserved-inputs 14 条、compact-policy+microcompact+bash-permission-policy 25 条均与基线相同）——与本批无关 |
+| `core/test/compact-pi-absorptions.test.ts`（node --import tsx） | 本机沙箱阻断（tsx 子进程 spawn EPERM）；⑥ 对 `selectCompactEntries` 的签名是加法可选参数、缺省 20K 不变，vitest ⑥ 用例已覆盖同一路径 |

@@ -45,6 +45,20 @@ export function buildKeepAlivePingMessage(): ModelInputMessage {
   };
 }
 
+/**
+ * 148⑤：保活刷新的命中率观测 = cacheRead / context。
+ * 分母缺失或非正、分子缺失时返回 null（无证据不造数）；上限钳到 1 防 provider
+ * 返回异常值污染日志口径。
+ */
+export function resolveKeepAliveCacheHitRatio(
+  contextTokens: number | undefined,
+  cacheReadTokens: number | null | undefined,
+): number | null {
+  if (contextTokens === undefined || contextTokens <= 0) return null;
+  if (cacheReadTokens === null || cacheReadTokens === undefined) return null;
+  return Math.min(1, cacheReadTokens / contextTokens);
+}
+
 /** 调度/清理保活定时器；由 runtime 持有句柄。 */
 export function scheduleCacheKeepAlive(runtime: AgentRuntimeInternal): void {
   cancelCacheKeepAlive(runtime);
@@ -88,9 +102,13 @@ export async function sendCacheKeepAliveRequestImpl(runtime: AgentRuntimeInterna
       options: { maxOutputTokens: KEEP_ALIVE_MAX_OUTPUT_TOKENS },
     });
     const contextTokens = getModelUsageContextTokens(result.usage);
+    const cacheReadTokens = result.usage?.cacheReadTokens ?? null;
     runtime.logger?.info(`${CACHE_KEEP_ALIVE_TAG} cache refreshed`, {
       contextTokens: contextTokens ?? null,
-      cacheReadTokens: result.usage?.cacheReadTokens ?? null,
+      cacheReadTokens,
+      // 148⑤：命中率长期偏低 = 12min 阈值假设被该模型/provider 打破的第一信号
+      //（per-model 阈值是否要加，看这里的实证，不预先加配置面）。
+      cacheHitRatio: resolveKeepAliveCacheHitRatio(contextTokens, cacheReadTokens),
     });
   } catch (error) {
     // 保活失败静默降级（优化不是功能依赖），但必须捕获——定时器回调里

@@ -324,7 +324,10 @@ describe("Root update ready overlay", () => {
     } finally {
       mockModelSelectionRead.failed = false;
     }
-  }, 15_000);
+    // 30s：该用例整树渲染（Root + 侧栏 + 设置面板）本身就是全文件最重的一档；
+    // 15s 在「跑测试的同时并行构建」的机器上会被 CPU 竞争打爆（实测全量批内
+    // 超时、单跑全绿），超时上限放宽不改变断言强度。
+  }, 30_000);
   beforeEach(() => {
     tabStoreState.tabs = [];
     tabStoreState.activeTabId = null;

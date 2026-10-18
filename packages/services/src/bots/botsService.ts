@@ -29,6 +29,14 @@ import { resolveAllowedAttachmentLocalPath } from "./attachmentPathGuard.js";
 // CE 线增量：task_error 文案出口统一走码→文案映射（稳定码可操作提示，见 taskFailureMessage.ts）。
 import { formatBotTaskFailureMessage } from "./taskFailureMessage.js";
 import { assertAllowedAttachmentUrl, fetchBotAttachmentFromUrl } from "./attachmentUrlGuard.js";
+// 重植（3.15.1 官方整版覆盖冲掉，恢复 origin/main 接线）：附件两个上限常量统一取自
+// 无依赖叶子模块 ./botAttachmentLimits.js（task-111），不在本文件重复定义——官方版本在本文件
+// 留有本地副本，会与根入口 @zcode/services 的导出（packages/server 的 botIngress 据此推导
+// /bot/** 请求体上限，botIngress.test.ts 有耦合断言）形成两处事实源并静默漂移。
+import {
+  BOT_MAX_ATTACHMENTS_PER_MESSAGE,
+  BOT_MAX_ATTACHMENT_SIZE_BYTES,
+} from "./botAttachmentLimits.js";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -752,8 +760,12 @@ const BOT_FORCED_MODE = "yolo";
 const BOT_TYPING_INTERVAL_MS = 4_000;
 const BOT_TASK_META_RETRY_DELAYS_MS = [80, 160, 320] as const;
 const BOT_WORKSPACE_REFS_CACHE_TTL_MS = 5_000;
-const BOT_MAX_ATTACHMENTS_PER_MESSAGE = 4;
-const BOT_MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
+// 两个附件上限的定义在无依赖叶子模块 ./botAttachmentLimits.js（task-111）：它们要经
+// browser-safe 的根入口 @zcode/services 导出，而本模块 import 了 ./attachmentUrlGuard.js
+// → undici（Node-only），定义在本文件会让根入口闭包被拉进 undici ⇒ 浏览器产物里
+// process is not defined ⇒ Web 客户端白屏。耦合关系：合法最大 payload =
+// ceil(N × S / 3) × 4（base64 膨胀）+ JSON 外壳，该值与 /bot/** 请求体上限耦合，
+// 改常量必须同步重算上限。详见 .reverse/93-bot-ingress/BOT-INGRESS-SPEC.md §7.1.1。
 const BOT_ATTACHMENT_DOWNLOAD_TIMEOUT_MS = 30_000;
 const REMOTE_RECONNECT_DEDUPE_TTL_MS = 3_000;
 const REMOTE_RECONNECT_DELIVERY_DEDUPE_TTL_MS = 2 * 60_000;

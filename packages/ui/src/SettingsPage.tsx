@@ -16,6 +16,7 @@ import {
 } from "react";
 import type {
   AppSettings,
+  DangerousCommandPolicy,
   DesktopCloseToTrayCapability,
   IntegratedTerminalShellOption,
   IntegratedTerminalShellSelection,
@@ -82,7 +83,12 @@ import { BrowserSettingsSection } from "@/settings/BrowserSettingsSection.js";
 import { ComputerUseSection } from "@/settings/ComputerUseSection.js";
 import { ShortcutSettingsSection } from "@/settings/ShortcutSettingsSection.js";
 import { MigrationSection } from "@/settings/MigrationSection.js";
+// 重植说明：3.15.1 整版覆盖本文件时把三个 CE 分区组件的接线冲掉（组件/i18n 均幸存），
+// 按 main 版形态恢复 import + 渲染分支，防 settingsPageConfig 已列分区渲染空白。
+import { FeedbackDiagnosticsSection } from "@/settings/FeedbackDiagnosticsSection.js";
+import { ToolPolicySection } from "@/settings/ToolPolicySection.js";
 import { SETTINGS_FRAME_CONTENT_CLASSNAME } from "@/settings/SettingsPageParts.js";
+import { GithubMirrorSetting } from "@/settings/GithubMirrorSetting.js";
 import {
   SettingsBreadcrumbProvider,
   SettingsHeaderBreadcrumb,
@@ -736,6 +742,10 @@ export function SettingsPage({
   const askUserQuestionAutoResolutionEnabled =
     sharedSettings?.askUserQuestionAutoResolutionEnabled !== false;
   const modelIoFullRetentionEnabled = sharedSettings?.modelIoFullRetentionEnabled === true;
+  // 重植说明：本 state 与下方 handleDangerousCommandPolicyChange 同属「工具与权限」分区接线，
+  // 3.15.1 整版覆盖时一并冲掉，按 main 版形态恢复。
+  // 「工具与权限」的保存态：策略写入要走设置队列，期间禁用控件避免连点产生乱序写入。
+  const [toolPolicySaving, setToolPolicySaving] = useState(false);
   const [dataBaseDir, setDataBaseDir] = useState("");
   const [terminalInheritSystemProfile, setTerminalInheritSystemProfile] = useState(true);
   const [terminalFontFamily, setTerminalFontFamily] = useState("");
@@ -943,6 +953,32 @@ export function SettingsPage({
           stateAfter: enabled ? "enabled" : "disabled",
         },
       });
+    },
+    [updateSharedSettings],
+  );
+  // 重植说明：3.15.1 整版覆盖本文件时冲掉（按 main 版形态恢复；featureId 随
+  // userActionTraceCatalog 的 3.15.1 命名规范化由 "settings.toolPolicy" 改为
+  // "settings.tool_policy"，action 名不变），「工具与权限」分区唯一写入路径。
+  const handleDangerousCommandPolicyChange = useCallback(
+    async (next: DangerousCommandPolicy) => {
+      setToolPolicySaving(true);
+      try {
+        await runSettingsActionAsync({
+          featureId: "settings.tool_policy",
+          action: "update_dangerous_command_policy",
+          trigger: "switch",
+          operation: () => updateSharedSettings({ dangerousCommandPolicy: next }),
+          completed: {
+            resultSource: "shared_settings",
+            // 复用既有的二值状态词：放宽 = enabled（危险命令可被记住），严格 = disabled。
+            // 不新增 "relaxed"/"strict" 字面量 —— UserActionStateAfter 是封闭联合，
+            // 为一次上报扩协议面不值得。
+            stateAfter: next.allowPersistentAuthorization ? "enabled" : "disabled",
+          },
+        });
+      } finally {
+        setToolPolicySaving(false);
+      }
     },
     [updateSharedSettings],
   );
@@ -1836,7 +1872,12 @@ export function SettingsPage({
                               })
                             }
                           />
-                        ) : activeSection === "appearance" ? (
+                        ) : null}
+                        {/* 重植说明：3.15.1 整版覆盖本文件时冲掉，按 main 版形态恢复。
+                            国内加速紧贴通用设置的分组尾部：它和 HTTP 代理同属网络出口配置，
+                            但作用域不同（只影响 GitHub 域名），因此独立成卡而不是并进代理卡片。 */}
+                        {activeSection === "general" ? <GithubMirrorSetting /> : null}
+                        {activeSection === "appearance" ? (
                           <AppearanceSectionContent
                             codePreviewSettings={codePreviewSettings}
                             setCodePreviewSettings={handleCodePreviewSettingsChange}
@@ -2006,6 +2047,21 @@ export function SettingsPage({
                             remoteTarget={activeWorkspaceTab?.remoteTarget}
                             localWorkspacePath={activeWorkspaceTab?.localWorkspacePath}
                           />
+                        ) : activeSection === "toolPolicy" ? (
+                          // 重植说明：3.15.1 整版覆盖本文件时冲掉，按 main 版形态恢复。
+                          // 「工具与权限」是全局策略：不接 workspace 参数 —— 策略按会话冻结，
+                          // 与当前打开哪个 workspace 无关。资源级启停归各自资源页。
+                          <ToolPolicySection
+                            policy={sharedSettings?.dangerousCommandPolicy}
+                            saving={toolPolicySaving}
+                            onChange={handleDangerousCommandPolicyChange}
+                          />
+                        ) : activeSection === "feedback" ? (
+                          // 重植说明：3.15.1 整版覆盖本文件时冲掉，按 main 版形态恢复；
+                          // useFeedbackEntryAction 在反馈渠道不可用时正是引导到本分区。
+                          // 「反馈与诊断」只依赖本机能力（GitHub 预填链接 / 本地日志归档），
+                          // 因此不接 workspace 参数，也不跟随远端 workspace 切换。
+                          <FeedbackDiagnosticsSection isDesktop={Boolean(isDesktop)} />
                         ) : activeSection === "remoteAssets" ? (
                           // 「远程资产发布根」只作用在桌面端：消费链是 desktop main 的
                           // desktopRuntimeEnv → remoteCdn 的 overrideBaseUrl 槽位（见

@@ -12,6 +12,11 @@ import { dirname, join, resolve, sep } from "node:path";
 import { writeBundledOfficialMarketplacePartitionSync } from "@zcode/adapters";
 import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE, type Logger } from "@zcode/contracts";
 import { isZCodeCuaInternalFeatureEnabled, ZCODE_CUA_OFFICIAL_PLUGIN_ID } from "@zcode/shared";
+// 重植（3.15.1 升级整取本文件时被官方版冲掉）：候选基目录与内置技能包
+// （bundled-skills.ts）共用同一枚举器——两类内置资产必须在每种运行布局（开发态/
+// Electron 桌面/SEA）下同进同出，官方版自带的本地 candidateBaseDirs 副本会随
+// entrypoint-candidates 的后续演进静默漂移。
+import { listEntrypointCandidateBaseDirs } from "./entrypoint-candidates.js";
 import {
   createOfficialPluginCacheRetryBudget,
   getOfficialPluginCacheRetryAttempts,
@@ -343,7 +348,8 @@ function readSeaManifest(sea: SeaModule): SeaOfficialPluginManifest | undefined 
 }
 
 function resolveFilesystemPluginRoot(definition: OfficialPluginDefinition): string | undefined {
-  for (const baseDir of candidateBaseDirs()) {
+  // 重植：改走与 bundled-skills.ts 共用的枚举器（理由见文件头 import 注释）。
+  for (const baseDir of listEntrypointCandidateBaseDirs()) {
     for (const relativePath of definition.rootCandidates) {
       const rootPath = resolve(baseDir, relativePath);
       if (existsSync(join(rootPath, ".zcode-plugin", "plugin.json"))) return rootPath;
@@ -628,23 +634,10 @@ function officialPluginCacheRoot(
   );
 }
 
-/** 内置技能包（bundled-skills.ts）沿同一组候选目录定位，保证两类内置资产在每种运行布局下同进同出。 */
-export function candidateBaseDirs(): string[] {
-  // 修复原因：Electron app-server 运行在 resources/glm/zcode.cjs，官方插件资源也随桌面包
-  // stage 到同级 packages/*-plugin。候选目录必须优先看入口文件目录，避免生产态退回到
-  // monorepo-only 的 __dirname 查找假设。
-  return [entrypointDir(), runtimeDir(), process.cwd()].filter(
-    (dir): dir is string => typeof dir === "string",
-  );
-}
-
-function runtimeDir(): string | undefined {
-  return typeof __dirname === "string" ? __dirname : undefined;
-}
-
-function entrypointDir(): string | undefined {
-  return process.argv[1] ? dirname(process.argv[1]) : undefined;
-}
+// 重植说明：官方 3.15.1 版本在此处自带一份本地 candidateBaseDirs()/runtimeDir()/
+// entrypointDir() 副本（与 entrypoint-candidates.ts 逐行同义）。已删除并统一走共用
+// 枚举器——保留两份会在未来调整候选目录时静默分叉。`dirname` 仍由上方 walk/resolve
+// 路径工具使用，不受影响。
 
 function shouldSkipDirectory(
   name: string,

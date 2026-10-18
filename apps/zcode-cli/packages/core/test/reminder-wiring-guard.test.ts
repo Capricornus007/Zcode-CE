@@ -24,7 +24,7 @@ function readSrc(relative: string): string {
   return readFileSync(join(coreSrc, ...relative.split("/")), "utf8");
 }
 
-test("turn-loop 必须接线五层遗忘对抗", () => {
+test("turn-loop 必须接线六层遗忘对抗", () => {
   const turnLoop = readSrc("runtime/methods/turn-loop.ts");
   for (const [name, marker] of [
     ["kb 知识卡召回", "buildKbRecallReminderBody({"],
@@ -32,6 +32,10 @@ test("turn-loop 必须接线五层遗忘对抗", () => {
     ["预测到期注入", "buildFollowupDueReminderBody({"],
     ["任务再锚定", "buildTaskReanchorReminderBody(state.turnRequestState.entries)"],
     ["用户指令热更新", "buildUserInstructionsUpdateBody({"],
+    // 记忆召回（CE 融合排序档）在 1b16b518 五层重植时被漏掉、2026-10-18 补植——
+    // 官方 semantic-recall 分支关在 default-index 时这是唯一动态记忆召回链，必须钉住。
+    ["记忆召回（CE 融合档）", "buildMemoryRecallReminderBody({"],
+    ["记忆召回每轮一次性门", "memoryRecallAttempted"],
     ["kb 每轮一次性门", "kbRecallAttempted"],
   ] as const) {
     assert.ok(turnLoop.includes(marker), `turn-loop.ts 缺少 ${name} 的接线（${marker}）`);
@@ -41,6 +45,7 @@ test("turn-loop 必须接线五层遗忘对抗", () => {
 test("system-reminder source 注册必须完整", () => {
   const source = readSrc("system-reminder/source.ts");
   for (const sourceName of [
+    "memory_recall",
     "kb_recall",
     "caliber_guard",
     "followup_due",
@@ -60,6 +65,7 @@ test("system-reminder source 注册必须完整", () => {
 
 test("reminder 实现文件本身在场（防止实现也被清掉后护栏空转）", () => {
   for (const file of [
+    "runtime/methods/memory-recall-reminder.ts",
     "runtime/methods/kb-recall-reminder.ts",
     "runtime/methods/caliber-guard-reminder.ts",
     "runtime/methods/followup-due-reminder.ts",

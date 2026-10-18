@@ -65,6 +65,9 @@ import {
   disposeProjectMemoryRecallPrefetch,
   startProjectMemoryRecallPrefetch,
 } from "../helpers/project-memory-recall.js";
+// 重植（3.15.1 升级整取 turn.ts 时被官方版冲掉）：缓存保活定时器的排程/取消——
+// turn 启动取消（turn 进行中绝不触发），turn 收尾重排（空闲 12 分钟后续命 prompt cache）。
+import { cancelCacheKeepAlive, scheduleCacheKeepAlive } from "./cache-keep-alive.js";
 import { ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH } from "../../memory/project-memory-retrieval-branch.js";
 import { scheduleProjectMemoryExtraction } from "../helpers/project-memory-extraction.js";
 import { appendBrowserTurnScreenshot } from "./browser-turn-screenshot.js";
@@ -112,6 +115,8 @@ export async function executeTurnCommand(
   // 初始化期间发生的切模会越过 admission 边界，错误影响已经开始的 Turn。
   // 这里在任何 await 之前冻结本轮事实；后续配置变化只作用于下一轮。
   const admittedModelSelection = options?.intent?.modelSelection ?? this.getSessionModelSelection();
+  // 重植：turn 启动先清保活定时器（安全边界：turn 运行中绝不触发保活请求）。
+  cancelCacheKeepAlive(this);
   const admittedOutputStyle = this.config.outputStyle;
   const compactInstructions = parseCompactCommand(input);
   const rewindCommand = parseRewindCommand(input);
@@ -878,6 +883,9 @@ export async function executeTurnCommand(
     this.releaseTurnStart(turnId);
     clearBrowserTurnState(this.sessionId, turnId);
     this.finishActiveTurn(activeTurn);
+    // 重植：turn 收尾重排保活——空闲超过阈值（默认 12 分钟）时发一次同前缀迷你请求，
+    // 让 provider 侧 prompt cache 跨空档续命（TTL 实测见 cache-keep-alive.ts 文件头）。
+    scheduleCacheKeepAlive(this);
     turnAbortScope.dispose();
     try {
       await this.browserControlPort?.turnEnded?.({

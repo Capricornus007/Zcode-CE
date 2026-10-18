@@ -1,7 +1,12 @@
 export type RequestVerificationConfig = Readonly<Record<string, unknown>>;
 export type RequestVerificationProof = Record<never, never>;
 export type RequestVerificationClientConfig = Record<never, never>;
-export const requestVerificationReasons = ["model-request"] as const;
+// 重植（3.15.1 升级冲掉）：`captcha-retry` 是 start-plan 的 3007 验证码挑战触发单次
+// 重试时 agent 重新请求运行时鉴权材料的 reason（adapters captcha-retry.ts takeReason），
+// 渲染层据此重新求解验证码并回传新 token。官方版枚举只留 model-request 会让 CLI 侧
+// captcha 重试在 wire 校验（zcodeProviderRuntimeHeadersRequestReasonSchema = z.enum(本表)）
+// 被拒——main 版 zcode-protocol/index.ts 该枚举本就含两个值。
+export const requestVerificationReasons = ["model-request", "captcha-retry"] as const;
 export type RequestVerificationReason = (typeof requestVerificationReasons)[number];
 export const requestVerificationTimeoutMessage =
   "Provider runtime headers request timed out. Please send your message again.";

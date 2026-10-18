@@ -89,6 +89,10 @@ import { initializeMessageHistoryFromContext } from "./context.js";
 import { extractToolCallsFromResult } from "./context.js";
 import { shouldStreamModelText } from "./context.js";
 import { runModelTextRequest } from "./model.js";
+// 重植（3.15.1 升级冲掉 proto 绑定）：空闲轮缓存保活请求入口（turn.ts 的
+// scheduleCacheKeepAlive 定时器经 internal 接口调用本实现）。
+import { sendCacheKeepAliveRequestImpl } from "./cache-keep-alive.js";
+import type { AgentRuntimeInternal } from "../internal.js";
 import { emitModelStreamingEvent } from "./model-streaming-event.js";
 import { createModelStatusSink } from "./model-status.js";
 import { logModelNetworkStatus } from "./model-status.js";
@@ -292,6 +296,13 @@ export function installAgentRuntimeMethods(ctor: AgentRuntimeConstructor): void 
   proto.initializeMessageHistoryFromContext = initializeMessageHistoryFromContext;
   proto.extractToolCallsFromResult = extractToolCallsFromResult;
   proto.shouldStreamModelText = shouldStreamModelText;
+  // 重植：cache-keep-alive 的接口声明在 internal.ts，但方法体在这里绑定——缺了这行
+  // scheduleCacheKeepAlive 触发时 runtime.sendCacheKeepAliveRequest 是 undefined。
+  // 注意不能照搬 main 的 `= sendCacheKeepAliveRequestImpl` 直赋：impl 首参是 runtime，
+  // 接口按方法调用不传参，直赋会把 undefined 当 runtime（定时器 fire 即 TypeError）。
+  proto.sendCacheKeepAliveRequest = function (this: AgentRuntimeInternal): Promise<void> {
+    return sendCacheKeepAliveRequestImpl(this);
+  };
   proto.runModelTextRequest = runModelTextRequest;
   proto.emitModelStreamingEvent = emitModelStreamingEvent;
   proto.createModelStatusSink = createModelStatusSink;

@@ -1,3 +1,6 @@
+// 重植（3.15.1 升级整取本文件时被官方版冲掉）：后台任务输出可能含孤立代理项，
+// 进入历史/请求体前消毒（GLM 网关 UTF-8 编码拒绝 surrogates）。
+import { sanitizeLoneSurrogates } from "../../model/sanitize-surrogates.js";
 import { open } from "node:fs/promises";
 import type { BackgroundExecutionSnapshot, TaskOutputTask } from "@zcode/contracts";
 import type { RuntimeTaskSnapshot } from "../../runtime-task/registry.js";
@@ -144,7 +147,7 @@ async function readRunningBashOutputFile(
 
       return {
         available: true,
-        content: buffer.subarray(0, bytesRead).toString("utf8"),
+        content: sanitizeLoneSurrogates(buffer.subarray(0, bytesRead).toString("utf8")),
         truncated: stat.size > bytesRead,
       };
     } finally {

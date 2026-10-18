@@ -1,5 +1,7 @@
 import { beginLocalTurnPreparation } from "@zcode/contracts";
 import { runWithModelInvocationContext, traceContextToLogContext } from "../deps.js";
+// 重植（3.15.1 升级整取 model.ts 时被官方版冲掉）：流式文本进入历史前消毒孤立代理项。
+import { sanitizeLoneSurrogates } from "../../model/sanitize-surrogates.js";
 import type { ModelReasoningContentBlock, ModelToolCall, ModelUsage, ToolCallId } from "../deps.js";
 import {
   buildSuspiciousEmptyDiagnostics,
@@ -24,6 +26,14 @@ import { createModelStreamingEventQueue } from "./model-streaming-event-queue.js
 import { getOrCreateReasoningBlock } from "./reasoning-stream.js";
 import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { isOutputTokenLimitFinishReason } from "./turn-output-token-continuation.js";
+// 重植（3.15.1 升级整取 model.ts 时被官方版冲掉）：缓存稳定性 linter 与自适应思考档
+// 两个 CE 模块的运行时接线。
+import { trackProviderRequestStabilityForRuntime } from "../../model/cache-stability.js";
+import {
+  isAdaptiveReasoningEnabled,
+  requestEndsWithToolResult,
+  resolveAdaptiveReasoningLevel,
+} from "../../model/adaptive-reasoning.js";
 
 const TOOL_INPUT_STREAM_DELTA_FALLBACK_FLUSH_CHARS = 4096;
 
@@ -170,9 +180,47 @@ export async function runModelTextRequest(
   const contextUsageBreakdown = this.buildContextUsageBreakdownFromSnapshot(contextUsageSnapshot);
   this.logContextUsageSnapshot(projectedOptions, contextUsageSnapshot);
 
+  // 重植：缓存稳定性检测（CE cache-stability linter）——正常增长=尾部追加；任何旧前缀内
+  // 的变异都会作废上一次缓存写。只在检测到变异时落 info 日志（罕见事件，生产可见），
+  // 稳定时零输出。
+  const stabilityReport = trackProviderRequestStabilityForRuntime(this, modelRequest);
+  if (stabilityReport?.mutatedBeforeTail) {
+    this.logger?.info("Provider request cache stability: prefix mutated", {
+      ...traceContextToLogContext(projectedOptions.traceContext),
+      cacheStability: {
+        systemChanged: stabilityReport.systemChanged,
+        toolsChanged: stabilityReport.toolsChanged,
+        firstMutatedMessageIndex: stabilityReport.firstMutatedMessageIndex,
+        summary: stabilityReport.summary,
+      },
+    });
+  }
+
+  // 重植：自适应思考档（experimental，默认关闭）——会话配置（App 设置→Agent 运行时偏好）
+  // 优先，环境变量 ZCODE_ADAPTIVE_REASONING 为 CLI/TUI 无设置链路的后备。工具续跑步降一档。
+  const adaptiveReasoningLevel = resolveAdaptiveReasoningLevel({
+    enabled: this.config.adaptiveReasoning?.enabled === true || isAdaptiveReasoningEnabled(),
+    currentLevel: model.options.reasoningLevel,
+    supportedLevels: model.optionSpecs?.reasoningLevel?.values,
+    endsWithToolResult: requestEndsWithToolResult(modelRequest.messages),
+  });
+  const requestWithOptions = adaptiveReasoningLevel
+    ? {
+        ...modelRequest,
+        options: { ...modelRequest.options, reasoningLevel: adaptiveReasoningLevel },
+      }
+    : modelRequest;
+  if (adaptiveReasoningLevel) {
+    this.logger?.info("[adaptive-reasoning] 工具续跑步降档", {
+      ...traceContextToLogContext(projectedOptions.traceContext),
+      from: model.options.reasoningLevel,
+      to: adaptiveReasoningLevel,
+    });
+  }
+
   if (!this.shouldStreamModelText()) {
     const result = await runWithModelInvocationContext(modelInvocationContext, () =>
-      model.generateText(modelRequest),
+      model.generateText(requestWithOptions),
     );
     const normalizedToolCalls = normalizeModelToolCallsForRuntime(result.toolCalls, {
       logger: this.logger,
@@ -258,7 +306,7 @@ export async function runModelTextRequest(
   };
 
   const modelStream = runWithModelInvocationContext(modelInvocationContext, () =>
-    model.streamText(modelRequest),
+    model.streamText(requestWithOptions),
   );
   finishAssembly();
   try {
@@ -285,7 +333,8 @@ export async function runModelTextRequest(
         }
 
         case "text_delta": {
-          text += event.text;
+          // 重植：LLM tokenizer 可拆出孤立代理项，进入请求体后 GLM 网关 UTF-8 编码报 500。
+          text += sanitizeLoneSurrogates(event.text);
           options.onStreamTextDelta?.(event.text);
           publishStreamSnapshot();
           await enqueueStreamingEvent({
@@ -333,7 +382,7 @@ export async function runModelTextRequest(
             reasoning,
             reasoningById,
           });
-          block.text += event.text;
+          block.text += sanitizeLoneSurrogates(event.text);
           options.onStreamReasoningDelta?.(event.text);
           if (event.providerMetadata) block.providerOptions = event.providerMetadata;
           publishStreamSnapshot();
@@ -543,7 +592,7 @@ export async function runModelTextRequest(
     finishReason,
     providerMetadata,
     reasoning: reasoning.length > 0 ? reasoning : undefined,
-    text,
+    text: sanitizeLoneSurrogates(text),
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     usage,
   };

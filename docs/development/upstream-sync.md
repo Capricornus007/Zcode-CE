@@ -99,3 +99,21 @@
 
 **整版升级移植**：需要专项工程（预计天级），且必须保住 CE 线与仓库自研全部能力
 （bots/远程控制/许可门禁/召回管线/工作流体系）——执行前需维护者拍板。
+
+## CE 接线重植台账（apps/zcode-cli 九项断线，2026-10-18 处置）
+
+> 背景：3.15.1 merge 官方整版覆盖部分既有文件，把「CE 新文件在既有文件里的引用接线」冲掉
+> （CE 净新增文件全部幸存）。下表为逐项判定与处置；判定口径 = `origin/main` 与 `HEAD`
+> 各自 `git grep -l <基名>` 的引用文件差 + 升级历史（`origin/main..HEAD`）区分「冲掉」与「已重做」。
+
+| CE 能力（文件基名）                                                        | 判定       | 处置与依据                                                                                                                                                                                               |
+| -------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| adaptive-reasoning（core/src/model/）                                      | 冲掉       | 已重植：model.ts 的 import + 降档解析块 + generateText/streamText 改走 requestWithOptions（aac47556 整版覆盖 model.ts，30bfcee1 重建时漏）                                                              |
+| cache-stability（core/src/model/）                                         | 冲掉       | 已重植：model.ts 的 trackProviderRequestStabilityForRuntime 接线 + 变异 info 日志（同上）                                                                                                               |
+| sanitize-surrogates（core/src/model/）                                     | 冲掉       | 已重植：model.ts 三处（text_delta/reasoning_delta/最终 text）+ task-output-bash.ts 读文件内容消毒（两文件均被官方版覆盖）                                                                                |
+| cache-keep-alive（core/src/runtime/methods/）                              | 冲掉       | 已重植：methods/index.ts 补 proto 绑定 + turn.ts 补 turn 起止的 cancel/schedule。internal.ts 的接口声明已在（5abb5886），但绑定与调用点缺失=死接口。注意 main 的 `= sendCacheKeepAliveRequestImpl` 直赋是潜在 bug（impl 首参 runtime、接口无参调用会传 undefined），重植时改为 this 透传包裹 |
+| captcha-retry（adapters/src/model/）                                       | 误报·链外断 | apps/zcode-cli 内 5→5 无变化（import/instantiate/isCaptchaRejection 全在，b9a534ce 已重植转发链）。真实断点在写权限外：`packages/shared/src/request-security-edition/verification-policy.ts` 的 `requestVerificationReasons` 丢 `"captcha-retry"`，zcode-protocol 枚举随之收窄——需另开工单修复 |
+| entrypoint-candidates（bootstrap/src/app/）                                | 冲掉       | 已重植：bundled-plugins.ts 删官方自带的本地 candidateBaseDirs 副本、改走共用枚举器（b3e64c22 的统一被 a44830f1 取官方版时回退；两实现当前逐行同义，不重植则未来调整候选目录时静默分叉）                  |
+| memory-recall-reminder（core/src/runtime/methods/）                        | 冲掉       | 已重植：turn-loop.ts 的 memory_recall 注入块 + source.ts 注册 + 护栏扩展（1b16b518 重植五层时漏了这层；官方 semantic-recall 分支被关在 default-index，此链是唯一动态记忆召回）。tests/system-reminder-source.test.ts（官方契约测试，钉死了无 CE 源的清单，且不被 run-tests.mjs 执行）随之保持红——与 1b16b518 时同款既有红，非本次引入 |
+| get-context-remaining（contracts/src/tools/ + core/src/tool/handlers/）    | 冲掉       | 已重植：handlers/index.ts 补 import + builtInTools 条目（01908867 在官方底座上重建该文件时漏；f41088b0 是 origin/main 侧原始提交，非升级分支重做）。contracts 侧 barrel 一直在场                              |
+| replay-order（dynamic-workflow/src/engine/）                               | 已重做     | 不恢复：engine.ts 持有 replaySettleOrder、新 engine-resume.ts 承接 recoverSettleOrder、scheduler 经 host.holdForReplay 释放，全链在位；「减少的引用」只是 scheduler*.ts 的注释指针从 replay-order.ts 改指 docs/execution-engine.md。回归 replayOrderResume 3/3 + replay-settle-order 12/12 绿 |

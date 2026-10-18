@@ -33,6 +33,12 @@ import {
 } from "./turn-loop-state.js";
 import type { RegularTurnLoopState } from "./turn-loop-state.js";
 import { consumeSettledProjectMemoryRecall } from "../helpers/project-memory-recall.js";
+// 重植（3.15.1 升级冲掉 turn-loop 接线）：CE 记忆召回提醒——按本轮用户输入对
+// .zcode 记忆语料做 embedding+词法融合排序，注入 top-K 记忆锚点。官方 3.15.1 的
+// 语义召回分支（startProjectMemoryRecallPrefetch）当前被
+// project-memory-retrieval-branch.ts 关在 "default-index"（只改系统提示词文案），
+// 这条链是唯一在跑的动态记忆召回。
+import { buildMemoryRecallReminderBody } from "./memory-recall-reminder.js";
 import { buildKbRecallReminderBody } from "./kb-recall-reminder.js";
 import { buildFollowupDueReminderBody } from "./followup-due-reminder.js";
 import { buildCaliberGuardReminderBody } from "./caliber-guard-reminder.js";
@@ -50,8 +56,9 @@ export async function runRegularTurnLoop(
   this: AgentRuntimeInternal,
   state: RegularTurnLoopState,
 ): Promise<void> {
-  // kb 召回与用户指令热更新按"每次用户 turn 一次"门控（跨 while 迭代；与
-  // 升级前 memoryRecallAttempted 同语义——多步 turn 的后续模型步不重复注入）。
+  // 记忆召回 / kb 召回 / 用户指令热更新按"每次用户 turn 一次"门控（跨 while 迭代——
+  // 多步 turn 的后续模型步不重复注入）。
+  let memoryRecallAttempted = false;
   let kbRecallAttempted = false;
   let userInstructionsUpdateAttempted = false;
   let kbRecallBodyForCaliber: string | null = null;
@@ -207,6 +214,26 @@ export async function runRegularTurnLoop(
           systemReminderAttachmentEntry("user_instructions_update", instructionsUpdateBody),
         ]);
         this.logger?.info("[user-instructions-update] 指令文件已变更，新版已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // 记忆召回提醒（重植）：按本轮用户输入对 memoryRoot 语料做 embedding×0.6+词法×0.4
+    // 融合排序，注入 top-K 记忆锚点（bench/memory-recall-probe 实测 hit@5 100%/33%）。
+    // 无 memoryRoot 或无命中静默跳过。
+    if (!memoryRecallAttempted && this.fileSystemPort && this.memoryRoot) {
+      memoryRecallAttempted = true;
+      const memoryRecallBody = await buildMemoryRecallReminderBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        memoryRoot: this.memoryRoot,
+        entries: state.turnRequestState.entries,
+      });
+      if (memoryRecallBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("memory_recall", memoryRecallBody),
+        ]);
+        this.logger?.info("[memory-recall] 相关记忆清单已注入本轮请求", {
           ...traceContextToLogContext(state.turnTraceContext),
         });
       }

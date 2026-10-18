@@ -44,6 +44,9 @@ export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
   "hook_context",
   "memory_update",
   "relevant_memory",
+  // 重植（3.15.1 升级冲掉注册）：CE 记忆召回提醒（memory-recall-reminder.ts 的
+  // 融合排序注入），与官方 relevant_memory（语义召回分支，当前关在 default-index）不同源。
+  "memory_recall",
   "user_instructions_update",
   "followup_due",
   "kb_recall",
@@ -108,6 +111,8 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
   hook_context: descriptor("current_turn", "per_current_turn", true, "sr.hook_context"),
   memory_update: descriptor("current_turn", "per_current_turn", true, "sr.memory_update"),
   relevant_memory: descriptor("current_turn", "per_current_turn", true, "sr.relevant_memory"),
+  // 记忆召回提醒（重植）：按本轮用户输入对记忆清单做相关性排序后注入 top-K 摘要。
+  memory_recall: descriptor("current_turn", "per_current_turn", true, "sr.memory_recall"),
   runtime_mode: descriptor("current_turn", "per_current_turn", true, "sr.runtime_mode"),
   plan_mode_exit: descriptor("current_turn", "runtime_local", true, "sr.plan_mode_exit"),
   output_style: descriptor("current_turn", "per_current_turn", true, "sr.output_style"),

@@ -3166,7 +3166,19 @@ export class ProductProjection {
       typeof payload.message === "string" && payload.message.trim().length > 0
         ? payload.message.trim().slice(0, 200)
         : undefined;
-    if (fraction === undefined && message === undefined && total === undefined) return [];
+    // TaskOutput 阻塞等待心跳只带 elapsedMs（无 fraction/total/message）：
+    // 之前这里整条丢弃，UI 只能看到无限转圈——长等待必须让「已等待多久」可见。
+    const elapsedMs =
+      typeof payload.elapsedMs === "number" && Number.isFinite(payload.elapsedMs)
+        ? Math.max(0, payload.elapsedMs)
+        : undefined;
+    if (
+      fraction === undefined &&
+      message === undefined &&
+      total === undefined &&
+      elapsedMs === undefined
+    )
+      return [];
     return [
       {
         op: "row.upserted",
@@ -3176,6 +3188,7 @@ export class ProductProjection {
             ...(fraction !== undefined ? { fraction } : {}),
             ...(total !== undefined ? { total } : {}),
             ...(message !== undefined ? { message } : {}),
+            ...(elapsedMs !== undefined ? { elapsedMs } : {}),
             updatedAt: this.ms(event),
           },
         },

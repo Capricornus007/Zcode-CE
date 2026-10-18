@@ -157,3 +157,65 @@ describe("Bash result display projection", () => {
     }
   });
 });
+
+describe("ToolOutput waiting heartbeat projection (TaskOutput 阻塞等待)", () => {
+  function heartbeatHarness() {
+    const projection = new ProductProjection("wait-heartbeat", "epoch");
+    let seq = 0;
+    const apply = (type: SessionEvent["type"], payload: unknown) =>
+      projection.applyEvent({
+        id: `event-${++seq}`,
+        sessionId: "wait-heartbeat",
+        turnId: "turn-1",
+        traceId: "trace",
+        timestamp: new Date(1700000000000 + seq),
+        sequenceNumber: seq,
+        type,
+        payload,
+      } as SessionEvent);
+    apply(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200000 });
+    apply(SessionEventType.TurnStarted, { turnNumber: 1, input: "wait", messageId: "user-1" });
+    apply(SessionEventType.ToolCallScheduled, {
+      toolCallId: "task-output-1",
+      toolName: "TaskOutput",
+      input: { task_id: "task-1", block: true, timeout: 60000 },
+      schedule: { parallelGroups: [["task-output-1"]], executionOrder: ["task-output-1"] },
+    });
+    apply(SessionEventType.ToolCallStarted, { toolCallId: "task-output-1", toolName: "TaskOutput" });
+    const row = () =>
+      projection.getSnapshot().rows.window.find((r) => r.kind === "toolCall") as ToolCallRow;
+    const heartbeat = (elapsedMs: number) =>
+      apply(SessionEventType.ToolCallProgress, {
+        toolCallId: "task-output-1",
+        toolName: "TaskOutput",
+        elapsedMs,
+      });
+    return { apply, row, heartbeat };
+  }
+
+  it("projects elapsedMs-only heartbeats to row.progress（否则 UI 只剩转圈）", () => {
+    const h = heartbeatHarness();
+    // 回归：只有 elapsedMs 的心跳曾被整条丢弃（fraction/total/message 全缺）。
+    const deltas = h.heartbeat(15_000);
+    expect(h.row().progress?.elapsedMs).toBe(15_000);
+    expect(h.row().progress?.fraction).toBeUndefined();
+    expect(
+      deltas.some((delta) => delta.op === "row.upserted" && delta.row.kind === "toolCall"),
+    ).toBe(true);
+    for (const delta of deltas) expect(conversationDeltaSchema.parse(delta)).toEqual(delta);
+
+    // 后续心跳更新到更晚的等待时长。
+    h.heartbeat(30_000);
+    expect(h.row().progress?.elapsedMs).toBe(30_000);
+  });
+
+  it("still ignores heartbeats with no usable field", () => {
+    const h = heartbeatHarness();
+    const deltas = h.apply(SessionEventType.ToolCallProgress, {
+      toolCallId: "task-output-1",
+      toolName: "TaskOutput",
+    });
+    expect(deltas).toEqual([]);
+    expect(h.row().progress).toBeUndefined();
+  });
+});

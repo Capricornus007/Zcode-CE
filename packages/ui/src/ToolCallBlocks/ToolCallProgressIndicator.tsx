@@ -1,5 +1,6 @@
 import type { ToolProgress } from "@zcode/shared/zcode-protocol-v4";
 import { toolProgressSchema } from "@zcode/shared/zcode-protocol-v4";
+import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 
 export const TID_TOOL_CALL_PROGRESS = "tool-call-progress";
 
@@ -10,17 +11,30 @@ export function readToolCallProgress(raw: unknown): ToolProgress | null {
   return parsed.success ? parsed.data : null;
 }
 
+function formatElapsed(elapsedMs: number): string {
+  const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
+}
+
 /**
  * 工具摘要行里的细进度条（）：有 fraction 用 determinate，否则 indeterminate 扫光；
- * message 跟在后面。颜色只用 brand / surface token，遵守 DESIGN.md。
+ * message 跟在后面，elapsedMs 以「已等待 N 秒」显示——长等待（如 TaskOutput 阻塞）
+ * 没有百分比，时长本身就是进度信号，不能只剩转圈。
+ * 颜色只用 brand / surface token，遵守 DESIGN.md。
  */
 export function ToolCallProgressIndicator({ progress }: { progress: ToolProgress }) {
+  const { intl } = useZCodeIntl();
   const fraction = progress.fraction;
   return (
     <span
       className="inline-flex min-w-0 items-center gap-2"
       data-testid={TID_TOOL_CALL_PROGRESS}
       {...(fraction !== undefined ? { "data-fraction": fraction.toFixed(3) } : {})}
+      {...(progress.elapsedMs !== undefined
+        ? { "data-elapsed-ms": String(Math.round(progress.elapsedMs)) }
+        : {})}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={1}
@@ -40,6 +54,17 @@ export function ToolCallProgressIndicator({ progress }: { progress: ToolProgress
       {progress.message ? (
         <span className="min-w-0 truncate text-ui-sm text-foreground-subtle">
           {progress.message}
+        </span>
+      ) : null}
+      {progress.elapsedMs !== undefined ? (
+        <span
+          className="shrink-0 text-ui-sm tabular-nums text-foreground-subtle"
+          data-testid={`${TID_TOOL_CALL_PROGRESS}-elapsed`}
+        >
+          {intl.formatMessage(
+            { id: "chat.toolCall.progress.waited" },
+            { duration: formatElapsed(progress.elapsedMs) },
+          )}
         </span>
       ) : null}
     </span>

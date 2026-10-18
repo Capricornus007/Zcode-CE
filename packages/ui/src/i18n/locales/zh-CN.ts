@@ -4939,6 +4939,7 @@ const zhCN: Record<string, string> = {
   "chat.longRunning.elapsedSeconds": "已运行 {seconds} 秒",
   "chat.longRunning.elapsedMinutesSeconds": "已运行 {minutes} 分 {seconds} 秒",
   "chat.toolCall.status.pending": "等待中",
+  "chat.toolCall.progress.waited": "已等待 {duration}",
   "chat.toolCall.status.running": "执行中",
   "chat.toolCall.status.completed": "已执行",
   "chat.toolCall.status.failed": "执行失败",

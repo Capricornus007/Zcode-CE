@@ -1,6 +1,10 @@
 import { FileOutputIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import {
+  ToolCallProgressIndicator,
+  readToolCallProgress,
+} from "@/ToolCallBlocks/ToolCallProgressIndicator.js";
 import { ToolSnapshotFieldNotice } from "@/ToolCallBlocks/ToolSnapshotFieldNotice.js";
 import { ToolLayout } from "@/ToolCallBlocks/ToolLayout.js";
 import type { ToolCallBlockRenderContext } from "@/ToolCallBlocks/shared.js";
@@ -83,6 +87,14 @@ export function TaskOutputToolCallBlock(context: ToolCallBlockRenderContext) {
   const kindLabel = intl.formatMessage({
     id: context.isRunning ? "chat.toolCall.taskOutput.fetching" : "chat.toolCall.kind.taskOutput",
   });
+  // 阻塞等待期心跳（每 15s elapsedMs）：等待时长本身就是进度信号，显示在摘要行，
+  // 否则长等待只剩一个转圈，看起来像卡死。
+  const waitingProgress =
+    toolCall.status === "in_progress" ? readToolCallProgress(toolCall.raw) : null;
+  const waitingStatus =
+    waitingProgress && waitingProgress.elapsedMs !== undefined ? (
+      <ToolCallProgressIndicator progress={waitingProgress} />
+    ) : undefined;
 
   const primaryText = useMemo(
     () => (
@@ -117,8 +129,8 @@ export function TaskOutputToolCallBlock(context: ToolCallBlockRenderContext) {
         kindLabel={kindLabel}
         sourceLabel={context.sourceLabel}
         primaryText={primaryText}
-        statusLabel={outcomeLabel}
-        showStatusLabel={outcomeLabel != null}
+        statusLabel={waitingStatus ?? outcomeLabel}
+        showStatusLabel={(waitingStatus ?? outcomeLabel) != null}
         statusTooltip={isExecutionFailed ? context.errorText : undefined}
         showFailureStatus={showFailureStatus}
         isRunning={context.isRunning}

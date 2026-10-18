@@ -194,6 +194,8 @@ export const toolProgressSchema = z.object({
   fraction: z.number().min(0).max(1).optional(),
   total: z.number().optional(),
   message: z.string().max(200).optional(),
+  /** 已等待时长（TaskOutput 阻塞等待心跳）。无可量化 fraction 的长等待也要有可见进度。 */
+  elapsedMs: z.number().nonnegative().finite().optional(),
   updatedAt: timestampSchema,
 });
 export type ToolProgress = z.infer<typeof toolProgressSchema>;

@@ -146,13 +146,104 @@ describe("ToolCallBlock agent routing", () => {
     expect(html).toContain(">MCP<");
     expect(html).toContain("Get environment");
     expect(html).toContain('class="text-foreground-subtle">Firebase</span>');
-    expect(html).not.toContain('class="text-foreground-subtlest">·</span><span class="text-foreground-subtle">Firebase</span>');
+    expect(html).not.toContain(
+      'class="text-foreground-subtlest">·</span><span class="text-foreground-subtle">Firebase</span>',
+    );
     expect(html).not.toMatch(/class="[^"]*(?:border|bg-background-alt)[^"]*">Firebase<\/span>/u);
     expect(html).not.toContain("Plugin:firebase:firebase");
     expect(html).not.toContain("Firebase get environment");
     expect(html).not.toContain(">mcp__plugin_firebase_firebase__firebase_get_environment<");
     expect(html).not.toContain("&quot;toolId&quot;");
     expect(html).not.toContain("已执行");
+  });
+
+  it("renders a generic waiting bar for any running tool without its own progress (141)", () => {
+    const startedAt = Date.now() - 5_000;
+    const row: ToolCallRow = {
+      rowId: 41,
+      turnId: "turn-1",
+      createdAt: 1_700_000_000_041,
+      createdAtSeq: 41,
+      kind: "toolCall",
+      toolCallId: "call-read-running",
+      toolName: "Read",
+      status: "running",
+      inputText: '{"file_path":"/workspace/a.ts"}',
+      input: { file_path: "/workspace/a.ts" },
+      startedAt,
+    };
+
+    const html = renderToStaticMarkup(
+      createElement(
+        ZCodeIntlProvider,
+        { initialLocale: "zh-CN" },
+        createElement(ToolCallBlock, {
+          toolCallNode: toolCallRowToLegacyNode(row),
+          workspacePath: "/workspace",
+        }),
+      ),
+    );
+
+    expect(html).toContain('data-testid="tool-call-progress"');
+    expect(html).toMatch(/已等待 [45]s/);
+  });
+
+  it("shows an indeterminate bar when a running tool has no start time and no progress", () => {
+    const row: ToolCallRow = {
+      rowId: 42,
+      turnId: "turn-1",
+      createdAt: 1_700_000_000_042,
+      createdAtSeq: 42,
+      kind: "toolCall",
+      toolCallId: "call-read-no-clock",
+      toolName: "Read",
+      status: "running",
+      inputText: '{"file_path":"/workspace/b.ts"}',
+      input: { file_path: "/workspace/b.ts" },
+    };
+
+    const html = renderToStaticMarkup(
+      createElement(
+        ZCodeIntlProvider,
+        { initialLocale: "zh-CN" },
+        createElement(ToolCallBlock, {
+          toolCallNode: toolCallRowToLegacyNode(row),
+          workspacePath: "/workspace",
+        }),
+      ),
+    );
+
+    expect(html).toContain('data-testid="tool-call-progress"');
+    expect(html).not.toContain("已等待");
+  });
+
+  it("does not paint a progress bar for a pending tool that is not executing yet", () => {
+    const row: ToolCallRow = {
+      rowId: 43,
+      turnId: "turn-1",
+      createdAt: 1_700_000_000_043,
+      createdAtSeq: 43,
+      kind: "toolCall",
+      toolCallId: "call-read-pending",
+      toolName: "Read",
+      status: "pending",
+      inputText: '{"file_path":"/workspace/c.ts"}',
+      input: { file_path: "/workspace/c.ts" },
+      startedAt: Date.now() - 5_000,
+    };
+
+    const html = renderToStaticMarkup(
+      createElement(
+        ZCodeIntlProvider,
+        { initialLocale: "zh-CN" },
+        createElement(ToolCallBlock, {
+          toolCallNode: toolCallRowToLegacyNode(row),
+          workspacePath: "/workspace",
+        }),
+      ),
+    );
+
+    expect(html).not.toContain('data-testid="tool-call-progress"');
   });
 
   it("renders historical MCP rows without display through the MCP summary and detail", () => {
@@ -330,9 +421,7 @@ describe("ToolCallBlock agent routing", () => {
 
     const summary = screen.getByTestId("tool-summary-trigger-call-mcp-failed");
     expect(
-      Array.from(summary.querySelectorAll("span")).filter(
-        (element) => element.textContent === "·",
-      ),
+      Array.from(summary.querySelectorAll("span")).filter((element) => element.textContent === "·"),
     ).toHaveLength(2);
     fireEvent.click(summary);
     const detail = screen.getByTestId("mcp-expanded-content");

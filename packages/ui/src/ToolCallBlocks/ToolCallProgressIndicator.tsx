@@ -1,6 +1,7 @@
 import type { ToolProgress } from "@zcode/shared/zcode-protocol-v4";
 import { toolProgressSchema } from "@zcode/shared/zcode-protocol-v4";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { formatElapsedDuration } from "@/lib/elapsedDuration.js";
 
 export const TID_TOOL_CALL_PROGRESS = "tool-call-progress";
 
@@ -9,13 +10,6 @@ export function readToolCallProgress(raw: unknown): ToolProgress | null {
   if (typeof raw !== "object" || raw === null) return null;
   const parsed = toolProgressSchema.safeParse((raw as { progress?: unknown }).progress);
   return parsed.success ? parsed.data : null;
-}
-
-function formatElapsed(elapsedMs: number): string {
-  const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
 }
 
 /**
@@ -63,7 +57,7 @@ export function ToolCallProgressIndicator({ progress }: { progress: ToolProgress
         >
           {intl.formatMessage(
             { id: "chat.toolCall.progress.waited" },
-            { duration: formatElapsed(progress.elapsedMs) },
+            { duration: formatElapsedDuration(progress.elapsedMs) },
           )}
         </span>
       ) : null}

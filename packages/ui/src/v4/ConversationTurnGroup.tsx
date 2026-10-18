@@ -56,6 +56,8 @@ import {
   type OffPeakCreateTaskSummary,
 } from "@/ToolCallBlocks/renderers/offpeak-create.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { formatElapsedDuration } from "@/lib/elapsedDuration.js";
+import { useElapsedSince } from "@/v4/useElapsedSince.js";
 import { HighspeedShareDialog } from "@/highspeed/HighspeedShareNoticeCard.js";
 import { isHighspeedShareEligible } from "@/highspeed/highspeedShare.js";
 import {
@@ -217,9 +219,11 @@ function toRetryStatus(apiRetry: ApiRetryState): ZCodeApiRetryStatus {
 function TurnChatLoadingSlot({
   apiRetry,
   eligible,
+  startedAt,
 }: {
   apiRetry: ApiRetryState | null;
   eligible: boolean;
+  startedAt?: number;
 }) {
   const { intl, locale } = useZCodeIntl();
   const retryStatus = useMemo(() => (apiRetry ? toRetryStatus(apiRetry) : null), [apiRetry]);
@@ -228,9 +232,10 @@ function TurnChatLoadingSlot({
   // 而不是回退到 ChatLoading。
   const visibleRetryStatus =
     retryStatus && retryStatus.attempt >= MIN_VISIBLE_API_RETRY_ATTEMPT ? retryStatus : null;
+  const elapsedMs = useElapsedSince(startedAt);
   if (!visibleRetryStatus && !eligible) return null;
   return (
-    <div data-zcode-chat-loading-slot="true" className="min-h-5">
+    <div data-zcode-chat-loading-slot="true" className="flex min-h-5 items-center gap-2">
       {visibleRetryStatus ? (
         <ChatApiRetryStatus apiRetry={visibleRetryStatus} intl={intl} locale={locale} />
       ) : (
@@ -238,6 +243,17 @@ function TurnChatLoadingSlot({
         // 更新反复重启可见性，并使 UI 晚于真实状态。
         <ChatLoading loading data-testid={TID_CHAT_LOADING} size="sm" />
       )}
+      {eligible && elapsedMs !== undefined ? (
+        <span
+          data-testid="turn-running-elapsed"
+          className="text-ui-sm tabular-nums text-foreground-subtle"
+        >
+          {intl.formatMessage(
+            { id: "chat.turn.runningFor" },
+            { duration: formatElapsedDuration(elapsedMs) },
+          )}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -969,7 +985,11 @@ function ConversationTurnFlow({
           stageTailIsRunning={unit.isRunning}
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
-        <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+        <TurnChatLoadingSlot
+          apiRetry={apiRetry}
+          eligible={showLoading}
+          startedAt={unit.header?.startedAt}
+        />
       </div>
     );
   }
@@ -1046,7 +1066,11 @@ function ConversationTurnFlow({
           shareSelectionRowId={shareSelectionRowId}
         />
       ))}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        startedAt={unit.header?.startedAt}
+      />
     </div>
   );
 }
@@ -1254,7 +1278,11 @@ function ConversationBackgroundResultWork({
           assistantCodeCommentProjectionEnabled={assistantCodeCommentProjectionEnabled}
         />
       ) : null}
-      <TurnChatLoadingSlot apiRetry={apiRetry} eligible={showLoading} />
+      <TurnChatLoadingSlot
+        apiRetry={apiRetry}
+        eligible={showLoading}
+        startedAt={unit.header?.startedAt}
+      />
     </div>
   );
 }

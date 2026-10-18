@@ -43,3 +43,7 @@
 - Bash 的 outputPreview 分支不变（字节进度与 MCP 百分比仍各走各的）。
 - 心跳间隔 15s 属运行时行为，UI 只反映最近一次心跳值；不做本地推断（避免与实际阻塞
   状态不一致）。
+
+## 后续
+
+Bash 心跳的 UI 消费与「本轮已运行」时长见 [141-waiting-progress-ux.md](./141-waiting-progress-ux.md)。

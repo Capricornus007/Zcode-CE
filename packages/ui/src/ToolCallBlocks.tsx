@@ -15,6 +15,8 @@ import { CuaGroupToolCallBlock } from "@/ToolCallBlocks/renderers/cua-group.js";
 import { resolveToolCallRenderer } from "@/ToolCallBlocks/resolveRenderer.js";
 import * as PluginUi from "@/plugin-ui/index.js";
 import { resolveToolCallIdentity } from "@/lib/toolIdentity.js";
+import { readToolCallProgress } from "@/ToolCallBlocks/ToolCallProgressIndicator.js";
+import { ToolRunningProgressProvider } from "@/ToolCallBlocks/ToolRunningProgressContext.js";
 import {
   readRawToolCallFileSummaries,
   type ToolCallBlockRenderContext,
@@ -369,6 +371,15 @@ function ToolCallBlockComponent({
   );
 
   const ToolCallRenderer = useMemo(() => resolveToolCallRenderer(renderContext), [renderContext]);
+  // 运行中进度统一由 ToolLayout 消费（141）：服务端 progress 优先，缺席时退回 startedAt 计时。
+  const runningProgressState = useMemo(
+    () => ({
+      ...(toolCall.startedAt === undefined ? {} : { startedAt: toolCall.startedAt }),
+      progress: isRunning ? readToolCallProgress(toolCall.raw) : null,
+      executing: toolCall.status === "in_progress",
+    }),
+    [isRunning, toolCall.raw, toolCall.startedAt, toolCall.status],
+  );
   // early return 必须在所有 hook 之后（见上方注释说明的崩溃原因）
   if (!showTodoToolCalls && identity.family === "todo") {
     return null;
@@ -382,16 +393,18 @@ function ToolCallBlockComponent({
       data-status={toolCall.status}
       data-zcode-tool-stream-animate={shouldPlayEntranceAnimation ? "true" : undefined}
     >
-      {toolCall.kind === "cuaGroup" ? (
-        <CuaGroupToolCallBlock
-          {...renderContext}
-          events={cuaGroupEvents}
-          renderAssistantMessage={renderCuaAssistantMessage}
-          renderReasoning={renderCuaReasoning}
-        />
-      ) : (
-        <ToolCallRenderer {...renderContext} />
-      )}
+      <ToolRunningProgressProvider value={runningProgressState}>
+        {toolCall.kind === "cuaGroup" ? (
+          <CuaGroupToolCallBlock
+            {...renderContext}
+            events={cuaGroupEvents}
+            renderAssistantMessage={renderCuaAssistantMessage}
+            renderReasoning={renderCuaReasoning}
+          />
+        ) : (
+          <ToolCallRenderer {...renderContext} />
+        )}
+      </ToolRunningProgressProvider>
     </div>
   );
 }

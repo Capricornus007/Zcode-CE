@@ -3,6 +3,10 @@ import { useCallback, useMemo } from "react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { ToolLayout } from "@/ToolCallBlocks/ToolLayout.js";
+import {
+  ToolCallProgressIndicator,
+  readToolCallProgress,
+} from "@/ToolCallBlocks/ToolCallProgressIndicator.js";
 import type { ToolCallBlockRenderContext } from "@/ToolCallBlocks/shared.js";
 import { getExecuteSecondaryText } from "@/ToolCallBlocks/renderers/execute.js";
 
@@ -53,6 +57,9 @@ export function ExecuteGroupToolCallBlock(context: ToolCallBlockRenderContext) {
   const latestChild = latestActiveChild ?? childToolCalls.at(-1);
   const latestCommand =
     !isOfficeMode && latestChild ? getExecuteSecondaryText(latestChild.toolCall.input) : undefined;
+  // 组摘要只报「最新活动子命令」的等待时长：整组停留时长会把已完成的命令也算进去（141）。
+  const latestProgress =
+    isRunning && latestActiveChild ? readToolCallProgress(latestActiveChild.toolCall.raw) : null;
   const runningActionLabel = latestCommand
     ? intl.formatMessage({ id: "chat.toolCall.execute.running" })
     : undefined;
@@ -130,7 +137,10 @@ export function ExecuteGroupToolCallBlock(context: ToolCallBlockRenderContext) {
           ? `execute:${toolCall.toolId}:${latestChild.toolCall.toolId}:${runningActionLabel ?? "running"}:${latestCommand ?? "command"}`
           : `execute:${toolCall.toolId}:done:${completedSummary}`
       }
-      statusLabel={statusLabel}
+      statusLabel={
+        latestProgress ? <ToolCallProgressIndicator progress={latestProgress} /> : statusLabel
+      }
+      showStatusLabel={latestProgress != null}
       isRunning={isRunning}
       title={isOfficeMode ? undefined : isRunning && latestCommand ? latestCommand : toolCall.title}
       expandedTitle={toolCall.title}

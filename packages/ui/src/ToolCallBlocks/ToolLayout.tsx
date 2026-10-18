@@ -1,8 +1,9 @@
-import { memo, type ReactNode, useEffect, useRef, useState } from "react";
+import { memo, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible.js";
 import { Button } from "@/components/ui/button.js";
 import { cn } from "@/components/lib/utils.js";
 import { CheckIcon, CopyIcon } from "lucide-react";
+import type { ToolProgress } from "@zcode/shared/zcode-protocol-v4";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   Tooltip,
@@ -11,6 +12,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip.js";
 import { ToolSummaryRow, type ToolSummaryAction } from "@/ToolCallBlocks/ToolSummaryRow.js";
+import { ToolCallProgressIndicator } from "@/ToolCallBlocks/ToolCallProgressIndicator.js";
+import { useToolRunningProgress } from "@/ToolCallBlocks/ToolRunningProgressContext.js";
+import { useElapsedSince } from "@/v4/useElapsedSince.js";
 import { uiMemoryDiagnosticsRegistry } from "@/lib/memoryDiagnostics.js";
 
 const toolLayoutOpenState = new Map<string, boolean>();
@@ -117,6 +121,28 @@ function ToolLayoutComponent({
   const hasAutoOpenedRef = useRef(false);
   const previousIsRunningRef = useRef(isRunning);
   const shouldShowStatusLabel = (showStatusLabel || showFailureStatus) && statusLabel != null;
+  // 141：没有专属状态位的运行中工具，统一在摘要行显示进度条。服务端 progress 优先；
+  // 只有 startedAt 时用本地计时；两者都缺时至少给 indeterminate 条，不再只剩静态文案。
+  const runningProgressState = useToolRunningProgress();
+  const runningElapsedMs = useElapsedSince(isRunning ? runningProgressState?.startedAt : undefined);
+  const genericProgress = useMemo<ToolProgress | null>(() => {
+    if (!isRunning) return null;
+    const serverProgress = runningProgressState?.progress;
+    if (serverProgress) {
+      return serverProgress.elapsedMs === undefined && runningElapsedMs !== undefined
+        ? { ...serverProgress, elapsedMs: runningElapsedMs, updatedAt: Date.now() }
+        : serverProgress;
+    }
+    return {
+      ...(runningElapsedMs === undefined ? {} : { elapsedMs: runningElapsedMs }),
+      updatedAt: Date.now(),
+    };
+  }, [isRunning, runningProgressState?.progress, runningElapsedMs]);
+  const shouldShowGenericProgress =
+    isRunning &&
+    runningProgressState?.executing !== false &&
+    !shouldShowStatusLabel &&
+    genericProgress !== null;
   const shouldRenderResolvedContent = !hasSummaryAction && (isExpanded || shouldRenderContent);
   const resolvedContent = shouldRenderResolvedContent
     ? (renderContent?.() ?? content ?? null)
@@ -291,7 +317,7 @@ function ToolLayoutComponent({
         <span className="whitespace-nowrap">{statusLabel}</span>
       )
     ) : null;
-  const statusNode =
+  const explicitStatusNode =
     statusWordNode !== null && statusIndicator != null ? (
       <span className="inline-flex shrink-0 items-center gap-1.5">
         {statusIndicator}
@@ -300,6 +326,11 @@ function ToolLayoutComponent({
     ) : (
       statusWordNode
     );
+  const statusNode =
+    explicitStatusNode ??
+    (shouldShowGenericProgress && genericProgress !== null ? (
+      <ToolCallProgressIndicator progress={genericProgress} />
+    ) : null);
 
   return (
     <Collapsible

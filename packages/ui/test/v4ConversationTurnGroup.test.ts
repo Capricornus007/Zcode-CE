@@ -2457,6 +2457,27 @@ describe("ConversationTurnGroup ChatLoading lifecycle", () => {
     expect(modifier).not.toContain("--animated-gradient-text-soft");
   });
 
+  it("shows the turn running duration from turnHeader.startedAt (141)", () => {
+    const startedAt = Date.now() - 12_000;
+    const html = renderUnit(
+      baseUnit({
+        isRunning: true,
+        assistantHistoryDefaultOpen: true,
+        header: turnHeader({ state: "running", startedAt, createdAt: startedAt }),
+      }),
+    );
+
+    expect(html).toContain("本轮已运行 12s");
+    expect(html).toContain('data-testid="turn-running-elapsed"');
+  });
+
+  it("does not fabricate a running duration without a turn header", () => {
+    const html = renderUnit(baseUnit({ isRunning: true, assistantHistoryDefaultOpen: true }));
+
+    expect(html).toContain('data-testid="chat-loading"');
+    expect(html).not.toContain("本轮已运行");
+  });
+
   it("第三次 retry 才替换当前 turn 底部的通用 loading，并保留 3/10 计数口径", () => {
     const html = renderUnit(
       baseUnit({

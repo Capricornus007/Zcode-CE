@@ -177,7 +177,8 @@ export function McpToolCallBlock(context: ToolCallBlockRenderContext) {
   const parametersLabel = intl.formatMessage({ id: "chat.toolCall.mcp.parameters" });
   const hasCallDetails = Boolean(presentation?.description || toolCall.input !== undefined);
   const resultText = stringifyMcpResult(toolCall.output);
-  const visibleError = toolCall.status === "failed" ? (toolCall.error ?? context.errorText) : undefined;
+  const visibleError =
+    toolCall.status === "failed" ? (toolCall.error ?? context.errorText) : undefined;
   const hasPrimaryResult = Boolean(resultText || visibleError);
   const isSummaryOnlyLifecycle = toolCall.status === "pending" || toolCall.status === "stopped";
   // R7：运行中且 agent 投影了 MCP 进度时，摘要行显示细进度条 + message；终态由投影清除。
@@ -188,9 +189,10 @@ export function McpToolCallBlock(context: ToolCallBlockRenderContext) {
         <span className="text-foreground-subtlest">·</span>
         <span>{context.statusLabel}</span>
       </span>
-    ) : progress ? (
-      <ToolCallProgressIndicator progress={progress} />
     ) : undefined;
+  const runningSummaryStatus = progress ? (
+    <ToolCallProgressIndicator progress={progress} />
+  ) : undefined;
   const failedSummaryStatus =
     toolCall.status === "failed" ? (
       <span className="inline-flex items-center gap-2">
@@ -345,16 +347,15 @@ export function McpToolCallBlock(context: ToolCallBlockRenderContext) {
       forceOpen={!isSummaryOnlyLifecycle && (context.forceOpen ?? false)}
       kindLabel="MCP"
       kindDetail={
-        serverLabel ? (
-          <span className="text-foreground-subtle">{serverLabel}</span>
-        ) : undefined
+        serverLabel ? <span className="text-foreground-subtle">{serverLabel}</span> : undefined
       }
       primaryText={toolLabel}
       summaryContentSeparator="·"
       // Pending/Running/Completed 都是正常生命周期，不在摘要重复状态；Stopped 是异常终态，
       // 用显式分隔节点避免非动画摘要的两个文本节点粘连。Failed 使用专用错误状态槽位。
       secondaryText={stoppedSummaryStatus}
-      statusLabel={failedSummaryStatus}
+      statusLabel={runningSummaryStatus ?? failedSummaryStatus}
+      showStatusLabel={runningSummaryStatus != null}
       statusTooltip={toolCall.status === "failed" ? context.errorText : undefined}
       showFailureStatus={toolCall.status === "failed"}
       isRunning={context.isRunning}

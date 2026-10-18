@@ -7,6 +7,10 @@ import { SquareTerminalIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { ToolSnapshotFieldNotice } from "@/ToolCallBlocks/ToolSnapshotFieldNotice.js";
+import {
+  ToolCallProgressIndicator,
+  readToolCallProgress,
+} from "@/ToolCallBlocks/ToolCallProgressIndicator.js";
 import { ToolLayout } from "../ToolLayout.js";
 import type { ToolCallBlockRenderContext } from "../shared.js";
 
@@ -295,6 +299,9 @@ export function ExecuteToolCallBlock(context: ToolCallBlockRenderContext) {
   }, [isRunning, toolCall.raw]);
   const failureVisibleText =
     toolCall.status === "failed" ? (errorText ?? resultText ?? undefined) : undefined;
+  // 140/139 同款信号：Bash 执行适配器每 1s 发 ToolCallProgress.elapsedMs，投影进 raw.progress。
+  // 没有百分比时「已等待 Ns」就是进度；否则长命令与卡死无法区分（141）。
+  const progress = isRunning ? readToolCallProgress(toolCall.raw) : null;
   const secondaryTextNode = useMemo(
     // 收起态 command 属于摘要正文，使用 UI sans 与同一行文案保持一致；
     // 展开后的完整命令仍保留 font-mono，便于阅读和复制技术内容。
@@ -370,7 +377,8 @@ export function ExecuteToolCallBlock(context: ToolCallBlockRenderContext) {
               intl.formatMessage({ id: "chat.toolCall.execute.execute" }))
         }
         secondaryText={isOfficeMode ? undefined : secondaryTextNode}
-        statusLabel={statusLabel}
+        statusLabel={progress ? <ToolCallProgressIndicator progress={progress} /> : statusLabel}
+        showStatusLabel={progress != null}
         statusTooltip={isOfficeMode ? undefined : failureVisibleText}
         showFailureStatus={toolCall.status === "failed"}
         isRunning={isRunning}

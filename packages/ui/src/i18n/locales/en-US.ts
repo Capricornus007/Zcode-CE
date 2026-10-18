@@ -5262,6 +5262,7 @@ const enUS: Record<string, string> = {
   "chat.longRunning.elapsedMinutesSeconds": "Running for {minutes}m {seconds}s",
   "chat.toolCall.status.pending": "Pending",
   "chat.toolCall.progress.waited": "Waiting {duration}",
+  "chat.turn.runningFor": "Running for {duration}",
   "chat.toolCall.status.running": "Running",
   "chat.toolCall.status.completed": "Completed",
   "chat.toolCall.status.failed": "Failed",

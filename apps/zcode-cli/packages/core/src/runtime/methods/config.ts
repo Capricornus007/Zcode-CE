@@ -30,6 +30,7 @@ import { applyRuntimeExecutionState } from "../execution-state.js";
 import { mirrorSubagentInteractionEvent } from "../../subagent/tool-event-mirror.js";
 import { orderProviderVisibleToolContracts } from "../../tool/provider-visible-order.js";
 import { resolveToolDeferralPlan } from "../helpers/tool-deferral.js";
+import { TOOL_SEARCH_TOOL_NAME } from "../../tool/handlers/tool-search.js";
 import { projectToolModelContract } from "../../tool/model-contract.js";
 import { rebuildContextPrefix } from "./context-refresh.js";
 import { filterEmbeddedSearchRuntimeVisibleTools } from "./embedded-search-branch.js";
@@ -144,15 +145,13 @@ export function getTools(this: AgentRuntimeInternal, model?: Model): ModelToolCo
   );
   // 延迟发现（吸收 pi tool_search）：声明面超预算时只声明预算内 + 已激活的工具，
   // 并追加 ToolSearch；被降级的 MCP 工具仍注册、可执行，由模型按需搜索激活。
+  // ToolSearch 只随 active 补回——预算内绝不能泄漏进声明面：模型一旦看到 ToolSearch
+  // 就会推断其余工具藏在延迟池里，改用空搜而不是直接调用已声明的工具（GLM 会话实测：
+  // 38 工具 ≤48 预算时泄漏，连续 6 轮空搜后宣布「工具缺失」，整会话退化成纯聊天）。
   const deferral = resolveToolDeferralPlan(this, filtered);
-  if (!deferral.active) {
-    return filtered.map((tool) =>
-      projectToolModelContract(tool, this.registry.get(tool.name), {
-        model,
-      }),
-    );
-  }
-  const toolSearchContract = filtered.find((tool) => tool.name === "ToolSearch");
+  const toolSearchContract = deferral.active
+    ? filtered.find((tool) => tool.name === TOOL_SEARCH_TOOL_NAME)
+    : undefined;
   const declared = toolSearchContract
     ? [...deferral.declared, toolSearchContract]
     : deferral.declared;

@@ -7,6 +7,7 @@ import {
   searchAndActivateDeferredTools,
   TOOL_SEARCH_ACTIVATE_LIMIT_DEFAULT,
 } from "../src/runtime/helpers/tool-deferral.js";
+import { getTools } from "../src/runtime/methods/config.js";
 import { TOOL_SEARCH_TOOL_NAME } from "../src/tool/handlers/tool-search.js";
 
 /**
@@ -182,4 +183,64 @@ test("searchAndActivate：激活前 N 个命中；重复搜索不重复激活；
   });
   const inactive = searchAndActivateDeferredTools(belowBudget as never, "anything");
   assert.equal(inactive.results.length, 0, "未触发预算时 ToolSearch 搜索必须返回空");
+});
+
+// -----------------------------------------------
+// getTools 声明面组装（回归锚点：2026-10-18 GLM 会话「工具缺失」事故）
+// -----------------------------------------------
+
+function fakeRuntimeForGetTools(options: {
+  contractNames: readonly string[];
+  mcpNames: readonly string[];
+  budget?: number;
+}) {
+  const runtime = fakeRuntime(options);
+  return {
+    ...runtime,
+    // getTools 走预填缓存，不触发 registry.toContracts/filterRuntimeVisibleTools。
+    cachedTools: runtime.cachedTools,
+  };
+}
+
+test("getTools 预算内：ToolSearch 不得泄漏进声明面（GLM「工具缺失」事故回归锚点）", () => {
+  // 事故形态：ToolSearch 无条件注册进 registry，getTools 在 !active 分支直接返回
+  // filtered，把 ToolSearch 带进了 38 工具（≤48 预算）的声明面。模型看到 ToolSearch
+  // 即推断其余工具藏在延迟池里，改用空搜而不是直接调用，整会话退化成纯聊天。
+  const runtime = fakeRuntimeForGetTools({
+    contractNames: withToolSearch(["Read", "Bash", "mcp__srv__a"]),
+    mcpNames: ["mcp__srv__a"],
+    budget: 48,
+  });
+  const declared = getTools.call(runtime as never);
+  const names = declared.map((tool) => tool.name);
+  assert.ok(!names.includes(TOOL_SEARCH_TOOL_NAME), "预算内 ToolSearch 不得声明");
+  assert.equal(names.length, 3, "其余工具照常全量声明");
+  assert.ok(names.includes("Bash") && names.includes("mcp__srv__a"));
+});
+
+test("getTools 超预算：ToolSearch 随降级一起声明，被降级工具不出现", () => {
+  const mcpNames = ["mcp__srv__t0", "mcp__srv__t1", "mcp__srv__t2"];
+  const runtime = fakeRuntimeForGetTools({
+    contractNames: withToolSearch(["Read", "Bash", ...mcpNames]),
+    mcpNames,
+    budget: 4,
+  });
+  const declared = getTools.call(runtime as never);
+  const names = declared.map((tool) => tool.name);
+  assert.ok(names.includes(TOOL_SEARCH_TOOL_NAME), "降级触发时 ToolSearch 必须声明");
+  assert.ok(!names.includes("mcp__srv__t2"), "被降级工具不得声明");
+  assert.ok(names.includes("Bash"), "内置工具永不降级");
+});
+
+test("getTools 预算内且 ToolSearch 未注册：原样全量声明", () => {
+  const runtime = fakeRuntimeForGetTools({
+    contractNames: ["Read", "Bash"],
+    mcpNames: [],
+    budget: 48,
+  });
+  const declared = getTools.call(runtime as never);
+  assert.deepEqual(
+    declared.map((tool) => tool.name).sort(),
+    ["Bash", "Read"],
+  );
 });

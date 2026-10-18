@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { isRealComputerUseProducerInstalled } from "../packages/desktop/scripts/computer-use-producer.mjs";
@@ -8,9 +8,20 @@ import { withPinnedNodePath } from "./mise-toolchain-env.mjs";
 import { quoteArgsForWindowsShell } from "./spawn-command.mjs";
 
 const requestedEnv = process.argv[2]?.trim().toLowerCase();
-const agentBytecode = process.argv.slice(3).includes("--agent-bytecode");
+const devFlags = process.argv.slice(3);
+const agentBytecode = devFlags.includes("--agent-bytecode");
+// 重启耗时优化：turbo 命中缓存时只重建变更包；skip 仅适用于纯 UI/桌面改动，
+// 复用上一次的 CLI dist（改 core/bootstrap/contracts 时必须跑完整构建）。
+const turboAgentBuild = devFlags.includes("--turbo");
+const skipAgentBuild = devFlags.includes("--skip-agent-build");
 if (requestedEnv !== "test" && requestedEnv !== "production") {
-  console.error("Usage: node scripts/dev-desktop-env.mjs <test|production> [--agent-bytecode]");
+  console.error(
+    "Usage: node scripts/dev-desktop-env.mjs <test|production> [--agent-bytecode] [--turbo] [--skip-agent-build]",
+  );
+  process.exit(1);
+}
+if (turboAgentBuild && skipAgentBuild) {
+  console.error("--turbo 与 --skip-agent-build 不能同时使用");
   process.exit(1);
 }
 
@@ -109,14 +120,26 @@ try {
   // Preserve its runtime-asset preparation and stale `out` cleanup explicitly
   // before rebuilding bundles or starting Electron.
   await run(pnpmCommand, ["--filter", "@zcode/desktop", "pre-dev"]);
-  // On Windows, use "node" (resolved via PATHEXT) to avoid "C:\Program Files\..." space issues
-  await run(process.platform === "win32" ? "node" : process.execPath, [
-    resolve(repoRoot, "scripts/build-desktop-agent-cli.mjs"),
-  ]);
-  if (agentBytecode) {
+  if (skipAgentBuild) {
+    // 纯 renderer/main 改动不需要动 CLI；没有 dist 时不能静默启动旧副本。
+    if (!existsSync(resolve(repoRoot, "apps/zcode-cli/packages/cli/dist/zcode.cjs"))) {
+      throw new Error("缺少 CLI dist，--skip-agent-build 不可用；先跑一次完整 pnpm dev:desktop");
+    }
+    console.log("[dev] --skip-agent-build：复用现有 CLI dist（不改 core/bootstrap 时使用）");
+  } else {
+    if (turboAgentBuild) {
+      process.env.ZCODE_DESKTOP_AGENT_BUILD_MODE = "turbo";
+      console.log("[dev] --turbo：CLI 包构建走 turbo 缓存");
+    }
+    // On Windows, use "node" (resolved via PATHEXT) to avoid "C:\Program Files\..." space issues
     await run(process.platform === "win32" ? "node" : process.execPath, [
-      resolve(repoRoot, "scripts/build-desktop-agent-bytecode.mjs"),
+      resolve(repoRoot, "scripts/build-desktop-agent-cli.mjs"),
     ]);
+    if (agentBytecode) {
+      await run(process.platform === "win32" ? "node" : process.execPath, [
+        resolve(repoRoot, "scripts/build-desktop-agent-bytecode.mjs"),
+      ]);
+    }
   }
   await run(pnpmCommand, ["--filter", "@zcode/desktop", "dev:runtime"]);
 } catch (error) {

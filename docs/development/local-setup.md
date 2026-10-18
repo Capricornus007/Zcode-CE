@@ -16,17 +16,19 @@ pnpm install
 
 ## 常用命令
 
-| 用途             | 命令                                    |
-| ---------------- | --------------------------------------- |
-| 类型检查         | `pnpm typecheck`                        |
-| Lint             | `pnpm lint` / `pnpm lint:fix`           |
-| 格式检查         | `pnpm fmt:check`                        |
-| 测试             | `pnpm test`                             |
-| 桌面开发         | `pnpm dev:desktop`                      |
-| Web 开发         | `pnpm dev:web`                          |
-| 架构检查         | `pnpm architecture:check --changed`     |
-| 模块阅读包       | `pnpm architecture:context <module-id>` |
-| 未使用依赖与导出 | `pnpm knip`                             |
+| 用途              | 命令                                    |
+| ----------------- | --------------------------------------- |
+| 类型检查          | `pnpm typecheck`                        |
+| Lint              | `pnpm lint` / `pnpm lint:fix`           |
+| 格式检查          | `pnpm fmt:check`                        |
+| 测试              | `pnpm test`                             |
+| 桌面开发          | `pnpm dev:desktop`                      |
+| 桌面重启（缓存）  | `pnpm dev:desktop:turbo`                |
+| 桌面重启（仅 UI） | `pnpm dev:desktop:fast`                 |
+| Web 开发          | `pnpm dev:web`                          |
+| 架构检查          | `pnpm architecture:check --changed`     |
+| 模块阅读包        | `pnpm architecture:context <module-id>` |
+| 未使用依赖与导出  | `pnpm knip`                             |
 
 ## 测试
 

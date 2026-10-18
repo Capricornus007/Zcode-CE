@@ -119,6 +119,12 @@ During the compatibility phase:
 - New writes go to `local_setting`.
 - The old table remains in the database until a later cleanup migration removes fallback support.
 
+## Config JSON Schema for Editor Support
+
+Config files accept an optional `$schema` field, and the CLI ships a generated JSON Schema so editors can validate and autocomplete config keys. Point `$schema` at the committed artifact `docs/schema/zcode-config-v2.schema.json` (repo-relative path, absolute path, or `file://` URL); the canonical id is `https://zcode.ai/schema/config-v2.json`.
+
+The artifact is generated output, not hand-written: it is rendered from `ZCodeConfigFileSchema` (`packages/adapters/src/config/schema.ts`) with the zod 4 native converter `z.toJSONSchema` (`target: "draft-7"`, `io: "input"` — draft-07 is the dialect the tool contract path in `contracts/src/tools/json-schema.ts` targets as `jsonSchema7`; `zod-to-json-schema` 3.25.2 cannot serialize zod 4 classic schemas). After changing the config schema, regenerate it with `UPDATE_CONFIG_SCHEMA=1 pnpm --dir apps/zcode-cli --filter @zcode/adapters test -- config-schema-snapshot` and commit the result. The snapshot test `packages/adapters/tests/config-schema-snapshot.test.ts` compares the artifact byte-for-byte against the current schema, so a config change without regeneration turns the test red. This keeps hand-authored config files declarative and editor-checkable while `local_setting` stays the owner of mutable runtime state.
+
 ## Tests
 
 - Fresh databases apply all migrations and record their ids in order.

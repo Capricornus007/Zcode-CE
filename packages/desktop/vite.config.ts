@@ -5,7 +5,11 @@ import { pathToFileURL } from "node:url";
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
-import { resolveZCodeEndpointOrigin } from "@zcode/shared/zcodeEndpoint";
+// 必须用相对路径而非 "@zcode/shared/zcodeEndpoint"：vite 8 的 bundle config loader 会把裸导入
+// 留给 Node 原生加载，而 hoisted 布局下该解析落在 node_modules 内的 .ts，Node 的 type stripping
+// 拒绝 node_modules 下的 TS（ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING）。相对路径会被 Rolldown
+// 内联进 config 产物，绕开该限制；与上方 ../ui/vite/pdfJsCMapsPlugin.js 的做法一致。
+import { resolveZCodeEndpointOrigin } from "../shared/src/zcodeEndpoint.ts";
 import { pdfJsCMapsPlugin } from "../ui/vite/pdfJsCMapsPlugin.js";
 import { getBuildMetadata } from "./scripts/build-metadata.mjs";
 import { resolveDesktopProductFlavor } from "./scripts/desktop-product-identity.mjs";

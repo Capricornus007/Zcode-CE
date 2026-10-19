@@ -1,5 +1,5 @@
 /* eslint-disable max-lines -- Electron Builder config keeps related packaging hooks together so build order stays explicit. */
-import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -361,6 +361,16 @@ async function injectHoistedRuntimeModulesIntoAsar(context) {
     runTimedSync("afterPack:asar-extract", () =>
       runAsarCommand(["extract", appAsarPath, stagingDir]),
     );
+
+    // asar extract 只解归档本体，unpacked sidecar（node-pty prebuilds 等 native）不会出现在 staging。
+    // 不合并回来的话，重打包时 --unpack-dir 匹配不到任何文件，产不出 app.asar.next.unpacked，
+    // 替换阶段又会先删原 unpacked——node-pty native 就会整体丢失，已安装应用的主进程随之崩溃。
+    runTimedSync("afterPack:merge-unpacked-sidecar", () => {
+      const unpackedSidecarDir = `${appAsarPath}.unpacked`;
+      if (existsSync(unpackedSidecarDir)) {
+        cpSync(unpackedSidecarDir, stagingDir, { recursive: true });
+      }
+    });
 
     const stagingNodeModulesDir = resolve(stagingDir, "node_modules");
     mkdirSync(stagingNodeModulesDir, { recursive: true });
@@ -842,6 +852,30 @@ export default {
     installerIcon: "build/icon_installer.ico",
     uninstallerIcon: "build/icon_installer.ico",
     installerHeaderIcon: "build/icon_installer.ico",
+    // ZCODE_EB_SKIP_UNINSTALLER_SIGN=1 时提供一个一行 shim 作为"自定义 NSIS 脚本"。
+    // electron-builder 看到自定义脚本会跳过卸载器预编译舞蹈（BUILD_UNINSTALLER 中间产物
+    // 的编译与运行），其余流程不变：shim 只 !include 上游模板本体，-D defines、-X 命令、
+    // 生成的脚本头、以及 patch-nsis-install-section 对 installSection.nsh 的补丁全部照旧。
+    // 为什么留这个开关：本机实测（2026-10-19）卸载器舞蹈无论 26.8.1 还是 26.15.3 都在
+    // "运行刚编译的 BUILD_UNINSTALLER 安装器"一步确定性退出码 2 / spawn 失败，而最小
+    // NSIS 复现（同样的 WriteUninstaller+quitSuccess）在本机正常；CI 与其他环境未复现。
+    // 代价：独立卸载器不再被预签名（安装包本体与其中嵌入的卸载器数据不受影响，
+    // electron-builder 自己对自定义脚本的提示也是这句）。默认不设变量时保持上游行为。
+    ...(process.env.ZCODE_EB_SKIP_UNINSTALLER_SIGN === "1"
+      ? (() => {
+          const shimPath = resolve(desktopPackageRoot, "dist", "installer-entry.nsi");
+          const templatePath = resolve(
+            dirname(requireFromConfig.resolve("app-builder-lib/package.json")),
+            "templates",
+            "nsis",
+            "installer.nsi",
+          );
+          // NSIS 双引号字符串里反斜杠不是转义符，路径原样写入即可。
+          mkdirSync(dirname(shimPath), { recursive: true });
+          writeFileSync(shimPath, `!include "${templatePath}"\r\n`, "utf8");
+          return { script: shimPath };
+        })()
+      : {}),
   },
   detectUpdateChannel: false,
   publish: {

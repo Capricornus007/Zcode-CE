@@ -1,4 +1,5 @@
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -76,6 +77,13 @@ export function removeSourceMapFilesInDirectory(rootDir) {
   return summary;
 }
 
+function mergeUnpackedSidecarIntoStaging({ appAsarPath, stagingDir }) {
+  const unpackedSidecarDir = `${appAsarPath}.unpacked`;
+  if (existsSync(unpackedSidecarDir)) {
+    cpSync(unpackedSidecarDir, stagingDir, { recursive: true });
+  }
+}
+
 export async function cleanupPackagedSourcemaps({
   appAsarPath,
   resourcesDir,
@@ -92,6 +100,11 @@ export async function cleanupPackagedSourcemaps({
       runTimedSync("afterPack:sourcemap-cleanup:asar-extract", () =>
         runAsarCommand(["extract", appAsarPath, stagingDir]),
       );
+      // asar extract 只解归档本体，unpacked sidecar（node-pty prebuilds 等 native）不在 staging 里。
+      // 不合并回来，重打包时 --unpack/--unpack-dir 匹配不到文件，产不出 app.asar.next.unpacked，
+      // 替换流程又会先删原 unpacked ⇒ native 整体丢失。与 electron-builder.config.js
+      // afterPack:merge-unpacked-sidecar 是同一个约束的两处消费点。
+      mergeUnpackedSidecarIntoStaging({ appAsarPath, stagingDir });
       const stripSummary = stripSourceMappingUrlCommentsInDirectory(stagingDir);
       const mapSummary = removeSourceMapFilesInDirectory(stagingDir);
       if (stripSummary.referencesRemoved > 0 || mapSummary.filesRemoved > 0) {

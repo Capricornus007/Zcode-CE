@@ -762,6 +762,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - @types/node@25.6.0 — MIT
 
+- @types/node@26.6.5 — MIT
+
 - @types/prop-types@15.7.15 — MIT
 
 - @types/react-dom@18.3.7 — MIT
@@ -1664,7 +1666,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - lexical@0.42.0 — MIT
 
-- lib0@0.2.117 — MIT
+- lib0@0.2.119 — MIT
 
 - lie@3.3.0 — MIT
 
@@ -2132,7 +2134,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - react-is@16.13.1 — MIT
 
-- react-is@19.3.0 — MIT
+- react-is@19.3.1 — MIT
 
 - react-jsx-parser@2.4.1 — MIT
 
@@ -2249,6 +2251,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 - safer-buffer@2.1.2 — MIT
 
 - sax@1.6.0 — BlueOak-1.0.0
+
+- sax@1.6.1 — BlueOak-1.0.0
 
 - saxes@5.0.1 — ISC
 
@@ -2449,6 +2453,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 - undici-types@7.16.0 — MIT
 
 - undici-types@7.19.2 — MIT
+
+- undici-types@8.9.0 — MIT
 
 - undici@6.24.1 — MIT
 
@@ -4779,7 +4785,7 @@ MIT
 
 - react-dom@19.2.7: LICENSE
 
-- react-is@19.3.0: LICENSE
+- react-is@19.3.1: LICENSE
 
 - react-reconciler@0.33.0: LICENSE
 
@@ -7416,6 +7422,8 @@ SOFTWARE.
 - @types/node@24.12.2: LICENSE
 
 - @types/node@25.6.0: LICENSE
+
+- @types/node@26.6.5: LICENSE
 
 - @types/prop-types@15.7.15: LICENSE
 
@@ -22666,6 +22674,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 - sax@1.6.0: LICENSE.md
 
+- sax@1.6.1: LICENSE.md
+
 
 
 ````text
@@ -24729,7 +24739,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ### Notice 5446db1e43fe52faf3faab7e9959fe3762ac11bdc61c0945934c498affd52d73
 
-- lib0@0.2.117: LICENSE
+- lib0@0.2.119: LICENSE
 
 
 
@@ -24760,7 +24770,7 @@ SOFTWARE.
 
 ### Notice 2a88c16bef1c3bef4a5bd265bd61ea2e30b19d0a501e12e1d5d79e523ca4836c
 
-- lib0@0.2.117: README.md (license section)
+- lib0@0.2.119: README.md (license section)
 
 
 
@@ -39284,6 +39294,8 @@ ISC
 - undici-types@7.16.0: LICENSE
 
 - undici-types@7.19.2: LICENSE
+
+- undici-types@8.9.0: LICENSE
 
 - undici@6.24.1: LICENSE
 

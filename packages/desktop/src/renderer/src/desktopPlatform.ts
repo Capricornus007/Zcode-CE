@@ -1,6 +1,4 @@
-// 直连子路径导出而不是 @zcode/ui barrel：barrel 会经 App.tsx 拖入 .svg 等纯前端资产，
-// 使本文件无法在 node 环境（desktopPlatformConnectionSeam 接缝测试）下加载。
-import { recordArmsCustomEventForE2E } from "@zcode/ui/arms-custom-event-observability";
+import { recordArmsCustomEventForE2E } from "@zcode/ui";
 import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
@@ -11,10 +9,12 @@ export function createDesktopPlatform(options: {
 }): IPlatformService {
   return {
     canSelectFilePath: true,
+    canOpenLocalFiles: true,
     pluginSandbox: createDesktopPluginSandboxPlatform(),
     createLocalMediaPreviewUrl: buildLocalMediaPreviewUrl,
     isLocalDevelopmentRuntime: options.isLocalDevelopmentRuntime,
     selectDirectory: () => window.zcode.selectDirectory(),
+    selectDirectories: () => window.zcode.selectDirectories(),
     selectFile: () => window.zcode.selectFile(),
     selectFiles: () => window.zcode.selectFiles?.() ?? Promise.resolve([]),
     createTempTextAttachment: (payload) => window.zcode.createTempTextAttachment(payload),
@@ -22,40 +22,22 @@ export function createDesktopPlatform(options: {
       window.zcode.materializeWorkflowArtifactFile(payload),
     onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
     onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
-    onBotRemoteWorkspaceReconnected: (handler) =>
-      window.zcode.onBotRemoteWorkspaceReconnected(handler),
-    // ---- CE 线增量：本地 Web 服务（远程控制，契约 §5）。preload 已暴露这八条；这里把它们映射进
-    // IPlatformService —— 少这一步的话 `window.zcode` 有、`IPlatformService` 没有，UI 侧的
-    // 能力探测会判成"能力缺失"⇒ 入口与面板在桌面端也不渲染（静默失效）。
-    getWebServiceStatus: () => window.zcode.getWebServiceStatus(),
-    startWebService: (options) => window.zcode.startWebService(options),
-    stopWebService: () => window.zcode.stopWebService(),
-    getWebServiceConnectionInfo: () => window.zcode.getWebServiceConnectionInfo(),
-    onWebServiceChanged: (handler) => window.zcode.onWebServiceChanged(handler),
-    // 连接面三条（谁连着）。与上面五条分开映射：UI 侧分档探测，各自门控自己的区块
-    // （设备清单 / 断开按钮 / 轮换入口）。条件定义而非无条件转发：旧 preload（开发态 HMR、
-    // 升级后未重启的窗口）缺这三条时，能力探测判"无能力"⇒ 区块不渲染，而不是点了才炸。
-    getWebServiceConnections: window.zcode.getWebServiceConnections
-      ? () => window.zcode.getWebServiceConnections()
-      : undefined,
-    revokeWebServiceConnection: window.zcode.revokeWebServiceConnection
-      ? (input) => window.zcode.revokeWebServiceConnection(input)
-      : undefined,
-    rotateWebServiceToken: window.zcode.rotateWebServiceToken
-      ? () => window.zcode.rotateWebServiceToken()
-      : undefined,
-
+    // Source 自动重连会替换 logical session；统一由 preload bridge 转发换代事件。
+    onRemoteSessionReconnected: (handler) =>
+      window.zcode.onRemoteSessionReconnected?.(handler) ?? (() => {}),
     activateOrSetWorkspace: (path) =>
       window.zcode.activateOrSetWorkspace?.(path) ?? Promise.resolve({ activated: false }),
     connectRemote: (remoteOptions, requestId, context) =>
       window.zcode.connectRemote(remoteOptions, requestId, context),
+    requestSourceSettingsAttachment: (sourceServerId) =>
+      window.zcode.requestSourceSettingsAttachment?.(sourceServerId) ??
+      Promise.reject(new Error("Source settings attachment bridge unavailable")),
     cancelPendingRemoteConnection: (requestId) =>
       window.zcode.cancelPendingRemoteConnection?.(requestId) ?? Promise.resolve(),
     bindRemoteWorkspaceSessionContext: (context) =>
-      window.zcode.bindRemoteWorkspaceSessionContext?.(context) ?? Promise.resolve(),
+      window.zcode.bindRemoteWorkspaceSessionContext?.(context) ??
+      Promise.reject(new Error("Desktop bindRemoteWorkspaceSessionContext bridge unavailable")),
     startWebRemoteControl: (context) => window.zcode.startWebRemoteControl(context),
-    refreshWebRemoteControlPairing: (context) =>
-      window.zcode.refreshWebRemoteControlPairing(context),
     stopWebRemoteControl: () => window.zcode.stopWebRemoteControl(),
     getWebRemoteControlStatus: () => window.zcode.getWebRemoteControlStatus(),
     onWebRemoteControlStatusChanged: (handler) =>
@@ -87,6 +69,8 @@ export function createDesktopPlatform(options: {
     startCuaHelperPermissionDrag: window.zcode.startCuaHelperPermissionDrag
       ? () => window.zcode.startCuaHelperPermissionDrag?.()
       : undefined,
+    notifyWebRemoteControlAuthStateChanged: (change) =>
+      window.zcode.notifyWebRemoteControlAuthStateChanged(change),
     registerOAuthState: (payload) => window.zcode.registerOAuthState(payload),
     onOAuthCallback: (callback) => window.zcode.onOAuthCallback(callback),
     onPaymentCallback: (callback) => window.zcode.onPaymentCallback(callback),
@@ -114,7 +98,6 @@ export function createDesktopPlatform(options: {
     syncWindowTabs: (paths) => window.zcode.syncWindowTabs(paths),
     syncWebRemoteControlWorkspaces: (workspaces) =>
       window.zcode.syncWebRemoteControlWorkspaces?.(workspaces),
-    syncWebRemoteControlTasks: (tasks) => window.zcode.syncWebRemoteControlTasks?.(tasks),
     onWebRemoteControlReconnectWorkspace: (handler) =>
       window.zcode.onWebRemoteControlReconnectWorkspace?.(handler) ?? (() => {}),
     syncWindowUnreadCount: (count) => window.zcode.syncWindowUnreadCount(count),
@@ -204,7 +187,7 @@ export function createDesktopPlatform(options: {
       window.zcode.acknowledgePostUpdateReleaseNotes(version),
     skipUpdateVersion: (version) => window.zcode.skipUpdateVersion?.(version) ?? Promise.resolve(),
     quitAndInstallUpdate: () => window.zcode.quitAndInstallUpdate(),
-    getInstalledEditors: () => window.zcode.getInstalledEditors(),
+    getInstalledEditors: (filePath) => window.zcode.getInstalledEditors(filePath),
     getApplicationIcon: (bundleId) =>
       window.zcode.getApplicationIcon?.(bundleId) ?? Promise.resolve(null),
     openInEditor: (editorId, path, editorOptions) =>

@@ -54,6 +54,7 @@ vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform ,
  useOptionalPlatform: () => h.platform}));
 vi.mock("@/store/StoreProvider.js", () => ({
   useZCodeStore: (selector: (state: typeof h.store) => unknown) => selector(h.store),
+  useZCodeStoreWithDefault: (selector: (state: typeof h.store) => unknown) => selector(h.store),
 }));
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: typeof h.tabs) => unknown) => selector(h.tabs),

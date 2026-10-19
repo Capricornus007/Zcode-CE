@@ -2,7 +2,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Settings2 } from "lucide-react";
 import type { ZCodeTaskMeta } from "@zcode/shared";
-import { TID_TASK_LIST, TID_TASK_EMPTY, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared";
+import { TID_TASK_LIST, TID_TASK_EMPTY, TID_TASK_SETTINGS_BUTTON } from "@zcode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
 import { toast } from "@/components/ui/toast.js";
@@ -12,8 +12,6 @@ import { NewTaskButtonGroup } from "@/NewTaskButtonGroup.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { MemoTaskItem, TaskListItemContextMenuContent } from "@/TaskListItem.js";
 import { TaskListLoadingHint } from "@/TaskListLoadingHint.js";
-import { WorkspaceRuntimeNotice } from "@/WorkspaceRuntimeNotice.js";
-import type { WorkspaceRuntimeState } from "@/hooks/useWorkspaceRuntimeStates.js";
 import { TaskRenameDialog } from "@/TaskRenameDialog.js";
 import { buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
 import { compareZCodeTaskListItems } from "@/lib/taskListOrdering.js";
@@ -25,16 +23,6 @@ export { deriveTaskLeadingIndicator } from "@/lib/taskListItemPresentation.js";
 // 默认参数里的 [] 会在每次 TaskList render 时创建新数组；
 // 任务流刷新期间这会放大 memo 子组件的等价数据判断成本。
 const EMPTY_PINNED_TASKS: ZCodeTaskMeta[] = [];
-
-/**
- * 只有「未启动 / 启动中 / 失败」三种状态才占用空列表位置。
- *
- * 为什么必须显式列举：`unknown`（远端 tab、旧调用方）与 `live` 都必须落回原来的
- * 「暂无任务」，否则远端行会在空列表时变成一片空白 —— 那是新的信息丢失。
- */
-function isHonestRuntimePlaceholder(state: WorkspaceRuntimeState | undefined): boolean {
-  return state === "not-started" || state === "starting" || state === "failed";
-}
 
 // 父级 App/Shell 可能因 stream 状态更新重渲，但列表 props 本身未变。
 // TaskList 先整体 memo，避免无关父 render 重新遍历任务并触发 MemoTaskItem props 计算。
@@ -51,22 +39,22 @@ export const TaskList = memo(function TaskList({
   showCreateButton = true,
   showFooter = true,
   showEmptyState = true,
+  taskRowVariant = "default",
+  hoverEnabled = true,
   loading: inputLoading,
   hasMore = false,
   onShowMore,
   onRenameTask,
   onSetTaskPinned,
   onArchiveTask,
+  isArchived = false,
   onSetTaskUnread,
   mobileActiveTaskKey,
   readOnlyReason,
-  runtimeState,
-  persistedSessionCount,
-  lastActivityAt,
-  runtimeFailureReason,
-  onStartRuntime,
-  onRetryRuntime,
+  onOpenFileTree,
+  organizationActions,
 }: {
+  organizationActions?: React.ReactNode;
   workspacePath: string;
   remoteSessionId?: string;
   workspaceIdentity?: string;
@@ -79,26 +67,19 @@ export const TaskList = memo(function TaskList({
   showCreateButton?: boolean;
   showFooter?: boolean;
   showEmptyState?: boolean;
+  taskRowVariant?: "default" | "timeline";
+  hoverEnabled?: boolean;
   loading?: boolean;
   hasMore?: boolean;
   onShowMore?: () => void;
   onRenameTask: (taskId: string, title: string) => Promise<ZCodeTaskMeta | null>;
   onSetTaskPinned: (taskId: string, pinned: boolean) => Promise<ZCodeTaskMeta | null>;
   onArchiveTask: (taskId: string) => Promise<ZCodeTaskMeta | null>;
+  isArchived?: boolean;
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
   mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
-  /**
-   * §3.2 诚实未启动态：本 workspace 的 runtime 状态。
-   * 缺席 = 旧调用方，保持原「暂无任务」文案（不得因缺省而改口径）。
-   */
-  runtimeState?: WorkspaceRuntimeState;
-  /** 持久层会话数（注册表事实）：runtime 未启动时用它说明「已经有什么」。 */
-  persistedSessionCount?: number | null;
-  lastActivityAt?: number | null;
-  runtimeFailureReason?: string | null;
-  onStartRuntime?: () => void;
-  onRetryRuntime?: () => void;
+  onOpenFileTree?: () => void | Promise<void>;
 }) {
   const { intl } = useZCodeIntl();
   const pinnedTaskIdSet = useMemo(
@@ -391,7 +372,10 @@ export const TaskList = memo(function TaskList({
         workspacePath={workspacePath}
         remoteSessionId={remoteSessionId}
         task={task}
+        variant={taskRowVariant}
+        hoverEnabled={hoverEnabled}
         isPinned={isPinned}
+        isArchived={isArchived}
         isActive={isWorkspaceActive && task.taskId === activeTaskId}
         isMobileActive={
           mobileActiveTaskKey ===
@@ -406,6 +390,7 @@ export const TaskList = memo(function TaskList({
         onArchiveTask={handleArchiveTask}
         onMarkTaskAsUnread={handleMarkTaskAsUnread}
         onOpenTaskContextMenu={handleOpenTaskContextMenu}
+        onOpenFileTree={onOpenFileTree}
         actionsDisabled={Boolean(readOnlyReason)}
         actionsDisabledReason={readOnlyReason}
         intl={intl}
@@ -463,18 +448,6 @@ export const TaskList = memo(function TaskList({
         <div className="space-y-1">
           {Boolean(inputLoading) && visibleSourceTasks.length === 0 ? (
             <TaskListLoadingHint />
-          ) : visibleSourceTasks.length === 0 && isHonestRuntimePlaceholder(runtimeState) ? (
-            // §3.2：runtime 未启动/启动中/失败必须与「暂无任务」区分开。
-            // 之前这里只有一句「暂无任务」，于是 M1 列出的未启动 workspace 看起来像「会话丢了」。
-            <WorkspaceRuntimeNotice
-              state={runtimeState ?? "unknown"}
-              workspaceName={workspacePath}
-              persistedSessionCount={persistedSessionCount ?? null}
-              lastActivityAt={lastActivityAt ?? null}
-              failureReason={runtimeFailureReason ?? null}
-              onStart={onStartRuntime}
-              onRetry={onRetryRuntime}
-            />
           ) : visibleSourceTasks.length === 0 ? (
             showEmptyState ? (
               <div
@@ -501,6 +474,8 @@ export const TaskList = memo(function TaskList({
                   remoteSessionId={remoteSessionId}
                   task={contextMenuTask}
                   isPinned={pinnedTaskIdSet.has(contextMenuTask.taskId)}
+                  isArchived={isArchived}
+                  organizationActions={organizationActions}
                   intl={intl}
                   onTogglePinTask={handleTogglePinTask}
                   onStartRenameTask={handleStartRenameTask}
@@ -514,13 +489,15 @@ export const TaskList = memo(function TaskList({
           )}
         </div>
         {hasMore && onShowMore ? (
-          <div className="cursor-pointer pl-8.5">
-            <span
-              className="text-ui-base text-foreground-subtlest hover:text-foreground-subtle"
+          <div className="pl-8.5">
+            <button
+              type="button"
+              data-task-list-show-more="true"
+              className="rounded-sm bg-transparent p-0 text-ui-sm text-foreground-subtle outline-none transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring/30"
               onClick={onShowMore}
             >
               {intl.formatMessage({ id: "taskList.showMore" })}
-            </span>
+            </button>
           </div>
         ) : null}
       </div>

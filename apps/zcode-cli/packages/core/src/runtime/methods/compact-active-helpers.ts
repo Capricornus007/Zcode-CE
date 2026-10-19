@@ -97,7 +97,10 @@ export async function persistCompactTimelineEvent(
 export function buildCompactSummaryRequestMessages(
   entriesForSummary: readonly RuntimeMessageEntry[],
   compactPrompt: string,
-  options: { useMidConversationSystem?: boolean } = {},
+  options: {
+    useMidConversationSystem?: boolean;
+    loadedToolCallIds?: ReadonlySet<string>;
+  } = {},
 ): RunModelTextRequestOptions["messages"] {
   const projected = buildProviderRequestMessages({
     entries: [
@@ -107,6 +110,7 @@ export function buildCompactSummaryRequestMessages(
     applyCacheControl: true,
     skipCacheWrite: true,
     useMidConversationSystem: options.useMidConversationSystem,
+    loadedToolCallIds: options.loadedToolCallIds,
   }).messages;
   // 148②（吸收 pi 1.2.0）：摘要请求剥离历史 reasoning 块。thinking 签名只对产生它的
   // 模型有效，对摘要模型是无效负载；重放的推理也不在真实上下文里，原样携带只会把

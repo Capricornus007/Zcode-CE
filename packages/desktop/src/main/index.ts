@@ -38,12 +38,15 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  MessageChannelMain,
   nativeImage,
   net,
   protocol,
   session,
+  shell,
   webContents,
 } from "electron";
+import { randomUUID } from "node:crypto";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { spawn } from "node:child_process";
 import { join, resolve } from "node:path";
@@ -62,14 +65,19 @@ import {
   getZCodeDataRootDir,
   normalizeRuntimeProcessEnv,
   setDataBaseDir,
+  migrateApplicationStorage,
+  resolveDefaultZCodeAgentCommand,
+  startupStorage,
 } from "@zcode/services/node";
 import {
   desktopMenuMessageIds,
   type Locale,
   type AppSettings,
+  type appSettingsPatchSchema,
   PlatformChannels,
   ZCODE_ENV,
   ZCODE_PRODUCT_FLAVOR,
+  ZCODE_AUTO_UPDATE_ENABLED,
   DEFAULT_ZCODE_ENDPOINT_ORIGIN,
   DEFAULT_LOCALE,
   TEST_ZCODE_ENDPOINT_ORIGIN,
@@ -81,11 +89,9 @@ import {
   type UpdateStatePayload,
   type TelemetryEventPayload,
   HostMessageTypes,
+  InternalChannels,
 } from "@zcode/shared";
 import { logger, webRemoteControlRelayLogger } from "./logger.js";
-import { registerWebServiceIpc } from "./web-service/ipc.js";
-import { createWebServiceConnectionPlane } from "./web-service/remoteControlClient.js";
-import { createWebServiceRuntime } from "./web-service/runtime.js";
 import { markMainLaunchAppReady } from "./desktopLaunchMarks.js";
 import { createCuaPipFocusRouter, resolveCuaPipWindowKey } from "./cuaPipFocusRouter.js";
 import { createDesktopTelemetryFetch } from "./desktopTelemetryFetch.js";
@@ -101,7 +107,6 @@ import {
   syncPostUpdateReleaseNotesToWindow,
   syncReadyUpdateToWindow,
 } from "./autoUpdater.js";
-import { shouldSkipAutoUpdateCheckOnDarwinRelease } from "./autoUpdateAvailability.js";
 import { BroadcastHub } from "./broadcastHub.js";
 import { TaskRealtimeBus } from "./taskRealtimeBus.js";
 import { createAppLaunchGate } from "./appLaunchGate.js";
@@ -126,8 +131,7 @@ import {
   resolveExplicitStartupWorkspaceBootstrap,
 } from "./startupWorkspaceDeepLinkGate.js";
 import { createWebRemoteControlManager } from "./webRemoteControlManager.js";
-import { createNodeWebRemoteControlRelayAuthProvider } from "./webRemoteControlRelayAuthProvider.js";
-import { createWebRemoteControlRelayAuthStorageProvider } from "./webRemoteControlRelayAuthStorageProvider.js";
+import { createWebRemoteControlDeviceStorage } from "#src/main/web-remote-relay/index.js";
 import { createWebRemoteControlFeatureGate } from "./webRemoteControlFeatureGate.js";
 import { reconnectWebRemoteControlWorkspaceInRenderer } from "./webRemoteControlRendererReconnect.js";
 import { sendWebRemoteControlStatusChangedToWindow } from "./webRemoteControlStatusEvents.js";
@@ -171,7 +175,6 @@ import {
   resolveBundledGlmBinaryPath,
   resolveRemoteAssetDirs,
   resolveZCodeEndpointEnvBaseOrigin,
-  setRemoteAssetCdnBaseUrlSetting,
   desktopRuntimeEnv,
   runtimeApplicationName,
   runtimeHomePath,
@@ -217,10 +220,7 @@ import {
 } from "./resourceManagerWindow.js";
 import { createWebRemoteControlSharedHostAttachments } from "./webRemoteControlSharedHostAttachments.js";
 import { createDesktopHelpConfigReader } from "./desktopHelpConfig.js";
-import {
-  registerPlatformIpcHandlers,
-  type AppSettingsSyncPatch,
-} from "./desktopMainIpcPlatform.js";
+import { registerPlatformIpcHandlers } from "./desktopMainIpcPlatform.js";
 import {
   loadCliMcpFromUserDirectory,
   migrateLegacyCommonMcp,
@@ -776,7 +776,7 @@ const appTelemetryCore = createTelemetryCore({
   loadMarketingParams: createTelemetryMarketingParamsLoader(appTelemetryCredentialService),
   resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
   fetchImpl: createDesktopTelemetryFetch({
-    fetch: (input, init) => net.fetch(input.toString(), init as RequestInit | undefined),
+    fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
   }),
 });
 const appTelemetryRuntime = createAppTelemetryRuntime({
@@ -836,7 +836,11 @@ const remoteSessionManager = createRemoteWorkspaceSessionManager({
   webRemoteControlManagerRef,
 });
 
-const webRemoteControlAuthProvider = createNodeWebRemoteControlRelayAuthProvider();
+// 复用既有只读账号入口；HTTP 由 main 的 Node fetch 执行，不触发 host OAuth 登出。
+const loadRemoteControlUserId = createTelemetryUserIdLoader(webRemoteControlCredentialService);
+const loadRemoteControlAuthorization = createTelemetryAuthorizationLoader(
+  webRemoteControlCredentialService,
+);
 const webRemoteControlSharedHostAttachments = createWebRemoteControlSharedHostAttachments({
   windowHostProcessMap,
   attachRemoteWorkspaceSessionHost: remoteSessionManager.attachRemoteWorkspaceSessionHost,
@@ -847,6 +851,7 @@ const deviceMid = ensureDesktopDeviceMidSync();
 const readHelpConfig = createDesktopHelpConfigReader({
   appVersion: ZCODE_VERSION || app.getVersion(),
   deviceMid,
+  getClientLanguage: () => currentApplicationLocale,
   resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
 });
 // 同一个 /api/v1/client/configs fetcher 供两个灰度 rollout 共用（请求参数与鉴权完全一致，
@@ -854,6 +859,7 @@ const readHelpConfig = createDesktopHelpConfigReader({
 const electronClientConfigsFetcher = createElectronDesktopContextPromptConfigFetcher({
   appVersion: ZCODE_VERSION || app.getVersion(),
   deviceMid,
+  getClientLanguage: () => currentApplicationLocale,
   resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
 });
 desktopContextPromptRollout = createDesktopContextPromptRollout({
@@ -936,12 +942,16 @@ const webRemoteControlManager = createWebRemoteControlManager({
   deviceMid,
   deviceName: hostname(),
   appVersion: webRemoteControlAppVersion,
-  authProvider: webRemoteControlAuthProvider,
-  authStorageProvider: createWebRemoteControlRelayAuthStorageProvider({
-    credentialService: webRemoteControlCredentialService,
+  getLogin: async () => {
+    const userId = await loadRemoteControlUserId();
+    const authorization = await loadRemoteControlAuthorization(userId);
+    return authorization ? { userId, jwt: authorization.slice("Bearer ".length) } : undefined;
+  },
+  deviceStorage: createWebRemoteControlDeviceStorage({
+    deleteLegacyCredential: () =>
+      webRemoteControlCredentialService.delete("web-remote-control:external-relay:pass_hash"),
     loadSettings: () => mainSettingService.get(),
     patchSettings: (patch) => mainSettingService.update(patch),
-    logger,
   }),
   startupRestoreStorageProvider: {
     load: async () => (await mainSettingService.get()).webRemoteControlLastEnabledContext,
@@ -983,6 +993,20 @@ const webRemoteControlManager = createWebRemoteControlManager({
     migrateLegacyCommonMcp: (payload) => migrateLegacyCommonMcp(payload),
   },
   reconnectWorkspace: reconnectWebRemoteControlWorkspaceInRenderer,
+  prepareProjectWorkspace: async (windowId, project, requestId) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (!win || win.isDestroyed()) throw new Error("项目导航窗口已关闭");
+    return remoteSessionManager.prepareProjectWorkspace(win, project, requestId);
+  },
+  cancelProjectPreparation: (windowId, requestId) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (win && !win.isDestroyed())
+      remoteSessionManager.cancelPendingRemoteWorkspaceSessionsForWindow(
+        win.webContents.id,
+        "mobile-navigation-superseded",
+        requestId,
+      );
+  },
   reportRendererTelemetryEvent: (event) => {
     void appTelemetryCore.reportEvent(event).catch(() => {});
   },
@@ -1092,14 +1116,8 @@ function syncCloseToTrayOnWindows(value: unknown) {
   logger.info(`[settings] closeToTrayOnWindows=${value}`);
 }
 
-function syncImmediateAppSettings(patch: AppSettingsSyncPatch) {
+function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchema.parse>) {
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
-
-  if (patch.remoteAssetCdnBaseUrl !== undefined) {
-    // 设置页改自定义远程资产 CDN 基址：只刷新进程内缓存，**新建**的远程连接才会用到新值。
-    // 已建立的远程会话沿用旧基址（下载地址在连接时已确定），设置项文案已如实标注这一点。
-    setRemoteAssetCdnBaseUrlSetting(patch.remoteAssetCdnBaseUrl);
-  }
 
   if (typeof patch.keepAwakeWhileRunning === "boolean") {
     keepAwakeWhileRunning = patch.keepAwakeWhileRunning;
@@ -1890,6 +1908,9 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
           onAgentProcessSpawned: (event) => reportAgentProcessStartToArms(event, logger),
           onMcpTelemetry: (message) =>
             reportMcpTelemetryToArms(message.event, message.runtimeSurface),
+          onPluginTelemetry: (message) => {
+            void appTelemetryCore.reportEvent(message.event).catch(() => {});
+          },
           onSessionCreateTelemetry: (message) => {
             void appTelemetryCore.reportEvent(message.event).catch(() => {});
           },
@@ -1904,77 +1925,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
             const { requestId: _requestId, ...registerInput } = input;
             return host.registerFromHost(registerInput);
           },
-          // Bugfix: bot service 运行在本地窗口 host 内，/reconnect 必须能从本地 host 请求 main 创建远端 session。
-          handleBotRemoteWorkspaceReconnectRequest: async ({
-            win,
-            requestId,
-            workspacePath,
-            workspaceIdentity,
-            target,
-          }) => {
-            try {
-              const sessionId = await remoteSessionManager.reconnectBotRemoteWorkspaceSession(win, {
-                target,
-                workspacePath,
-                workspaceIdentity,
-                requestId,
-              });
-              if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
-                win.webContents.send(PlatformChannels.BotRemoteWorkspaceReconnected, {
-                  sessionId,
-                  workspacePath,
-                  workspaceIdentity,
-                  target,
-                });
-              }
-              return { ok: true, sessionId };
-            } catch (error) {
-              return {
-                ok: false,
-                error: error instanceof Error ? error.message : String(error),
-              };
-            }
-          },
-          handleBotRemoteWorkspaceConnectionStatusRequest: async ({
-            win,
-            target,
-            workspacePath,
-            workspaceIdentity,
-          }) => ({
-            ok: true,
-            // Bugfix: Bot 远端连接状态必须按 workspaceIdentity/workspacePath 精确隔离。
-            // 只按 SSH target 判断会把同一台机器上的其他目录误判为当前 workspace 已连接。
-            connected: remoteSessionManager.hasRemoteWorkspaceSessionForTarget(win, target, {
-              workspacePath,
-              workspaceIdentity,
-            }),
-          }),
-          handleBotRemoteWorkspaceRuntimePortRequest: async ({
-            win,
-            requestId,
-            workspacePath,
-            workspaceIdentity,
-            target,
-          }) => {
-            try {
-              const port = await remoteSessionManager.createBotRemoteWorkspaceRuntimePort(
-                win,
-                {
-                  target,
-                  workspacePath,
-                  workspaceIdentity,
-                },
-                requestId,
-              );
-              return { ok: true, port };
-            } catch (error) {
-              return {
-                ok: false,
-                error: error instanceof Error ? error.message : String(error),
-              };
-            }
-          },
-          // browser-use：main 用 WebContentsView+CDP 执行命令。
+          // browser-use：main 用 WebContentsView+CDP 执行命令（替换 T4 占位）。
           handleBrowserExecuteRequest: ({ win: browserWin, ...request }) =>
             runBrowserCommandOnView({ win: browserWin, ...request }),
         },
@@ -2016,6 +1967,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     // 已恢复 workspace 建立后台索引。始终注入 canonical fallback，才能覆盖非 active 历史目录已删除的情况。
     agentSpawnFallbackCwd: getConversationWorkspaceDir(),
     deviceMid,
+    remoteAssets: resolveRemoteAssetDirs({ locale: currentApplicationLocale }, hostProcessLocalEnv),
     runtimeProcessEnvPatchPromise: runtimeProcessEnvPreparation.patchPromise,
     runtimeProcessEnvFallbackPatch: runtimeProcessEnvPreparation.fallbackPatch,
     initialDesktopZoomLevel: currentDesktopZoomLevel,
@@ -2118,8 +2070,6 @@ app.whenReady().then(async () => {
       ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
       : {}),
   });
-  // Electron 的 net.request 只能在 app ready 后使用；灰度请求仍是旁路预热，不阻塞首个 Host。
-  void desktopContextPromptRollout?.refresh();
   installBrowserRestoreBootstrapProtocol(
     session.fromPartition(EMBEDDED_BROWSER_PARTITION).protocol,
   );
@@ -2135,9 +2085,6 @@ app.whenReady().then(async () => {
       loadedBootstrapLocale = true;
       currentApplicationLocale = bootstrapSettings.locale;
     }
-    // 自定义远程资产 CDN 基址（设置页）：与其它 AppSettings 字段同一处读取。
-    // 它有独立的进程内缓存，因为消费点 `resolveRemoteAssetDirs` 是同步接口。
-    setRemoteAssetCdnBaseUrlSetting(bootstrapSettings.remoteAssetCdnBaseUrl);
     // Linux 默认值归位迁移（spec：docs/desktop/linux-close-to-tray.md）：shared 迁移无平台
     // 概念、曾把存量 Linux 用户归为 true，但 Linux 此前无设置入口，存量 true 非用户显式
     // 选择；首次启动强制归位为默认关并落标记，之后尊重用户选择。
@@ -2208,6 +2155,10 @@ app.whenReady().then(async () => {
   if (!loadedBootstrapLocale) {
     currentApplicationLocale = resolveSystemApplicationLocale();
   }
+  // Electron 的 net.request 只能在 app ready 后使用；灰度请求仍是旁路预热，不阻塞首个 Host。
+  // 预热曾在读取持久化语言之前启动，X-Client-Language 会带默认语言并进入 1 小时缓存；
+  // 必须在 currentApplicationLocale 确定之后再启动。
+  void desktopContextPromptRollout?.refresh();
   installFinderOpenFolderWorkflow({
     platform: process.platform,
     locale: currentApplicationLocale,
@@ -2254,15 +2205,8 @@ app.whenReady().then(async () => {
   // Preview 身份无论连接哪个后端都不自动更新：stable feed 上只分发正式 ZCode 安装包，
   // 不向 Preview 渠道提供更新。构建期未启用自动更新时同样不更新
   // （见 docs/desktop/build-time-optional-capabilities.md）。
-  // CE 线增量（spec 136）：darwin 正式包（未签名、无 feed 覆盖）由调用点整体禁用
-  // 自动更新——确定性提示替代必失败的更新请求，引导 GitHub Releases 手动下载。
-  const darwinReleaseSkip = shouldSkipAutoUpdateCheckOnDarwinRelease({
-    platform: process.platform,
-    isPackaged: app.isPackaged,
-    updateFeedUrl: resolveUpdateFeedSourceFromStartupConfig()?.url,
-  });
   void initAutoUpdater({
-    enabled: ZCODE_PRODUCT_FLAVOR === "production" && !darwinReleaseSkip,
+    enabled: ZCODE_PRODUCT_FLAVOR === "production" && ZCODE_AUTO_UPDATE_ENABLED,
     onBeforeQuitAndInstall: async () => {
       notifyStabilityLifecycle("update_install");
       await prepareAppQuit("auto-update quitAndInstall", "update-install");
@@ -2321,6 +2265,10 @@ app.whenReady().then(async () => {
     const capability = await closeToTrayCapabilityMonitor.refresh();
     if (capability.supported) {
       desktopTrayReady = createDesktopTray({ ...desktopTrayOptions, platform: "linux" }) !== null;
+      // 托盘补建成功时回放当前未读数：创建前已有的未读不能等到下一次计数变化才出现在红点上。
+      if (desktopTrayReady) {
+        syncApplicationUnreadBadge(windowUnreadCountMap);
+      }
     }
   };
   if (process.platform === "linux") {
@@ -2340,8 +2288,8 @@ app.whenReady().then(async () => {
       }
       return result;
     },
-    updateBrowserGuestViewport: (tabId, viewport, windowId, desktopZoomFactor) =>
-      browserGuestManager.updateViewportFromRenderer(tabId, viewport, windowId, desktopZoomFactor),
+    updateBrowserGuestViewport: (tabId, viewport, windowId) =>
+      browserGuestManager.updateViewportFromRenderer(tabId, viewport, windowId),
     reportBrowserScreenshotSurfaceReady: (windowId, senderWebContentsId, payload) => {
       logger.debug("[browser-screenshot-surface] renderer ready", {
         windowId,
@@ -2370,6 +2318,10 @@ app.whenReady().then(async () => {
     },
     applyApplicationLocale: async (locale) => {
       currentApplicationLocale = locale;
+      // Host 的 ZCode endpoint 请求以此为实时语言；setting.json 写入可能滞后或失败，不能作为来源。
+      for (const child of windowHostProcessMap.values()) {
+        child.postMessage({ type: HostMessageTypes.ApplicationLocaleChanged, locale });
+      }
       windowsCuaOperationIndicator.refreshContent();
       rebuildMenu();
       for (const win of getApplicationWindowsExcludingCuaIndicator()) {
@@ -2419,9 +2371,6 @@ app.whenReady().then(async () => {
         taskRealtimeBus.updateHostWorkspaceKeys(hostId, workspaceKeys);
       }
     },
-    restorePreviouslyEnabledWebRemoteControl: (windowId, contexts) => {
-      void webRemoteControlManager.restorePreviouslyEnabled(windowId, contexts);
-    },
     getUpdateState: getAutoUpdaterState,
     openUpdateStatusWindow,
     getAutoUpdatePreferences,
@@ -2433,8 +2382,6 @@ app.whenReady().then(async () => {
       webRemoteControlManager.syncAvailableWorkspaces(windowId, workspaces);
       void webRemoteControlManager.restorePreviouslyEnabled(windowId, workspaces);
     },
-    syncWebRemoteControlTasks: (windowId, tasks) =>
-      webRemoteControlManager.syncAvailableTasks(windowId, tasks),
     syncAppSettings: syncImmediateAppSettings,
     // 设置页置灰查询：monitor 带 stale 缓存，装完 AppIndicator 扩展重开设置页即可刷新。
     // 设置页置灰查询：先确保托盘实例就绪（用户装扩展后首次查询会补建），再返回合并了
@@ -2485,6 +2432,28 @@ app.whenReady().then(async () => {
       remoteSessionManager.cancelPendingRemoteWorkspaceSessionsForWindow,
     bindRemoteWorkspaceSessionContext: remoteSessionManager.bindRemoteWorkspaceSessionContext,
     confirmRendererAttachmentReady: remoteSessionManager.confirmRendererAttachmentReady,
+    attachSourceSettings: (sender, sourceServerId) => {
+      const child = windowHostProcessMap.get(sender.id);
+      if (!child) throw new Error("Desktop Window Host is unavailable");
+      const { port1, port2 } = new MessageChannelMain();
+      const attachmentId = `source-settings-${randomUUID()}`;
+      child.postMessage(
+        {
+          type: HostMessageTypes.AttachServicePort,
+          requestId: randomUUID(),
+          attachmentId,
+          clientMode: "desktop-continuous",
+          scope: { kind: "source-settings", sourceServerId },
+        },
+        [port2],
+      );
+      sender.postMessage(
+        InternalChannels.SourceSettingsServicePort,
+        { attachmentId, sourceServerId },
+        [port1],
+      );
+      return { attachmentId };
+    },
     isDockerDaemonAvailable,
     listAvailableWSLDistros,
     listAvailableDockerContainers,
@@ -2524,38 +2493,6 @@ app.whenReady().then(async () => {
   registerDesktopResourceTelemetry(logger);
   // 主窗口 renderer 的 60 秒 heap 样本入口；随 App 生命周期常驻，只注册一次。
   registerRendererHeapSampleIpc();
-
-  // ── 本地 Web 服务（远程控制 Slice 1）─────────────────────────────────────────
-  // 生产者（随包 .cjs / 静态根 / pty.node + spawn / 探活 / 选端口 / 停 pid）全在
-  // web-service/runtime.ts；这里只做**接线与注册**：状态由编排器持有，main 不承载业务状态。
-  // 令牌只经 connectionInfo 的 linkWithToken 交付渲染进程；status/changed 的载荷不含令牌。
-  const webServiceRuntime = createWebServiceRuntime({
-    resourceRoot: process.resourcesPath,
-    ...(app.isPackaged ? {} : { fallbackRoot: app.getAppPath() }),
-    nodeExecPath: process.execPath,
-    childEnv: { ELECTRON_RUN_AS_NODE: "1" },
-    onChildOutput: (chunk, stream) => logger.info(`[web-service:${stream}] ${chunk.trimEnd()}`),
-  });
-  // 连接面（谁连着）：main 侧带上令牌去请求本机服务端的 HTTP 端点（spec §6.4）。
-  // 令牌不跨 IPC 边界 —— 只有结果（已由 remoteControlClient 逐字段重建）转给渲染进程。
-  const webServiceConnectionPlane = createWebServiceConnectionPlane({
-    status: () => webServiceRuntime.controller.status(),
-    tokenPath: webServiceRuntime.tokenPath,
-  });
-  registerWebServiceIpc({
-    ipcMain,
-    controller: webServiceRuntime.controller,
-    connectionPlane: webServiceConnectionPlane,
-    broadcast: (channel, payload) => {
-      for (const win of BrowserWindow.getAllWindows()) {
-        if (!win.isDestroyed()) {
-          win.webContents.send(channel, payload);
-        }
-      }
-    },
-    onError: (error, channel) => logger.error(`[web-service] ${channel} 失败`, error),
-});
-
   const defaultDataBaseDir = process.env.HOME?.trim() || homedir();
   registerDesktopZCodeDataSizeTelemetry({
     context: {
@@ -2575,22 +2512,32 @@ app.whenReady().then(async () => {
   });
   registerDesktopNetworkTelemetry(logger);
 
-  // 社区版**不执行**远端强制升级门（force-update gate）。
-  //
-  // 为什么禁用：该门读的是**官方** `/api/v1/client/configs` 的 `forceUpdate.minimalVersion`，
-  // 命中后会阻止创建主窗口并 `app.quit()` —— 失败模式是"应用完全打不开"。对社区版而言：
-  //   1. 官方下发的 `minimalVersion` 面向官方发行版，社区版未必有对应版本可升；
-  //   2. 版本号形态不同（`3.14.1-ce.1` 这类带预发布后缀），即使剥离后缀比较，也可能出现
-  //      "官方要求 ≥ 3.15.0 而社区版最新仍是 3.14.1-ce.N" 的窗口期，用户直接无法使用；
-  //   3. 社区版没有强制用户升级的正当性 —— 用户在自己的机器上使用，升级与否应由用户决定。
-  //
-  // 注意这**只禁用强更门**，不影响更新检查与下载：更新源已绑定本项目自己的 GitHub Release
-  // （见 `applyUpdateProvider`），用户可在帮助菜单里正常检查并升级。
-  //
-  // 保留 `maybeBlockStartupForForceUpdate` 与其调用形态不删：`forceUpdateGuard` 仍被远端配置
-  // 解析等路径引用，且将来若要做"社区版自己的强更策略"，这里是唯一接线点。
-  const forceUpdateGuardResult = { blocked: false } as const;
-  logger.info("[force-update] 社区版跳过远端强制升级检查");
+  // 本地未打包 dev 构建（app.isPackaged === false）必须跳过远端强制升级 gate。
+  // 原因：force-update gate 只看 ZCODE_ENV === "production"，但 dev 构建（如 dev:desktop:cua
+  // 连真实后端测 computer use）虽指向 production 后端，版本号却滞后于线上 release（feature
+  // 分支不 bump 版本），会被 release minimalVersion 误判为"需强制升级"而启动秒退。force-update
+  // 是面向打包发布客户端的安全门，对未打包 dev 运行时无意义。打包版 app.isPackaged === true，
+  // gate 照常生效，对真实用户零影响。
+  const skipForceUpdateForLocalDevRuntime = !app.isPackaged;
+  const forceUpdateGuardResult =
+    ZCODE_PRODUCT_FLAVOR === "production" && !skipForceUpdateForLocalDevRuntime
+      ? await maybeBlockStartupForForceUpdate({
+          locale: currentApplicationLocale,
+          logger,
+          endpointOrigin: await resolveCurrentZCodeEndpointOrigin(),
+          onBlocked: () => {
+            forceUpdateMainWindowCreationBlocked = true;
+          },
+        })
+      : { blocked: false };
+  if (ZCODE_PRODUCT_FLAVOR !== "production") {
+    logger.info("[force-update] Preview 跳过远端强制升级检查");
+  } else if (skipForceUpdateForLocalDevRuntime) {
+    logger.info("[force-update] 本地 dev 构建（未打包）跳过远端强制升级检查");
+  }
+  if (forceUpdateGuardResult.blocked) {
+    return;
+  }
 
   logger.info("[startup] 创建主窗口");
   await primaryWindowCoordinator.ensurePrimaryWindow("app-ready");
@@ -2612,7 +2559,7 @@ app.whenReady().then(async () => {
   });
 
   const protocolUrl = extractDeepLinkUrlFromArgs(process.argv);
-  if (startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
+  if (protocolUrl && startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
     handleDeepLink(protocolUrl, logger, {
       confirmationCopy: resolveExternalWorkspaceConfirmationCopy(),
       resolveApplicationWindow: () => getApplicationWindowsExcludingCuaIndicator()[0] ?? null,

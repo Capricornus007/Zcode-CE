@@ -6,7 +6,7 @@ import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
-import type { DangerousCommandPolicy } from "./dangerousCommands.js";
+import type { AppToolSearchMode } from "./app-runtime-preferences.js";
 
 // ── Domain types ──
 
@@ -180,6 +180,8 @@ export type RemoteTargetSnapshot =
 export interface RemoteWorkspaceSessionSnapshot {
   /** 远程 workspace 的真实绝对路径 */
   workspacePath: string;
+  /** 用户可见的 workspace 分类；旧远端快照缺失时按 project 兼容读取。 */
+  workspacePurpose?: WorkspacePurpose;
   /** 发起远程连接时的本机 workspace 路径，仅用于 MCP filesystem 路径改写。 */
   localWorkspacePath?: string;
   /** 远程 workspace 的稳定身份键（authority + canonicalPath）。 */
@@ -276,12 +278,6 @@ export interface AppSettings {
   /** 自定义 PEM 根证书路径；下次启动 app/agent 时用于 renderer 校验与 agent NODE_EXTRA_CA_CERTS。 */
   httpProxyCaCertPath?: string;
   /**
-   * GitHub 加速前缀，例如 https://ghfast.top/；为空时直连 GitHub（默认关闭，不替用户选镜像站）。
-   * 只作用于 GitHub 自有域名的请求（插件市场 zipball/clone、更新检查），非 GitHub 域名不受影响。
-   * 必须为 https 且不含用户名/口令/查询串，非法值在保存时被拒绝。格式要求见 docs/operations/github-mirror.md。
-   */
-  githubMirrorPrefix?: string;
-  /**
    * 内置浏览器忽略 HTTPS 证书校验错误（自签名、过期、域名不匹配等），用于访问内网测试站点。
    * 只影响内置浏览器出口，不影响 ZCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
    */
@@ -294,8 +290,10 @@ export interface AppSettings {
    * 关闭后按钮不再渲染，且不因重启或版本更新自愈，仅能在设置页重新开启。
    */
   computerUseComposerEntryHidden?: boolean;
-  /** 自动归档已完成旧任务的总开关 */
+  /** 自动归档旧会话的总开关 */
   taskAutoArchiveEnabled?: boolean;
+  /** 自动归档修复后的一次性关闭标记；只用于设置迁移，不参与归档判断。 */
+  taskAutoArchiveResetVersion?: 1;
   /** 自动归档阈值；当任务最后更新时间早于该天数时允许被归档 */
   taskAutoArchiveOlderThanDays?: number;
   /** 桌面端关闭窗口时隐藏到托盘驻留（Windows/Linux；spec：docs/desktop/linux-close-to-tray.md） */
@@ -356,8 +354,8 @@ export interface AppSettings {
   providerFamilyDomainMigrated?: boolean;
   /** 新建或冷恢复 Session 是否为 Bash 注入 bfs/ugrep 增强；默认启用。 */
   nativeSearchEnhancementsEnabled?: boolean;
-  /** 自适应思考档（experimental，默认关）：工具续跑步降一档。 */
-  adaptiveReasoningEnabled?: boolean;
+  /** 新建或冷恢复时读取；已有 Runtime 保持原策略。 */
+  toolSearchMode?: AppToolSearchMode;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */
   memoryEnabled?: boolean;
   onboardingOccupation?:
@@ -377,8 +375,31 @@ export interface AppSettings {
     | "other"
     | null;
   proactiveSuggestionsEnabled?: boolean;
-  /** 上次关闭时的完整 workspace 会话（含本地与远端 workspace） */
+  /** 新版只保存活动执行目录；不表达项目/连接成员，null 表示明确清空。 */
+  lastActiveWorkspace?: PersistedWorkspaceSessionEntry | null;
+  /** Host 从项目/本机入口派生，供旧版降级读取；新版不作为入口真相。 */
   lastWorkspaceSession?: PersistedWorkspaceSessionEntry[];
+  /** 每个 Source Server 已解析的 canonical conversation backing workspace。 */
+  remoteConversationWorkspaceBySourceServerId?: Record<
+    string,
+    {
+      workspacePath: string;
+      lastResolvedAt: number;
+    }
+  >;
+  /** R3 控制端已识别的 Source Server；运行态仍由远端 Server 权威提供。 */
+  sourceServers?: import("./source-server/contracts.js").SourceServerRecord[];
+  /** R3 到达 Source Server 的线路；只保存 credential key，不保存 secret。 */
+  connectionProfiles?: import("./source-server/contracts.js").ConnectionProfile[];
+  /** R3 workspace 打开历史；连接线路与 workspace 实体分离。 */
+  sourceServerWorkspaceHistory?: import("./source-server/contracts.js").SourceServerWorkspaceHistoryEntry[];
+  /** 桌面端启动时是否执行 Source Server 静默重连；缺失按 true 兼容旧设置。 */
+  remoteStartupAutoReconnectEnabled?: boolean;
+  sourceServerDirectoryMigrationVersion?: 1;
+  /** 旧客户端只接受 2；保留回滚兼容，新介绍不使用该字段判断已读。 */
+  remoteBoundaryOnboardingVersion?: 2;
+  /** 仅表示用户明确确认持续运行介绍。 */
+  remoteBoundaryIntroAcknowledgedVersion?: 1;
   /** 上次关闭时激活的 tab 索引 */
   lastActiveTabIndex?: number;
   /** 每个 workspace 的最后活跃 taskId，下次打开自动恢复 */
@@ -402,6 +423,12 @@ export interface AppSettings {
   /** 首次启动设置同步提示是否已消费；只表示弹窗不再出现，不代表导入成功。 */
   settingsSyncFirstRunPromptHandled?: boolean;
   /** 外部 Web 远控 relay 的非敏感设备身份；passHash 必须存 credentialService。 */
+  /** V2 非敏感注册身份；JWT 和一次性 token 不持久化于 AppSettings。 */
+  webRemoteControlRelayV2Device?: {
+    deviceSid: string;
+    userId: string;
+    endpointOrigin: string;
+  };
   webRemoteControlExternalRelayDevice?: {
     deviceSid: string;
   };
@@ -413,26 +440,4 @@ export interface AppSettings {
   };
   /** 设置页里的临时 endpoint override；正式/测试默认 base url 由 ZCODE_BASE_URL env 管理。 */
   zcodeEndpointOrigin?: string;
-  /**
-   * 「工具与权限」页的危险命令策略。**缺省即严格**（fail-safe 收紧，ce.2 起的行为变更）：
-   * 危险命令只能逐次确认，且此前落盘的授权规则不再放行（评估时撤销，见 dangerousCommands.ts）。
-   *
-   * 生效时机：**新建会话**。策略经 session 运行时偏好链路下发（与 nativeSearchEnhancementsEnabled
-   * 同一条路径），已运行的会话不重新读取——设置页据此如实标注。
-   */
-  dangerousCommandPolicy?: DangerousCommandPolicy;
-  /**
-   * 自定义远程资产 CDN 基址（**发布根**，不要带版本号）。
-   *
-   * 语义：留空/缺省 = 用默认（构建期基址 → 官方 CDN）；值按**字面值**当发布根使用，
-   * 不再追加任何路径段。优先级见
-   * `docs/development/remote-workspace.md` §3.1：运行期 env > 本设置 > 构建期基址 > 官方默认。
-   *
-   * **生效范围只有桌面端**：只有 desktop main 读它（`desktopRuntimeEnv.ts` → `remoteCdn.ts`
-   * 的 `overrideBaseUrl` 槽位）；Web / CLI 侧走的是另一条资产解析链，不读 AppSettings。
-   * 设置项在 Web 侧隐藏，正是为了不显示一个点了没用的开关。
-   *
-   * 生效时机：改动后**新建的远程连接**用新基址，已建立的会话沿用旧基址。
-   */
-  remoteAssetCdnBaseUrl?: string;
 }

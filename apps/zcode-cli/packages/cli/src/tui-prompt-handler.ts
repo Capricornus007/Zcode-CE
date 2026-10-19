@@ -1,3 +1,4 @@
+import type { ToolSearchMode } from "@zcode/contracts";
 import { getDefaultConfigPath, updateUiLocaleInFileConfig } from "@zcode/adapters/config";
 import type { SessionEvent } from "@zcode/contracts";
 import type { ZCodeAppOptions } from "@zcode/bootstrap";
@@ -57,6 +58,7 @@ export function createTuiSubmitPrompt(
   startupLocale: SupportedLocale = DEFAULT_LOCALE,
   toolDisallowlist?: readonly string[],
   forceMcs = false,
+  toolsearchMode: ToolSearchMode = "off",
   browserUse?: GlobalOptions["browserUse"],
   browserExecutable?: GlobalOptions["browserExecutable"],
 ): TuiPromptHandler {
@@ -145,6 +147,7 @@ export function createTuiSubmitPrompt(
     let createdApp: Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>>;
     try {
       createdApp = await createAppFactory({
+        modelSelectionMode: "cli-default",
         browserControlPort: browserRuntime?.browserControlPort,
         env: appEnv,
         projectConfigPath: deps.projectConfigPath,
@@ -159,6 +162,7 @@ export function createTuiSubmitPrompt(
         runtimeConfig: {
           ...(modeState.override ? { mode: modeState.override } : {}),
           ...(toolDisallowlist ? { toolDisallowlist } : {}),
+          toolSearch: { mode: toolsearchMode },
           ...(forceMcs ? { midConversationSystem: { mode: "force" as const } } : {}),
           modelStreaming: "on",
           titleGeneration: TUI_TITLE_GENERATION_CONFIG,

@@ -77,10 +77,10 @@ async function buildApplicationPathIndex(
   let cursor = 0;
   const worker = async () => {
     while (cursor < appPaths.length) {
-      const appPath = appPaths[cursor];
-      cursor += 1;
-      // 循环条件保证 cursor 一定小于长度；这里只是让 noUncheckedIndexedAccess 下的类型收窄。
-      if (appPath === undefined) return;
+      const appPath = appPaths[cursor++];
+      // Bug 原因：并发 worker 共享 cursor，数组下标在 noUncheckedIndexedAccess 下仍可能为空；
+      // 先收窄本轮路径，避免把 undefined 传给 plist 读取与索引。
+      if (!appPath) return;
       const remainingMs = deadline - dependencies.now();
       if (remainingMs <= 0) return;
       try {

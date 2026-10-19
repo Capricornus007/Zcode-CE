@@ -9,9 +9,7 @@ import { inspectConversationSessionFormalAdmission as inspect } from "../lib/con
 const temporaryRoots = [];
 
 after(async () => {
-  await Promise.all(
-    temporaryRoots.map((root) => rm(root, { force: true, recursive: true })),
-  );
+  await Promise.all(temporaryRoots.map((root) => rm(root, { force: true, recursive: true })));
 });
 
 async function makeRoot() {
@@ -49,11 +47,7 @@ function providerEntry(manifestRequest) {
   };
 }
 
-async function addFormalCase(
-  root,
-  caseName,
-  specSource = "it('runs', async () => {});\n",
-) {
+async function addFormalCase(root, caseName, specSource = "it('runs', async () => {});\n") {
   const defaultRequest = request(`${caseName}-request`);
   const defaultManifest = {
     version: 1,
@@ -71,18 +65,15 @@ async function addFormalCase(
     `packages/desktop/test/e2e/conversation-session/${caseName}.test.ts`,
     specSource,
   );
-  await writeJson(
-    root,
-    "packages/desktop/test/e2e/fixtures/upstream/common.json",
-    {
-      version: 1,
-      fixtures: [],
-    },
-  );
+  await writeJson(root, "packages/desktop/test/e2e/fixtures/upstream/common.json", {
+    version: 1,
+    fixtures: [],
+  });
   await writeJson(
     root,
     `packages/desktop/test/e2e/fixtures/upstream/conversation-session/${caseName}.json`,
-    { version: 1, fixtures: [providerEntry(defaultRequest)] },
+    // 准入新增身份校验后，合法夹具也须携带归属，避免无关拒绝掩盖本场景断言。
+    { version: 1, caseName, spec: defaultManifest.spec, fixtures: [providerEntry(defaultRequest)] },
   );
   await writeJson(
     root,
@@ -93,10 +84,9 @@ async function addFormalCase(
 }
 
 function codes(result, caseName) {
-  return (
-    result.formal.rejected.find((item) => item.caseName === caseName)
-      ?.reasons ?? []
-  ).map((reason) => reason.code);
+  return (result.formal.rejected.find((item) => item.caseName === caseName)?.reasons ?? []).map(
+    (reason) => reason.code,
+  );
 }
 
 test("rejects provider and static file symlinks that escape trusted roots", async (t) => {
@@ -115,8 +105,7 @@ test("rejects provider and static file symlinks that escape trusted roots", asyn
   }
   const provider = await addFormalCase(root, "provider-symlink-escape");
   await writeJson(root, "outside-provider.json", { version: 1, fixtures: [] });
-  const providerLink =
-    "packages/desktop/test/e2e/fixtures/upstream/provider-link.json";
+  const providerLink = "packages/desktop/test/e2e/fixtures/upstream/provider-link.json";
   await symlink(join(root, "outside-provider.json"), join(root, providerLink));
   await writeJson(
     root,
@@ -146,14 +135,8 @@ test("rejects provider and static file symlinks that escape trusted roots", asyn
 
   const result = await inspect(root);
 
-  assert.ok(
-    codes(result, "provider-symlink-escape").includes(
-      "UNSAFE_PROVIDER_FIXTURE_PATH",
-    ),
-  );
-  assert.ok(
-    codes(result, "static-symlink-escape").includes("UNSAFE_FILE_FIXTURE_PATH"),
-  );
+  assert.ok(codes(result, "provider-symlink-escape").includes("UNSAFE_PROVIDER_FIXTURE_PATH"));
+  assert.ok(codes(result, "static-symlink-escape").includes("UNSAFE_FILE_FIXTURE_PATH"));
 });
 
 test("requires providerRequestPolicy none for an empty case-local contract", async () => {
@@ -198,15 +181,10 @@ test("requires providerRequestPolicy none for an empty case-local contract", asy
 
   const result = await inspect(root);
 
+  assert.ok(codes(result, "implicit-empty-contract").includes("EMPTY_CASE_FIXTURE_WITHOUT_NONE"));
   assert.ok(
-    codes(result, "implicit-empty-contract").includes(
-      "EMPTY_CASE_FIXTURE_WITHOUT_NONE",
-    ),
-  );
-  assert.ok(
-    result.formal.admitted.some(
-      (item) => item.caseName === "explicit-empty-contract",
-    ),
+    result.formal.admitted.some((item) => item.caseName === "explicit-empty-contract"),
+    JSON.stringify(result.formal.rejected),
   );
 });
 
@@ -215,10 +193,7 @@ test("unwraps syntax-transparent AST wrappers around legacy prepare calls", asyn
   const cases = [
     ["parenthesized-call", "(prepareConversationE2E)();"],
     ["non-null-call", "prepareConversationE2E!();"],
-    [
-      "as-satisfies-call",
-      "((prepareConversationE2E as unknown) satisfies unknown)();",
-    ],
+    ["as-satisfies-call", "((prepareConversationE2E as unknown) satisfies unknown)();"],
   ];
   for (const [caseName, call] of cases) {
     await addFormalCase(

@@ -1,7 +1,6 @@
 import { SquareTerminalIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { ToolLayout } from "@/ToolCallBlocks/ToolLayout.js";
 import {
   ToolCallProgressIndicator,
@@ -48,6 +47,7 @@ function formatCompletedSummary(
 }
 
 export function ExecuteGroupToolCallBlock(context: ToolCallBlockRenderContext) {
+  const ToolCallBlock = context.nestedToolRenderer;
   const { intl } = useZCodeIntl();
   const { toolCallNode, isRunning, statusLabel, isOfficeMode = false } = context;
   const { toolCall, childToolCalls } = toolCallNode;

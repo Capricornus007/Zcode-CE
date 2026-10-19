@@ -61,3 +61,5 @@ export * from "./performance.js";
 export type { DiffHunk, GitDiff } from "./write.js";
 export * from "./fill-workflow-hole.js";
 export * from "./workflow-settings.js";
+export * from "./tool-search.js";
+export * from "./deferred-tool-call.js";

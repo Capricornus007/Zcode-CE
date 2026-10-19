@@ -98,6 +98,7 @@ export * from "./official-mcp-auth.js";
 export * from "./official-mcp-tool-error.js";
 export * from "./conversation-message-projection-policy.js";
 export * from "./conversation-share.js";
+export * from "./conversation-share-content.js";
 export * from "./conversation-preview-artifacts.js";
 export * from "./zcode-session-task-status.js";
 export * from "./zcode-session-content-profile.js";
@@ -115,6 +116,7 @@ export * from "./dynamic-workflow-feature.js";
 export * from "./markdown-artifact-images.js";
 export * from "./serviceAuthority.js";
 export * from "./server-remote.js";
+export * from "./source-server/index.js";
 
 export interface ICredentialStore {
   get(key: string): Promise<string | null>;
@@ -122,7 +124,6 @@ export interface ICredentialStore {
   delete(key: string): Promise<void>;
 }
 
-export * from "./test-ids.js";
 export * from "./test-ids-workflow.js";
 export * from "./channels.js";
 export * from "./storage.js";
@@ -144,40 +145,24 @@ export {
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
 } from "./platform.js";
-// ---- CE 线增量：桌面窗口装饰面（DesktopZoomState 等定义在 platform.ts 中段，desktop preload 消费）----
-export type {
-  BrowserViewSurfaceScaleMode,
-  DesktopZoomState,
-  WindowControlsOverlayMetrics,
-  WindowControlsOverlayReadyPayload,
-} from "./platform.js";
-// ---- CE 线增量：Web 服务/远程控制面（类型定义在 platform.ts 尾段）----
-export type {
-  WebServiceStatusState,
-  WebServiceStatusStaleReason,
-  WebServiceStatusErrorCode,
-  WebServiceStatusPayload,
-  WebServiceConnectionInfoPayload,
-  RemoteControlConnectionRole,
-  RemoteControlConnection,
-  RemoteControlConnectionsPayload,
-  RemoteControlRevokeRequest,
-  RemoteControlRevokeResult,
-  RemoteControlRotateTokenResult,
-} from "./platform.js";
 export type {
   ArmsCustomEventPayload,
   ConfigureFinalArmsCustomEventE2ERequest,
   FinalArmsCustomEventE2EEntry,
   FinalArmsCustomEventPayload,
+  MobilePluginDiscoveryTelemetry,
   RendererTelemetryEventPayload,
   TelemetryEventPayload,
   TelemetryRendererContext,
 } from "./telemetry.js";
 export {
+  PLUGIN_TELEMETRY_EVENTS,
+  mobilePluginDiscoveryTelemetrySchema,
+  sanitizePluginTelemetryDetail,
   collectTelemetryRendererContext,
   resolveSafeTelemetryHostname,
   sanitizeTelemetryErrorMessage,
+  sanitizeTelemetrySkillName,
   sanitizeTelemetryEventDetail,
 } from "./telemetry.js";
 export type {
@@ -199,9 +184,11 @@ export * from "./sessionCreateTelemetry.js";
 export type { LaunchMarks } from "./launchMarks.js";
 export { LAUNCH_MARKS_QUERY_KEY, parseLaunchMarks, serializeLaunchMarks } from "./launchMarks.js";
 export type {
+  BrowserViewSurfaceScaleMode,
   CancelPendingRemoteConnectionRequest,
   BindRemoteWorkspaceSessionContextRequest,
-  BotRemoteWorkspaceReconnectedEvent,
+  BindRemoteWorkspaceSessionContextIpcResult,
+  BindRemoteWorkspaceSessionContextResult,
   BrowserTabResidencyState,
   BrowserViewCloseTabNotification,
   BrowserViewCloseTabRequest,
@@ -253,12 +240,14 @@ export type {
   PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
+  RemoteSessionReconnectedEvent,
   RemoteServiceSession,
   SSHConfigAliasOption,
   TaskNotificationPayload,
   UpdateCheckResultPayload,
   UpdateStatePayload,
   WSLDistro,
+  WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
 } from "./platform.js";
 export type {
@@ -315,7 +304,8 @@ export * from "./streaming-tool-input-preview.js";
 export * from "./tool-plan-adapter.js";
 export * from "./permission-request-preview.js";
 export * from "./web-remote-control.js";
-export * from "./web-remote-control-heartbeat.js";
+export * from "#src/web-remote-relay/index.js";
+
 export * from "./web-remote-control-rpc-transport.js";
 export * from "./settings-sync.js";
 export * from "./uuid.js";
@@ -381,20 +371,4 @@ export {
 } from "./request-security-edition/policy.js";
 export * from "./request-security-edition/verification-policy.js";
 
-// ---- CE 线增量导出（整版升级移植保留面）----
-export * from "./dangerousCommands.js";
-export { resolveSafeEndpointHostname } from "./endpointHostname.js";
-export * from "./githubMirror.js";
-// ManualClaim* 由 manual-claim-plan.ts 权威导出；此处显式排除避免 export * 歧义（TS2308）。
-export type {
-  ManualClaimPlanPreview,
-  ManualClaimPlanClaimRequest,
-  ManualClaimPlanEntitlement,
-} from "./manual-claim-plan.js";
-export * from "./manual-claim-plan.js";
-export * from "./model-catalog.js";
-export * from "./remoteAssetCdn.js";
-export type { SessionCreateSource } from "./sessionCreateSource.js";
-export * from "./workspace-registry.js";
-export * from "./qimen-pan.js";
-export * from "./liuren-pan.js";
+export * from "./conversation-share-tool-presentation.js";

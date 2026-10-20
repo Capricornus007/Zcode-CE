@@ -1,4 +1,5 @@
 import { requestVerificationReasons } from "../request-security-edition/verification-policy.js";
+import { MCP_SERVER_MAX_DISABLED_TOOLS } from "../mcpDisabledTools.js";
 import { zcodeProtocolTraceSchema } from "./trace.js";
 // Bot 反向回复的名字解析/待澄清结果与 App、CLI 使用同一严格 schema。
 export { channelReplyRequestSchema, channelReplyResultSchema } from "../channel-mention.js";
@@ -83,7 +84,10 @@ import {
 import { browserClientModeSchema, browserCommandSchema } from "../browser-use/commands.js";
 import { browserCommandResultSchema } from "../browser-use/result.js";
 import { appToolSearchModeSchema } from "../app-runtime-preferences.js";
-import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
+import {
+  dangerousCommandPolicySchema,
+  integratedTerminalShellSelectionSchema,
+} from "../validationAppSettings.js";
 import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
 import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
 import {
@@ -759,6 +763,10 @@ export const zcodeProtocolMcpServerSchema = z.union([
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
       alwaysLoad: z.boolean().optional(),
+      // CE 线增量：工具级启停（disabledTools）必须走 wire——server.config 要原样下发
+      // 给 agent；本 schema 是 .strict() 的，漏声明该键会在协议校验阶段判非法。
+      // 上限唯一所有者是 ../mcpDisabledTools.js，wire 边界与配置边界必须同一个数。
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -772,6 +780,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
       alwaysLoad: z.boolean().optional(),
+      disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -2085,6 +2094,10 @@ export const zcodeSessionRuntimePreferencesResultSchema = z
     additionalDirectories: z.array(nonEmptyString).max(256).optional(),
     nativeSearchEnhancementsEnabled: z.boolean(),
     toolSearchMode: appToolSearchModeSchema.default("off"),
+    // CE 线增量（3.16.1 合并重植）：自适应思考档与危险命令策略要经 wire 下发——
+    // 本 schema 是 .strict() 的，漏声明会在协议校验阶段整条丢弃。
+    adaptiveReasoningEnabled: z.boolean().optional(),
+    dangerousCommandPolicy: dangerousCommandPolicySchema.optional(),
     subagentRuntimeConfigEnabled: z.boolean().optional(),
     memoryEnabled: z.boolean().default(false),
     askUserQuestionAutoResolutionEnabled: z.boolean().default(true),

@@ -11,6 +11,12 @@ import { ZCODE_ENABLED_AGENT_PROVIDERS } from "./zcode-agent-policy.js";
 import { DYNAMIC_WORKFLOW_MODES } from "./dynamic-workflow-feature.js";
 import { normalizeZCodeEndpointOrigin } from "./zcodeEndpoint.js";
 import {
+  MAX_CUSTOM_DANGEROUS_ENTRIES,
+  MAX_DANGEROUS_PATTERN_LENGTH,
+  normalizeDangerousPattern,
+} from "./dangerousCommands.js";
+
+import {
   DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
   embeddedBrowserViewportPreferenceSchema,
 } from "./browser-use/command-metadata.js";
@@ -72,6 +78,38 @@ const enabledBuiltinAgentCliProvidersSchema = z
   .array(z.enum(["claude", "opencode", "gemini", "codex", "glm"]))
   .transform(() => [...ZCODE_ENABLED_AGENT_PROVIDERS]);
 const providerFamilyDomainSchema = z.enum(["zai", "bigmodel"]);
+
+/**
+ * 危险命令清单的用户偏差。三项都是可选的：**缺席即默认**（严格 + 默认项全开），
+ * 所以老配置不需要任何迁移（AGENTS.md：取"关闭态"而非"开启态"字段可省迁移）。
+ *
+ * pattern 用 normalizeDangerousPattern 归一：非法（空、过长、含 shell 元字符）直接拒绝，
+ * 而不是静默存下一条永远匹配不上的项 —— 静默失效是唯一不被允许的。
+ */
+const dangerousCommandCustomEntrySchema = z.object({
+  pattern: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_DANGEROUS_PATTERN_LENGTH)
+    .refine((value) => normalizeDangerousPattern(value) !== undefined, {
+      message: "Dangerous command pattern must be an executable name or a plain command prefix",
+    }),
+  enabled: z.boolean().optional(),
+});
+
+export const dangerousCommandPolicySchema = z
+  .object({
+    allowPersistentAuthorization: z.boolean().optional(),
+    disabledEntries: z.array(z.string().trim().min(1)).max(64).optional(),
+    customEntries: z
+      .array(dangerousCommandCustomEntrySchema)
+      .max(MAX_CUSTOM_DANGEROUS_ENTRIES)
+      .optional(),
+  })
+  .strict();
+
+export type DangerousCommandPolicyInput = z.infer<typeof dangerousCommandPolicySchema>;
 
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,

@@ -100,6 +100,8 @@ export function maybeLocalMicrocompactMessages<T extends LocalMicrocompactMessag
   config?: LocalMicrocompactPolicyConfig;
   lastAssistantCompletedAtMs?: number;
   messages: readonly T[];
+  /** 上游 3.16.1：历史条目缺 toolName 时由 sourceEntries 还原权威工具身份（候选分类用）。 */
+  resolveToolResultName?: (message: T, index: number) => string | undefined;
   nowMs?: number;
 }): LocalMicrocompactResult<T> {
   const config = input.config ?? {};
@@ -128,7 +130,11 @@ export function maybeLocalMicrocompactMessages<T extends LocalMicrocompactMessag
     };
   }
 
-  const candidateGroups = collectCompactableToolResultGroups(messages, config);
+  const candidateGroups = collectCompactableToolResultGroups(
+    messages,
+    config,
+    input.resolveToolResultName,
+  );
   const preservedExcerptTools = new Set(
     config.preservedExcerptToolNames ?? DEFAULT_PRESERVED_EXCERPT_TOOL_NAMES,
   );
@@ -221,6 +227,7 @@ function resolveMicrocompactTrigger(input: {
 function collectCompactableToolResultGroups<T extends LocalMicrocompactMessage>(
   messages: readonly T[],
   config: LocalMicrocompactPolicyConfig,
+  resolveToolResultName?: (message: T, index: number) => string | undefined,
 ): ToolResultCandidate[][] {
   const compactableTools = new Set(
     config.compactableToolNames ?? DEFAULT_MICROCOMPACT_COMPACTABLE_TOOLS,
@@ -245,7 +252,9 @@ function collectCompactableToolResultGroups<T extends LocalMicrocompactMessage>(
 
     if (message.role !== "tool") return;
     if (!message.toolCallId || !message.toolName) return;
-    if (!compactableTools.has(message.toolName)) return;
+    const toolName = resolveToolResultName ? resolveToolResultName(message, index) : message.toolName;
+    if (!toolName) return;
+    if (!compactableTools.has(toolName)) return;
     if (message.isError && !clearErrorResults) return;
     if (isMicrocompactClearedToolResultContent(message.content)) return;
     if (hasMediaToolResultContent(message.content)) return;

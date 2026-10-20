@@ -75,7 +75,6 @@ import { evalWorkflowSnippetToolEntry } from "./eval-workflow-snippet.js";
 import { listWorkflowRunsToolEntry } from "./list-workflow-runs.js";
 import { getWorkflowRunToolEntry } from "./get-workflow-run.js";
 import { resumeWorkflowRunToolEntry } from "./resume-workflow-run.js";
-import { toolSearchToolEntry } from "./tool-search.js";
 // import { workflowToolEntry } from "./workflow.js";
 import { createToolRuleNameSet } from "../tool-visibility.js";
 

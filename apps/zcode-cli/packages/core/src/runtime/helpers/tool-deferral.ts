@@ -1,6 +1,6 @@
 import type { ModelToolContract } from "@zcode/contracts";
 import type { AgentRuntimeInternal } from "../internal.js";
-import { TOOL_SEARCH_TOOL_NAME } from "../../tool/handlers/tool-search.js";
+import { TOOL_SEARCH_NAME } from "@zcode/contracts";
 
 /**
  * 工具暴露分级与延迟发现（吸收 earendil-works/pi tool_search + exposure 设计，
@@ -50,8 +50,8 @@ export function resolveToolDeferralPlan(
   runtime: Pick<AgentRuntimeInternal, "config" | "registry" | "activatedDeferredToolNames">,
   contracts: readonly ModelToolContract[],
 ): ToolDeferralPlan {
-  const toolSearch = contracts.find((contract) => contract.name === TOOL_SEARCH_TOOL_NAME);
-  const candidates = contracts.filter((contract) => contract.name !== TOOL_SEARCH_TOOL_NAME);
+  const toolSearch = contracts.find((contract) => contract.name === TOOL_SEARCH_NAME);
+  const candidates = contracts.filter((contract) => contract.name !== TOOL_SEARCH_NAME);
   if (!toolSearch) {
     // 没有 ToolSearch 时降级等于永久不可达——绝不降级。
     return { declared: [...candidates], deferred: [], active: false };

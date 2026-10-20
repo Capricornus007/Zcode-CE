@@ -1,5 +1,5 @@
 import type { ToolSearchExecutionContext, ToolSearchMode } from "@zcode/contracts";
-import type { RequestVerificationReason } from "@zcode/shared";
+import type { DangerousCommandPolicy, RequestVerificationReason } from "@zcode/shared";
 import type { GetAgentDefinitions, LoadAgentDefinitions } from "../subagent/definitions.js";
 import type { RuntimeInputPresentation, TurnExecutionModelFallbackReason } from "@zcode/contracts";
 /* eslint-disable max-lines -- Runtime 类型集中承载 core/runtime 对外结构，拆分需要单独迁移。 */
@@ -138,6 +138,13 @@ export interface AgentRuntimeConfig {
   maxTurns?: number;
   permissionTimeoutMs?: number;
   compact?: AutoCompactPolicyConfig;
+  /** CE 线增量（experimental）：自适应思考档——工具续跑步自动降一档。缺省=关。 */
+  adaptiveReasoning?: { enabled?: boolean };
+  /** 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
+  /** CE 线增量（experimental）：缓存保活器——会话空闲超阈值时发同前缀迷你请求刷新
+   * provider 侧 prompt cache，消除长空档后下一请求的预填充跳升。默认关。 */
+  cacheKeepAlive?: { enabled?: boolean; idleThresholdMs?: number };
   targetCompletionVerification?: { enabled?: boolean };
   midConversationSystem?: {
     mode?: "auto" | "force";
@@ -174,6 +181,12 @@ export interface AgentRuntimeConfig {
     browserUse?: boolean;
     /** 是否把 CUA broker 凭据注入共享 node_repl；不代表注册独立 CUA MCP。 */
     computerUse?: boolean;
+    /**
+     * 工具声明面预算（吸收 pi tool_search 的 exposure 分级）：超过该数量的可见工具
+     * 会被降级为 deferred（不声明给模型），由 ToolSearch 按需发现激活。缺省 48，
+     * 环境变量 ZCODE_TOOL_DECLARATION_BUDGET 可覆盖；<2 视为未配置。
+     */
+    toolDeclarationBudget?: number;
     /**
      * 官方 browser-use plugin 的 docs 资产目录。由 bootstrap 从 plugin metadata.rootPath 推导，
      * 不属于 plugin manifest schema。

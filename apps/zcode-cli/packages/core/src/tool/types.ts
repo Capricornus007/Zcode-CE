@@ -1,3 +1,4 @@
+import type { ToolSearchExecutionContext, ModelCallWrapper } from "@zcode/contracts";
 import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 // ============================================================
@@ -70,6 +71,10 @@ import type {
 // -----------------------------------------------
 
 export interface ToolMetadata {
+  // CE 合并（3.16.1）：上游 ToolSearch 延迟发现契约字段（曝光分级据此判定）。
+  shouldDefer?: boolean;
+  alwaysLoad?: boolean;
+  searchHint?: string;
   name: string;
   description?: string;
   modelInstructions?: readonly string[];
@@ -180,6 +185,8 @@ export interface ToolExecutionContext {
   parentSpanId?: string;
   abortSignal: AbortSignal;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  /** 上游 3.16.1 ToolSearch 执行上下文（native/local 模式与 announcement 持久化用）。 */
+  toolSearch?: ToolSearchExecutionContext;
   /** 延迟工具发现端口（ToolSearch）；runtime 装配，缺席时 handler 诚实失败。 */
   toolSearchControlPort?: ToolSearchControlPort;
   /** 知识卡检索端口（KbSearch）；runtime 装配，缺席时 handler 诚实失败。 */
@@ -542,6 +549,9 @@ export interface ToolBatchResult {
 // -----------------------------------------------
 
 export interface ExecutableToolCall {
+  /** CE 合并（3.16.1）：DeferredToolCall 包装标记——原始目标参数只保存一份，
+   * 执行/Hook 可修改的对象在执行入口独立克隆（见 executor/call-runner.ts）。 */
+  modelCallWrapper?: ModelCallWrapper;
   id: string;
   name: string;
   input: unknown;

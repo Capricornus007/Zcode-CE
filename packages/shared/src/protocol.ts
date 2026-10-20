@@ -282,6 +282,10 @@ export interface AppSettings {
    * 只影响内置浏览器出口，不影响 ZCode 自身对后端与模型 API 的请求。默认关闭，重启后生效。
    */
   embeddedBrowserAllowInsecureCertificates?: boolean;
+  /** CE：GitHub 加速前缀（插件/资产下载走镜像）；空 = 直连。校验见 validationAppSettings。 */
+  githubMirrorPrefix?: string;
+  /** CE：自定义远程资产 CDN 基址（发布根，可带子路径）；空 = 用内置默认。 */
+  remoteAssetCdnBaseUrl?: string;
   /** 人类用户主动打开 Browser tab 时的一次性显示偏好；Agent Browser Use 不读写。 */
   embeddedBrowserViewportPreference?: EmbeddedBrowserViewportPreference;
   /**

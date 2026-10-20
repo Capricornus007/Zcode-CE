@@ -22,6 +22,12 @@ export function createDesktopPlatform(options: {
       window.zcode.materializeWorkflowArtifactFile(payload),
     onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
     onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+    // ---- CE 重植（3.16.1 合并）：本地 Web 服务（远程控制）服务面五条。
+    getWebServiceStatus: () => window.zcode.getWebServiceStatus(),
+    startWebService: (options) => window.zcode.startWebService(options),
+    stopWebService: () => window.zcode.stopWebService(),
+    getWebServiceConnectionInfo: () => window.zcode.getWebServiceConnectionInfo(),
+    onWebServiceChanged: (handler) => window.zcode.onWebServiceChanged(handler),
     // Source 自动重连会替换 logical session；统一由 preload bridge 转发换代事件。
     onRemoteSessionReconnected: (handler) =>
       window.zcode.onRemoteSessionReconnected?.(handler) ?? (() => {}),

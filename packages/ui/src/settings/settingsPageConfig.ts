@@ -234,3 +234,16 @@ export function resolveSettingsSectionForPlatform(
 }
 
 export type { SettingsSectionId };
+
+// ---- CE 重植（3.16.1 合并）：上游 3.16.1 新增的两个派生出口（settingsPageHelpers 消费）。
+export const SETTINGS_SECTION_GROUPS = BASE_SETTINGS_SECTION_GROUPS.map((group) => ({
+  ...group,
+  sections: SETTINGS_SECTIONS.filter((section) => section.groupId === group.id),
+})).filter((group) => group.sections.length > 0);
+
+export function isSettingsSectionAvailable(
+  section: SettingsSectionId,
+  isDesktop: boolean,
+): boolean {
+  return isDesktop || section !== "remoteDevices";
+}

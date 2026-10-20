@@ -372,3 +372,50 @@ export {
 export * from "./request-security-edition/verification-policy.js";
 
 export * from "./conversation-share-tool-presentation.js";
+
+// ---- CE 重植（3.16.1 整版合并）：index 取上游版时被冲掉的 CE 模块出口 ----
+// 原则：CE 专属模块补回根出口；与上游已有模块重名的符号用显式名单（显式出口优先于
+// export *，可消 TS2308 歧义），platform 不能整模块 export *（RemoteWorkspaceConnectTrigger
+// 同时由 remoteUsageTelemetry 导出）。
+export * from "./qimen-pan.js";
+export * from "./liuren-pan.js";
+export * from "./dangerousCommands.js";
+export * from "./test-ids.js";
+export * from "./githubMirror.js";
+export * from "./model-catalog.js";
+export * from "./workspace-registry.js";
+// remoteAssetCdn 是 CE 的 CDN 覆写模块（RemoteAssetsSetting/desktopRuntimeEnv 消费）。
+export * from "./remoteAssetCdn.js";
+// manual-claim：上游 3.16.1 在 coding-plan-subscription 里原生化了同名类型（无 endsAt/
+// ClaimOutcome/parseManualClaimPlanPreviews 等扩展），CE 扩展按显式名单出口压过 star 歧义。
+export type { ManualClaimPlanPreview } from "./manual-claim-plan.js";
+export {
+  MANUAL_CLAIM_CAPTCHA_CONFIG_UNAVAILABLE,
+  MANUAL_CLAIM_CAPTCHA_DISABLED,
+  MANUAL_CLAIM_CAPTCHA_SOLVER_UNAVAILABLE,
+  MANUAL_CLAIM_FAILURE_MESSAGE_KEYS,
+  classifyManualClaimCode,
+  parseManualClaimPlanPreviews,
+  pickManualClaimPlan,
+} from "./manual-claim-plan.js";
+export type {
+  ManualClaimCaptchaConfig,
+  ManualClaimCaptchaSolution,
+  ManualClaimPlanClaimOutcome,
+} from "./manual-claim-plan.js";
+// platform：CE 自托管 Web 服务/远程控制面 + 桌面缩放，按名单出口。
+export type {
+  DesktopZoomState,
+  RemoteControlConnection,
+  RemoteControlConnectionRole,
+  RemoteControlConnectionsPayload,
+  RemoteControlRevokeRequest,
+  RemoteControlRevokeResult,
+  RemoteControlRotateTokenResult,
+  WebServiceConnectionInfoPayload,
+  WebServiceStatusErrorCode,
+  WebServiceStatusPayload,
+  WebServiceStatusStaleReason,
+  WebServiceStatusState,
+  WindowControlsOverlayMetrics,
+} from "./platform.js";

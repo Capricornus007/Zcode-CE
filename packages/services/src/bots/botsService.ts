@@ -41,6 +41,10 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { IDisposable } from "@zcode/rpc";
+// CE 合并（3.16.1）：BotRemoteWorkspaceService 改派生自上游 runtime 契约，见下方类型块。
+import type { BotRemoteRuntimeService } from "#src/bot-project-runtime/contract.js";
+import type { IProjectService } from "#src/project/index.js";
+import type { IRemoteProjectService } from "#src/remote-projects/contract.js";
 import { completeNewModelSelection } from "@zcode/provider";
 import {
   ALL_BOT_WORKSPACES,
@@ -322,6 +326,12 @@ interface BotsServiceDeps {
   modelSelectionService: Pick<IModelSelectionService, "getView">;
   remoteWorkspaceService?: BotRemoteWorkspaceService;
   repo?: BotsRepo;
+  ownerHostId?: string;
+  // CE 合并（3.16.1）：上游接线注入的 project 绑定出口；CE 版 bots 尚未消费 project 绑定
+  // （上游 3.16.1 的 bot×project 关联是未跟进项，见 upstream-sync 台账），先收下保持
+  // node.ts 装配形状兼容，后续跟进上游功能时启用。
+  projectService?: Pick<IProjectService, "readProjects" | "readTree" | "prepareSession">;
+  remoteProjectService?: Pick<IRemoteProjectService, "readDirectory">;
   // 修复原因：desktop-attached 远端启动阶段不应抢跑 bot 轮询、runtime lock 和模型候选缓存；
   // 这些后台任务属于本地桌面 host，不属于 SSH/Docker 远端首屏连接路径。
   runStartupBackgroundTasks?: boolean;
@@ -332,19 +342,20 @@ interface BotRemoteWorkspaceTarget {
   workspaceIdentity: string;
 }
 
-interface BotRemoteWorkspaceReconnectResult {
-  ok: boolean;
-  message?: string;
-}
+// ---- CE 合并（3.16.1）：接口改由上游 BotRemoteRuntimeService 派生（与上游 botsService 同一
+// 写法）。CE 版原是手写五成员；上游 3.16.1 给接线新增了 resolveWorkspace 通道，手写清单
+// 不再与 node.ts 的 spread 赋值兼容，改为派生以自动跟随 contract 演化。
+type BotRemoteWorkspaceReconnectResult = Awaited<
+  ReturnType<BotRemoteRuntimeService["ensureConnected"]>
+>;
 
-interface BotRemoteWorkspaceService {
-  isConnected(target: BotRemoteWorkspaceTarget): Promise<boolean>;
-  ensureConnected(target: BotRemoteWorkspaceTarget): Promise<BotRemoteWorkspaceReconnectResult>;
-  getZCodeTaskService?(target: BotRemoteWorkspaceTarget): Promise<IZCodeTaskService | null>;
-  getModelSelectionService?(
-    target: BotRemoteWorkspaceTarget,
-  ): Promise<Pick<IModelSelectionService, "getView"> | null>;
-  syncAppRuntimePreferences?(preferences: ZCodeAgentAppRuntimePreferences): Promise<void>;
+interface BotRemoteWorkspaceService
+  extends Pick<BotRemoteRuntimeService, "isConnected" | "ensureConnected">,
+    Partial<Omit<BotRemoteRuntimeService, "isConnected" | "ensureConnected">> {
+  resolveWorkspace?: (target: {
+    workspacePath: string;
+    workspaceIdentity: string;
+  }) => Promise<{ workspacePath: string; workspaceIdentity: string } | null>;
 }
 
 interface PreparedTopicMessage {

@@ -2,6 +2,8 @@
 import { z } from "zod";
 import { appToolSearchModeSchema } from "./app-runtime-preferences.js";
 import type { AppSettings } from "./protocol.js";
+import { resolveGithubMirrorPrefix } from "./githubMirror.js";
+import { normalizeRemoteAssetCdnBaseUrl } from "./remoteAssetCdn.js";
 import { REMOTE_ASSET_INSTALL_MODES } from "./remoteAssetInstallMode.js";
 import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
 import { wslUserSchema } from "./wslUserValidation.js";
@@ -517,6 +519,30 @@ const appSettingsObjectSchema = z.object({
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.default(
     DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
   ),
+  // ---- CE 重植（3.16.1 合并）：GitHub 加速前缀与远程资产 CDN 基址 ----
+  // 加速前缀默认关闭（空值 = 直连）。只校验形状：非空必须通过 resolveGithubMirrorPrefix 的
+  // https/无凭据/无查询串约束，避免手改 setting.json 写入明文前缀后让插件下载落到 http 链路。
+  githubMirrorPrefix: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || resolveGithubMirrorPrefix(value).prefix !== undefined,
+      "GitHub mirror prefix must be an https URL without credentials, query or fragment",
+    )
+    .optional(),
+  // 自定义远程资产 CDN 基址（发布根）：schema 是唯一拦得住「绕开 UI 写入取不到资源的基址」
+  // 的位置；transform 归一化（去空白与尾斜杠、保留子路径），`empty` 按未设置落盘（留空 = 默认）。
+  remoteAssetCdnBaseUrl: z.string().transform((value, ctx) => {
+    const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+    if (normalized.kind === "invalid") {
+      ctx.addIssue({
+        code: "custom",
+        message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+      });
+      return z.NEVER;
+    }
+    return normalized.kind === "valid" ? normalized.value : "";
+  }).optional(),
   // 输入框电脑操作入口改为默认不展示，设置项保留、默认关闭。
   // default 只对缺省字段生效，显式存过 false 的用户仍保持展示。
   computerUseComposerEntryHidden: z.boolean().default(true),
@@ -617,6 +643,26 @@ export const appSettingsPatchSchema = z.object({
   httpProxyCaCertPath: nonEmptyStringSchema.optional(),
   embeddedBrowserAllowInsecureCertificates: z.boolean().optional(),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.optional(),
+  // CE（3.16.1 合并重植）：与主 schema 同形的两个 CE 字段的 Partial 形态。
+  githubMirrorPrefix: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || resolveGithubMirrorPrefix(value).prefix !== undefined,
+      "GitHub mirror prefix must be an https URL without credentials, query or fragment",
+    )
+    .optional(),
+  remoteAssetCdnBaseUrl: z.string().transform((value, ctx) => {
+    const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+    if (normalized.kind === "invalid") {
+      ctx.addIssue({
+        code: "custom",
+        message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+      });
+      return z.NEVER;
+    }
+    return normalized.kind === "valid" ? normalized.value : "";
+  }).optional(),
   computerUseComposerEntryHidden: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),

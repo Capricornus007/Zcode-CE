@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "257a92e7dba8828b4de5e38365280d1559b640d46ad9878141c75c10c9005f81",
+  "noticesSha256": "e3847056aa1894e0f5a3d166ee75e3942553ab95802766b7c22e4c17c025947d",
   "inputs": {
     ".agents/skills/agent-browser/references/authentication.md": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b",
     ".agents/skills/agent-browser/references/commands.md": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909",
@@ -1604,7 +1604,7 @@
     "packages/services/src/bots/botAttachmentLimits.ts": "8ed42b6c752ff26af77438ac157d5f35c1cb1e7e647e088cdecfaa1032a9b347",
     "packages/services/src/bots/botConfigHelpers.ts": "9a0a60154ba1693aa51b8634ee83493078c6fbedc739aa82b3b9f89a3cdecc80",
     "packages/services/src/bots/bots.ts": "8495c4ab7841519988b1c803f93d4f3a2a050abed87f2683decb2bace04921d2",
-    "packages/services/src/bots/botsService.ts": "eaf98579511d2b472b4fd497e0734e80bb601a79646dfcb51f0257c21b7707bf",
+    "packages/services/src/bots/botsService.ts": "490c1acaa269cd06fc27fe31132277f897605f4438585c567998ff2eb43cd433",
     "packages/services/src/bots/channelMentionResolver.ts": "066c25f71be779b633a8f902061437ed2359f7f8ee348cfa567fab56b2e49909",
     "packages/services/src/bots/channelReply.ts": "70d094491011cde5b0c6e435fc91de911b3824610c0b3aefc2eb70add97c18bd",
     "packages/services/src/bots/channelRuntime.ts": "d318d5b3020f3f6cee781005c4930c65ef4d618f3f4262a5ef5b22914eca4993",
@@ -2936,14 +2936,14 @@
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
     "patches/@arms__rum-electron@0.0.3.patch": "36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97",
     "patches/wdio-electron-service@9.2.1.patch": "52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f",
-    "pnpm-lock.yaml": "72cdb2e1f4364349ab9ea39f7bb1c3431ab7352c5a485f58ea11872c7d71ef0d",
+    "pnpm-lock.yaml": "623a55f86e284acfa92c0af7522802ce34fa39be8f2961e7a49f8c1d575be3aa",
     "pnpm-workspace.yaml": "a8baaa44e161c0bfda716ff3129148f3c2ecfae48f5eb4c795b5ad0dc33dccfc",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
     "scripts/native-search-tools-config.mjs": "06e9d2b066a22f4bb731fb7356d786b52cf08e20dd6faf91e1a82b167d7462e8",
     "scripts/remote-native-search-tools-config.mjs": "2ddb7054e219ea487596cbdcb83d5c7eac9f239cfe169cfac22e3759d95d7c35",
     "third-party/copied-components.json": "abd7aa42e8540fd20fd017c95a565ca8723eb5c24026b8ac3e72725b8f579f3d",
-    "third-party/embedded-components.json": "1160d4b37e297584099e640998b75599a9ac237dc39dc29d49f2a538e514bb4e",
+    "third-party/embedded-components.json": "9586ccca15897f56d4ca1d703dffe9e02880fedd766c1dff93f7ac1f52ea891a",
     "third-party/native-search/licenses/00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce.txt": "00373c9bf56a894b2ed67586596bc1e8b0630cabbaf1ab46c75fc754b6bcd1ce",
     "third-party/native-search/licenses/01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f.txt": "01c266bced4a434da0051174d6bee16a4c82cf634e2679b6155d40d75012390f",
     "third-party/native-search/licenses/029d615cc92cc216eeefa50fea59bb9838e8e8f22a9f19ec5ee224a31ec9f383.txt": "029d615cc92cc216eeefa50fea59bb9838e8e8f22a9f19ec5ee224a31ec9f383",
@@ -3059,7 +3059,7 @@
     "third-party/native-search/licenses/f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af.txt": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af",
     "third-party/native-search/licenses/f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505.txt": "f9c375a1be4a41f7b70301dd83c91cb89e41567478859b77eef375a52d782505",
     "third-party/native-search/sources.json": "5e1aedef96227f4deefe6f07cda644bd25e638443e86e93ddb2e9578a73d9609",
-    "third-party/npm-overrides.json": "5566eb296015345aaf52428f473e3fa297fa8324cad6a419d70068ce68172502",
+    "third-party/npm-overrides.json": "2fa173999f48283b2d6b388135c1823fd532fe4321f88bb63a88068387481e07",
     "third-party/runtime/node-22.16.0-LICENSE.txt": "1ae62e2015784ba438db7b04ebd33f3c4ff3efdb824c111c4ececd99945fd52d",
     "third-party/runtime/node-24.14.0-LICENSE.txt": "4573185d56580da2b890ba34a85a409257640f1c5632eade4300137266194d18",
     "third-party/runtime/sources.json": "b27bc8d81aeb71108e523602364ffbb6a1b19c2d5d47733fd43094b769006741",
@@ -3069,12 +3069,10 @@
     "third-party/upstream/0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a.txt": "0ab717053f3e24736cd404a0801407fb305db75d1b58f7e6487d14feee30d28a",
     "third-party/upstream/0c74e86d37d6fc7e8f22b4b8e3b801f6737c263c27a71d81c86cd8de0b6a84e5.txt": "0c74e86d37d6fc7e8f22b4b8e3b801f6737c263c27a71d81c86cd8de0b6a84e5",
     "third-party/upstream/0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138.txt": "0e80a2d229d2fd4fc7e8636142ec5d0ff0bc031f14c15b682e2ac01dfd5b5138",
-    "third-party/upstream/0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e.txt": "0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e",
     "third-party/upstream/1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f.txt": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
     "third-party/upstream/17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee.txt": "17510cf7a58b4879b887ec05a45d72cf1b73544dd9ec7e72f20110ed104229ee",
     "third-party/upstream/1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d.txt": "1a8f1058753f1ba890de984e48f0242a3a5c29a6a8f2ed9fd813f36985387e8d",
     "third-party/upstream/1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17.txt": "1b8910ad1a22011c632f7ff544708be6cf08818ef80e8d4b45b6808ee8b05c17",
-    "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
     "third-party/upstream/23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3.txt": "23f18e03dc49df91622fe2a76176497404e46ced8a715d9d2b67a7446571cca3",
     "third-party/upstream/268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5.txt": "268872b9816f90fd8e85db5a28d33f8150ebb8dd016653fb39ef1f94f2686bc5",
     "third-party/upstream/2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a.txt": "2711a8b5a5cdfef0e639f96c1aca12ae23d7d64a02d0507f1bdf14d2b27bbc3a",
@@ -3089,7 +3087,6 @@
     "third-party/upstream/3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94.txt": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94",
     "third-party/upstream/417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6.txt": "417fa227d75b1e22a15d8389ca8b5e8b7b86241c3b1b17288d20523016ef6fa6",
     "third-party/upstream/43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1.txt": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
-    "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
     "third-party/upstream/4a1d35b6325ede5ff9fc338fe7e6fdcaa9fe770767a0114242b817dcba28253f.txt": "4a1d35b6325ede5ff9fc338fe7e6fdcaa9fe770767a0114242b817dcba28253f",
     "third-party/upstream/508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f.txt": "508d4676d4083e874df706f302d9d42e5e7f9aed3f5a7ea614dc6d2b2252a22f",
     "third-party/upstream/5129f8779dca579cfcb235570688a2f15822b270575e04f27ef906aabbcc0355.txt": "5129f8779dca579cfcb235570688a2f15822b270575e04f27ef906aabbcc0355",
@@ -3105,7 +3102,6 @@
     "third-party/upstream/606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b.txt": "606c36baf38b973227273df12a74930e4b4137280eea835c5cd623aa4553c13b",
     "third-party/upstream/66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101.txt": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101",
     "third-party/upstream/6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469.txt": "6ae13df543a24b3fb18c25182cf4f084132f799ea9225410f7037888401b7469",
-    "third-party/upstream/7261b3ab93df04c6d8f3398f87275d28f0e87d88cbd0033b788fb50402de03c5.txt": "7261b3ab93df04c6d8f3398f87275d28f0e87d88cbd0033b788fb50402de03c5",
     "third-party/upstream/75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6.txt": "75815e3bf6484201a3c3d17a1bbf10f2e8e3237f84df10a2357ea896db2a81d6",
     "third-party/upstream/8405932022a556380c2d8c272eff154a923feb197233f348ce5f7334fb0a5ede.txt": "8405932022a556380c2d8c272eff154a923feb197233f348ce5f7334fb0a5ede",
     "third-party/upstream/8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6.txt": "8802fecf9da4367bc23bcf20b21cc143785fc6c92b152f3fa7fbe6ce08d344d6",
@@ -3126,7 +3122,6 @@
     "third-party/upstream/b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529.txt": "b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529",
     "third-party/upstream/ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64.txt": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
     "third-party/upstream/bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526.txt": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
-    "third-party/upstream/bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3.txt": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3",
     "third-party/upstream/c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9.txt": "c0779290c1d4783169aa3dbfb55feb505e563ef8a004bbf55298ceffcfbda8d9",
     "third-party/upstream/c5adaf9051f20a1bbeecfb39de415cac1fef591d4fcda2b55d66b31354fdba1e.txt": "c5adaf9051f20a1bbeecfb39de415cac1fef591d4fcda2b55d66b31354fdba1e",
     "third-party/upstream/c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817.txt": "c681d64256e752c1435814cf045f4467720a8473e425ea54103a0f5128bfc817",
@@ -3135,14 +3130,12 @@
     "third-party/upstream/cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c.txt": "cc3273e0694ea5896145e0677699b53471b03ea43021ddc50e7923fbb9f5023c",
     "third-party/upstream/cdab3014d4f69b49dde2b85e81792208c72de613aa6aed7f7a9b5c6609b89670.txt": "cdab3014d4f69b49dde2b85e81792208c72de613aa6aed7f7a9b5c6609b89670",
     "third-party/upstream/cf81859d85e99ff2fad83d51d9dfd85ca5189b23c4442aacf1890c54665d92f4.txt": "cf81859d85e99ff2fad83d51d9dfd85ca5189b23c4442aacf1890c54665d92f4",
-    "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
     "third-party/upstream/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "third-party/upstream/d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d.txt": "d1cc4c0ada218e8a336dc8c3d8bb7d5b1c8dedfa31f5b25c9ea1759d21b8b62d",
     "third-party/upstream/d65ff929f8a373ea16b21d45d5489557d51389ba6583a5c9959d5487c02ce965.txt": "d65ff929f8a373ea16b21d45d5489557d51389ba6583a5c9959d5487c02ce965",
     "third-party/upstream/da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93.txt": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93",
     "third-party/upstream/e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c.txt": "e1cfcc55c325b3f78cf55df9664abaa066e2271dffe8213347d9fccdfbac8f2c",
     "third-party/upstream/e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c.txt": "e2b35be49f7284a45b7baca8fc7b3ab7440e7902392b2528a457816b5bb2a15c",
-    "third-party/upstream/e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613.txt": "e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613",
     "third-party/upstream/ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855.txt": "ebb2e920800c6353474e3e23d84f714ee8aaecd8f5a71851aa03594a4129d855",
     "third-party/upstream/ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be.txt": "ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be",
     "third-party/upstream/f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3.txt": "f158b3bd10b867740fdbf81447216f1f8685473acf61e6a105ef91ba9fe8ebc3",
@@ -4022,30 +4015,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "bca603cabc880342e6b5b1e6a3e7b498225df28fb0d4df747f63160e8daae7f0"
-        }
-      ]
-    },
-    {
-      "name": "@fast-csv/format",
-      "version": "4.3.5",
-      "license": "MIT",
-      "repository": "git+https://github.com/C2FO/fast-csv.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "2450088d1769a2b36e210a5a345a55b209944f4c6a9a89f7ce3aaba163680a42"
-        }
-      ]
-    },
-    {
-      "name": "@fast-csv/parse",
-      "version": "4.3.6",
-      "license": "MIT",
-      "repository": "git+https://github.com/C2FO/fast-csv.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "2450088d1769a2b36e210a5a345a55b209944f4c6a9a89f7ce3aaba163680a42"
         }
       ]
     },
@@ -7108,18 +7077,6 @@
       ]
     },
     {
-      "name": "@swc/helpers",
-      "version": "0.5.23",
-      "license": "Apache-2.0",
-      "repository": "git+https://github.com/swc-project/swc.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "d96eba1f1881334d50ffc144276dfa98e147a415e7c591ecdfcb81680361dc91"
-        }
-      ]
-    },
-    {
       "name": "@szmarczak/http-timer",
       "version": "4.0.6",
       "license": "MIT",
@@ -7889,31 +7846,7 @@
     },
     {
       "name": "@types/node",
-      "version": "14.18.63",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
-      "name": "@types/node",
       "version": "16.9.1",
-      "license": "MIT",
-      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383"
-        }
-      ]
-    },
-    {
-      "name": "@types/node",
-      "version": "22.20.4",
       "license": "MIT",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
       "notices": [
@@ -8604,42 +8537,6 @@
       ]
     },
     {
-      "name": "archiver-utils",
-      "version": "2.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/archiver-utils.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "19a37eba4fee8b33d904c46235c30bd668cff139f50b1fa5c7c57d2f920e6a4f"
-        }
-      ]
-    },
-    {
-      "name": "archiver-utils",
-      "version": "3.0.4",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/archiver-utils.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "9fe335fb097fbff0b7f709ee14a77b1d1cf739d3400cd0b0e19118946772ea56"
-        }
-      ]
-    },
-    {
-      "name": "archiver",
-      "version": "5.3.2",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/node-archiver.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "9e23899170d96e708b24a2afce11e96d169c8cebf1bd24ac60b675a400cb1cf1"
-        }
-      ]
-    },
-    {
       "name": "argparse",
       "version": "2.0.1",
       "license": "Python-2.0",
@@ -8801,22 +8698,6 @@
     },
     {
       "name": "balanced-match",
-      "version": "1.0.2",
-      "license": "MIT",
-      "repository": "git://github.com/juliangruber/balanced-match.git",
-      "notices": [
-        {
-          "member": "LICENSE.md",
-          "sha256": "a1bd5deadb6a06dd74efa852c1b8b23f63b67f2214fbe9c8bd591da51da69268"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101"
-        }
-      ]
-    },
-    {
-      "name": "balanced-match",
       "version": "4.0.4",
       "license": "MIT",
       "repository": "git://github.com/juliangruber/balanced-match.git",
@@ -8840,38 +8721,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "62235643db61d20e8e4c58d160e906fc168941207adbc96a80ba87b491570067"
-        }
-      ]
-    },
-    {
-      "name": "base64-js",
-      "version": "0.0.8",
-      "license": "MIT",
-      "repository": "git://github.com/beatgammit/base64-js.git",
-      "notices": [
-        {
-          "member": "LICENSE.MIT",
-          "sha256": "136239d1783a151cdbf6fd7935dd945082b9d0ee2cbb8497cc0ae49e8a743a47"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "d6ead4a120036ff90fd2665ec1befd9687c25d2074e932f8f59eecddca113de8"
-        }
-      ]
-    },
-    {
-      "name": "base64-js",
-      "version": "1.5.1",
-      "license": "MIT",
-      "repository": "git://github.com/beatgammit/base64-js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "5b37224c080cdcc97c871ada971c224e9926370fe74f11b539aa1cf9f3b1aca1"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "bcc62468ddfc1d8b468c44e6bef1f4d4149729eeafbdbbd86c6cfc87b6ab55f4"
         }
       ]
     },
@@ -8912,38 +8761,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "0e00c860f4ae10ef7d21d31833d4dc187d866d2914b3a20e0037f3bd2c67d2fa"
-        }
-      ]
-    },
-    {
-      "name": "bl",
-      "version": "4.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/rvagg/bl.git",
-      "notices": [
-        {
-          "member": "LICENSE.md",
-          "sha256": "9377db95383c8befacf05c6e465d969d756edf178487ca1344fdf3ba147c596f"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "c37c3f830189b5b46188ccc224a978e596ef3e5b71043b45fea0bf3cdc6a4dae"
-        }
-      ]
-    },
-    {
-      "name": "bluebird",
-      "version": "3.7.2",
-      "license": "MIT",
-      "repository": "git://github.com/petkaantonov/bluebird.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "87092fe7ffd1e92eba5d1dd39b73a73fdb4fdd4df3474beacc3d9f6b08ece82c"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "3b6b8e0ced23af4a5127940b99433c00b14b51fd7ea3aca94aa60c53826566dd"
         }
       ]
     },
@@ -9001,38 +8818,6 @@
     },
     {
       "name": "brace-expansion",
-      "version": "1.1.14",
-      "license": "MIT",
-      "repository": "git://github.com/juliangruber/brace-expansion.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101"
-        }
-      ]
-    },
-    {
-      "name": "brace-expansion",
-      "version": "2.1.0",
-      "license": "MIT",
-      "repository": "git://github.com/juliangruber/brace-expansion.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "68f12f6e2c33688699249c01d8f9623c534da20aa71989c57b061b7bc1676d14"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "66aa9feab8bb39aceebd69f2a357015d57ceab486d3c7a19ff8d3d4110a6d101"
-        }
-      ]
-    },
-    {
-      "name": "brace-expansion",
       "version": "5.0.5",
       "license": "MIT",
       "repository": "git+ssh://git@github.com/juliangruber/brace-expansion.git",
@@ -9056,38 +8841,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "a5555dc3e925c3c12eb3daa35c12fa696b089014b1261e9262ac428cf0bea33d"
-        }
-      ]
-    },
-    {
-      "name": "brotli",
-      "version": "1.3.3",
-      "license": "MIT",
-      "repository": "https://github.com/devongovett/brotli.js.git",
-      "notices": [
-        {
-          "member": "readme.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        },
-        {
-          "member": "https://registry.npmjs.org/brotli/1.3.3",
-          "sha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793"
-        }
-      ]
-    },
-    {
-      "name": "browserify-zlib",
-      "version": "0.2.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/devongovett/browserify-zlib.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ddd770379e07bf0574dfaa4485be80a23b3248b36d09f33ec79276c09b829daf"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -9132,22 +8885,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "c6483fac297225119319fee0a87bb04bbd17dd65e30299f92317da30bcb9a9a1"
-        }
-      ]
-    },
-    {
-      "name": "buffer",
-      "version": "5.7.1",
-      "license": "MIT",
-      "repository": "git://github.com/feross/buffer.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "233f9392178f64b53517abc5b8a7b6b66c2802374a51ba48e3654876ca06ef14"
         }
       ]
     },
@@ -9592,22 +9329,6 @@
       ]
     },
     {
-      "name": "clone",
-      "version": "2.1.2",
-      "license": "MIT",
-      "repository": "git://github.com/pvorb/node-clone.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3fb0857ef0133928cf72c88dfc464e931486e88778961eedec25585e2321507f"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "3d98dedcafc7fc533a3d4bfa09b0b0a11159523bbae0953fad44c3c7dd097db9"
-        }
-      ]
-    },
-    {
       "name": "clsx",
       "version": "2.1.1",
       "license": "MIT",
@@ -9784,34 +9505,6 @@
         {
           "member": "Readme.md (license section)",
           "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
-      "name": "compress-commons",
-      "version": "4.1.2",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/node-compress-commons.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "79bad9f51738814f83251ae89460326b2ff2ea19ff5f71ab8f7636b2e17bb231"
-        }
-      ]
-    },
-    {
-      "name": "concat-map",
-      "version": "0.0.1",
-      "license": "MIT",
-      "repository": "git://github.com/substack/node-concat-map.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "435a6722c786b0a56fbe7387028f1d9d3f3a2d0fb615bb8fee118727c3f59b7b"
-        },
-        {
-          "member": "README.markdown (license section)",
-          "sha256": "1617b045dd80cddf06277adc7fd5f4a06876bd15812bc938658fb11e9fb0b701"
         }
       ]
     },
@@ -10008,34 +9701,6 @@
       ]
     },
     {
-      "name": "crc-32",
-      "version": "1.2.2",
-      "license": "Apache-2.0",
-      "repository": "git://github.com/SheetJS/js-crc32.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c542ba7851b5d39a5face477e47a27cb7c00a9759e321b66824e79718bffe1ac"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "881788c69fcf010a0a25ffb2e09eb00f628c43b31eb90b989d0f0334fdb6f3e0"
-        }
-      ]
-    },
-    {
-      "name": "crc32-stream",
-      "version": "4.0.3",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/node-crc32-stream.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "79bad9f51738814f83251ae89460326b2ff2ea19ff5f71ab8f7636b2e17bb231"
-        }
-      ]
-    },
-    {
       "name": "croner",
       "version": "10.0.1",
       "license": "MIT",
@@ -10064,18 +9729,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "ae23bc497387d4df92901cf403625e16c228dc6ef366a5f74d9ba0117a3bfce0"
-        }
-      ]
-    },
-    {
-      "name": "crypto-js",
-      "version": "4.2.0",
-      "license": "MIT",
-      "repository": "http://github.com/brix/crypto-js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f729d14b7e1bf8adca0dcc38b93b929d14d53fcd5db56c3d1c9b2daa7aa69396"
         }
       ]
     },
@@ -10940,22 +10593,6 @@
       ]
     },
     {
-      "name": "dfa",
-      "version": "1.2.0",
-      "license": "MIT",
-      "repository": "git+ssh://git@github.com/devongovett/dfa.git",
-      "notices": [
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        },
-        {
-          "member": "https://registry.npmjs.org/dfa/1.2.0",
-          "sha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355"
-        }
-      ]
-    },
-    {
       "name": "diff",
       "version": "8.0.3",
       "license": "BSD-3-Clause",
@@ -11024,18 +10661,6 @@
         {
           "member": "LICENSE",
           "sha256": "8668bf4417d161e4eb4d47d6044526e4914d9eb3c748573d9bb7e87708c1253f"
-        }
-      ]
-    },
-    {
-      "name": "docx",
-      "version": "9.7.1",
-      "license": "MIT",
-      "repository": "git+https://github.com/dolanmiu/docx.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "b5b2364c0c95a26b2a2399d7e706a61acac680be1d5b180b00592ee85830bffb"
         }
       ]
     },
@@ -11120,22 +10745,6 @@
         {
           "member": "LICENSE",
           "sha256": "2b770a704c15de238c3f622b01b0044ddd60b49ee30608ea6991ebf19db7a7a1"
-        }
-      ]
-    },
-    {
-      "name": "duplexer2",
-      "version": "0.1.4",
-      "license": "BSD-3-Clause",
-      "repository": "deoxxa/duplexer2",
-      "notices": [
-        {
-          "member": "LICENSE.md",
-          "sha256": "252a200ba7a38686f7954ec4cb09b3ad7788fa099eb724de167d7ab16b1244b9"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "27c0e1498340178e73c69507d061c0e2f8afae8da9e4c3a08bdc4bdb8fc8b3ef"
         }
       ]
     },
@@ -11712,22 +11321,6 @@
       ]
     },
     {
-      "name": "exceljs",
-      "version": "4.4.0",
-      "license": "MIT",
-      "repository": "https://github.com/exceljs/exceljs.git",
-      "notices": [
-        {
-          "member": "dist/LICENSE",
-          "sha256": "2ed526b7e7c7681dc2347995b5036ddf73dc27d0539cdea59b6d4a72b63a57a0"
-        },
-        {
-          "member": "LICENSE",
-          "sha256": "2ed526b7e7c7681dc2347995b5036ddf73dc27d0539cdea59b6d4a72b63a57a0"
-        }
-      ]
-    },
-    {
       "name": "execa",
       "version": "5.1.1",
       "license": "MIT",
@@ -11820,18 +11413,6 @@
         {
           "member": "LICENSE",
           "sha256": "77b2de947c65f3062fb347118ca198ca50898ead84a8509d8153fa65741f029b"
-        }
-      ]
-    },
-    {
-      "name": "fast-csv",
-      "version": "4.3.6",
-      "license": "MIT",
-      "repository": "git+https://github.com/C2FO/fast-csv.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "2450088d1769a2b36e210a5a345a55b209944f4c6a9a89f7ce3aaba163680a42"
         }
       ]
     },
@@ -12052,22 +11633,6 @@
       ]
     },
     {
-      "name": "fontkit",
-      "version": "2.0.4",
-      "license": "MIT",
-      "repository": "git://github.com/foliojs/fontkit.git",
-      "notices": [
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        },
-        {
-          "member": "https://registry.npmjs.org/fontkit/2.0.4",
-          "sha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153"
-        }
-      ]
-    },
-    {
       "name": "form-data",
       "version": "4.0.5",
       "license": "MIT",
@@ -12156,22 +11721,6 @@
       ]
     },
     {
-      "name": "fs-constants",
-      "version": "1.0.0",
-      "license": "MIT",
-      "repository": "https://github.com/mafintosh/fs-constants.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "2281f2db407bdbb54f069eec38128b2dee2c0c952f52b786ef1faecb81767b3c"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "fs-extra",
       "version": "10.1.0",
       "license": "MIT",
@@ -12184,22 +11733,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "99418da6b0279959da793d62433978847d00236e852c4be780f384b7f506d425"
-        }
-      ]
-    },
-    {
-      "name": "fs-extra",
-      "version": "11.3.1",
-      "license": "MIT",
-      "repository": "https://github.com/jprichardson/node-fs-extra",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c6a7de1428955aa5a692f4d3a3d3ede658d959616944713337cda296736442e1"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "17f7fa5a10a40e614e14342fa1b18046fee2edcdfb9528bf67f4593ef2ff61fd"
         }
       ]
     },
@@ -12232,18 +11765,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "99418da6b0279959da793d62433978847d00236e852c4be780f384b7f506d425"
-        }
-      ]
-    },
-    {
-      "name": "fs.realpath",
-      "version": "1.0.0",
-      "license": "ISC",
-      "repository": "git+https://github.com/isaacs/fs.realpath.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "8465b04b67f473341171b5c9c8b2c741a4a395b3f6ed58339b3a4f4db3db7472"
         }
       ]
     },
@@ -12444,18 +11965,6 @@
       ]
     },
     {
-      "name": "glob",
-      "version": "7.2.3",
-      "license": "ISC",
-      "repository": "git://github.com/isaacs/node-glob.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "6236fa0b88a4a0cce3dda0367979491b2052b3c8d6b1c10b3668de083e86a7f0"
-        }
-      ]
-    },
-    {
       "name": "global-agent",
       "version": "3.0.0",
       "license": "BSD-3-Clause",
@@ -12592,22 +12101,6 @@
         {
           "member": "LICENSE",
           "sha256": "e2560e002e13281578c75c850061d9255c33d16d732939e8c2db64c2506642fa"
-        }
-      ]
-    },
-    {
-      "name": "hash.js",
-      "version": "1.1.7",
-      "license": "MIT",
-      "repository": "git@github.com:indutny/hash.js",
-      "notices": [
-        {
-          "member": "README.md (license section)",
-          "sha256": "f6ea0899d4a65578f4be7e01b61fa2ffb08268ca06571f4f53d8a82025179982"
-        },
-        {
-          "member": "https://raw.githubusercontent.com/indutny/hash.js/master/README.md (LICENSE section)",
-          "sha256": "7261b3ab93df04c6d8f3398f87275d28f0e87d88cbd0033b788fb50402de03c5"
         }
       ]
     },
@@ -13060,13 +12553,6 @@
       ]
     },
     {
-      "name": "https",
-      "version": "1.0.0",
-      "license": "ISC",
-      "acceptedMissingNotice": "占位包：tarball 仅含 package.json（main 指向不存在的 index.js），无代码、无 README、无 LICENSE。pptxgenjs 声明依赖它但运行时不 require（实测 grep 无命中）。包内许可字段为 ISC，无可登记的完整许可文本，故按「接受缺失上游文本」登记。",
-      "notices": []
-    },
-    {
       "name": "human-signals",
       "version": "2.1.0",
       "license": "Apache-2.0",
@@ -13159,18 +12645,6 @@
       ]
     },
     {
-      "name": "image-size",
-      "version": "1.2.1",
-      "license": "MIT",
-      "repository": "git://github.com/image-size/image-size.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3109783dad7527b490aabc49c3cb148573c19b41b843e70cf9388a93f3d7fccd"
-        }
-      ]
-    },
-    {
       "name": "immediate",
       "version": "3.0.6",
       "license": "MIT",
@@ -13215,18 +12689,6 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
-      "name": "inflight",
-      "version": "1.0.6",
-      "license": "ISC",
-      "repository": "https://github.com/npm/inflight.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "05dc4d785ac3a488676d3ed10e901b75ad89dafcc63f8e66610fd4a39cc5c7e8"
         }
       ]
     },
@@ -13715,18 +13177,6 @@
       ]
     },
     {
-      "name": "jpeg-exif",
-      "version": "1.1.4",
-      "license": "MIT",
-      "repository": "https://github.com/zhso/jpeg-exif.git",
-      "notices": [
-        {
-          "member": "LICENSE.txt",
-          "sha256": "a8202d59ed0629ee6e58df1f883519d5ede193cd64419a00003e31f29c62e26d"
-        }
-      ]
-    },
-    {
       "name": "jpeg-js",
       "version": "0.4.4",
       "license": "BSD-3-Clause",
@@ -14136,18 +13586,6 @@
       ]
     },
     {
-      "name": "lazystream",
-      "version": "1.0.1",
-      "license": "MIT",
-      "repository": "https://github.com/jpommerening/node-lazystream.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "e7f5d28405c9fe6580db684634bace66953055b436d7fbb6f860d0c800c44a9f"
-        }
-      ]
-    },
-    {
       "name": "lexical",
       "version": "0.42.0",
       "license": "MIT",
@@ -14184,22 +13622,6 @@
         {
           "member": "license.md",
           "sha256": "5c81b0caa98593408b03125efa25efe622341ed87ae55561968828cd887d64a4"
-        }
-      ]
-    },
-    {
-      "name": "linebreak",
-      "version": "1.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/devongovett/linebreaker.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "cf22b8198f0886a8d4626121579114f23141070e1fceab02ab3c1c361e163440"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
         }
       ]
     },
@@ -14264,56 +13686,8 @@
       ]
     },
     {
-      "name": "lodash.defaults",
-      "version": "4.2.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.difference",
-      "version": "4.5.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
       "name": "lodash.escaperegexp",
       "version": "4.1.2",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.flatten",
-      "version": "4.4.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.groupby",
-      "version": "4.6.0",
       "license": "MIT",
       "repository": "lodash/lodash",
       "notices": [
@@ -14336,18 +13710,6 @@
       ]
     },
     {
-      "name": "lodash.isboolean",
-      "version": "3.0.3",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "25a399d4a42f419445101092a1fc3f9b4bfe06d614f84128222d79e3a2105fe7"
-        }
-      ]
-    },
-    {
       "name": "lodash.isequal",
       "version": "4.5.0",
       "license": "MIT",
@@ -14356,54 +13718,6 @@
         {
           "member": "LICENSE",
           "sha256": "e159c6d48c989185448658f276375bfb2300362ec6d4ae5525a2d49c4bcb947d"
-        }
-      ]
-    },
-    {
-      "name": "lodash.isfunction",
-      "version": "3.0.9",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "e159c6d48c989185448658f276375bfb2300362ec6d4ae5525a2d49c4bcb947d"
-        }
-      ]
-    },
-    {
-      "name": "lodash.isnil",
-      "version": "4.0.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "25a399d4a42f419445101092a1fc3f9b4bfe06d614f84128222d79e3a2105fe7"
-        }
-      ]
-    },
-    {
-      "name": "lodash.isplainobject",
-      "version": "4.0.6",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.isundefined",
-      "version": "3.0.1",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE.txt",
-          "sha256": "90df9e2220f682e1f77e24b1c0f72d2de18b818096c957a65698e74c41a4826f"
         }
       ]
     },
@@ -14422,30 +13736,6 @@
     {
       "name": "lodash.pickby",
       "version": "4.6.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.union",
-      "version": "4.6.0",
-      "license": "MIT",
-      "repository": "lodash/lodash",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ffd8b33b354585f4ce119f19c53728281e48a97b074491eb6bf6d5c5ff305272"
-        }
-      ]
-    },
-    {
-      "name": "lodash.uniq",
-      "version": "4.5.0",
       "license": "MIT",
       "repository": "lodash/lodash",
       "notices": [
@@ -15724,18 +15014,6 @@
       ]
     },
     {
-      "name": "minimalistic-assert",
-      "version": "1.0.1",
-      "license": "ISC",
-      "repository": "https://github.com/calvinmetcalf/minimalistic-assert.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "136fee1129ea96ce18b41c26a72f5d4ba196ee41bfd73b55d0b8509cdda148e9"
-        }
-      ]
-    },
-    {
       "name": "minimatch",
       "version": "10.2.5",
       "license": "BlueOak-1.0.0",
@@ -15744,30 +15022,6 @@
         {
           "member": "LICENSE.md",
           "sha256": "2c7c5d22ed5a8ee968c64757710979afcd77438c48b4a265b94e615babd8a901"
-        }
-      ]
-    },
-    {
-      "name": "minimatch",
-      "version": "3.1.5",
-      "license": "ISC",
-      "repository": "git://github.com/isaacs/minimatch.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "4ec3d4c66cd87f5c8d8ad911b10f99bf27cb00cdfcff82621956e379186b016b"
-        }
-      ]
-    },
-    {
-      "name": "minimatch",
-      "version": "5.1.9",
-      "license": "ISC",
-      "repository": "git://github.com/isaacs/minimatch.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "d11323827fa4edeaafc437cc5b91b6971b335f0127efeeb42bf5122fe8657e8f"
         }
       ]
     },
@@ -16080,18 +15334,6 @@
       ]
     },
     {
-      "name": "node-int64",
-      "version": "0.4.0",
-      "license": "MIT",
-      "repository": "https://github.com/broofa/node-int64",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "8f85aab053e268546014761da47630a09886626afbd0d8d440cb2c69611bb8d3"
-        }
-      ]
-    },
-    {
       "name": "node-pty",
       "version": "1.1.0",
       "license": "MIT",
@@ -16120,22 +15362,6 @@
         {
           "member": "LICENSE",
           "sha256": "3706296ed611888111ceccc1dff4712844dea4bde0b185c82d718c3b69895abe"
-        }
-      ]
-    },
-    {
-      "name": "normalize-path",
-      "version": "3.0.0",
-      "license": "MIT",
-      "repository": "jonschlinkert/normalize-path",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "e70ff771504ba41f2be55de812a017ff46433d7a250c862e38fc419159e44500"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "f01e8d67b83bf33655fa832af835ef8350c58c0c0d7c058f20e2e1f3abf4c86b"
         }
       ]
     },
@@ -16489,22 +15715,6 @@
     },
     {
       "name": "pako",
-      "version": "0.2.9",
-      "license": "MIT",
-      "repository": "nodeca/pako",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3bc404ffa7888053253eedcc5a667619aa08dc1be0bea400e5ff28c51602180f"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "e45629d9b3a56012e2bfc7ac24eec4361a9208659973c33777184718e1291df5"
-        }
-      ]
-    },
-    {
-      "name": "pako",
       "version": "1.0.11",
       "license": "(MIT AND Zlib)",
       "repository": "nodeca/pako",
@@ -16724,22 +15934,6 @@
       ]
     },
     {
-      "name": "path-is-absolute",
-      "version": "1.0.1",
-      "license": "MIT",
-      "repository": "sindresorhus/path-is-absolute",
-      "notices": [
-        {
-          "member": "license",
-          "sha256": "6fb9754611c20f6649f68805e8c990e83261f29316e29de9e6cedae607b8634c"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "0b8c7c0c5579b689ab841976b473ebe9269aa46347fc1295431e0fc3f2452d36"
-        }
-      ]
-    },
-    {
       "name": "path-key",
       "version": "3.1.1",
       "license": "MIT",
@@ -16852,22 +16046,6 @@
         {
           "member": "wasm/LICENSE_QCMS",
           "sha256": "36d847ae882f6574ebc72f56a4f354e4f104fde4a584373496482e97d52d31bc"
-        }
-      ]
-    },
-    {
-      "name": "pdfkit",
-      "version": "0.17.1",
-      "license": "MIT",
-      "repository": "https://github.com/foliojs/pdfkit.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "427d01cbe37b367b97f2ea655935d94f4ed03ed11343c3c00e78c8366df810cc"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "1914214939de6408667a6c114ca8b0ec45fa8c8e77d26ef506d9cfd35dc526e6"
         }
       ]
     },
@@ -16996,22 +16174,6 @@
       ]
     },
     {
-      "name": "png-js",
-      "version": "1.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/devongovett/png.js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3"
-        },
-        {
-          "member": "https://registry.npmjs.org/png-js/1.1.0",
-          "sha256": "bdb26a2ec815931ed6a38f3416362566204ee85ecdef96702b636402da4c75c3"
-        }
-      ]
-    },
-    {
       "name": "pngjs",
       "version": "5.0.0",
       "license": "MIT",
@@ -17124,18 +16286,6 @@
         {
           "member": "license",
           "sha256": "5c932d88256b4ab958f64a856fa48e8bd1f55bc1d96b8149c65689e0c61789d3"
-        }
-      ]
-    },
-    {
-      "name": "pptxgenjs",
-      "version": "4.0.1",
-      "license": "MIT",
-      "repository": "git+https://github.com/gitbrent/PptxGenJS.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "7a2bfe96150786ed1908b8e63f98ebab88875c1e79e28faff6649e0f11f77e52"
         }
       ]
     },
@@ -17364,22 +16514,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "a3c7d5b41af742dce5b55e0b2cb165c39b857e3d48e51ed2ee1e66afe3b82887"
-        }
-      ]
-    },
-    {
-      "name": "queue",
-      "version": "6.0.2",
-      "license": "MIT",
-      "repository": "https://github.com/jessetane/queue.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "38d7c4d8410c68eeae9ce24a8b4ee2380199d6df4abb1d9c15dc70b135935fe8"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "fd17f37c38b21a2e4b255786369ace8ce59ebae2a151f9c22cbba610f30fc2da"
         }
       ]
     },
@@ -17672,30 +16806,6 @@
         {
           "member": "LICENSE",
           "sha256": "ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54"
-        }
-      ]
-    },
-    {
-      "name": "readable-stream",
-      "version": "3.6.2",
-      "license": "MIT",
-      "repository": "git://github.com/nodejs/readable-stream",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "ec62dc96da0099b87f4511736c87309335527fb7031639493e06c95728dc8c54"
-        }
-      ]
-    },
-    {
-      "name": "readdir-glob",
-      "version": "1.1.3",
-      "license": "Apache-2.0",
-      "repository": "git://github.com/Yqnn/node-readdir-glob.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "8cd23e2d76d2791765f7dd1025a9df99d81db91da9e2701f283987a1c0435aa3"
         }
       ]
     },
@@ -18116,22 +17226,6 @@
       ]
     },
     {
-      "name": "restructure",
-      "version": "3.0.2",
-      "license": "MIT",
-      "repository": "git://github.com/devongovett/restructure.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c0df7f551401f8f80197ff31bf69b8cd23727d127423403282514d242a3ab132"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "rettime",
       "version": "0.11.7",
       "license": "MIT",
@@ -18316,22 +17410,6 @@
       ]
     },
     {
-      "name": "safe-buffer",
-      "version": "5.2.1",
-      "license": "MIT",
-      "repository": "git://github.com/feross/safe-buffer.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c7cc929b57080f4b9d0c6cf57669f0463fc5b39906344dfc8d3bc43426b30eac"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "4001f409f2886ac791b0be2131ca3ed8770b896314579ecb5d1eaf7a6e6f3eb8"
-        }
-      ]
-    },
-    {
       "name": "safer-buffer",
       "version": "2.1.2",
       "license": "MIT",
@@ -18364,18 +17442,6 @@
         {
           "member": "LICENSE.md",
           "sha256": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
-        }
-      ]
-    },
-    {
-      "name": "saxes",
-      "version": "5.0.1",
-      "license": "ISC",
-      "repository": "https://github.com/lddubeau/saxes.git",
-      "notices": [
-        {
-          "member": "https://raw.githubusercontent.com/lddubeau/saxes/v5.0.1/LICENSE",
-          "sha256": "0fac2374380621b22e6b50451057721a9c52935b02d16d106a9f04897f061d0e"
         }
       ]
     },
@@ -18932,18 +17998,6 @@
       ]
     },
     {
-      "name": "string_decoder",
-      "version": "1.3.0",
-      "license": "MIT",
-      "repository": "git://github.com/nodejs/string_decoder.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "11f2aafb37d06b3ee5bdaf06e9811141d0da05263c316f3d627f45c20d43261b"
-        }
-      ]
-    },
-    {
       "name": "string-width",
       "version": "4.2.3",
       "license": "MIT",
@@ -19244,38 +18298,6 @@
       ]
     },
     {
-      "name": "tar-stream",
-      "version": "2.2.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/mafintosh/tar-stream.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "3fe8d55a98dbf260eace67c00cf9bc53edb46234e840098a0b93df3096b97fb6"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "98bb58f02f63428bdcf9153ac14c74149b50d3995e363c17a3faea9f8248858c"
-        }
-      ]
-    },
-    {
-      "name": "tiny-inflate",
-      "version": "1.0.3",
-      "license": "MIT",
-      "repository": "git://github.com/devongovett/tiny-inflate.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "c0df7f551401f8f80197ff31bf69b8cd23727d127423403282514d242a3ab132"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
       "name": "tiny-invariant",
       "version": "1.3.3",
       "license": "MIT",
@@ -19348,18 +18370,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "b009b9b1b7ce08c0e0c9bcb60b5d7b7e8386bfd5e7ef6331a68a57f54f17989c"
-        }
-      ]
-    },
-    {
-      "name": "tmp",
-      "version": "0.2.5",
-      "license": "MIT",
-      "repository": "https://github.com/raszi/node-tmp.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "162413c61e0982abe89a06bf7a02ec760dc49a7364d838bd9f01daebb5b95954"
         }
       ]
     },
@@ -19701,18 +18711,6 @@
     },
     {
       "name": "undici-types",
-      "version": "6.21.0",
-      "license": "MIT",
-      "repository": "git+https://github.com/nodejs/undici.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
-        }
-      ]
-    },
-    {
-      "name": "undici-types",
       "version": "7.16.0",
       "license": "MIT",
       "repository": "git+https://github.com/nodejs/undici.git",
@@ -19780,38 +18778,6 @@
         {
           "member": "LICENSE",
           "sha256": "a6db8096b2707bc0102d256917d4d33f298ba36d8c3f25de067a2b5bb379db27"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
-      "name": "unicode-properties",
-      "version": "1.4.1",
-      "license": "MIT",
-      "repository": "git://github.com/devongovett/unicode-properties.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "43439dbd4f43837aadab215cdbe5a422cc6323a50c4ea84d8d6bbc3671666a1d"
-        },
-        {
-          "member": "readme.md (license section)",
-          "sha256": "daf005969aac8cb4283b3777361f0244f4cce898b9a983a60b7f0d9e96f559bf"
-        }
-      ]
-    },
-    {
-      "name": "unicode-trie",
-      "version": "2.0.0",
-      "license": "MIT",
-      "repository": "git://github.com/devongovett/unicode-trie.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "43439dbd4f43837aadab215cdbe5a422cc6323a50c4ea84d8d6bbc3671666a1d"
         },
         {
           "member": "README.md (license section)",
@@ -20032,22 +18998,6 @@
       ]
     },
     {
-      "name": "unzipper",
-      "version": "0.12.5",
-      "license": "MIT",
-      "repository": "https://github.com/ZJONSSON/node-unzipper.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "b9e9abeaf8b92573dc28915d4948dbce30d55b30c688d109898b35e6105c4215"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "ed8a1e51777dfd46dcb9b07f1ef9f626aa25995fa1a0b5cba69c8f517acb066b"
-        }
-      ]
-    },
-    {
       "name": "update-browserslist-db",
       "version": "1.2.3",
       "license": "MIT",
@@ -20170,18 +19120,6 @@
     {
       "name": "uuid",
       "version": "11.1.0",
-      "license": "MIT",
-      "repository": "https://github.com/uuidjs/uuid.git",
-      "notices": [
-        {
-          "member": "LICENSE.md",
-          "sha256": "beaa6b04fb82e41dd2ad679e19e27953afb5999b1abbb455b6564e78ebfeb332"
-        }
-      ]
-    },
-    {
-      "name": "uuid",
-      "version": "8.3.2",
       "license": "MIT",
       "repository": "https://github.com/uuidjs/uuid.git",
       "notices": [
@@ -20744,22 +19682,6 @@
       ]
     },
     {
-      "name": "xml-js",
-      "version": "1.6.11",
-      "license": "MIT",
-      "repository": "git+https://github.com/nashwaan/xml-js.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "dd73f89a6d4b458e6ae75e6f09de6fcb9bad05082e980c200d13c3baa894f077"
-        }
-      ]
-    },
-    {
       "name": "xml-parse-from-string",
       "version": "1.0.1",
       "license": "MIT",
@@ -20772,18 +19694,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "b62b0f91d50a1729c834f1c0ced03edef1426592dcc90aa5fe88fc2850b353c3"
-        }
-      ]
-    },
-    {
-      "name": "xml",
-      "version": "1.0.1",
-      "license": "MIT",
-      "repository": "http://github.com/dylang/node-xml",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "d2b3e2f62078f282f21a8c5119a44cc7313fe6aa4a22094c8ad93f4b577b7901"
         }
       ]
     },
@@ -20808,18 +19718,6 @@
         {
           "member": "LICENSE",
           "sha256": "e368bc4263b466cf98c225af15e300549e00da8859416a4536109e9654d434a8"
-        }
-      ]
-    },
-    {
-      "name": "xmlchars",
-      "version": "2.2.0",
-      "license": "MIT",
-      "repository": "https://github.com/lddubeau/xmlchars.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "45d196313c2647d313cc65ca9b093d2d6974b64d35ee7346f2c60c9d518dff2c"
         }
       ]
     },
@@ -21048,18 +19946,6 @@
         {
           "member": "https://raw.githubusercontent.com/facebook/yoga/v3.2.1/LICENSE",
           "sha256": "52412d7bc7ce4157ea628bbaacb8829e0a9cb3c58f57f99176126bc8cf2bfc85"
-        }
-      ]
-    },
-    {
-      "name": "zip-stream",
-      "version": "4.1.1",
-      "license": "MIT",
-      "repository": "https://github.com/archiverjs/node-zip-stream.git",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "79bad9f51738814f83251ae89460326b2ff2ea19ff5f71ab8f7636b2e17bb231"
         }
       ]
     },
@@ -32932,7 +31818,7 @@
         },
         {
           "file": "packages/services/src/bots/botsService.ts",
-          "sha256": "eaf98579511d2b472b4fd497e0734e80bb601a79646dfcb51f0257c21b7707bf"
+          "sha256": "490c1acaa269cd06fc27fe31132277f897605f4438585c567998ff2eb43cd433"
         },
         {
           "file": "packages/services/src/bots/channelMentionResolver.ts",
@@ -33714,77 +32600,6 @@
       }
     },
     {
-      "package": "https@1.0.0",
-      "license": "ISC",
-      "acceptedMissingNotice": "占位包：tarball 仅含 package.json（main 指向不存在的 index.js），无代码、无 README、无 LICENSE。pptxgenjs 声明依赖它但运行时不 require（实测 grep 无命中）。包内许可字段为 ISC，无可登记的完整许可文本，故按「接受缺失上游文本」登记。"
-    },
-    {
-      "package": "fontkit@2.0.4",
-      "repo": "foliojs/fontkit",
-      "refs": [
-        "v2.0.4",
-        "2.0.4",
-        "fontkit@2.0.4"
-      ],
-      "file": "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt",
-      "sha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
-      "source": "https://registry.npmjs.org/fontkit/2.0.4",
-      "evidenceKind": "publisher-declared-standard-terms",
-      "license": "MIT",
-      "reviewEvidence": {
-        "checkedOn": "2026-09-24",
-        "result": "The versioned npm archive contains no standalone LICENSE file. The package files whitelist is NOT the reason: npm always packs README, LICENSE and LICENCE whatever the files field says, so an archive without a LICENSE means the repository has none. Re-checked exhaustively: all 7 branches carry license files only under test/data (bundled test fonts), and master HEAD equals the v2.0.4 tag fbf3b9ef. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
-        "inArchivePublisherStatements": [
-          "package/package.json declares license MIT",
-          "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
-        ],
-        "registryPublisherIdentity": "npm 2.0.4 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==",
-        "notPublisherMaterial": "PR foliojs/fontkit#300 (Add LICENSE, head e208a491449fe9759637e09e92bfbc9b032d2707) is an unmerged third-party contribution - re-checked 2026-09-24 as state=open, merged=false - so it is not a publisher statement and is not used as material. Downstream fork fontkitten@1.0.3 publishes package/LICENSE (sha256 e626e38b2081908f1ffa133bd13a695d7cc8f70005d2f7b282b262610fe307cd) reproducing Copyright (c) 2014 Devon Govett and stating that it applies to code originating from foliojs/fontkit; that corroborates the copyright line only and is not publisher material.",
-        "npmArchiveSha256": "f686a9515af33fce16ab4bffe50570728197e53165068548c6f75a1793797a08",
-        "sourceTreeUrl": "https://api.github.com/repos/foliojs/fontkit/git/trees/master?recursive=1",
-        "sourceTreeAlsoChecked": "https://api.github.com/repos/foliojs/fontkit/git/trees/v2.0.4?recursive=1 (217 entries; license paths only under test/data) plus the trees of all 7 branches",
-        "upstreamLicenseFiles": []
-      }
-    },
-    {
-      "package": "brotli@1.3.3",
-      "file": "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt",
-      "sha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
-      "source": "https://registry.npmjs.org/brotli/1.3.3",
-      "evidenceKind": "publisher-declared-standard-terms",
-      "license": "MIT",
-      "reviewEvidence": {
-        "checkedOn": "2026-09-24",
-        "result": "CORRECTED on 2026-09-24. The earlier text claimed the upstream publishes no license material at all; that was produced by a filename-only scan and is false. The versioned npm archive ships a verbatim Google copyright and Apache-2.0 notice as the leading comment of all seven shipped dec/*.js files; it is now registered as the embedded component google/brotli (vendored in brotli@1.3.3). What is still missing is a notice issued by the publisher for the package body itself, which declares MIT in package.json and carries only a README License heading. The synthesized standard MIT text is kept because the archive ships no MIT file either.",
-        "inArchivePublisherStatements": [
-          "package/package.json declares license MIT",
-          "package/readme.md carries a License heading whose body is MIT; already captured by the notice collector as the readme.md (license section) member"
-        ],
-        "registryPublisherIdentity": "npm 1.3.3 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==",
-        "inArchiveLicenseMaterialFound": "package/dec/{bit_reader,context,decode,dictionary,dictionary-data,prefix,transform}.js lines 1-13: Copyright 2013 Google Inc. All Rights Reserved. plus the Apache License 2.0 notice; byte-identical across all seven files, sha256 e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613. The same header is still present in pdfkit@0.17.1 js/pdfkit.standalone.js (five occurrences), confirming downstreams retain it.",
-        "vendorProvenance": "foliojs/brotli.js v1.3.3 pins submodule vendor/brotli to google/brotli commit 5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421 (.gitmodules -> git@github.com:google/brotli.git); the Makefile Emscripten-compiles vendor/brotli/common and vendor/brotli/enc into build/encode.js and build/mem.js. That LICENSE is byte-identical (sha256 3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94) to the google/brotli notice already registered for @napi-rs/canvas.",
-        "npmArchiveSha256": "3c7c260f6263df95fee49a9119e9fd21227d628b6c9d99080a75edfd9e2bdb24"
-      }
-    },
-    {
-      "package": "dfa@1.2.0",
-      "file": "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt",
-      "sha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
-      "source": "https://registry.npmjs.org/dfa/1.2.0",
-      "evidenceKind": "publisher-declared-standard-terms",
-      "license": "MIT",
-      "reviewEvidence": {
-        "checkedOn": "2026-09-24",
-        "result": "The versioned npm archive contains no standalone LICENSE file and the upstream repository devongovett/dfa publishes none either - re-checked exhaustively on 2026-09-24: the tarball has 6 entries with no license-named member, and the repository has a single branch whose v1.2.0 tree holds 17 entries with no license path at any depth. The in-archive publisher statements listed below are the material we rely on; upstream-issued copyright/license material for this version still does not exist and is not recoverable.",
-        "inArchivePublisherStatements": [
-          "package/package.json declares license MIT",
-          "package/README.md carries a License heading whose body is MIT; already captured by the notice collector as the README.md (license section) member"
-        ],
-        "registryPublisherIdentity": "npm 1.2.0 metadata: author, maintainers and _npmUser are all devongovett (devongovett@gmail.com); dist.integrity sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==",
-        "npmArchiveSha256": "d781eb3a307ab6aa2d97028f695b17dbeadf6fd27788c333b1fb96d18d2a23ad"
-      }
-    },
-    {
       "package": "agent-base@6.0.2",
       "repo": "TooTallNate/node-agent-base",
       "refs": [
@@ -34175,54 +32990,6 @@
       }
     },
     {
-      "id": "brotli@1.3.3",
-      "tier": "publisher-declared-standard-terms",
-      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
-      "evidence": {
-        "source": "https://registry.npmjs.org/brotli/1.3.3",
-        "noticeFile": "third-party/upstream/cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793.txt",
-        "noticeSha256": "cfc3c11a0e3e83ced162857d81a6df9fc5e9ad61ec5883217d556c631c244793",
-        "archiveSha256": "3c7c260f6263df95fee49a9119e9fd21227d628b6c9d99080a75edfd9e2bdb24",
-        "declaredLicense": "MIT",
-        "declarationLocation": [
-          "package.json license field",
-          "published notice members: readme.md (license section)"
-        ]
-      }
-    },
-    {
-      "id": "dfa@1.2.0",
-      "tier": "publisher-declared-standard-terms",
-      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
-      "evidence": {
-        "source": "https://registry.npmjs.org/dfa/1.2.0",
-        "noticeFile": "third-party/upstream/1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355.txt",
-        "noticeSha256": "1cff602ca185285d9d18ad1f9ac9b8a7c973b9d5c5ec845e29e10bd5b6c8a355",
-        "archiveSha256": "d781eb3a307ab6aa2d97028f695b17dbeadf6fd27788c333b1fb96d18d2a23ad",
-        "declaredLicense": "MIT",
-        "declarationLocation": [
-          "package.json license field",
-          "published notice members: README.md (license section)"
-        ]
-      }
-    },
-    {
-      "id": "fontkit@2.0.4",
-      "tier": "publisher-declared-standard-terms",
-      "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
-      "evidence": {
-        "source": "https://registry.npmjs.org/fontkit/2.0.4",
-        "noticeFile": "third-party/upstream/47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153.txt",
-        "noticeSha256": "47a5b3dace9cce679dff68809f563a5e254152807e19d2b415e9a90d30407153",
-        "archiveSha256": "f686a9515af33fce16ab4bffe50570728197e53165068548c6f75a1793797a08",
-        "declaredLicense": "MIT",
-        "declarationLocation": [
-          "package.json license field",
-          "published notice members: README.md (license section)"
-        ]
-      }
-    },
-    {
       "id": "https-proxy-agent@5.0.1",
       "tier": "publisher-declared-standard-terms",
       "reason": "Recorded limitation, not blocking: the published artifact declares the license identifier and ships the standard terms; the upstream never published a copyright or license file of its own.",
@@ -34548,28 +33315,6 @@
           "sha256": "5f745b8244890bde0a2258fe32342d60c577fad043e8601d923690a5bfe1b54f"
         }
       ]
-    },
-    {
-      "id": "google/brotli (vendored in brotli@1.3.3)",
-      "parentPackage": "brotli@1.3.3",
-      "revision": "5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421",
-      "source": "https://github.com/foliojs/brotli.js/tree/v1.3.3",
-      "notices": [
-        {
-          "component": "google/brotli JavaScript decoder (dec/*.js)",
-          "source": "https://registry.npmjs.org/brotli/-/brotli-1.3.3.tgz (package/dec/transform.js)",
-          "extraction": "Original leading copyright and license comment, verbatim. The first 13 lines are byte-identical in all seven shipped dec/*.js files (bit_reader, context, decode, dictionary, dictionary-data, prefix, transform); only the per-file description line after the blank line differs.",
-          "file": "third-party/upstream/e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613.txt",
-          "sha256": "e422ec4747a913fb1aa7aecf7826bb06bd49d1a0de0dca5ec55b6b06214af613"
-        },
-        {
-          "component": "google/brotli C sources (Emscripten-compiled into build/encode.js and build/mem.js)",
-          "source": "https://raw.githubusercontent.com/google/brotli/5ce9bf11b3fe0924d87b2a2d47eb7a53a76a4421/LICENSE",
-          "extraction": "The revision pinned by the vendor/brotli submodule of foliojs/brotli.js v1.3.3 (.gitmodules -> git@github.com:google/brotli.git); byte-identical to the google/brotli LICENSE already registered for the @napi-rs/canvas component, so the two share one notice text.",
-          "file": "third-party/upstream/3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94.txt",
-          "sha256": "3d180008e36922a4e8daec11c34c7af264fed5962d07924aea928c38e8663c94"
-        }
-      ]
     }
   ],
   "runtimes": {
@@ -34608,10 +33353,6 @@
     {
       "id": "is-node-process@1.2.0",
       "reason": "Publisher-declaration tier criteria not met: (c) the published artifact carries no publisher copyright subject (package.json author/contributors/maintainers, or a Copyright line in a published licence text)"
-    },
-    {
-      "id": "https@1.0.0",
-      "reason": "Original version-specific publisher copyright/license material remains incomplete."
     },
     {
       "id": "@arms/rum-browser@0.1.8",

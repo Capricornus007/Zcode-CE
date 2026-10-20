@@ -54,7 +54,9 @@ for (const key of allKeys) {
     console.log(`${key}: ${before ?? " absent "} -> ${after ?? 0}`);
   }
 }
-console.log(`\n${Object.keys(files).length} files carry comment emphasis; ${changed} entries changed.`);
+console.log(
+  `\n${Object.keys(files).length} files carry comment emphasis; ${changed} entries changed.`,
+);
 
 if (write) {
   const total = Object.values(files).reduce((sum, n) => sum + n, 0);

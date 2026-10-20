@@ -80,9 +80,8 @@ vi.mock("@/hooks/usePlatform.js", () => ({
 }));
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
-  useOptionalTabStore: (
-    selector: (state: { openSettingsTab: () => void }) => unknown,
-  ) => selector({ openSettingsTab: capturedHeaderHelp.openSettingsTab }),
+  useOptionalTabStore: (selector: (state: { openSettingsTab: () => void }) => unknown) =>
+    selector({ openSettingsTab: capturedHeaderHelp.openSettingsTab }),
 }));
 
 vi.mock("@/components/ui/toast.js", () => ({

@@ -31,15 +31,15 @@ function buildDocument(): LiurenPanDocument {
       { position: "中传", jiang: "阴", zhi: "戌", liuqin: "财", kongwang: true },
       { position: "末传", jiang: "虎", zhi: "未", dun: "辛", liuqin: "财", wangshuai: "相" },
     ],
-    shensha: Object.fromEntries(
-      Array.from({ length: 20 }, (_, i) => [`神煞${i}`, "子"]),
-    ),
+    shensha: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`神煞${i}`, "子"])),
   };
 }
 
 describe("LiurenPanBlock", () => {
   it("renders 三传 + 四课 with meta strip", () => {
-    const { container, getByText } = render(createElement(LiurenPanBlock, { document: buildDocument() }));
+    const { container, getByText } = render(
+      createElement(LiurenPanBlock, { document: buildDocument() }),
+    );
     expect(container.querySelectorAll("[data-liuren-chuan]")).toHaveLength(3);
     expect(container.querySelectorAll("[data-liuren-ke]")).toHaveLength(4);
     expect(getByText("乙丑日 未时")).toBeTruthy();

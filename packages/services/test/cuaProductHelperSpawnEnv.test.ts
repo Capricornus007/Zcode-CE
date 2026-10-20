@@ -24,7 +24,9 @@ import {
  * 运行：cd packages/services && node --import tsx --test test/cuaProductHelperSpawnEnv.test.ts
  */
 
-const NODE_TS_PATH = fileURLToPath(new URL("../src/cua-product-helper-agent-env.ts", import.meta.url));
+const NODE_TS_PATH = fileURLToPath(
+  new URL("../src/cua-product-helper-agent-env.ts", import.meta.url),
+);
 /** 只用到 warn；buildCuaProductHelperAgentEnv 的其它日志方法不参与断言。 */
 const silentLogger = { warn() {}, info() {}, error() {}, debug() {} };
 

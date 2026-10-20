@@ -434,10 +434,7 @@ test("provider：有 JWT 无求解器 → captcha_unavailable（稳定码，不�
     credentialService: CREDENTIAL_SERVICE,
     resolveDeviceMid: async () => DEVICE_MID,
   });
-  await assert.rejects(
-    provider.claimManualPlan({ planId: "wk-0918" }),
-    /HTTP 500/u,
-  );
+  await assert.rejects(provider.claimManualPlan({ planId: "wk-0918" }), /HTTP 500/u);
 });
 
 test("provider：UI 传入 verifyParam → 走完整 claim 路径", async () => {
@@ -469,10 +466,7 @@ test("provider：空 planId → invalid_request 且不发请求", async () => {
   });
   expectResponse((_req, res) => json(res, 500, {}));
   // 官方实现不做本地 planId 校验（POST 原样发送），非法值由服务端拒绝。
-  await assert.rejects(
-    provider.claimManualPlan({ planId: "   " }),
-    /HTTP 500/u,
-  );
+  await assert.rejects(provider.claimManualPlan({ planId: "   " }), /HTTP 500/u);
 });
 
 test("service：preview / captchaConfig / claim 三个新方法均可装配调用", async () => {
@@ -501,7 +495,7 @@ test("service：preview / captchaConfig / claim 三个新方法均可装配调�
     region: "sgp",
   });
 
-    // 官方实现：claim 无本地验证码门控/失败分型，服务端非 2xx 直接抛 ApiError；
+  // 官方实现：claim 无本地验证码门控/失败分型，服务端非 2xx 直接抛 ApiError；
   // 失败响应的 code/message 通过 outcome（success=false）透传。
   const outcome = await service.claimManualPlan({ planId: "wk-0918" });
   assert.equal(outcome.success, false);

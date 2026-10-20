@@ -246,7 +246,6 @@ function wireRejectedCandidate(
 
 // ————————————————— ConversationProjectionStore —————————————————
 
-
 // 合法形态的空快照：handleFrame 的调用方（SessionDataLayer）在生产里先过 wire schema，
 // store 内部按 rows.window 结构取值 —— 夹具必须给真实形状，而不是 rows:[] 旧数组形态。
 function makeEmptySnapshot() {

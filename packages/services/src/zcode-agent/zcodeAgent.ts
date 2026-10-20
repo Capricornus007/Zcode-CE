@@ -865,9 +865,7 @@ export interface IZCodeAgentService {
    * 宿主侧当前未实现（诚实可选成员）：能力缺席 ⇒ UI 侧不订阅 ⇒ 验证码附件不激活，
    * 而不是整链崩溃。返回可 dispose 的订阅句柄。
    */
-  onDynamicSessionCaptchaCapability?(
-    target: ZCodeAgentSessionCaptchaCapabilityParams,
-  ): Event<void>;
+  onDynamicSessionCaptchaCapability?(target: ZCodeAgentSessionCaptchaCapabilityParams): Event<void>;
   /**
    * CLI 进程级资源样本，带 services 打的 lane 标签（CLI 自己不知道 lane）。
    * 使用 dynamic event 避免 RPC 服务在无人订阅时缓冲周期事件；

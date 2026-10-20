@@ -350,7 +350,8 @@ type BotRemoteWorkspaceReconnectResult = Awaited<
 >;
 
 interface BotRemoteWorkspaceService
-  extends Pick<BotRemoteRuntimeService, "isConnected" | "ensureConnected">,
+  extends
+    Pick<BotRemoteRuntimeService, "isConnected" | "ensureConnected">,
     Partial<Omit<BotRemoteRuntimeService, "isConnected" | "ensureConnected">> {
   resolveWorkspace?: (target: {
     workspacePath: string;
@@ -5866,7 +5867,7 @@ export function createBotsService(
           if (supportsStreamingCardReply()) {
             streamingCardStatus = "error";
             if (!hasStreamingCardMessageText()) {
-                appendStreamingCardMessages([
+              appendStreamingCardMessages([
                 formatBotTaskFailureMessage(await readMessageLocale(), event.error),
               ]);
             }

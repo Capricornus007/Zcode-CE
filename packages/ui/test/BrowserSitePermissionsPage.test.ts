@@ -12,8 +12,10 @@ const h = vi.hoisted(() => ({
     resetEmbeddedBrowserSitePermission: vi.fn(),
   },
 }));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform ,
- useOptionalPlatform: () => h.platform}));
+vi.mock("@/hooks/usePlatform.js", () => ({
+  usePlatform: () => h.platform,
+  useOptionalPlatform: () => h.platform,
+}));
 vi.mock("@/i18n/IntlProvider.js", () => ({
   useZCodeIntl: () => ({ intl: { formatMessage: ({ id }: { id: string }) => id } }),
 }));
@@ -42,7 +44,9 @@ it("按能力目录渲染整表，并把持久层 allow/deny 投影为下拉初�
   expect(screen.getByText("browser.permission.media")).toBeTruthy();
   expect(screen.getByText("browser.permission.geolocation")).toBeTruthy();
   expect(
-    screen.getByTestId("site-permission-setting-geolocation").getAttribute("data-permission-setting"),
+    screen
+      .getByTestId("site-permission-setting-geolocation")
+      .getAttribute("data-permission-setting"),
   ).toBe("allow");
   expect(
     screen

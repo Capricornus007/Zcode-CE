@@ -48,7 +48,9 @@ export function WorkflowRetuneRow({
   requested: number | null;
   runId: string;
 }) {
-  const row = <WorkflowSettingsChangeRow amend={retuneAsAmendMeta(requested, defaultConcurrency)} />;
+  const row = (
+    <WorkflowSettingsChangeRow amend={retuneAsAmendMeta(requested, defaultConcurrency)} />
+  );
   if (onOpen === undefined) {
     return (
       <div data-testid="workflow-retune-row" data-workflow-retune-run-id={runId}>

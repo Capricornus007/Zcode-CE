@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AddressInfo } from "node:net";
-import {
-  ServiceCollection,
-  IBotsService,
-  type IBotsService as BotsService,
-} from "@zcode/services";
+import { ServiceCollection, IBotsService, type IBotsService as BotsService } from "@zcode/services";
 import { createHttpServer } from "../src/http.js";
 import { DEFAULT_BOT_COMMANDS } from "@zcode/shared";
 import { ICredentialService } from "@zcode/services";

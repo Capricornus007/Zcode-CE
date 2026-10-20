@@ -21,13 +21,7 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": [
-            "plan",
-            "build",
-            "edit",
-            "yolo",
-            "auto"
-          ]
+          "enum": ["plan", "build", "edit", "yolo", "auto"]
         },
         "allowedTools": {
           "type": "array",
@@ -137,11 +131,7 @@
                 "properties": {
                   "protocolVersion": {
                     "type": "string",
-                    "enum": [
-                      "auto",
-                      "legacy",
-                      "2026-07-28"
-                    ]
+                    "enum": ["auto", "legacy", "2026-07-28"]
                   },
                   "enabled": {
                     "type": "boolean"
@@ -186,10 +176,7 @@
                     }
                   }
                 },
-                "required": [
-                  "type",
-                  "command"
-                ],
+                "required": ["type", "command"],
                 "additionalProperties": false
               },
               {
@@ -197,11 +184,7 @@
                 "properties": {
                   "protocolVersion": {
                     "type": "string",
-                    "enum": [
-                      "auto",
-                      "legacy",
-                      "2026-07-28"
-                    ]
+                    "enum": ["auto", "legacy", "2026-07-28"]
                   },
                   "enabled": {
                     "type": "boolean"
@@ -260,11 +243,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "type",
-                          "clientId",
-                          "clientSecret"
-                        ],
+                        "required": ["type", "clientId", "clientSecret"],
                         "additionalProperties": false
                       },
                       {
@@ -294,18 +273,13 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     ]
                   }
                 },
-                "required": [
-                  "type",
-                  "url"
-                ],
+                "required": ["type", "url"],
                 "additionalProperties": false
               },
               {
@@ -313,11 +287,7 @@
                 "properties": {
                   "protocolVersion": {
                     "type": "string",
-                    "enum": [
-                      "auto",
-                      "legacy",
-                      "2026-07-28"
-                    ]
+                    "enum": ["auto", "legacy", "2026-07-28"]
                   },
                   "enabled": {
                     "type": "boolean"
@@ -376,11 +346,7 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "type",
-                          "clientId",
-                          "clientSecret"
-                        ],
+                        "required": ["type", "clientId", "clientSecret"],
                         "additionalProperties": false
                       },
                       {
@@ -410,18 +376,13 @@
                             "type": "string"
                           }
                         },
-                        "required": [
-                          "type"
-                        ],
+                        "required": ["type"],
                         "additionalProperties": false
                       }
                     ]
                   }
                 },
-                "required": [
-                  "type",
-                  "url"
-                ],
+                "required": ["type", "url"],
                 "additionalProperties": false
               }
             ]
@@ -483,10 +444,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "source",
-                      "url"
-                    ],
+                    "required": ["source", "url"],
                     "additionalProperties": false
                   },
                   {
@@ -516,10 +474,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "source",
-                      "repo"
-                    ],
+                    "required": ["source", "repo"],
                     "additionalProperties": false
                   },
                   {
@@ -549,10 +504,7 @@
                         }
                       }
                     },
-                    "required": [
-                      "source",
-                      "url"
-                    ],
+                    "required": ["source", "url"],
                     "additionalProperties": false
                   },
                   {
@@ -567,10 +519,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "source",
-                      "package"
-                    ],
+                    "required": ["source", "package"],
                     "additionalProperties": false
                   },
                   {
@@ -585,10 +534,7 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "source",
-                      "path"
-                    ],
+                    "required": ["source", "path"],
                     "additionalProperties": false
                   },
                   {
@@ -603,18 +549,13 @@
                         "minLength": 1
                       }
                     },
-                    "required": [
-                      "source",
-                      "path"
-                    ],
+                    "required": ["source", "path"],
                     "additionalProperties": false
                   }
                 ]
               }
             },
-            "required": [
-              "source"
-            ],
+            "required": ["source"],
             "additionalProperties": false
           }
         },
@@ -629,11 +570,7 @@
               "type": "string"
             },
             "additionalProperties": {
-              "type": [
-                "string",
-                "number",
-                "boolean"
-              ]
+              "type": ["string", "number", "boolean"]
             }
           }
         },
@@ -710,19 +647,11 @@
       "properties": {
         "level": {
           "type": "string",
-          "enum": [
-            "debug",
-            "info",
-            "warn",
-            "error"
-          ]
+          "enum": ["debug", "info", "warn", "error"]
         },
         "format": {
           "type": "string",
-          "enum": [
-            "text",
-            "json"
-          ]
+          "enum": ["text", "json"]
         }
       }
     },
@@ -731,19 +660,11 @@
       "properties": {
         "locale": {
           "type": "string",
-          "enum": [
-            "auto",
-            "en-US",
-            "zh-CN"
-          ]
+          "enum": ["auto", "en-US", "zh-CN"]
         },
         "theme": {
           "type": "string",
-          "enum": [
-            "auto",
-            "dark",
-            "light"
-          ]
+          "enum": ["auto", "dark", "light"]
         }
       }
     },
@@ -836,10 +757,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -884,19 +802,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -943,10 +856,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -991,19 +901,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -1050,10 +955,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -1098,19 +1000,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -1157,10 +1054,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -1205,19 +1099,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -1264,10 +1153,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -1312,19 +1198,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -1371,10 +1252,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -1419,19 +1297,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             },
@@ -1478,10 +1351,7 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         },
                         {
@@ -1526,19 +1396,14 @@
                               "minLength": 1
                             }
                           },
-                          "required": [
-                            "type",
-                            "command"
-                          ],
+                          "required": ["type", "command"],
                           "additionalProperties": {}
                         }
                       ]
                     }
                   }
                 },
-                "required": [
-                  "hooks"
-                ],
+                "required": ["hooks"],
                 "additionalProperties": false
               }
             }

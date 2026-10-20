@@ -532,17 +532,20 @@ const appSettingsObjectSchema = z.object({
     .optional(),
   // 自定义远程资产 CDN 基址（发布根）：schema 是唯一拦得住「绕开 UI 写入取不到资源的基址」
   // 的位置；transform 归一化（去空白与尾斜杠、保留子路径），`empty` 按未设置落盘（留空 = 默认）。
-  remoteAssetCdnBaseUrl: z.string().transform((value, ctx) => {
-    const normalized = normalizeRemoteAssetCdnBaseUrl(value);
-    if (normalized.kind === "invalid") {
-      ctx.addIssue({
-        code: "custom",
-        message: `Remote asset CDN base URL is invalid (${normalized.code})`,
-      });
-      return z.NEVER;
-    }
-    return normalized.kind === "valid" ? normalized.value : "";
-  }).optional(),
+  remoteAssetCdnBaseUrl: z
+    .string()
+    .transform((value, ctx) => {
+      const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+      if (normalized.kind === "invalid") {
+        ctx.addIssue({
+          code: "custom",
+          message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+        });
+        return z.NEVER;
+      }
+      return normalized.kind === "valid" ? normalized.value : "";
+    })
+    .optional(),
   // 输入框电脑操作入口改为默认不展示，设置项保留、默认关闭。
   // default 只对缺省字段生效，显式存过 false 的用户仍保持展示。
   computerUseComposerEntryHidden: z.boolean().default(true),
@@ -652,17 +655,20 @@ export const appSettingsPatchSchema = z.object({
       "GitHub mirror prefix must be an https URL without credentials, query or fragment",
     )
     .optional(),
-  remoteAssetCdnBaseUrl: z.string().transform((value, ctx) => {
-    const normalized = normalizeRemoteAssetCdnBaseUrl(value);
-    if (normalized.kind === "invalid") {
-      ctx.addIssue({
-        code: "custom",
-        message: `Remote asset CDN base URL is invalid (${normalized.code})`,
-      });
-      return z.NEVER;
-    }
-    return normalized.kind === "valid" ? normalized.value : "";
-  }).optional(),
+  remoteAssetCdnBaseUrl: z
+    .string()
+    .transform((value, ctx) => {
+      const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+      if (normalized.kind === "invalid") {
+        ctx.addIssue({
+          code: "custom",
+          message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+        });
+        return z.NEVER;
+      }
+      return normalized.kind === "valid" ? normalized.value : "";
+    })
+    .optional(),
   computerUseComposerEntryHidden: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),

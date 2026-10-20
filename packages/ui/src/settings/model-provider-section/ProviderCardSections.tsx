@@ -497,30 +497,30 @@ export function ProviderModelsSection({
         <span className="text-ui-base text-foreground-subtle">
           {intl.formatMessage({ id: "settings.modelProvider.models" })}
         </span>
-          {onAddModelsFromCatalog ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="default"
-              className="rounded-lg"
-              data-testid={TID_MODEL_PROVIDER_FETCH_MODELS_BUTTON}
-              onClick={() => setCatalogDialogOpen(true)}
-            >
-              <Download data-icon="inline-start" aria-hidden="true" />
-              {intl.formatMessage({ id: "settings.modelProvider.modelCatalog.button" })}
-            </Button>
-          ) : null}
+        {onAddModelsFromCatalog ? (
           <Button
             type="button"
             variant="secondary"
             size="default"
             className="rounded-lg"
-            data-testid={TID_MODEL_PROVIDER_ADD_MODEL_BUTTON}
-            onClick={openAddDialog}
+            data-testid={TID_MODEL_PROVIDER_FETCH_MODELS_BUTTON}
+            onClick={() => setCatalogDialogOpen(true)}
           >
-            <Plus data-icon="inline-start" aria-hidden="true" />
-            {intl.formatMessage({ id: "settings.modelProvider.addModel" })}
+            <Download data-icon="inline-start" aria-hidden="true" />
+            {intl.formatMessage({ id: "settings.modelProvider.modelCatalog.button" })}
           </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant="secondary"
+          size="default"
+          className="rounded-lg"
+          data-testid={TID_MODEL_PROVIDER_ADD_MODEL_BUTTON}
+          onClick={openAddDialog}
+        >
+          <Plus data-icon="inline-start" aria-hidden="true" />
+          {intl.formatMessage({ id: "settings.modelProvider.addModel" })}
+        </Button>
       </div>
       {models.length > 0 ? (
         <div className="overflow-hidden rounded-lg border border-input-border bg-input">

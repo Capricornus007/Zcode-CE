@@ -411,9 +411,9 @@ test("附件必须同时订阅事件并声明能力，且两者在同一 effect 
   );
   assert.ok(cleanup.includes("subscription.dispose()"), "cleanup 必须撤销订阅");
   assert.ok(
-        cleanup.includes("capabilitySubscription?.dispose()"),
-        "cleanup 必须撤销能力声明（?. 为 CE 2b·3 可选降级形态）",
-      );
+    cleanup.includes("capabilitySubscription?.dispose()"),
+    "cleanup 必须撤销能力声明（?. 为 CE 2b·3 可选降级形态）",
+  );
   assert.ok(cleanup.includes("orchestrator.dispose()"), "cleanup 必须停掉编排器");
 });
 

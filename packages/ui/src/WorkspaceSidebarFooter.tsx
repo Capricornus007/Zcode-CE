@@ -127,10 +127,10 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   workspacePath?: string;
   workspaceIdentity?: string;
   workspaceRemoteSessionId?: string;
-  activeTaskId?: string | null;  /**
+  activeTaskId?: string | null /**
    * 远控入口（ce.3 · 切片 1）：状态与打开动作**由调用方注入**，footer 不自己取状态。
    * 不传则不渲染入口（Settings 等复用 footer 的场景无需知道远控）。
-   */
+   */;
   remoteControlEntry?: RemoteControlEntry;
   isDesktop?: boolean;
   banner?: ReactNode;

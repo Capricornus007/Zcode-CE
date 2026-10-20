@@ -48,10 +48,14 @@ vi.mock("@/hooks/useProviderSettingsView.js", () => ({
     },
   }),
 }));
-vi.mock("@/hooks/useServices.js", () => ({ useServices: () => h.services ,
- useOptionalServices: () => h.services}));
-vi.mock("@/hooks/usePlatform.js", () => ({ usePlatform: () => h.platform ,
- useOptionalPlatform: () => h.platform}));
+vi.mock("@/hooks/useServices.js", () => ({
+  useServices: () => h.services,
+  useOptionalServices: () => h.services,
+}));
+vi.mock("@/hooks/usePlatform.js", () => ({
+  usePlatform: () => h.platform,
+  useOptionalPlatform: () => h.platform,
+}));
 vi.mock("@/store/StoreProvider.js", () => ({
   useZCodeStore: (selector: (state: typeof h.store) => unknown) => selector(h.store),
   useZCodeStoreWithDefault: (selector: (state: typeof h.store) => unknown) => selector(h.store),

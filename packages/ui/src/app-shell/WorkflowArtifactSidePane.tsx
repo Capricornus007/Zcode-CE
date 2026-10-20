@@ -261,9 +261,7 @@ function WorkflowArtifactView({
           <span className="text-ui-sm text-foreground-subtle">{kindLabel}</span>
           <ArtifactVersionStepper
             availableVersions={availableVersions}
-            onSelect={(nextVersion) =>
-              setSelection({ key: selectionKey, version: nextVersion })
-            }
+            onSelect={(nextVersion) => setSelection({ key: selectionKey, version: nextVersion })}
             version={version}
             versionIndex={versionIndex}
           />

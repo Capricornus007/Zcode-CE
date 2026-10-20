@@ -349,7 +349,6 @@ export class BigModelCodingPlanSubscriptionProvider {
     return await this.manualClaimCaptcha.getConfig(options);
   }
 
-
   async claimManualPlan(request: ManualClaimPlanClaimRequest): Promise<ManualClaimPlanClaimResult> {
     const token = (await this.credentialService.load(ZCODE_JWT_TOKEN_KEY))?.trim();
     if (!token) {

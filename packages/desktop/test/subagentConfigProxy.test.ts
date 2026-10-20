@@ -38,7 +38,12 @@ it.each([false, true])(
     );
     // Windows 修正：NODE_OPTIONS 的 --import= 把裸盘符路径当 URL scheme（ERR_UNSUPPORTED_
     // ESM_URL_SCHEME）；转成 file:// URL 后跨平台可用。
-    const proxySpecifier = process.platform === "win32" ? new URL("file:///" + proxy.replace(/^[A-Za-z]:/, (m) => m.toLowerCase()).replaceAll("\\", "/")).href : proxy;
+    const proxySpecifier =
+      process.platform === "win32"
+        ? new URL(
+            "file:///" + proxy.replace(/^[A-Za-z]:/, (m) => m.toLowerCase()).replaceAll("\\", "/"),
+          ).href
+        : proxy;
     const child = spawn(process.execPath, [entry, "app-server", "--stdio"], {
       env: {
         ...process.env,

@@ -518,10 +518,8 @@ function createWebPlatform(options?: {
     // 拒绝并说明需要桌面宿主（UI 的能力探测读取 status=stopped ⇒ 入口不渲染）。
     getWebServiceStatus: () =>
       Promise.resolve({ state: "stopped" as const, adopted: false, loopback: true }),
-    startWebService: () =>
-      Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
-    stopWebService: () =>
-      Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
+    startWebService: () => Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
+    stopWebService: () => Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
     getWebServiceConnectionInfo: () => Promise.resolve(null),
     onWebServiceChanged: () => () => {},
     isDockerAvailable: () =>

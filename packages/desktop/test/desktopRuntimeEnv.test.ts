@@ -365,9 +365,7 @@ describe("desktopRuntimeEnv resolveRemoteAssetDirs", () => {
 
     expect(dirs.mockCdnDir).toBeUndefined();
     expect(dirs.sourceServerArtifactPolicy).toBeUndefined();
-    expect(dirs.remoteCdnBaseUrl).toBe(
-      "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
-    );
+    expect(dirs.remoteCdnBaseUrl).toBe("https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test");
     expect(dirs.remoteCdnBaseUrls).toEqual([
       "https://cdn-zcode.z.ai/zcode/electron/releases/0.0.0-test",
     ]);

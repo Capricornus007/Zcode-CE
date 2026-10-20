@@ -5818,7 +5818,10 @@ export function createZCodeAgentService(
       const requestHeaders = {
         ...accountRequestAuth?.headers,
       };
-      Object.assign(requestHeaders, mergeCaptchaVerificationHeaders(params.response.runtimeProviderHeaders));
+      Object.assign(
+        requestHeaders,
+        mergeCaptchaVerificationHeaders(params.response.runtimeProviderHeaders),
+      );
       const requestAuth =
         accountRequestAuth?.apiKey || Object.keys(requestHeaders).length > 0
           ? {

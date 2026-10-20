@@ -9,10 +9,7 @@
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import { BROKER_UNAVAILABLE_ENV, isCuaHelperError } from "@zcode/zcode-cua/broker";
 import { resolveCuaProductHelperSpawnEnv } from "./cua-permission-broker/cuaProductHelperSpawnEnv.js";
-import type {
-  CuaHelperHost,
-  ManagedCuaProductHelperHost,
-} from "./cua-permission-broker/index.js";
+import type { CuaHelperHost, ManagedCuaProductHelperHost } from "./cua-permission-broker/index.js";
 import { ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY } from "@zcode/shared";
 import { BROKER_SOCKET_ENV } from "@zcode/zcode-cua/broker";
 
@@ -24,10 +21,7 @@ type CuaProductMcpServerResolverContext = Record<string, unknown>;
  * 有界等待 Helper transport 就绪（官方 waitForCuaHelperStartup 同款语义）：
  * timeout 内 ready 则透传 handle，超时由 transport promise 自身的 reject 传播（fail-closed）。
  */
-function waitForCuaHelperStartup<T>(
-  transportPromise: Promise<T>,
-  timeoutMs: number,
-): Promise<T> {
+function waitForCuaHelperStartup<T>(transportPromise: Promise<T>, timeoutMs: number): Promise<T> {
   return Promise.race([
     transportPromise,
     new Promise<never>((_, reject) => {
@@ -108,7 +102,6 @@ function trackCuaProductHelperStartup(
   );
 }
 
-
 function cuaHelperStartErrorDetail(error: unknown): string {
   return isCuaHelperError(error)
     ? `${error.code}: ${error.message}`
@@ -116,7 +109,6 @@ function cuaHelperStartErrorDetail(error: unknown): string {
       ? error.message
       : String(error);
 }
-
 
 export async function buildCuaProductHelperAgentEnv(
   host:
@@ -299,4 +291,3 @@ export async function buildCuaProductHelperAgentEnv(
     return helperFailureEnv;
   }
 }
-

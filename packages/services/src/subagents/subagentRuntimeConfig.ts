@@ -36,8 +36,7 @@ type Scope<T> = ReturnType<typeof createSubagentConfigScope<T>>;
  * （回归用例：filename-only case rename）。Linux 允许 `A.md` 与 `a.md` 共存，
  * 必须保持精确键，不能无条件小写。
  */
-const CACHE_KEY_CASE_INSENSITIVE =
-  process.platform === "win32" || process.platform === "darwin";
+const CACHE_KEY_CASE_INSENSITIVE = process.platform === "win32" || process.platform === "darwin";
 const cacheKey = (path: string) => (CACHE_KEY_CASE_INSENSITIVE ? path.toLowerCase() : path);
 
 async function listDocuments(root: string): Promise<string[]> {

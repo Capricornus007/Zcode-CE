@@ -259,8 +259,8 @@ describe("MCP Settings Shared", () => {
           url: "",
           headers: "",
           timeoutMs: "",
-        protocolVersion: "",
-        disabledTools: "",
+          protocolVersion: "",
+          disabledTools: "",
         },
       );
 
@@ -291,8 +291,8 @@ describe("MCP Settings Shared", () => {
           url: "",
           headers: "",
           timeoutMs: "",
-        protocolVersion: "",
-        disabledTools: "",
+          protocolVersion: "",
+          disabledTools: "",
         },
       );
 

@@ -29,13 +29,13 @@ const until = (assertion: () => unknown) => vi.waitFor(assertion, { timeout: 800
 async function pair(prepareHome?: (homeDir: string) => Promise<void>) {
   const homeDir = await localTempHome("subagent-host-watch-");
 
-// Windows 对抗审查：%TEMP% 根会被外部应用投放锁定文件（LISF_* 等），锚目录未建时
-// 的浅层父监听上溯扫描触发 EPERM 重载风暴。home 建到 %LOCALAPPDATA% 下避开。
-async function localTempHome(prefix: string): Promise<string> {
-  const localRoot = join(tmpdir(), "..", "zcode-test-homes");
-  await mkdir(localRoot, { recursive: true });
-  return mkdtemp(join(localRoot, prefix));
-}
+  // Windows 对抗审查：%TEMP% 根会被外部应用投放锁定文件（LISF_* 等），锚目录未建时
+  // 的浅层父监听上溯扫描触发 EPERM 重载风暴。home 建到 %LOCALAPPDATA% 下避开。
+  async function localTempHome(prefix: string): Promise<string> {
+    const localRoot = join(tmpdir(), "..", "zcode-test-homes");
+    await mkdir(localRoot, { recursive: true });
+    return mkdtemp(join(localRoot, prefix));
+  }
   cleanup.push(() => rm(homeDir, { recursive: true, force: true }));
   await prepareHome?.(homeDir);
   const a = createSubagentsService({ homeDir }),

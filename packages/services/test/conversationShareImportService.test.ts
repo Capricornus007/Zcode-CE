@@ -18,9 +18,7 @@ afterEach(async () => {
 
 describe("ConversationShareService import", () => {
   afterEach(async () => {
-    const { setBotAttachmentAllowedHosts } = await import(
-      "../src/bots/attachmentUrlGuard.js"
-    );
+    const { setBotAttachmentAllowedHosts } = await import("../src/bots/attachmentUrlGuard.js");
     setBotAttachmentAllowedHosts([]);
   });
   it("installs imported artifacts under the captured local workspace without deleting siblings on failure", async () => {
@@ -459,9 +457,7 @@ describe("ConversationShareService import", () => {
   it("对象存储把 .md 标成别的 content-type 时仍能导入；SHA-256 不符仍然拒绝", async () => {
     // S5 判据会把 127.0.0.1（本用例本地 object-storage server）按私网拦下；
     // 登记放行名单让 HTTP 层行为（404/超时/Content-Length 预检）成为被测对象。
-    const { setBotAttachmentAllowedHosts } = await import(
-      "../src/bots/attachmentUrlGuard.js"
-    );
+    const { setBotAttachmentAllowedHosts } = await import("../src/bots/attachmentUrlGuard.js");
     setBotAttachmentAllowedHosts(["127.0.0.1"]);
     const mdBytes = new TextEncoder().encode("# feature map\n");
     const root = await mkdtemp(join(tmpdir(), "zcode-share-import-mime-"));
@@ -601,9 +597,7 @@ describe("ConversationShareService import", () => {
   it("Content-Length 超过 manifest 声明时在读 body 前中断，不把超大响应读进内存", async () => {
     // S5 判据会把 127.0.0.1（本用例本地 object-storage server）按私网拦下；
     // 登记放行名单让 HTTP 层行为（404/超时/Content-Length 预检）成为被测对象。
-    const { setBotAttachmentAllowedHosts } = await import(
-      "../src/bots/attachmentUrlGuard.js"
-    );
+    const { setBotAttachmentAllowedHosts } = await import("../src/bots/attachmentUrlGuard.js");
     setBotAttachmentAllowedHosts(["127.0.0.1"]);
     const mdBytes = new TextEncoder().encode("# feature map\n");
     const root = await mkdtemp(join(tmpdir(), "zcode-share-import-oversize-"));
@@ -720,9 +714,7 @@ describe("ConversationShareService import", () => {
   it("下载挂住时按超时以 network 失败，不会无限停在 downloading 阶段", async () => {
     // S5 判据会把 127.0.0.1（本用例本地 object-storage server）按私网拦下；
     // 登记放行名单让 HTTP 层行为（404/超时/Content-Length 预检）成为被测对象。
-    const { setBotAttachmentAllowedHosts } = await import(
-      "../src/bots/attachmentUrlGuard.js"
-    );
+    const { setBotAttachmentAllowedHosts } = await import("../src/bots/attachmentUrlGuard.js");
     setBotAttachmentAllowedHosts(["127.0.0.1"]);
     const mdBytes = new TextEncoder().encode("# feature map\n");
     const root = await mkdtemp(join(tmpdir(), "zcode-share-import-timeout-"));

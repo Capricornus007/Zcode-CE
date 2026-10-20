@@ -1374,7 +1374,13 @@ export function createHttpServer(
     const auditContext = buildConnectionAuditContext(c);
     return {
       onOpen(_event, ws) {
-        setupChannelServer(ws.raw as WebSocket, services, "desktop-continuous", auditContext, options.topicResourcePeers);
+        setupChannelServer(
+          ws.raw as WebSocket,
+          services,
+          "desktop-continuous",
+          auditContext,
+          options.topicResourcePeers,
+        );
       },
     };
   });

@@ -250,11 +250,11 @@ export function ProviderRuntimeHeadersCaptchaAttachment({
     // 事件通道的 disposable 由 channelClient 在客户端本地构造，不跨 RPC，因此可用。
     // 该事件不承载数据，订阅动作本身就是「声明」。
     // CE 声明面（2b·3）：宿主未实现该通道时为可选成员——能力缺席 ⇒ 不订阅（诚实降级）。
-    const capabilitySubscription = agentService
-      .onDynamicSessionCaptchaCapability?.(target)
-      ?.(() => {
+    const capabilitySubscription = agentService.onDynamicSessionCaptchaCapability?.(target)?.(
+      () => {
         // never 载荷，不会有事件到达；回调仅为满足 Event 契约。
-      });
+      },
+    );
 
     // 订阅建立日志：本链路的失败形态是「UI 静默收不到事件」，真机排查需要这一条。
     logger.debug("[provider-runtime-captcha] 已订阅 providerRuntimeHeaders.request", {

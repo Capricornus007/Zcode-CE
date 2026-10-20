@@ -1224,7 +1224,10 @@ export interface IPlatformService {
   /** 读取本地 Web 服务的对外状态（契约 §5）。 */
   getWebServiceStatus(): Promise<WebServiceStatusPayload>;
   /** 启动本地 Web 服务；同步等到最终态才返回，中间态没有出口。 */
-  startWebService(options: { scope: "loopback" | "lan"; port?: number }): Promise<WebServiceStatusPayload>;
+  startWebService(options: {
+    scope: "loopback" | "lan";
+    port?: number;
+  }): Promise<WebServiceStatusPayload>;
   /** 停止本地 Web 服务，返回停后状态。 */
   stopWebService(): Promise<WebServiceStatusPayload>;
   /** 取带令牌的连接信息（契约 §5：带令牌的链接只走这一条通道）；服务未在跑时为 null。 */
@@ -1234,7 +1237,9 @@ export interface IPlatformService {
   /** 已建立连接列表快照（spec §6.4）；null = 不知道（服务没在跑/读失败/鉴权失败）。 */
   getWebServiceConnections?(): Promise<RemoteControlConnectionsPayload | null>;
   /** 断开连接（按 id 或全部）；幂等。 */
-  revokeWebServiceConnection?(input: RemoteControlRevokeRequest): Promise<RemoteControlRevokeResult>;
+  revokeWebServiceConnection?(
+    input: RemoteControlRevokeRequest,
+  ): Promise<RemoteControlRevokeResult>;
   /** 轮换 Web 服务令牌；旧令牌立即失效。 */
   rotateWebServiceToken?(): Promise<RemoteControlRotateTokenResult>;
 }

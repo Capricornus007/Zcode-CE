@@ -3961,9 +3961,8 @@ describe("botsService messageFlow", () => {
     // S1 后附件下载走 guarded pinned fetch（不经过全局 fetch 桩）。
     // 本地 server 返回 404，保持用例意图：下载失败 → 可操作文案，而非 provider 内部错误。
     const { createServer } = await import("node:http");
-    const { setBotAttachmentDnsResolver, setBotAttachmentAllowedHosts } = await import(
-      "../src/bots/attachmentUrlGuard.js"
-    );
+    const { setBotAttachmentDnsResolver, setBotAttachmentAllowedHosts } =
+      await import("../src/bots/attachmentUrlGuard.js");
     const server = createServer((_req, res) => {
       res.writeHead(404, { "content-type": "text/plain" });
       res.end("missing");

@@ -57,7 +57,8 @@ vi.mock("@/lib/settingsNavigation.js", async (importOriginal) => ({
 
 vi.mock("@/store/TabStoreProvider.js", () => ({
   useTabStore: (selector: (state: typeof tabStoreState) => unknown) => selector(tabStoreState),
-  useOptionalTabStore: (selector: (state: typeof tabStoreState) => unknown) => selector(tabStoreState),
+  useOptionalTabStore: (selector: (state: typeof tabStoreState) => unknown) =>
+    selector(tabStoreState),
 }));
 // 页层只消费项目目录；单独 hook 测试覆盖 Host 身份和离线过滤。
 vi.mock("@/project-sidebar/useSavedWorkflowProjectOptions.js", () => ({

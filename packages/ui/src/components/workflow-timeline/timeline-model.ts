@@ -302,59 +302,60 @@ function computeWorkflowTimeline(
     const pills: TimelinePill[] = participantsOfPhase(live.graph, phase.id)
       .filter((participant) => !(holeWaiting && participant.lane === "main"))
       .map((participant) => {
-      const instance = live.instances[participant.id];
-      const lane = laneRefs.get(participant.lane) ?? {
-        id: participant.lane,
-        laneClass: laneClassOf(participant.lane),
-      };
-      // 折叠为空 = 这个子代理在这一站、这一次 run 里什么都没做：空心是诚实的。undefined 只留给
-      // 无 run 的静态药丸。
-      const status =
-        run === undefined
-          ? undefined
-          : (participantStatus(participant, overlay.statuses, live.participantStatuses) ??
-            "pending");
-      const sessionId =
-        instance === undefined
-          ? undefined
-          : sessionByInstance.get(`${participant.lane}@${instance.ordinal}`);
-      const slot =
-        run !== undefined && lane.laneClass === "agent"
-          ? {
-              ordinal: instance?.ordinal ?? (participant.member?.index ?? 0) + 1,
-              siteId: participant.lane,
-            }
-          : undefined;
-      const avatarKey = `${participant.lane}@${instance?.ordinal ?? (participant.member?.index ?? 0) + 1}`;
-      if (lane.laneClass === "agent" && !avatarIndexes.has(avatarKey)) {
-        avatarIndexes.set(avatarKey, avatarIndexes.size);
-      }
-      return {
-        ...(lane.laneClass === "agent" ? { avatarIndex: avatarIndexes.get(avatarKey)! } : {}),
-        key: participant.id,
-        lane,
-        laneClass: lane.laneClass,
-        ...(instance?.name === undefined ? {} : { runtimeName: instance.name }),
-        status,
-        ...(instance === undefined
-          ? {}
-          : {
-              instance: {
-                ordinal: instance.ordinal,
+        const instance = live.instances[participant.id];
+        const lane = laneRefs.get(participant.lane) ?? {
+          id: participant.lane,
+          laneClass: laneClassOf(participant.lane),
+        };
+        // 折叠为空 = 这个子代理在这一站、这一次 run 里什么都没做：空心是诚实的。undefined 只留给
+        // 无 run 的静态药丸。
+        const status =
+          run === undefined
+            ? undefined
+            : (participantStatus(participant, overlay.statuses, live.participantStatuses) ??
+              "pending");
+        const sessionId =
+          instance === undefined
+            ? undefined
+            : sessionByInstance.get(`${participant.lane}@${instance.ordinal}`);
+        const slot =
+          run !== undefined && lane.laneClass === "agent"
+            ? {
+                ordinal: instance?.ordinal ?? (participant.member?.index ?? 0) + 1,
                 siteId: participant.lane,
-                ...(sessionId === undefined ? {} : { sessionId }),
-              },
-            }),
-        ...(slot === undefined ? {} : { slot }),
-        ...(run !== undefined && lane.laneClass === "workspace"
-          ? { workspace: { phaseId: phase.id } }
-          : {}),
-        stepIds: [...participant.steps],
-        ...(instance !== undefined && askingInstances.has(`${participant.lane}@${instance.ordinal}`)
-          ? { asking: true as const }
-          : {}),
-      };
-    });
+              }
+            : undefined;
+        const avatarKey = `${participant.lane}@${instance?.ordinal ?? (participant.member?.index ?? 0) + 1}`;
+        if (lane.laneClass === "agent" && !avatarIndexes.has(avatarKey)) {
+          avatarIndexes.set(avatarKey, avatarIndexes.size);
+        }
+        return {
+          ...(lane.laneClass === "agent" ? { avatarIndex: avatarIndexes.get(avatarKey)! } : {}),
+          key: participant.id,
+          lane,
+          laneClass: lane.laneClass,
+          ...(instance?.name === undefined ? {} : { runtimeName: instance.name }),
+          status,
+          ...(instance === undefined
+            ? {}
+            : {
+                instance: {
+                  ordinal: instance.ordinal,
+                  siteId: participant.lane,
+                  ...(sessionId === undefined ? {} : { sessionId }),
+                },
+              }),
+          ...(slot === undefined ? {} : { slot }),
+          ...(run !== undefined && lane.laneClass === "workspace"
+            ? { workspace: { phaseId: phase.id } }
+            : {}),
+          stepIds: [...participant.steps],
+          ...(instance !== undefined &&
+          askingInstances.has(`${participant.lane}@${instance.ordinal}`)
+            ? { asking: true as const }
+            : {}),
+        };
+      });
     const nodeStatus = collapseStatuses(
       memberSteps.map((step) => step.id),
       overlay.statuses,

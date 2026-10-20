@@ -57,11 +57,7 @@ const ChuanCell = memo(function ChuanCell({
       </div>
       <span className="font-mono text-ui-xl text-foreground">{chuan.zhi}</span>
       <span className="font-mono text-ui-xs text-foreground-subtle">
-        {[
-          chuan.dun ? `遁${chuan.dun}` : null,
-          chuan.liuqin ?? null,
-          chuan.wangshuai ?? null,
-        ]
+        {[chuan.dun ? `遁${chuan.dun}` : null, chuan.liuqin ?? null, chuan.wangshuai ?? null]
           .filter(Boolean)
           .join(" ")}
       </span>
@@ -121,28 +117,19 @@ export const LiurenPanBlock = memo(function LiurenPanBlock({
   const kongwang = meta?.kongwang;
   const title =
     document.title ??
-    (meta?.siganzhi?.day && meta?.zhanshi
-      ? `${meta.siganzhi.day}日 ${meta.zhanshi}时`
-      : undefined);
+    (meta?.siganzhi?.day && meta?.zhanshi ? `${meta.siganzhi.day}日 ${meta.zhanshi}时` : undefined);
 
   return (
     <div className="flex flex-col gap-2 p-1" data-liuren-pan="">
       {(title || meta) && (
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-1">
-          {title ? (
-            <span className="text-ui-sm font-medium text-foreground">{title}</span>
-          ) : null}
+          {title ? <span className="text-ui-sm font-medium text-foreground">{title}</span> : null}
           {meta?.method ? (
             <span className="text-ui-xs text-warning">取三传：{meta.method}</span>
           ) : null}
           {meta?.siganzhi ? (
             <span className="font-mono text-ui-xs text-foreground-subtle">
-              {[
-                meta.siganzhi.year,
-                meta.siganzhi.month,
-                meta.siganzhi.day,
-                meta.siganzhi.hour,
-              ]
+              {[meta.siganzhi.year, meta.siganzhi.month, meta.siganzhi.day, meta.siganzhi.hour]
                 .filter(Boolean)
                 .join(" ")}
             </span>
@@ -156,9 +143,7 @@ export const LiurenPanBlock = memo(function LiurenPanBlock({
             </span>
           ) : null}
           {meta?.keti?.length ? (
-            <span className="text-ui-xs text-foreground-subtle">
-              课体 {meta.keti.join("+")}
-            </span>
+            <span className="text-ui-xs text-foreground-subtle">课体 {meta.keti.join("+")}</span>
           ) : null}
           {meta?.benming ? (
             <span className="text-ui-xs text-foreground-subtlest">本命 {meta.benming}</span>
@@ -190,30 +175,30 @@ export const LiurenPanBlock = memo(function LiurenPanBlock({
       </div>
 
       {/* 神煞 chips（载荷可能上百项：渲染截断防盘面膨胀，JSON 全量留给模型读） */}
-      {document.shensha && Object.keys(document.shensha).length > 0 ? (
-        (() => {
-          const entries = Object.entries(document.shensha);
-          const visible = entries.slice(0, SHENSHA_CHIP_LIMIT);
-          return (
-            <div className="flex flex-wrap gap-1 px-1" data-liuren-shensha="">
-              {visible.map(([name, desc]) => (
-                <span
-                  key={name}
-                  className="rounded border border-border bg-surface px-1.5 py-0.5 text-ui-xs text-foreground-subtle"
-                >
-                  {name}
-                  {desc ? `:${desc}` : ""}
-                </span>
-              ))}
-              {entries.length > SHENSHA_CHIP_LIMIT ? (
-                <span className="px-1 py-0.5 text-ui-xs text-foreground-subtlest">
-                  …等 {entries.length} 项
-                </span>
-              ) : null}
-            </div>
-          );
-        })()
-      ) : null}
+      {document.shensha && Object.keys(document.shensha).length > 0
+        ? (() => {
+            const entries = Object.entries(document.shensha);
+            const visible = entries.slice(0, SHENSHA_CHIP_LIMIT);
+            return (
+              <div className="flex flex-wrap gap-1 px-1" data-liuren-shensha="">
+                {visible.map(([name, desc]) => (
+                  <span
+                    key={name}
+                    className="rounded border border-border bg-surface px-1.5 py-0.5 text-ui-xs text-foreground-subtle"
+                  >
+                    {name}
+                    {desc ? `:${desc}` : ""}
+                  </span>
+                ))}
+                {entries.length > SHENSHA_CHIP_LIMIT ? (
+                  <span className="px-1 py-0.5 text-ui-xs text-foreground-subtlest">
+                    …等 {entries.length} 项
+                  </span>
+                ) : null}
+              </div>
+            );
+          })()
+        : null}
     </div>
   );
 });

@@ -45,7 +45,8 @@ export const desktopRuntimeEnv: ZCodeRuntimeEnv = isLocalDevelopmentRuntime
   : "production";
 // 身份看编译期 flavor 而不是 ZCODE_ENV：ZCODE_PREVIEW_IDENTITY=1 的生产后端构建同样是 Preview，
 // 需要独立的应用名、Electron 数据目录和 Helper 安装子目录才能与正式版并排运行。
-export const isPreviewPackagedRuntime = !isLocalDevelopmentRuntime && ZCODE_PRODUCT_FLAVOR === "preview";
+export const isPreviewPackagedRuntime =
+  !isLocalDevelopmentRuntime && ZCODE_PRODUCT_FLAVOR === "preview";
 
 function readRuntimeEnvOverride(name: string): string | undefined {
   return process.env[name]?.trim() || undefined;
@@ -515,8 +516,8 @@ export function resolvePackagedAgentTelemetryEnv(
   compiledEnv:
     | Readonly<Record<string, string>>
     | undefined = typeof __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__ === "undefined"
-      ? undefined
-      : __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__,
+    ? undefined
+    : __ZCODE_PACKAGED_AGENT_TELEMETRY_ENV__,
 ): Record<string, string> {
   if (!compiledEnv) {
     return {};

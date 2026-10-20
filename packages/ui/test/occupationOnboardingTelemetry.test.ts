@@ -17,7 +17,10 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("@/hooks/usePlatform.js", () => ({
   usePlatform: () => ({ reportTelemetryEvent: mocks.report, getDeviceId: () => "record-device" }),
-  useOptionalPlatform: () => ({ reportTelemetryEvent: mocks.report, getDeviceId: () => "record-device" }),
+  useOptionalPlatform: () => ({
+    reportTelemetryEvent: mocks.report,
+    getDeviceId: () => "record-device",
+  }),
 }));
 vi.mock("@/hooks/useSettingService.js", () => ({
   useSettings: () => ({

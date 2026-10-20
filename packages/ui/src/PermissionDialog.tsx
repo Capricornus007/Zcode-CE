@@ -937,9 +937,7 @@ export function PermissionDialog({
                 const ruleScopes =
                   getPermissionOptionDisplayKind(option.kind) === "allowAlways" &&
                   !officialCuaProjectPermission
-                    ? readPermissionRuleScopes(option).filter(
-                        (scope) => scope.kind !== "exact",
-                      )
+                    ? readPermissionRuleScopes(option).filter((scope) => scope.kind !== "exact")
                     : [];
 
                 return (

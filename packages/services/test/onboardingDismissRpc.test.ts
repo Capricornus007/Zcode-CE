@@ -68,11 +68,7 @@ test("dismissOnboarding 经 RPC 通道调用后，重启判定为不再引导", 
       loadUserId: async () => USER,
       hasExistingLocalTask: async () => false,
     });
-    assert.equal(
-      await restarted.shouldOnboard(DEVICE_MID),
-      false,
-      "经 RPC 关闭后重启不得再弹",
-    );
+    assert.equal(await restarted.shouldOnboard(DEVICE_MID), false, "经 RPC 关闭后重启不得再弹");
   } finally {
     client?.dispose();
     server?.dispose();

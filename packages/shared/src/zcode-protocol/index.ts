@@ -37,8 +37,6 @@ import { MCP_SERVER_MAX_DISABLED_TOOLS } from "../mcpDisabledTools.js";
 // 上述旧协议 client/server 组删除时，本文件整体删除。
 // 注：外部零消费 schema 多为存活 schema 联合的内部依赖，随宿主文件一起处理，勿单删。
 import { bashOutputDisplaySchema } from "../bash-output-display.js";
-<<<<<<< HEAD
-=======
 import { zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
 import { completeModelPropertiesDataSchema } from "../model-config.js";
@@ -49,7 +47,6 @@ import { modelSelectionSchema } from "../model-selection.js";
 import { APP_USAGE_RANGES, appUsageSnapshotSchema } from "../usage-stats.js";
 import { DYNAMIC_WORKFLOW_MODES } from "../dynamic-workflow-feature.js";
 import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
->>>>>>> zai-org/main
 // 后台详情共享精简的只读响应 schema，不携带命令或计时元数据。
 export * from "../background-bash-output.js";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
@@ -69,13 +66,10 @@ import {
   browserSessionContextKindSchema,
 } from "../browser-use/backend.js";
 import { browserCommandResultSchema } from "../browser-use/result.js";
-<<<<<<< HEAD
-=======
 import { appToolSearchModeSchema } from "../app-runtime-preferences.js";
 import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
 import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
 import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
->>>>>>> zai-org/main
 import {
   dangerousCommandPolicySchema,
   integratedTerminalShellSelectionSchema,
@@ -740,14 +734,10 @@ export const zcodeProtocolMcpServerSchema = z.union([
       env: z.array(zcodeProtocolMcpEntrySchema),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
-<<<<<<< HEAD
       // 工具级启停（disabledTools）必须走 wire：它是 server 配置对象的一部分，UI 读到的
       // server.config 要原样下发给 agent。这个 schema 是 .strict() 的——漏声明该键，
       // host 传下来的启用列表会在协议校验阶段被判成非法，整个 session/create 失败。
       disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
-=======
-      alwaysLoad: z.boolean().optional(),
->>>>>>> zai-org/main
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -760,11 +750,7 @@ export const zcodeProtocolMcpServerSchema = z.union([
       oauth: zcodeProtocolMcpOAuthSchema.optional(),
       isolation: z.enum(["session", "workspace"]).optional(),
       protocolVersion: z.enum(["legacy", "auto", "2026-07-28"]).optional(),
-<<<<<<< HEAD
       disabledTools: z.array(nonEmptyString).max(MCP_SERVER_MAX_DISABLED_TOOLS).optional(),
-=======
-      alwaysLoad: z.boolean().optional(),
->>>>>>> zai-org/main
       timeoutMs: z.number().int().positive().optional(),
     })
     .strict(),
@@ -2060,11 +2046,8 @@ export const zcodeSessionRuntimePreferencesResultSchema = z
   .object({
     additionalDirectories: z.array(nonEmptyString).max(256).optional(),
     nativeSearchEnhancementsEnabled: z.boolean(),
-<<<<<<< HEAD
-=======
     toolSearchMode: appToolSearchModeSchema.default("off"),
     subagentRuntimeConfigEnabled: z.boolean().optional(),
->>>>>>> zai-org/main
     memoryEnabled: z.boolean().default(false),
     askUserQuestionAutoResolutionEnabled: z.boolean().default(true),
     integratedTerminalShell: integratedTerminalShellSelectionSchema.optional(),
@@ -3375,13 +3358,8 @@ export type ZCodeWorkflowsMoveResult = z.infer<typeof zcodeWorkflowsMoveResultSc
 // run, and running it again」）──
 // 完成卡的「直接保存」走这条：不收脚本，只收 runId——要写的那份正文是这次 run 实际执行的
 // 脚本，agent 从 journal 记录（`scriptText`）里读。脚本不经 GUI 走一圈有两个后果值得写下来：
-<<<<<<< HEAD
 // 修订过的 run 存下的是结算它的那一份，而工具行入参被快照裁成预览的老对话也照样存得出
 // 同样的字节。名字合法性、覆盖、遮蔽与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
-=======
-// 修订过的 run 存下的是**结算它的**那一份，而工具行入参被快照裁成预览的老对话也照样存得出
-// 同样的字节。名字合法性、覆盖、遮��与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
->>>>>>> zai-org/main
 /** 另一档已有同名定义（遮蔽事实）；与 contracts 的 SavedWorkflowShadowing 逐字对齐。 */
 export const zcodeSavedWorkflowShadowingSchema = z.enum(["hides_global", "hidden_by_project"]);
 export type ZCodeSavedWorkflowShadowing = z.infer<typeof zcodeSavedWorkflowShadowingSchema>;

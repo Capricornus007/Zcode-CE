@@ -18,7 +18,6 @@ import {
   adoptSourceServerWorkspaceSchema,
   SOURCE_SERVER_SCHEMA_CHECKSUM_INPUT,
 } from "#src/session/tasksDatabase/source-server-schema-v5.js";
-
 // 冻结历史列声明，不能以实时 Repo/schema 代替，否则新版构建会改变已应用 checksum。
 const columns = [
   ["tasks", "title_overridden", "INTEGER NOT NULL DEFAULT 0"],
@@ -120,7 +119,33 @@ const definitions = [
     checksumInput: [TASK_GROUP_ADMISSIONS_SQL],
     apply: (db: DatabaseSync) => db.exec(TASK_GROUP_ADMISSIONS_SQL),
   },
+  {
+    // 0004：工作区注册表（可见工作区的唯一真相源）。只增不改：不 ALTER 既有表。（CE）
+    id: "0004_workspace_registry",
+    touchedTables: ["workspace_registry"],
+    checksumInput: [WORKSPACE_REGISTRY_MIGRATION_SQL],
+    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL),
+  },
+  {
+    // 0005：注册表增加未归档会话数（active_session_count）。（CE）
+    id: "0005_workspace_registry_active_session_count",
+    touchedTables: ["workspace_registry"],
+    checksumInput: [WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL],
+    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL),
+  },
 ] as const;
+
+/** CE 保留：迁移 id → 执行动作的显式分派（fail-closed；workspaceRegistryRepo 测试钉住）。 */
+export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSync) => void {
+  if (id === "0001_adopt_task_schema") return adoptSchema;
+  if (id === "0002_provider_selection") return importLegacyAutomationSelections;
+  if (id === "0003_official_glm_selection")
+    return (db) => db.exec(OFFICIAL_GLM_SELECTION_MIGRATION_SQL);
+  if (id === "0004_workspace_registry") return (db) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL);
+  if (id === "0005_workspace_registry_active_session_count")
+    return (db) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
+  throw new Error("Unknown task database migration id: " + id);
+}
 
 export type TasksDatabaseMigrationScope = "base" | "controller-remote" | "source-server";
 
@@ -171,43 +196,7 @@ function prepareMigrations(scope: TasksDatabaseMigrationScope) {
   }));
 }
 
-export async function runTasksDatabaseMigrations(
-  {
-    // 0004：工作区注册表（可见工作区的唯一真相源）。只增不改：不 ALTER 既有表。
-    id: "0004_workspace_registry",
-    touchedTables: ["workspace_registry"],
-    checksumInput: [WORKSPACE_REGISTRY_MIGRATION_SQL],
-    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL),
-  },
-  {
-    // 0005：注册表增加未归档会话数（active_session_count），修「说已有 N 个会话、点开是空的」。
-    // 只对 0004 建出的表 ADD COLUMN；兼容策略见 workspace-registry-v2.ts 顶部注释。
-    id: "0005_workspace_registry_active_session_count",
-    touchedTables: ["workspace_registry"],
-    checksumInput: [WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL],
-    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL),
-  },
-] as const;
-
-/**
- * 迁移 id → 执行动作（显式分派）。
- *
- * 依据（修缺陷，不是改语义）：迁移循环此前用的是 if 0001 / else if 0002 / **else 执行 0003 的 SQL**
- * 兜底分支（原 migrations.ts:122-126）—— 任何新增 id 都会被静默执行成官方 GLM 迁移，是一条静默
- * 数据污染路径。现在未知 id 显式抛错（fail-closed），既有 0001-0004 的行为逐字不变。
- * 新增迁移必须在这里登记分支，否则 packages/services/test/workspaceRegistryRepo.test.ts
- * 的「未知 id 必须抛错」断言会失败。
- */
-export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSync) => void {
-  if (id === "0001_adopt_task_schema") return adoptSchema;
-  if (id === "0002_provider_selection") return importLegacyAutomationSelections;
-  if (id === "0003_official_glm_selection")
-    return (db) => db.exec(OFFICIAL_GLM_SELECTION_MIGRATION_SQL);
-  if (id === "0004_workspace_registry") return (db) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL);
-  if (id === "0005_workspace_registry_active_session_count")
-    return (db) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
-  throw new Error("Unknown task database migration id: " + id);
-}  db: DatabaseSync,
+export async function runTasksDatabaseMigrations(  db: DatabaseSync,
   scopeOrOptions: string | TasksDatabaseMigrationOptions = "base",
 ) {
   const options: TasksDatabaseMigrationOptions =
@@ -271,8 +260,7 @@ export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSyn
       },
     });
     facts.committedCount = facts.executedCount;
-    return result;
-  } catch (error) {
+    return result;  } catch (error) {
     if (error && typeof error === "object" && currentMigrationId)
       Object.assign(error, { migrationId: currentMigrationId });
     throw error;

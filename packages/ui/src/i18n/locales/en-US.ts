@@ -2151,8 +2151,11 @@ const enUS: Record<string, string> = {
   "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
   "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
   "workspaceSidebar.registry.retry": "Reload",
+  "workspaceRuntime.failed.reasonUnavailable":
     "No specific reason was reported. Retry once; check logs if it keeps failing.",
+  "workspaceRuntime.notStarted.title":
     "Not started (opening starts it; other workspaces are unaffected)",
+  "workspaceRuntime.notStarted.persistedSessions":
     "{count} sessions on record, last active {activity} ago",
   "workspaceSidebar.notConnected": "Not connected",
   "remote.error.sourceServerInstallRequired":
@@ -2647,10 +2650,14 @@ const enUS: Record<string, string> = {
   "remote.backToConnection": "Back to configuration",
   "remote.title": "Connect remote environment",
   "remote.description":
+  "remote.selectDirectoryDescription":
+    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
   "remote.step.connect": "Connect",
   "remote.step.selectDirectory": "Choose directory",
+  "remote.connectingStepDescription":
     "We are establishing the {method} connection. You can follow the live setup progress here.",
     "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
+  "remote.selectDirectoryTargetDescription":
     "Choose which directory to open in this window after the remote connection is ready.",
   "remote.selectedMethod": "Selected method",
   "remote.methods": "Connection method",

@@ -2403,6 +2403,7 @@ const zhCN: Record<string, string> = {
   "remote.description":
   "remote.step.connect": "连接环境",
   "remote.step.selectDirectory": "选择目录",
+  "remote.selectDirectoryDescription":
     "通过 SSH、Server、WSL 或 Docker 连接远程工作区，并在当前窗口中继续选择目录。",
   "remote.selectedMethod": "当前连接方式",
   "remote.methods": "连接方式",

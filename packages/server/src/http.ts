@@ -1,16 +1,10 @@
 /* eslint-disable max-lines -- HTTP、WebSocket 与静态资源路由集中注册，保持同一鉴权顺序。 */
 import { randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
-<<<<<<< HEAD
 import type { Duplex } from "node:stream";
 import type { IncomingMessage } from "node:http";
 import { basename, extname, relative, resolve, sep } from "node:path";
 import { hostname } from "node:os";
-=======
-import { hostname, userInfo } from "node:os";
-import * as nodePath from "node:path";
-import { basename, extname, resolve } from "node:path";
->>>>>>> zai-org/main
 import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
@@ -27,14 +21,10 @@ import {
   ServiceCollection,
   IZCodeAgentService,
   createZCodeAgentConnectionScope,
-<<<<<<< HEAD
   IFileService,
   IGitService,
   ISystemService,
   ITerminalService,
-=======
-  IBotsService,
->>>>>>> zai-org/main
   IProviderProvisioningTargetService,
   IWorkspaceRegistryService,
 } from "@zcode/services";
@@ -153,12 +143,7 @@ function setupChannelServer(
   ws: WebSocket,
   services: ServiceCollection,
   clientMode: "desktop-continuous" | "web-remote-replayable",
-<<<<<<< HEAD
   auditContext?: ConnectionAuditContext,
-=======
-  workspaceIdentityMapper?: SourceServerWorkspaceIdentityMapper,
-  resourcePeers?: TopicResourcePeers,
->>>>>>> zai-org/main
 ) {
   const socket = wrapWebSocket(ws);
   // 连接级审计（B1）：建立与断开各一条，close 带存活时长与连接 id（可把 open/close 配对）。
@@ -348,7 +333,6 @@ function fallbackServerWorkspaces(): ServerRemoteWorkspaceInfo[] {
   ];
 }
 
-<<<<<<< HEAD
 /**
  * server-info 的 workspaces（M1.3）——**由服务端注册表驱动**。
  *
@@ -399,32 +383,20 @@ async function createServerInfo(
 ): Promise<ServerRemoteInfo> {
   return {
     serverId: resolveServerId(options),
-=======
-function createServerInfo(options: HttpServerOptions): ServerRemoteInfo {
-  return serverRemoteInfoOutputSchema.parse({
-    serverId: resolveHttpServerId(options),
->>>>>>> zai-org/main
     ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
       ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
       : {}),
     version: ZCODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
     authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
-<<<<<<< HEAD
     workspaces: await resolveServerWorkspaces(options, services),
-=======
-    workspaces: resolveServerWorkspaces(options),
-    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
-    migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
-    identity: { osUser: userInfo().username, hostname: hostname() },
->>>>>>> zai-org/main
     capabilities: {
       desktopContinuous: true,
       websocketRpc: true,
       ...(options.virtualProjects ? { virtualProjects: true } : {}),
       processResourceTelemetry: true,
     },
-  });
+  };
 }
 
 const zcodeLiteTokenCookieName = "zcode_lite_token";
@@ -467,7 +439,6 @@ function parseCookieHeader(header: string | undefined): Map<string, string> {
   return cookies;
 }
 
-<<<<<<< HEAD
 /**
  * 请求是否走 https —— 决定 token cookie 是否带 `Secure`。
  *
@@ -479,22 +450,6 @@ function parseCookieHeader(header: string | undefined): Map<string, string> {
  */
 function isSecureRequest(c: Context): boolean {
   if (new URL(c.req.url).protocol === "https:") {
-=======
-function hasValidLiteToken(c: Context, token: string): boolean {
-  const authorization = c.req.header("authorization");
-  if (
-    authorization?.startsWith("Bearer ") &&
-    authorization.slice("Bearer ".length).trim() === token
-  ) {
-    return true;
-  }
-  const url = new URL(c.req.url);
-  if (url.searchParams.get("token") === token) {
-    c.header(
-      "Set-Cookie",
-      `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax`,
-    );
->>>>>>> zai-org/main
     return true;
   }
   const forwardedProto = c.req.header("x-forwarded-proto");
@@ -1412,7 +1367,6 @@ export function createHttpServer(
   // 都不能再把自己提升为 trusted host。
   app.get(
     "/ws",
-<<<<<<< HEAD
     upgradeWebSocket((c) => {
       // `createEvents` 在升级时执行，是我们还能拿到 Context 的最后一站 ⇒ 审计上下文在这里算好。
       const auditContext = buildConnectionAuditContext(c);
@@ -1432,31 +1386,6 @@ export function createHttpServer(
       },
     };
   });
-=======
-    upgradeWebSocket(() => ({
-      onOpen(_event, ws) {
-        setupChannelServer(
-          ws.raw as WebSocket,
-          services,
-          "web-remote-replayable",
-          options.workspaceIdentityMapper,
-        );
-      },
-    })),
-  );
-
-  const upgradeTrustedHostWebSocket = upgradeWebSocket(() => ({
-    onOpen(_event, ws) {
-      setupChannelServer(
-        ws.raw as WebSocket,
-        services,
-        "desktop-continuous",
-        options.workspaceIdentityMapper,
-        options.topicResourcePeers,
-      );
-    },
-  }));
->>>>>>> zai-org/main
   app.use("/ws/host", async (c, next) => {
     const capability = c.req.header(ZCODE_RPC_HOST_CAPABILITY_HEADER);
     if (!hostCapabilities.consume(capability)) {
@@ -1472,7 +1401,6 @@ export function createHttpServer(
   });
   app.get("/ws/host", upgradeTrustedHostWebSocket);
 
-<<<<<<< HEAD
   // Web 模式下发起远程连接
   app.post("/api/connect-remote", async (c) => {
     const rawBody = await c.req.json();
@@ -1532,57 +1460,6 @@ export function createHttpServer(
       };
     }),
   );
-=======
-  const handleBotCallback = async (c: Context) => {
-    const provider = c.req.param("provider") as BotProvider;
-    if (!botProviders.includes(provider)) {
-      return c.json({ error: `Unsupported provider: ${provider}` }, 400);
-    }
-    if (provider !== "webhook") {
-      return c.json({ error: `Provider ${provider} does not support HTTP callbacks.` }, 400);
-    }
-    const botsService = services.getOptional(IBotsService);
-    if (!botsService) {
-      return c.json({ error: "Bots service is not available." }, 503);
-    }
-    const rawBodyText = await c.req.text().catch(() => "");
-    let rawBody: unknown = {};
-    if (rawBodyText) {
-      try {
-        rawBody = JSON.parse(rawBodyText) as unknown;
-      } catch {
-        rawBody = { payload: rawBodyText };
-      }
-    }
-    const webhookSecret = c.req.header("x-zcode-bot-secret");
-    const botId = c.req.param("botId");
-    const result = await botsService.handleProviderCallbackResponse(provider, {
-      ...(typeof rawBody === "object" && rawBody !== null ? rawBody : { payload: rawBody }),
-      rawBody: rawBodyText,
-      ...(botId ? { botId } : {}),
-      ...(webhookSecret ? { webhookSecret } : {}),
-    });
-    const responseBody = result.responseBody ?? { ok: result.ok, replies: result.replies };
-    if (result.status === 400) {
-      return c.json(responseBody, 400);
-    }
-    if (result.status === 401) {
-      return c.json(responseBody, 401);
-    }
-    if (result.status === 503) {
-      // Bugfix：Bot 业务失败必须把可重试状态透传给 HTTP provider；返回 200 会让
-      // webhook/网关误以为消息已消费，效果与提前提交 Telegram offset 相同。
-      return c.json(responseBody, 503);
-    }
-    return c.json(responseBody, 200);
-  };
-
-  app.post("/api/bots/:provider", handleBotCallback);
-  app.post("/api/bots/:provider/:botId", handleBotCallback);
-
-  // Bug 原因：旧 `/api/connect-remote` + `/ws/remote/:id` 会在 Server 内另起临时 stdio
-  // runtime，绕过 R3 的 Window Host → Source Server attachment 主链；两个入口必须一起不可达。
->>>>>>> zai-org/main
 
   if (options.staticRoot?.trim()) {
     const staticRoot = options.staticRoot.trim();

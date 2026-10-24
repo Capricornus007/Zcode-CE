@@ -1,14 +1,11 @@
 import { ComposerSubmissionPendingContext } from "@/project-sidebar/index.js";
 /* oxlint-disable eslint(max-lines) -- composer 集中收口输入区 wiring（附件/草稿/历史/mention），拆分会打散收口粒度。 */
-<<<<<<< HEAD
-=======
 import { useRemoteProjectReconnect } from "@/hooks/RemoteProjectPresentationContext.js";
 import { useOptionalRemoteWorkspaceController } from "@/remote/useRemoteWorkspaceController.js";
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
 import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 import { formatConversationWorkDuration } from "@/v4/conversationWorkDuration.js";
->>>>>>> zai-org/main
 /**
  * v4 会话 composer（composer parity）。
  *
@@ -60,12 +57,8 @@ import {
   TID_V4_ATTACHMENT_UPLOAD_RETRY,
   TID_V4_STOP,
   testId,
-<<<<<<< HEAD
   type ZCodeProvider,
 } from "@zcode/shared";
-=======
-} from "@zcode/shared/test-ids";
->>>>>>> zai-org/main
 import type {
   AttachmentRef,
   ConversationSnapshot,
@@ -80,16 +73,7 @@ import {
   XIcon,
 } from "lucide-react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
-<<<<<<< HEAD
 import { ChatErrorBanner, shouldSuppressChatErrorBanner } from "@/ChatErrorBanner.js";
-=======
-import {
-  ChatErrorBanner,
-  resolveChatErrorBannerDisplayMessage,
-  shouldSuppressChatErrorBanner,
-  type ChatErrorBannerModelConfigTarget,
-} from "@/ChatErrorBanner.js";
->>>>>>> zai-org/main
 import {
   Attachment,
   Attachments,
@@ -198,15 +182,12 @@ import { WebElementContextAttachmentChip } from "@/v4/composer/WebElementContext
 import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSelectionReferenceChip.js";
 import type { AttachmentPutFn } from "@/v4/composer/attachmentUpload.js";
 import type { ComposerSubmissionConfig } from "@/v4/composer/composerSubmissionConfig.js";
-<<<<<<< HEAD
-=======
 import { buildV4ConversationPromptTelemetryExtraDetail } from "@/v4/telemetry/conversationPromptTelemetry.js";
 import { pendingCommandRegistry } from "@/v4/pendingCommandRegistry.js";
 import {
   subscribeComposerSubmissionSettled,
   trackUnsettledComposerSubmission,
 } from "@/v4/composer/composerSubmissionSettlement.js";
->>>>>>> zai-org/main
 import { resolveAttachableShareContext } from "@/lib/conversationShareContext.js";
 
 const MODEL_SELECTION_LOADING_STATE: ModelSelectionState = { status: "loading" };
@@ -433,8 +414,6 @@ interface ConversationComposerProps {
    */
   blockingRequestId?: string | null;
   disabled?: boolean;
-<<<<<<< HEAD
-=======
   onRetryInitialization?: () => void;
   /** 当前 Task 可用的 Highspeed 卡；只影响静态标识和模型锁定。 */
   highspeedCard?: HighspeedCardSnapshot | null;
@@ -444,7 +423,6 @@ interface ConversationComposerProps {
    */
   highspeedActivationCardId?: string | null;
   onHighspeedActivationApplied?: (cardId: string) => void;
->>>>>>> zai-org/main
   /**
    * 是否在新建任务 / 切换会话 / 挂载后自动把光标聚焦到输入框（默认开）。
    * 竖切多 pane 时由宿主传入 SessionPane.focused，仅焦点 pane 聚焦、后台 pane 不抢焦点。
@@ -556,15 +534,7 @@ function ConversationComposerImpl({
   layout = "stacked",
   workingDurationMs,
   blockingRequestId = null,
-<<<<<<< HEAD
   disabled = false,
-=======
-  disabled: disabledProp = false,
-  onRetryInitialization,
-  highspeedCard = null,
-  highspeedActivationCardId = null,
-  onHighspeedActivationApplied,
->>>>>>> zai-org/main
   autoFocusEnabled = true,
   workspacePath,
   workspaceIdentity,
@@ -625,18 +595,7 @@ function ConversationComposerImpl({
   const disabled = disabledProp || !remoteAvailable || targetSelectionPending;
   const { intl, locale } = useZCodeIntl();
   const services = useOptionalServices();
-<<<<<<< HEAD
   const draftScopeId = sessionId ?? V4_DRAFT_SCOPE_ROOT;
-=======
-  const conversationTelemetry = useScopedConversationTelemetrySupervisor({
-    workspacePath,
-    ...(workspaceIdentity ? { workspaceIdentity } : {}),
-    ...(remoteSessionId ? { remoteSessionId } : {}),
-  });
-  const draftScopeId =
-    sessionId ??
-    (rootDraftScopeKey ? `${V4_DRAFT_SCOPE_ROOT}:${rootDraftScopeKey}` : V4_DRAFT_SCOPE_ROOT);
->>>>>>> zai-org/main
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
   const configPickerScopeKey = `${workspaceKey}\0${draftScopeId}`;
   const [text, setText] = useState("");
@@ -693,12 +652,9 @@ function ConversationComposerImpl({
   const activeShareContext = resolveAttachableShareContext(snapshot?.sharedContextImport);
   const pendingShareContext = activeShareContext?.status === "pending" ? activeShareContext : null;
   const inputApiRef = useRef<LexicalChatInputHandle | null>(null);
-<<<<<<< HEAD
-=======
   const commandResolutionCleanupsRef = useRef(new Set<() => void>());
   const reportedErrorKeysRef = useRef(new Set<string>());
   const isMobileTextInputViewport = useIsMobileTextInputViewport();
->>>>>>> zai-org/main
   const primaryModifierPressed = usePrimaryFollowupModifier();
   const appleKeyboardPlatform = isAppleKeyboardPlatform();
   const enterSubmits = true;
@@ -1502,8 +1458,6 @@ function ConversationComposerImpl({
         const sendResult = await onSendText(promptText, {
           submittedDraftText: submittedDraft.text,
           submission,
-<<<<<<< HEAD
-=======
           ...(currentConversationSelections.length
             ? {
                 conversationQuotes: currentConversationSelections.map(
@@ -1520,7 +1474,6 @@ function ConversationComposerImpl({
             : {}),
           telemetrySeed,
           onCommandCreated: subscribeToCommandResolution,
->>>>>>> zai-org/main
           ...(requestedDelivery ? { requestedDelivery } : {}),
           ...(heldQueueDisposition ? { heldQueueDisposition } : {}),
           ...(expectedHeldQueueItemIds ? { expectedHeldQueueItemIds } : {}),
@@ -1560,7 +1513,6 @@ function ConversationComposerImpl({
           return;
         }
         setHeldQueueConfirmation(null);
-<<<<<<< HEAD
         // 暂存内容只有在发送成功后才移交给 task；失败仍保留为可重试草稿。
         await attachmentsApi.adoptSentAttachments(submittedAttachmentIds);
         // Bug 原因：发送等待期间产生的新正文属于下一次 Submission，旧 ACK 不能清除。
@@ -1585,18 +1537,6 @@ function ConversationComposerImpl({
       } catch (error) {
         rollbackPromptHistory();
         restoreSubmittedDraft();
-=======
-        // 发送成功或 ACK 丢失后由权威 projection 结算：清本次提交捕获的内容，
-        // prompt history 已在真实发送前同步写盘，避免首发 promote 丢失或误清新 scope。
-        await settleSubmittedContent();
-        sendAction.complete({ resultSource: "authority_ack", admissionResult: "accepted" });
-      } catch (error) {
-        rollbackPromptHistory();
-        // 权威 ACK/投影可能在 Promise 失败回调前先到达；清理已开始时不能再把旧草稿恢复回来。
-        if (!submittedContentSettled) restoreSubmittedDraft();
-        if (telemetrySeed.localTtft)
-          getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "failed");
->>>>>>> zai-org/main
         // 发送失败草稿保留在输入框（不清空），仅记录原因。
         logger.warn(`[v4-composer] 发送失败: ${String(error)}`);
         sendAction.fail({ failureStage: "composer_send" });
@@ -1753,7 +1693,6 @@ function ConversationComposerImpl({
   }, [listenAddToChatEvents, updateText, workspaceIdentity, workspacePath]);
 
   // 动态 placeholder（旧 chatViewPlaceholder 语义）：无历史 → newTask；
-<<<<<<< HEAD
   // 有历史空闲 → followUpAsk；有历史处理中 → followUpQueue。
   const placeholder = intl.formatMessage({
     id: resolveChatPlaceholderKey({
@@ -1762,24 +1701,6 @@ function ConversationComposerImpl({
       compactNewTask: false,
     }),
   });
-=======
-  // 有历史空闲 → followUpAsk；有历史处理中 → followUpQueue；
-  // 完整视图浮窗（单行）运行中 → 「工作中 {时长}」，与流式消息同值同格式。
-  const workingDurationLabel =
-    layout === "inline" && canStop
-      ? formatConversationWorkDuration(workingDurationMs, intl, locale)
-      : null;
-  const normalPlaceholder = workingDurationLabel
-    ? intl.formatMessage({ id: "chat.history.workingFor" }, { duration: workingDurationLabel })
-    : intl.formatMessage({
-        id: resolveChatPlaceholderKey({
-          hasHistoryMessages: (snapshot?.rows.totalCount ?? 0) > 0,
-          isTaskProcessing: canStop,
-          // 单行输入框放不下完整的新任务提示，沿用手机远控的短文案。
-          compactNewTask: compactMobilePlaceholder || layout === "inline",
-        }),
-      });
->>>>>>> zai-org/main
   const sendTooltipTitle = intl.formatMessage({
     id: mode === "enqueue" ? "chat.queue.enqueue" : "chat.send",
   });
@@ -2204,7 +2125,6 @@ function ConversationComposerImpl({
   const submitControlNode = useMemo(
     () => (
       <div className="flex min-w-0 items-center gap-1">
-<<<<<<< HEAD
         <span className="flex min-w-0 shrink items-center gap-1 overflow-hidden empty:hidden">
           <V4ComposerModelControls
             workspacePath={workspacePath}
@@ -2228,50 +2148,6 @@ function ConversationComposerImpl({
             onSendCompressionCommand={onSendCompressionCommand}
           />
         </span>
-=======
-        {!remoteAvailable ? (
-          <span
-            data-testid="remote-send-unavailable"
-            className="max-w-40 text-right text-ui-sm text-foreground-subtle"
-          >
-            {intl.formatMessage({ id: "remote.conversation.sendUnavailable" })}
-          </span>
-        ) : null}
-        {remoteAvailable ? (
-          <span className="flex min-w-0 shrink items-center gap-1 overflow-hidden empty:hidden">
-            <V4ComposerModelControls
-              workspacePath={workspacePath}
-              workspaceIdentity={workspaceIdentity}
-              modelSelectionView={modelSelectionView}
-              modelSelectionState={modelSelectionState}
-              modelSelectionReload={modelSelectionReload}
-              modelSelectionRefresh={modelSelectionRefresh}
-              sessionId={sessionId ?? null}
-              phase={composerPhase}
-              provider={provider}
-              isWebRemoteControl={isWebRemoteControl}
-              isMobileViewport={isMobileTextInputViewport}
-              draftMode={draftMode}
-              draftConfig={draftConfig}
-              usage={composerUsage}
-              disabled={disabled || runtimeBlocked}
-              modelLocked={highspeedCard !== null}
-              highspeedPresented={highspeedPresented}
-              highspeedEntranceAnimated={highspeedEntranceAnimated}
-              highspeedSweepActive={highspeedSweepActive}
-              highspeedExpiresAt={highspeedCard?.expiresAt}
-              highspeedModel={highspeedCard?.model}
-              activeConfigPicker={activeConfigPicker}
-              onConfigPickerOpenChange={handleConfigPickerOpenChange}
-              onSelectModel={handleSelectModelTrace}
-              onSelectThought={onSelectThought}
-              onSwitchMode={onSwitchMode}
-              onRecoverCustomModelSelection={onRecoverCustomModelSelection}
-              onSendCompressionCommand={onSendCompressionCommand}
-            />
-          </span>
-        ) : null}
->>>>>>> zai-org/main
         {showStopControl ? (
           <ControlHintTooltip title={stopTooltipTitle} shortcut="Esc">
             <Button
@@ -2489,15 +2365,7 @@ function ConversationComposerImpl({
       >
         {contextHeader ? (
           // 旧 ChatViewComposer contextHeaderContent 同款包装（workspace 菜单 + Git 分支）。
-<<<<<<< HEAD
           <div className="p-1.5 flex min-w-0 flex-wrap items-center gap-0">{contextHeader}</div>
-=======
-          <div className="relative z-10 p-1.5 flex min-w-0 flex-wrap items-center gap-0">
-            <ComposerSubmissionPendingContext.Provider value={updateTargetSelectionPending}>
-              {contextHeader}
-            </ComposerSubmissionPendingContext.Provider>
-          </div>
->>>>>>> zai-org/main
         ) : null}
         {conversationSelectionLimitReason ? (
           <div

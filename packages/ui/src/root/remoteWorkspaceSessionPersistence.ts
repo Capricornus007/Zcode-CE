@@ -72,7 +72,6 @@ export function buildRemoteWorkspacePersistPatch(
   state: TabStoreState,
   remoteSessions: readonly RemoteWorkspaceSessionEntry[],
 ): Partial<AppSettings> {
-<<<<<<< HEAD
   const remoteSessionMap = buildRemoteWorkspaceSessionEntryMap(remoteSessions);
   // fix.2 / Task F1：只承载激活态的 viewOnly tab 不进设置。
   //
@@ -103,18 +102,6 @@ export function buildRemoteWorkspacePersistPatch(
     ? workspaceTabs.findIndex((tab) => tab.workspacePath === state.activeWorkspacePath)
     : 0;
 
-=======
-  const activeKey = state.activeWorkspaceIdentity?.trim() || state.activeWorkspacePath;
-  const tab = state.tabs
-    .filter(isWorkspaceTab)
-    .find((candidate) => buildWorkspaceSessionKey(candidate) === activeKey);
-  if (!tab) return { lastActiveWorkspace: null };
-  if (tab.workspaceIdentity || tab.remoteSessionId) {
-    const remote = remoteSessions.find((entry) => buildWorkspaceSessionKey(entry) === activeKey);
-    // 绑定仍在进行时没有可保存的远端快照；不能把远端路径写成本机目录。
-    return remote ? { lastActiveWorkspace: remote } : {};
-  }
->>>>>>> zai-org/main
   return {
     lastActiveWorkspace: {
       kind: "local",

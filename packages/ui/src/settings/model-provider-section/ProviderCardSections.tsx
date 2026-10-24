@@ -24,7 +24,6 @@ import {
   testId,
 } from "@zcode/shared/test-ids";
 import { InfoIcon, LockKeyholeIcon, Plus, Pencil, Trash2, MoreHorizontal } from "lucide-react";
-} from "@zcode/shared";
 import {
   Download,
   InfoIcon,

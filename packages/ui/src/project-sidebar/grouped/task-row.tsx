@@ -4,26 +4,18 @@ import { memo, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { UniqueIdentifier } from "@dnd-kit/core";
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
 import { isCronTask, isOffPeakTask, type ZCodeTaskMeta } from "@zcode/shared";
-=======
-import { isCronTask, isOffPeakTask } from "@zcode/shared";
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
 import { ArrowUpToLine, Clock, Cloud, Folder, ListTree, LoaderIcon, Moon, X } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import { Badge } from "@/components/ui/badge.js";
 import { toast } from "@/components/ui/toast.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip.js";
-=======
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.js";
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   deriveTaskLeadingIndicator,
@@ -112,11 +104,7 @@ function GroupedTaskRowComponent({
   // 交互胶囊是当前最高优先级的右侧状态；无论来自 sessions-index 摘要还是
   // activity attention，都不应再并排显示相对时间并挤压任务标题。
   const hasPendingInteraction = Boolean(task.pendingInteraction) || taskAttention !== null;
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
   // 远端 session 未就绪时打开文件树必然会被 resolver 拒绝，因此不要暴露
-=======
-  // Bugfix：远端 session 未就绪时打开文件树必然会被 resolver 拒绝，因此不要暴露
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
   // 无效 action；本地 task 不需要 remoteSessionId，仍保持入口可用。
   const canOpenFileTree =
     Boolean(onOpenFileTree) && (!task.workspaceIdentity?.trim() || Boolean(remoteSessionId));
@@ -147,11 +135,7 @@ function GroupedTaskRowComponent({
   const isActive =
     buildTaskWorkspaceKey(activeWorkspacePath, activeWorkspaceIdentity) === workspaceKey &&
     activeTaskId === task.taskId;
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
   const isMobileActive = false;
-=======
-  const isMobileActive = mobileActiveTaskKey === `${workspaceKey}:${task.taskId}`;
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
   const statusDotClassName =
     leadingIndicator === "error"
       ? "bg-destructive"
@@ -357,11 +341,7 @@ function GroupedTaskRowComponent({
     droppable.setNodeRef(element);
   };
   const groupedTaskDomKey = typeof dragId === "string" ? encodeURIComponent(dragId) : undefined;
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
   // CSS hidden → flex 会让 action trigger 在 pointer 到达时才获得布局尺寸，
-=======
-  // Bug 原因：CSS hidden → flex 会让 action trigger 在 pointer 到达时才获得布局尺寸，
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
   // Tooltip Portal 可能先以未定位坐标绘制。改为交互状态决定 action 是否挂载，
   // 同时保留键盘、触摸设备和手机远控 active task 的入口。
   const shouldMountHoverActions =
@@ -402,11 +382,7 @@ function GroupedTaskRowComponent({
     >
       <span className={TASK_GROUP_ROW_LINE_CLASS}>
         <TaskTitleOverflowText as="span" className="text-foreground" title={taskTitle}>
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
           {/* grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。*/}
-=======
-          {/* Bugfix: grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。 */}
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
           {taskTitle}
         </TaskTitleOverflowText>
         <span className="ml-auto flex shrink-0 items-center gap-1.5 text-ui-sm text-foreground-subtle">
@@ -494,7 +470,6 @@ function GroupedTaskRowComponent({
         // overlay 拖拽时指针下方的真实 row 仍可能被 Radix 识别为 hover，跳过 TooltipTrigger 避免底层 row 或 action 弹出悬浮提示。
         <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
       ) : (
-<<<<<<< HEAD:packages/ui/src/workspace-grouped-tasks/task-row.tsx
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -525,36 +500,6 @@ function GroupedTaskRowComponent({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-=======
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right" align="center" sideOffset={6}>
-            {remoteSessionId ? (
-              <Cloud aria-hidden="true" className="size-3.5 shrink-0" />
-            ) : (
-              <Folder aria-hidden="true" className="size-3.5 shrink-0" />
-            )}
-            <span className="min-w-0 max-w-48 truncate">{workspaceLabel}</span>
-            {taskChangeParts.length > 0 ? (
-              <>
-                <span className="text-tooltip-foreground/60">·</span>
-                <span className="inline-flex shrink-0 items-center gap-1">
-                  {taskChangeParts.map((part) => (
-                    <span
-                      key={part}
-                      className={part.startsWith("+") ? "text-diff-added" : "text-diff-removed"}
-                    >
-                      {part}
-                    </span>
-                  ))}
-                </span>
-              </>
-            ) : null}
-          </TooltipContent>
-        </Tooltip>
->>>>>>> zai-org/main:packages/ui/src/project-sidebar/grouped/task-row.tsx
       )}
       {contextMenuOpen ? (
         // 右键菜单内容带 Radix Presence/Portal，拖拽重排时常驻挂载会触发嵌套更新循环；仅在菜单打开时挂载内容，配合路径懒加载避免拖拽过程刷 task path RPC。

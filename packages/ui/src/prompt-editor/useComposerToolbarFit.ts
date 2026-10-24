@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
 
-<<<<<<< HEAD
 /**
  * 折叠阶梯：值越小越先被折叠（0 最先，3 最后）。
  *
@@ -26,15 +25,6 @@ function measureOverflow(
   gap: number,
 ): number {
   const contentWidth = content.getBoundingClientRect().width;
-=======
-function toolbarOverflow(root: HTMLElement): number {
-  const available = root.querySelector<HTMLElement>("[data-composer-leading-actions]");
-  const content = root.querySelector<HTMLElement>("[data-composer-leading-content]");
-  if (!available || !content) return 0;
-  const trailing = root.querySelector<HTMLElement>("[data-composer-trailing-actions]");
-  const contentWidth = content.getBoundingClientRect().width;
-  const gap = Number.parseFloat(getComputedStyle(root).columnGap) || 12;
->>>>>>> zai-org/main
   return Math.max(
     0,
     contentWidth - available.getBoundingClientRect().width,
@@ -47,16 +37,8 @@ function toolbarOverflow(root: HTMLElement): number {
   );
 }
 
-<<<<<<< HEAD
 /** 仅拥有 DOM 布局投影；权限、Plan 和 CUA 业务状态仍由原有 hooks 管理。 */
 function fitComposerToolbar(root: HTMLElement) {
-=======
-/**
- * 仅拥有 DOM 布局投影；权限、Plan 和 CUA 业务状态仍由原有 hooks 管理。
- * iconOnly：单行输入框没有固定的工具栏宽度可测，直接按同一顺序收到最后一级（只留图标）。
- */
-export function fitComposerToolbar(root: HTMLElement, { iconOnly = false } = {}) {
->>>>>>> zai-org/main
   const available = root.querySelector<HTMLElement>("[data-composer-leading-actions]");
   const content = root.querySelector<HTMLElement>("[data-composer-leading-content]");
   if (!available || !content) return;
@@ -66,17 +48,11 @@ export function fitComposerToolbar(root: HTMLElement, { iconOnly = false } = {})
   delete root.dataset.composerModelIcon;
   delete root.dataset.composerProviderCompact;
   for (const control of controls) delete control.dataset.composerCompact;
-<<<<<<< HEAD
   const trailing = root.querySelector<HTMLElement>("[data-composer-trailing-actions]");
   const gap = Number.parseFloat(getComputedStyle(root).columnGap) || 12;
   const overflow = () => measureOverflow(root, available, content, trailing, gap);
   // 阶梯：每档先看还溢不溢出，不溢出就停在上一档的形态。
   for (const step of COLLAPSE_STEPS) {
-=======
-  const overflow = iconOnly ? () => Number.POSITIVE_INFINITY : () => toolbarOverflow(root);
-  // 前四档依次收起 Computer、mode、Plan、think 文字，不能合并裁决。
-  for (const priority of ["0", "1", "2", "3"]) {
->>>>>>> zai-org/main
     if (overflow() <= 0) return;
     for (const control of controls) {
       if (control.dataset.composerCollapsePriority === step) {

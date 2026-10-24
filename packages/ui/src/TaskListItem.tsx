@@ -375,19 +375,10 @@ export const MemoTaskItem = memo(function TaskListItem({
   // Bugfix: 手机远控标记和置顶状态共用左侧 leading 槽。
   // 已置顶任务如果继续常显 Pin，会和绝对定位的手机图标重叠；手机激活态默认让手机图标优先，hover 时再显示 Pin 操作。
   const showPinnedState = isPinned && leadingIndicator === "none" && !isMobileActive;
-<<<<<<< HEAD
   const shouldMountWorkspaceTaskActions = hoverActionsVisible || focusActionsVisible || isHoverNone;
   // hover:none 只代表触屏端需要常驻 action，不代表应永久隐藏时间、状态和变更摘要。
   // 元信息仅在真实 hover / focus 交互时让位，保持旧触屏布局的“元信息 + action”语义。
   const shouldSuppressWorkspaceTaskMetadata = hoverActionsVisible || focusActionsVisible;
-=======
-  // 修复原因：手机会在 click 前合成 mouseenter/focus；此时切换内容会让首次点击只进入 hover。
-  // 远控入口固定操作区和元信息，避免触摸引发 DOM 切换；桌面仍沿用 hover/focus 展示。
-  const shouldSuppressWorkspaceTaskMetadata =
-    hoverEnabled && (hoverActionsVisible || focusActionsVisible);
-  const shouldMountWorkspaceTaskActions =
-    !hoverEnabled || shouldSuppressWorkspaceTaskMetadata || isHoverNone;
->>>>>>> zai-org/main
   const taskTimeLabel = formatTaskRelativeTime(task.updatedAt, intl);
   const taskChangeSummary = getTaskChangeSummary(task);
   const isRemoteTask = Boolean(task.workspaceIdentity?.trim());
@@ -395,8 +386,6 @@ export const MemoTaskItem = memo(function TaskListItem({
     workspaceIdentity: task.workspaceIdentity,
     connectionOverlay,
   });
-<<<<<<< HEAD
-=======
   const remoteConnectionBadge = remoteConnectionUnavailable ? (
     <Badge
       data-remote-connection-overlay="true"
@@ -412,7 +401,6 @@ export const MemoTaskItem = memo(function TaskListItem({
         ? "taskList.unarchive"
         : "taskList.archive",
   });
->>>>>>> zai-org/main
   const taskTitleWithChanges = formatTaskTitleWithChanges(taskTitle, taskChangeSummary, intl);
   const workspaceLabel = getPathLeaf(task.workspacePath);
   const taskItemKey = `${buildTaskWorkspaceKey(task.workspacePath, task.workspaceIdentity)}:${task.taskId}`;
@@ -463,11 +451,7 @@ export const MemoTaskItem = memo(function TaskListItem({
             }}
             onClick={handleArchive}
             data-testid={testId(TID_TASK_ARCHIVE, task.taskId)}
-<<<<<<< HEAD
             // 归档确认态是显式等待用户决策的状态，必须持续显示 destructive 按钮。
-=======
-            // Bugfix: 归档确认态是显式等待用户决策的状态，必须持续显示 destructive 按钮。
->>>>>>> zai-org/main
             className={cn("shrink-0 border-destructive/20 px-2", archiveActionVisibilityClassName)}
             aria-label={archiveLabel}
           >
@@ -493,20 +477,15 @@ export const MemoTaskItem = memo(function TaskListItem({
       )}
     </div>
   ) : null;
-<<<<<<< HEAD
   // 远端 task 的 session 未就绪时 resolver 会拒绝打开；渲染层同步隐藏入口，
   // 避免展示一个点击后无反馈的按钮。本地 task 不依赖已打开 tab，仍可直接按路径打开。
   const canOpenFileTree =
     Boolean(onOpenFileTree) && (!task.workspaceIdentity?.trim() || Boolean(remoteSessionId));
-=======
-  // 原因：置顶任务常跨项目，查看文件必须保留独立入口；复用共享 action，避免点击选择任务。
->>>>>>> zai-org/main
   const fileTreeActionNode =
     onOpenFileTree &&
     !workspaceActionsDisabled &&
     !hasPendingInteraction &&
     (shouldMountWorkspaceTaskActions || isMobileActive) ? (
-<<<<<<< HEAD
       <span className="inline-flex shrink-0">
         {/* Pinned 文件树按钮曾手写 hover 背景和 tooltip，导致与 Grouped task
             的同一操作视觉不一致。直接复用共享 action，统一 bg-hover、尺寸和 pointer 行为。 */}
@@ -518,28 +497,6 @@ export const MemoTaskItem = memo(function TaskListItem({
           <ListTree className="size-3.5" />
         </TaskRowActionButton>
       </span>
-=======
-      <TaskRowActionButton
-        label={intl.formatMessage({ id: "git.action.showTree" })}
-        showTooltip
-        testId={`task-files-${task.taskId}`}
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          void runUserActionAsync({
-            input: { featureId: "workbench.file", action: "open_tree", trigger: "button" },
-            operation: async () => onOpenFileTree?.(),
-            completed: { resultSource: "local_commit" },
-            failureStage: "file_tree_open",
-          }).catch((cause) => {
-            logger.error("[task-list] 查看文件失败", cause);
-            toast(String(cause));
-          });
-        }}
-      >
-        <ListTree className="size-3.5" />
-      </TaskRowActionButton>
->>>>>>> zai-org/main
     ) : null;
   const taskActionGroupNode =
     fileTreeActionNode || archiveActionNode ? (
@@ -616,11 +573,7 @@ export const MemoTaskItem = memo(function TaskListItem({
           : hasWorkflowRunLines
             ? "items-start"
             : "items-center",
-<<<<<<< HEAD
         isActive ? "bg-selected" : "hover:bg-surface-hover",
-=======
-        isActive ? "bg-selected" : hoverEnabled && "hover:bg-surface-hover",
->>>>>>> zai-org/main
       )}
     >
       {/* 之前任务列表依赖 divide-y 画分隔线，深色侧栏里每个 item 上下都会出现明显黑线，
@@ -650,13 +603,9 @@ export const MemoTaskItem = memo(function TaskListItem({
           ) : leadingIndicator === "unread" ? (
             <span data-unread-indicator="true" className="size-[7px] rounded-full bg-icon-blue" />
           ) : leadingIndicator === "loading" ? (
-<<<<<<< HEAD
             <LoaderIcon className="size-4 animate-spin text-foreground-subtle" />
           ) : showTimelineIdleIndicator ? (
             <span data-idle-indicator="true" className="h-1.5 w-1.5 rounded-full bg-border" />
-=======
-            <LoaderIcon className="size-4 text-foreground-subtle" />
->>>>>>> zai-org/main
           ) : null}
         </span>
         {shouldRenderPinAction ? (
@@ -701,13 +650,8 @@ export const MemoTaskItem = memo(function TaskListItem({
               className="text-ui-base text-foreground"
               title={taskTitleWithChanges}
             >
-<<<<<<< HEAD
               {/* workspace/timeline task 标题之前使用 truncate，会在长标题末尾显示省略号；
                       grouped task 已改为右侧渐隐。这里统一 task 列表标题溢出策略，避免同一侧栏里出现两种截断语义。 */}
-=======
-              {/* Bugfix: task 标题之前使用 truncate，会在长标题末尾显示省略号；
-                      这里统一改为右侧渐隐，避免同一侧栏里出现两种截断语义。 */}
->>>>>>> zai-org/main
               {taskTitle}
             </TaskTitleOverflowText>
             {task.pendingInteraction ? (
@@ -916,7 +860,6 @@ export function TaskListItemContextMenuContent({
   const workspaceActionsDisabledReason = workspaceActionsDisabled
     ? (disabledReason ?? intl.formatMessage({ id: "workspaceSidebar.unavailableLocalDirectory" }))
     : undefined;
-<<<<<<< HEAD
   // 收尾：「在分屏打开」仅桌面 shell（context 由 WorkspaceShellLayout 提供；
   // 手机远控/无 Provider 环境默认 false → 菜单项整体不渲染）。
   const splitPaneEntry = useV4SplitPaneEntry();
@@ -933,9 +876,6 @@ export function TaskListItemContextMenuContent({
   // 当前 focused session、已有 group 与 pane 上限统一由 shell owner 裁决；row 不再直接写 layout store。
   const canOpenInSplitPane = splitPaneEntry.canOpenSession(splitPaneTarget);
   const { runFeedbackEntry } = useFeedbackEntryAction();
-=======
-  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
->>>>>>> zai-org/main
   const {
     taskSessionFile,
     taskNativeSessionLogFile,

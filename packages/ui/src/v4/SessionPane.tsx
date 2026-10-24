@@ -1,14 +1,4 @@
-<<<<<<< HEAD
 // Modified by ZCode: F5: SessionPaneProps 增加 compactForRemoteControl 可选 prop(上游 compactForRemoteControl)。
-=======
-import { remoteHostIdFromWorkspaceIdentity } from "@zcode/shared";
-import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
-import {
-  createRemoteWorkspaceDisconnectedError,
-  getRemoteConnectionFailureCode,
-} from "@/lib/remoteWorkspaceServiceError.js";
-import { buildConversationShareItems } from "@/v4/conversationShareItems.js";
->>>>>>> zai-org/main
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
 import { useStartPlanRecommendation } from "@/hooks/useStartPlanRecommendation.js";
 import type { SessionCreateSource } from "@zcode/shared";
@@ -74,8 +64,6 @@ import { WORKSPACE_FILE_DRAG_MIME } from "@/lib/workspaceFileDrag.js";
 import { buildChatSessionScrollMemoryKey } from "@/lib/chatSessionScrollMemory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { useServices } from "@/hooks/useServices.js";
-<<<<<<< HEAD
-=======
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { browserGlobalNoticeStore } from "@/global-notice/globalNoticeStore.js";
 import {
@@ -120,7 +108,6 @@ import {
   listHighspeedCardsAwaitingAutoShare,
 } from "@/highspeed/highspeedShareDiagnostics.js";
 import type { SessionOpenTrigger } from "@/lib/sessionOpenArmsTelemetry.js";
->>>>>>> zai-org/main
 import { useDynamicWorkflowAvailability } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { resolveWorkflowResumeHandler } from "@/v4/workflowResumeGate.js";
 import {
@@ -364,20 +351,10 @@ export interface SessionPaneProps {
    * focused pane。单 pane 消费者（V4ChatPane）缺省 true。
    */
   focused?: boolean;
-<<<<<<< HEAD
   /** 向右拆分新 draft 窗格（叶子数达上限时宿主不下发）。 */
   onSplitRight?: () => void;
   /** 向下拆分新 draft 窗格。 */
   onSplitDown?: () => void;
-=======
-  /** 右侧面板关闭时，主区 focused pane 可接收对话外的 Esc。 */
-  allowEscapeStopOutsidePane?: boolean;
-  /**
-   * pane 是否真实可见。分屏的非 focused pane 仍传 true；forceMount 的隐藏侧栏 tab 传 false。
-   * 只影响 foreground UI telemetry，不影响 live subscription 或后台 /event/report。
-   */
-  telemetryVisible?: boolean;
->>>>>>> zai-org/main
   /** 关闭本窗格（仅非 primary pane 下发；关 pane ≠ 停 session）。 */
   onClosePane?: () => void;
   /** 跨 workspace pane 的归属徽标（pane workspace ≠ shell 当前 workspace 时下发）。 */
@@ -541,50 +518,7 @@ function shouldRestoreQueuedComposerFromAck(status: CommandAck["status"]): boole
 }
 
 /**
-<<<<<<< HEAD
  * 单 pane 竖切：订阅 → 渲染 rows → composer 发送 / stop。
-=======
- * Highspeed 发送起点的 pane 绑定（spec §9.2）：在触发发送的同步阶段冻结，prepare 返回时据此
- * 判断 pane 是否仍停在本轮发送所属的 Task / 草稿，决定是否在本 pane 呈现卡并登记激活。
- */
-interface HighspeedPaneOrigin {
-  sessionId: string | null;
-  /** 发送起点时的 pane 绑定代次；草稿首发据此判断 pane 是否离开过该草稿。 */
-  paneBinding: number;
-  draftId: string | null;
-}
-
-interface SessionPaneLeaseBinding {
-  sessionId: string | null;
-  layer: object;
-  lease: SessionLease | null;
-}
-
-// 原始 binding 留在独立 hook 作用域，不能让 SessionPane 的事件闭包捕获失效 owner。
-export function useSessionPaneLease(sessionId: string | null, layer: object) {
-  const [binding, setBinding] = useState<SessionPaneLeaseBinding>({
-    sessionId,
-    layer,
-    lease: null,
-  });
-  if (binding.sessionId !== sessionId || binding.layer !== layer) {
-    // Bug 根因：新 session 的首帧若读取旧 lease，稳定回调会捕获旧 snapshot/store，
-    // 不同代的共享 render 闭包便会串成保留链。先收紧 owner，再让 acquire effect 接管。
-    // 草稿晋升仍复用同一预热 lease；不重挂 Composer，也不提前释放原 effect 的资源。
-    const promoted =
-      binding.layer === layer &&
-      binding.sessionId === null &&
-      binding.lease?.sessionId === sessionId;
-    const lease = promoted ? binding.lease : null;
-    setBinding({ sessionId, layer, lease });
-    return [lease, setBinding] as const;
-  }
-  return [binding.lease, setBinding] as const;
-}
-
-/**
- * 单 pane 竖切：订阅 → 渲染 rows → composer 发送 / stop（06-ui §SessionPane）。
->>>>>>> zai-org/main
  *
  * React 性能（vercel-react-best-practices）：
  * - 叶子组件（Header/Timeline/QueuePanel/InputControls/Composer/GoalBanner）均 memo；
@@ -609,13 +543,8 @@ export function SessionPane({
   onSessionCreated,
   onSelectionSideChatUnavailable,
   focused = true,
-<<<<<<< HEAD
   onSplitRight,
   onSplitDown,
-=======
-  allowEscapeStopOutsidePane = false,
-  telemetryVisible = true,
->>>>>>> zai-org/main
   onClosePane,
   workspaceBadge,
   draftComposerHeader,
@@ -696,45 +625,9 @@ export function SessionPane({
   });
   // SessionPane 已位于目标 Workspace 的 ServiceProvider 内，直接订阅该 Host Service；
   // 不再从展示组件二次解析 workspace/remote 路由。
-<<<<<<< HEAD
   const [lease, setLease] = useState<SessionLease | null>(null);
   const state = useConversationProjection(lease);
   const snapshot = state.snapshot;
-=======
-  const conversationTelemetry = useScopedConversationTelemetrySupervisor({
-    workspacePath,
-    ...(workspaceIdentity ? { workspaceIdentity } : {}),
-    ...(remoteSessionId ? { remoteSessionId } : {}),
-  });
-  const conversationTelemetryForegroundEnabled = useScopedConversationTelemetryForegroundEnabled({
-    workspacePath,
-    ...(workspaceIdentity ? { workspaceIdentity } : {}),
-    ...(remoteSessionId ? { remoteSessionId } : {}),
-  });
-  const conversationTelemetryForegroundOwnerRef = useRef<object>({});
-  useEffect(() => {
-    if (
-      !conversationTelemetry ||
-      !conversationTelemetryForegroundEnabled ||
-      !telemetryVisible ||
-      !sessionId
-    ) {
-      return undefined;
-    }
-    return conversationTelemetry.attachForeground(
-      conversationTelemetryForegroundOwnerRef.current,
-      sessionId,
-    );
-  }, [conversationTelemetry, conversationTelemetryForegroundEnabled, sessionId, telemetryVisible]);
-  const [lease, setLease] = useSessionPaneLease(sessionId, layer);
-  const state = useConversationProjection(lease);
-  const snapshot = state.snapshot;
-  const runtimeReady =
-    sessionId === null ||
-    (snapshot?.sessionId === sessionId &&
-      (!snapshot.runtimeInitialization || snapshot.runtimeInitialization.status === "ready"));
-  const newlyCreatedSessionIdRef = useRef<string | null>(null);
->>>>>>> zai-org/main
   const shareDraft = useConversationShareSelectionStore((storeState) =>
     sessionId ? storeState.drafts[sessionId] : undefined,
   );
@@ -923,13 +816,8 @@ export function SessionPane({
     setSharePreflightVersion((version) => version + 1);
   }, [preflightShareProductTurnIds, sharePreflightCacheKey]);
   const shareHydratedSessionRef = useRef<string | null>(null);
-<<<<<<< HEAD
   const sharePreflight = useMemo<ConversationShareSelectionPreflightState>(() => {
     if (!shareInSelectionStage || !sessionId) {
-=======
-  const sharePreflight = useMemo<ConversationSharePreflightState>(() => {
-    if (!shareActive || !sessionId || compactForRemoteControl) {
->>>>>>> zai-org/main
       return { status: "idle" };
     }
     if (preflightShareProductTurnIds.length === 0) {
@@ -999,16 +887,7 @@ export function SessionPane({
     // 预检结果按 turn 缓存：选择/取消只重新聚合当前选中项，只有首次加入或 turn fingerprint
     // 变化才触发 RPC；发布阶段仍走独立的权威 stat/read/SHA 校验，不能把这里的缓存当成最终事实。
     const requestScopeKey = sharePreflightScopeKey;
-<<<<<<< HEAD
     if (!shareInSelectionStage || !sessionId || selectedShareProductTurnIds.length === 0) {
-=======
-    if (
-      !shareActive ||
-      !sessionId ||
-      compactForRemoteControl ||
-      preflightShareProductTurnIds.length === 0
-    ) {
->>>>>>> zai-org/main
       return undefined;
     }
     const missingProductTurnIds = getMissingConversationSharePreflightTurnIds(
@@ -1118,8 +997,6 @@ export function SessionPane({
 
   // 稳定回调读取的最新值经 ref 透传，避免回调依赖高频变化的 snapshot/文本。
   const snapshotRef = useRef<ConversationSnapshot | null>(snapshot);
-<<<<<<< HEAD
-=======
   const sessionIdRef = useRef(sessionId);
   const [activeHighspeedCard, setActiveHighspeedCard] = useState<HighspeedCardSnapshot | null>(
     null,
@@ -1166,7 +1043,6 @@ export function SessionPane({
       ) => Promise<CommandAck>)
     | null
   >(null);
->>>>>>> zai-org/main
   const autoOpenedAssistantPptxKeysRef = useRef<Set<string>>(new Set());
   const assistantPreviewPptxGateRef = useRef(createAssistantPreviewPptxAutoOpenGateState());
   const [assistantPreviewPptxAutoOpenTarget, setAssistantPreviewPptxAutoOpenTarget] =
@@ -1407,8 +1283,6 @@ export function SessionPane({
     agentStartupAllowed: draftAgentStartupAllowed,
     modelSelectionService,
   });
-<<<<<<< HEAD
-=======
   useEffect(() => {
     if (
       !sessionId ||
@@ -1542,7 +1416,6 @@ export function SessionPane({
     sessionId,
     snapshot,
   ]);
->>>>>>> zai-org/main
   const modelSelectionView =
     modelSelectionRead.state.status === "ready" ? modelSelectionRead.state.view : null;
   const draftModelSelectionRevisionRef = useRef<number | null>(null);
@@ -1579,7 +1452,6 @@ export function SessionPane({
   );
   const codingPlanUpgradeDialog = useOptionalCodingPlanUpgradeDialog();
   const openSettingsTab = useOptionalTabStore((state) => state.openSettingsTab);
-<<<<<<< HEAD
   const promoteGroupedDraftTask = useZCodeSessionStore((state) => state.promoteGroupedDraftTask);
   const handleDraftSessionCreated = useCallback(
     (createdSessionId: string, groupedDraftTask: GroupedDraftTaskState | null | undefined) => {
@@ -1601,119 +1473,6 @@ export function SessionPane({
       onSessionCreated?.(createdSessionId);
     },
     [
-=======
-  const billingDiscount = useCodingPlanBillingDiscountFromService(
-    baseWorkspaceServices.codingPlanSubscriptionService,
-  );
-  const projectDirectory = useOptionalProjectDirectory();
-  const commitCreatedTask = projectDirectory?.commitCreatedTask;
-  const refreshTaskGroups = projectDirectory?.groups.refresh;
-  const draftNavigation = useMemo(
-    () => ({ controller: new AbortController() }),
-    [workspaceKey, sessionId],
-  );
-  useEffect(() => {
-    // StrictMode 会重放 effect；旧 scope 的请求仍使用各自的取消信号。
-    draftNavigation.controller = new AbortController();
-    return () => draftNavigation.controller.abort();
-  }, [draftNavigation]);
-  // 首发 commandId 在 accepted 时已存在，也是 completion 的 message_id；不必等回复完成。
-  const reportDraftCreated = useCallback(
-    (createdSessionId: string, source: SessionCreateSource, messageId: string) => {
-      void reportSessionCreate(platform, {
-        sessionId: createdSessionId,
-        messageId,
-        workspacePath,
-        workspaceIdentity,
-        remoteSessionId,
-        source,
-        clientKind: isDesktop ? "desktop" : compactForRemoteControl ? "mobile" : "web",
-      });
-    },
-    [
-      platform,
-      workspacePath,
-      workspaceIdentity,
-      remoteSessionId,
-      isDesktop,
-      compactForRemoteControl,
-    ],
-  );
-  const handleDraftSessionCreated = useCallback(
-    async (
-      createdSessionId: string,
-      createSource?: SessionCreateSource,
-      messageId?: string,
-      taskGroupId?: string | null,
-    ) => {
-      if (messageId) reportDraftCreated(createdSessionId, createSource ?? "session", messageId);
-      const commit = () => {
-        // Bug 根因：Session 打开埋点只衡量已有 Session，但草稿首发过去会把新建/预热提升的
-        // sessionId 直接交给同一 hook。预热 lease 还保留草稿期的 startedAt 与空 snapshot timing，
-        // 因而把数小时闲置时间误记为 total/react。创建边界先标记本 pane 的首次绑定；离开后
-        // 再次显式打开同一 Session 时标记会清除，恢复正常的已有 Session 打开测量。
-        newlyCreatedSessionIdRef.current = createdSessionId;
-        promoteComposerDraft(createdSessionId);
-        onSessionCreated?.(createdSessionId);
-      };
-      const organize =
-        taskGroupId !== undefined
-          ? async () => {
-              const task = {
-                taskId: createdSessionId,
-                workspacePath,
-                ...(workspaceIdentity ? { workspaceIdentity } : {}),
-                hostId: remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "") ?? "local",
-              };
-              const attempt = async () => {
-                try {
-                  if (!baseWorkspaceServices.taskGroupService)
-                    throw new Error("task-group.service-unavailable");
-                  await baseWorkspaceServices.taskGroupService.admit({
-                    tasks: [task],
-                    placement: {
-                      task,
-                      groupId: taskGroupId,
-                      creationId: messageId ?? createdSessionId,
-                    },
-                  });
-                  // 分组结构是独立投影；重读迟滞不能延长已接受首发或组织写入的完成时间。
-                  void refreshTaskGroups?.();
-                } catch (cause) {
-                  // 会话已创建；组织失败不能向发送层抛错，否则会诱导用户再发一次。
-                  // 重试闭包只持有这次创建的地址和 placement，绝不调用 createSession。
-                  logger.error("[task-groups] 新任务归属提交失败", cause);
-                  toast(intl.formatMessage({ id: "taskGroup.failed" }), {
-                    durationMs: 0,
-                    actionLabel: intl.formatMessage({ id: "taskGroup.retryPlacement" }),
-                    onAction: () => void attempt(),
-                    dedupeKey: `task-group:${createdSessionId}`,
-                  });
-                }
-              };
-              await attempt();
-            }
-          : undefined;
-      if (commitCreatedTask) {
-        await commitCreatedTask(
-          { taskId: createdSessionId, workspacePath, workspaceIdentity },
-          commit,
-          draftNavigation.controller.signal,
-          organize,
-        );
-      } else {
-        void organize?.();
-        commit();
-      }
-    },
-    [
-      commitCreatedTask,
-      baseWorkspaceServices.taskGroupService,
-      refreshTaskGroups,
-      intl,
-      draftNavigation,
-      reportDraftCreated,
->>>>>>> zai-org/main
       onSessionCreated,
       promoteComposerDraft,
       workspaceIdentity,
@@ -1760,33 +1519,15 @@ export function SessionPane({
       onEnvelopeCreated?: (envelope: CommandEnvelope) => void,
       creationProjectId?: string | null,
       sessionCreateSource?: SessionCreateSource,
-<<<<<<< HEAD
-=======
       recentSubmissionOverride?: ComposerSubmissionConfig | null,
       creationTaskGroupId?: string | null,
       submittedDraftText?: string,
->>>>>>> zai-org/main
     ): Promise<CommandAck> => {
       // 离线点击/快捷键不得进入 accepted 命令恢复账本，更不能在重连后自动发送。
       if (!remoteAvailable) throw createRemoteWorkspaceDisconnectedError();
       const submission = submissionConfigFromCommand(type, payload);
-<<<<<<< HEAD
       const acceptRecent = submission
         ? captureComposerRecentSubmission(workspacePath, submission, workspaceIdentity)
-=======
-      // 加速轮 payload 的 modelSelection 会被执行材料覆盖为隐藏加速 Provider；Recent 记录的是
-      // 用户在 Composer 的原始选择（新任务草稿的模型种子），加速轮必须由调用方传入发送前
-      // 冻结的 submission（spec §5.1）。接纳写入另有加速身份兜底拦截。
-      const recentSubmission = recentSubmissionOverride ?? submission;
-      // 发送时固定组织归属；同 cwd 可属于多个项目，切页和迟到 ACK 不得改写目标。
-      let recentScope =
-        creationProjectId === undefined
-          ? newTaskComposerScope
-          : { ...newTaskComposerScope, projectId: creationProjectId };
-      // 在异步查询归属前冻结选择与发起顺序，避免慢查询把早发命令排成最新。
-      const recentReceipt = recentSubmission
-        ? prepareComposerRecentReceipt(recentScope, recentSubmission)
->>>>>>> zai-org/main
         : undefined;
       if (recentSubmission && sessionId && targetSessionId) {
         const projectService = baseWorkspaceServices.projectService;
@@ -1899,26 +1640,7 @@ export function SessionPane({
       }
       let ack: CommandAck;
       try {
-<<<<<<< HEAD
         ack = await sendCommand(envelope);
-=======
-        if (telemetrySeed?.localTtft && !workspaceIdentity?.trim()) {
-          envelope.ttft = getLocalTtftObserver()?.dispatch(
-            telemetrySeed.localTtft,
-            workspacePath,
-            envelope.commandId,
-            targetSessionId,
-          );
-        }
-        ack =
-          projectId !== undefined
-            ? await sendCommand(envelope, { projectId })
-            : await sendCommand(envelope);
-        if (telemetrySeed?.localTtft && ack.reasonCode === "guard.heldQueueConfirmationStale")
-          getLocalTtftObserver()?.confirmationRetry(telemetrySeed.localTtft);
-        else if (telemetrySeed?.localTtft)
-          getLocalTtftObserver()?.ack(telemetrySeed.localTtft, ack.status, ack.ttftExcluded);
->>>>>>> zai-org/main
       } catch (error) {
         if (lease?.store) {
           lease.store.settleCommand(envelope.commandId);
@@ -1977,12 +1699,9 @@ export function SessionPane({
     },
     [
       captureAcceptedModelSelection,
-<<<<<<< HEAD
-=======
       newTaskComposerScope,
       baseWorkspaceServices.projectService,
       conversationTelemetry,
->>>>>>> zai-org/main
       lease,
       provider,
       sendCommand,
@@ -2616,7 +2335,6 @@ export function SessionPane({
         dynamicWorkflowEnabled,
         handler: handleResumeWorkflowRun,
       }),
-<<<<<<< HEAD
       onAmendWorkflowRunSettings: sessionId
         ? resolveWorkflowResumeHandler({
             readOnly,
@@ -2624,27 +2342,6 @@ export function SessionPane({
             handler: handleAmendWorkflowRunSettings,
           })
         : undefined,
-=======
-      onAmendWorkflowRunSettings:
-        runtimeReady && sessionId
-          ? resolveWorkflowResumeHandler({
-              readOnly,
-              dynamicWorkflowEnabled,
-              handler: handleAmendWorkflowRunSettings,
-            })
-          : undefined,
-      // 保存与 Resume 同一道门、同一个供给点：写文件与起引擎都属于「Resume 被收走的地方一并收走」
-      // （docs/dynamic-workflow/launch.md「Gray release」）。芯片不经这道门，它只是一条事实。
-      onSendWorkflowSaveRequest:
-        runtimeReady && sessionId
-          ? resolveWorkflowResumeHandler({
-              readOnly,
-              dynamicWorkflowEnabled,
-              handler: handleSendWorkflowSaveRequest,
-            })
-          : undefined,
-      workflowSaveCandidatesByRunId,
->>>>>>> zai-org/main
       ...(workflowSessionModel === undefined ? {} : { workflowSessionModel }),
       workflowRunByToolCallId,
       workflowRunByRunId,
@@ -3007,167 +2704,10 @@ export function SessionPane({
     [dispatchCommand, intl, settleCurrentQueueInputs],
   );
 
-<<<<<<< HEAD
   const dispatchSendTextAfterConfig = useCallback(
     async (text: string, options: ConversationComposerSendOptions | undefined) => {
-=======
-  const readGroupedDraftId = useCallback(
-    () =>
-      String(
-        useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
-          .draftFocusVersion,
-      ),
-    [workspacePath, workspaceIdentity],
-  );
-  /**
-   * 冻结本次发送起点（spec §9.2）。必须在触发发送的同步阶段调用：早于配置屏障、草稿模型就绪、
-   * Start 套餐推荐、空 session 创建等所有发送前 await，否则起点会被读成用户切换后的 Task。
-   */
-  const captureHighspeedPaneOrigin = useCallback(
-    (): HighspeedPaneOrigin => ({
-      sessionId: sessionIdRef.current,
-      paneBinding: paneBindingRef.current.generation,
-      draftId: sessionIdRef.current === null ? readGroupedDraftId() : null,
-    }),
-    [readGroupedDraftId],
-  );
-
-  const prepareHighspeedTurnFrom = useCallback(
-    (origin: HighspeedPaneOrigin): HighspeedTurnPreparer =>
-      async (
-        taskId: string,
-        submissionSelection?: ModelSelection,
-      ): Promise<HighspeedPrepareTurnResult | null> => {
-        // 规则 15：prepare 的选择与本次提交同源——用户刚切换的模型必须在首次发送就驱动
-        // admission。曾按会话投影旧组合抽卡，抽中后把用户切到非 Coding Plan 模型的提交
-        // 覆盖成卡模型，表现为"选了别的模型还是抽中加速"。
-        const selection = resolveHighspeedPrepareSelection({
-          submissionSelection,
-          projectedConfig:
-            snapshotRef.current?.sessionId === taskId ? snapshotRef.current.config : null,
-          draftConfig: draftConfigRef.current,
-          initialDraftConfig: resolveInitialDraftConfig(),
-        });
-        if (!selection) return null;
-        // 加速卡沿用会话模型，必须带上会话生效的思考档位；缺档位时 CLI 会因 execution 选择
-        // 不完整报 "Reasoning level is required" 让整轮发送失败。优先取提交选择的 options，
-        // 再回落 thought（CLI 投影的生效档位）；空串表示该模型无档位，交给 service 省略 options。
-        const { provider, model, reasoningLevel } = selection;
-        try {
-          const sendStartedAt = Date.now();
-          const result = await highspeedCardService.prepareTurn({
-            taskId,
-            providerId: provider,
-            model,
-            ...(reasoningLevel ? { reasoningLevel } : {}),
-            waitBudgetMs: HIGHSPEED_SEND_WAIT_BUDGET_MS,
-          });
-          if (result.kind === "accelerated") {
-            // Bug 根因：该查询只决定节省时间展示，却曾在抽中后同步 await；monitor 侧 15s 超时把
-            // 1s 发送承诺拉长到最多 16s（新会话首发尤其明显：空 session 已建、正文长期未发）。
-            // 现在只在剩余发送预算内 best-effort 等待，超时/失败本轮不附加 regularTps，
-            // 请求由 Service 层继续完成并缓存供下一轮（spec §3 规则 12、§9.4）。
-            const regularTps = await readRegularTpsWithinSendBudget({
-              read: async () => {
-                // 节省时间的基准 TPS 来自 Coding Plan 用量健康接口，请求期鉴权只能由账号访问
-                // 上下文解析。这里按当前选中的 Coding Plan Provider 现取快照，不订阅配置面
-                // （SessionPane 不需要为此重渲染）；未连接或无权益时直接不展示节省时间。
-                const providerSettingsState = getProviderSettingsSnapshot();
-                const accountAccess =
-                  providerSettingsState.status === "ready"
-                    ? resolveEntitledAccountProviderAccess(providerSettingsState.view, provider)
-                    : null;
-                if (!accountAccess) return undefined;
-                return readHighspeedRegularTpsFromHealth({
-                  usageStatsService,
-                  preferredProviderId: provider,
-                  accountAccess: accountAccess.access,
-                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                });
-              },
-              elapsedMs: Date.now() - sendStartedAt,
-              onError: (error) =>
-                logger.warn("[highspeed] 读取普通 Decode TPS 失败，本轮不展示节省时间", {
-                  error: error instanceof Error ? error.message : String(error),
-                  provider,
-                  taskId,
-                }),
-              onTimeout: (budgetMs) =>
-                logger.info(
-                  "[highspeed] 普通 Decode TPS 未在发送预算内返回，本轮不附加 regularTps",
-                  {
-                    budgetMs,
-                    provider,
-                    taskId,
-                  },
-                ),
-            });
-            const acceleratedResult: HighspeedPrepareTurnResult = regularTps
-              ? { ...result, card: { ...result.card, regularTps } }
-              : result;
-            const cardId = acceleratedResult.card.cardId;
-            // Bug 根因：SessionPane 跨 Task 复用同一实例，发送前的配置屏障、套餐推荐、建会话以及
-            // prepare 与 TPS 读取 await 期间用户都可能切到其他 Task；此时写卡片状态会把旧 Task 的卡
-            // 呈现到新 Task 的输入框并播放激活。起点曾在 prepare 入口才读取，切换发生在 prepare 之前时
-            // 起点已是新 Task，判定失效；现由调用方在发送同步阶段冻结。只有 pane 正显示卡所属 Task，
-            // 或草稿首发且 pane 从未离开该草稿（首发 session 尚未绑定回 pane）时才呈现。卡仍交给本轮
-            // 发送继续加速，只跳过本 pane 的呈现；切回所属 Task 由快照恢复按 restore 呈现。
-            const paneSessionId = sessionIdRef.current;
-            const paneShowsSendTarget =
-              paneSessionId === taskId ||
-              (origin.sessionId === null &&
-                paneSessionId === null &&
-                paneBindingRef.current.generation === origin.paneBinding &&
-                readGroupedDraftId() === origin.draftId);
-            if (!paneShowsSendTarget) {
-              return acceleratedResult;
-            }
-            // Bug 根因：恢复链路与 draw 命中共用同一条卡片渲染路径，按“卡片出现”触发激活动效会在
-            // 切回 Task 时重播；prepare 复用已有卡同样返回 accelerated。只有本 pane 首次呈现的卡才登记。
-            if (presentedHighspeedCardIdRef.current !== cardId) {
-              presentedHighspeedCardIdRef.current = cardId;
-              setHighspeedActivationCardId(cardId);
-            }
-            setActiveHighspeedCard(acceleratedResult.card);
-            return acceleratedResult;
-          } else if (
-            !result.card ||
-            result.card.taskId !== taskId ||
-            result.card.expiresAt <= Date.now()
-          ) {
-            setActiveHighspeedCard((current) => (current?.taskId === taskId ? null : current));
-          }
-          return result;
-        } catch (error) {
-          logger.warn("[highspeed] 抽卡失败，本轮按普通模型发送", {
-            error: error instanceof Error ? error.message : String(error),
-            taskId,
-          });
-          return null;
-        }
-      },
-    [
-      draftConfigRef,
-      highspeedCardService,
-      readGroupedDraftId,
-      resolveInitialDraftConfig,
-      usageStatsService,
-    ],
-  );
-
-  const dispatchSendTextAfterConfig = useCallback(
-    async (
-      text: string,
-      options: ConversationComposerSendOptions | undefined,
-      createSourceAtSend: SessionCreateSource,
-      highspeedOriginAtSend: HighspeedPaneOrigin,
-      taskGroupIdAtSend?: string | null,
-    ) => {
->>>>>>> zai-org/main
       let onAcceptedSelection: (() => void) | undefined;
       const dispatchSubmissionCommand = async (...args: Parameters<typeof dispatchCommand>) => {
-<<<<<<< HEAD
-=======
         args[9] = createSourceAtSend;
         args[11] = taskGroupIdAtSend;
         args[12] = options?.submittedDraftText ?? text;
@@ -3191,7 +2731,6 @@ export function SessionPane({
             logger.warn("[gen-ui] Widget context unavailable");
           }
         }
->>>>>>> zai-org/main
         const ack = await dispatchCommand(...args);
         // 在原 accepted 边界写回推荐选择，早于新 Session 的草稿转移；失败不改用户意图。
         if (ack.status === "accepted" && submissionConfigFromCommand(args[0], args[1]))
@@ -3311,7 +2850,6 @@ export function SessionPane({
           );
           return;
         }
-<<<<<<< HEAD
         const prewarm = prewarmBindingRef.current;
         if (prewarm?.beginPromotion()) {
           try {
@@ -3359,26 +2897,12 @@ export function SessionPane({
         const newSessionId = createResult.sessionId;
         handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
         await dispatchSlashCommand(
-=======
-      }
-      // Bug 根因：首发曾把 binding=null 当成无预热，绕过 owner 再建一个会话。
-      // 文本、附件/context 和 goal 都等待同一创建任务，创建失败或换代直接保留草稿。
-      const draftBinding = sessionId === null ? await waitForDraftSession() : null;
-      if (draftBinding) {
-        await ensureDraftPrewarmConfigBeforeSendRef.current(draftBinding.sessionId);
-        if (!draftBinding.beginPromotion()) throw new Error("草稿会话已切换，请重新发送");
-      }
-      const targetSessionId = sessionId ?? draftBinding!.sessionId;
-      if (draftBinding && draftSlashCommand) {
-        const consumed = await dispatchSlashCommand(
->>>>>>> zai-org/main
           draftSlashCommand,
           targetSessionId,
           0,
           heldQueueDisposition,
           expectedHeldQueueItemIds,
           submission,
-<<<<<<< HEAD
         );
         return;
       }
@@ -3481,48 +3005,24 @@ export function SessionPane({
         }
         handleDraftSessionCreated(newSessionId, groupedDraftTaskAtSend);
         return;
-=======
-          (messageId) => reportDraftCreated(targetSessionId, createSourceAtSend, messageId),
-        );
-        if (consumed === "confirmationRequired") return consumed;
-        if (consumed) {
-          draftBinding.promote();
-          await handleDraftSessionCreated(
-            targetSessionId,
-            createSourceAtSend,
-            undefined,
-            taskGroupIdAtSend,
-          );
-          return;
-        }
->>>>>>> zai-org/main
       }
       // admission 写出后的失败或 transport error 不能证明 CLI 没有执行；保留原 binding
       // 的 pending 生命周期，交给 Composer 保留输入，禁止自动换会话/command 重发。
       // 附件 ref 已在 composer 预传状态机中收口。
-<<<<<<< HEAD
-=======
       const highspeed = await prepareHighspeedSendContext(
         targetSessionId,
         prepareHighspeedTurn,
         submission.modelSelection,
       );
->>>>>>> zai-org/main
       const ack = await dispatchSubmissionCommand(
         "sendText",
         {
           text,
           ...submission,
           ...(readyAttachments.length > 0 ? { attachments: readyAttachments } : {}),
-<<<<<<< HEAD
           ...(options?.requestedDelivery
             ? {
                 // 立即发送曾先投影 QueueItem，再等待二次
-=======
-          ...(sessionId && options?.requestedDelivery
-            ? {
-                // Bug 根因：立即发送曾先投影 QueueItem，再等待二次
->>>>>>> zai-org/main
                 // sendQueuedNow，导致队列中间态外泄且输入框延迟清空。现在由
                 // CLI 原子 stop + start，accepted ACK 即是 Composer 清空边界。
                 requestedDelivery: options.requestedDelivery,
@@ -3532,24 +3032,7 @@ export function SessionPane({
           ...(expectedHeldQueueItemIds ? { expectedHeldQueueItemIds } : {}),
           ...(sharedContextRefs?.length ? { context_refs: sharedContextRefs } : {}),
         },
-<<<<<<< HEAD
         sessionId,
-=======
-        targetSessionId,
-        undefined,
-        undefined,
-        options?.telemetrySeed,
-        highspeed.acceleratedCard,
-        options?.onCommandCreated
-          ? (envelope) => {
-              if (envelope.type === "sendText") options.onCommandCreated?.(envelope.commandId);
-            }
-          : undefined,
-        undefined,
-        undefined,
-        // Recent 记录加速前的 Composer 原始选择，不用被覆盖的 payload Selection。
-        submission,
->>>>>>> zai-org/main
       );
       if (ack.reasonCode === "guard.heldQueueConfirmationStale") {
         return "confirmationRequired" as const;
@@ -3594,11 +3077,7 @@ export function SessionPane({
       availableSelectionSideSlashCommandNames,
       appSlashCommands,
       handleDraftSessionCreated,
-<<<<<<< HEAD
       handleDraftSwitchMode,
-=======
-      reportDraftCreated,
->>>>>>> zai-org/main
       handleOpenSelectionSideConversationWithPrompt,
       invalidateActiveHighspeedCard,
       intl,
@@ -3618,8 +3097,6 @@ export function SessionPane({
         submission:
           options?.submission === undefined ? createSubmissionFromComposer() : options.submission,
       };
-<<<<<<< HEAD
-=======
       // 进入配置屏障前冻结 Highspeed 发送起点；屏障与后续 await 期间用户可能切换 Task。
       const highspeedOrigin = captureHighspeedPaneOrigin();
       const taskGroupId =
@@ -3627,22 +3104,11 @@ export function SessionPane({
           ? useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
               .draftTaskGroupId
           : undefined;
->>>>>>> zai-org/main
       // followupMode 仍通过 Session CAS 同步；模型和模式已封装进 Submission，不再
       // 依赖“配置命令先到、sendText 后到”的跨命令时序。
       return configCommandBarrier.enqueue(async () => {
         try {
-<<<<<<< HEAD
           return await dispatchSendTextAfterConfig(text, submissionOptions);
-=======
-          return await dispatchSendTextAfterConfig(
-            text,
-            submissionOptions,
-            createSource,
-            highspeedOrigin,
-            taskGroupId,
-          );
->>>>>>> zai-org/main
         } catch (error) {
           if (sessionId === null && isProviderNotReadyError(error)) {
             // UI 预检查与 Host getClient 之间 registry 仍可能失效。竞态命中时收敛成
@@ -3942,27 +3408,10 @@ export function SessionPane({
       // 用户明确点击“立即发送”时，视觉意图等价于点击“滚动到底部”；command 的
       // reserve/stop/promote 生命周期仍由 CLI 裁决，不把滚动状态混入协议。
       focusTimelineToLatest();
-<<<<<<< HEAD
       void dispatchCommand("sendQueuedNow", { queueItemId }, sessionId, current.revision).then(
         (ack) => {
           if (ack.status !== "accepted" && ack.status !== "noop") {
             logger.warn(`[v4-pane] sendQueuedNow 被拒绝: ${ack.status} ${ack.reasonCode ?? ""}`);
-=======
-      const highspeedOrigin = captureHighspeedPaneOrigin();
-      void (async () => {
-        const queueItem = current.queue.items.find((item) => item.queueItemId === queueItemId);
-        let highspeedOverride: HighspeedSendContext["override"] = {};
-        if (queueItem?.highspeed && queueItem.highspeed.expiresAt > Date.now()) {
-          const refreshed = await prepareHighspeedSendContext(
-            sessionId,
-            prepareHighspeedTurnFrom(highspeedOrigin),
-            queueItem.modelSelection,
-          );
-          // Bug 原因：CLI 暂存 runtime 可能跨异步边界缺失；手动提升时补充同一张卡的
-          // 新 runtime。若服务返回了不同卡，不得把原队列意图悄悄改绑到另一张卡。
-          if (refreshed.acceleratedCard?.cardId === queueItem.highspeed.cardId) {
-            highspeedOverride = refreshed.override;
->>>>>>> zai-org/main
           }
         },
       );
@@ -4140,22 +3589,7 @@ export function SessionPane({
   // Composer 选择表达“下一次提交”。点击只更新 renderer intent；Session Selection
   // 在 Submission 真正开跑（Guide 为下一次 model-step）时由 CLI/Core 更新。
   const handleSelectModel = useCallback(
-<<<<<<< HEAD
     (modelProvider: string, model: string, sourceModel: ModelSelectionSource | null) => {
-=======
-    (
-      modelProvider: string,
-      model: string,
-      sourceModel: ModelSelectionSource | null,
-      reasoningLevel?: string,
-    ) => {
-      // 加速卡在本轮已把 Selection 锁定成卡上模型，选型菜单此时不可用；仍有快捷键
-      // 或竞态调用进来时明确提示，不能静默把草稿改成另一个模型。
-      if (activeHighspeedCard) {
-        toast(intl.formatMessage({ id: "chat.highspeed.modelLocked" }));
-        return;
-      }
->>>>>>> zai-org/main
       const resolvedProvider =
         modelProvider || draftConfigRef.current.provider || sourceModel?.provider || "";
       logger.debug("[v4-pane] onSelectModel", {
@@ -4878,14 +4312,11 @@ export function SessionPane({
                 issueCount: details.issueCount ?? details.issues.length,
                 omittedIssueCount: details.omittedIssueCount,
                 requestId: details.requestId,
-<<<<<<< HEAD
-=======
                 clientRequestId: details.clientRequestId,
                 operationId,
                 status: details.status,
                 code: details.code,
                 rejection: details.rejection,
->>>>>>> zai-org/main
               }
             : {
                 issues: [
@@ -4897,14 +4328,11 @@ export function SessionPane({
                 ],
                 issueCount: 1,
                 requestId: details.requestId,
-<<<<<<< HEAD
-=======
                 clientRequestId: details.clientRequestId,
                 operationId,
                 status: details.status,
                 code: details.code,
                 rejection: details.rejection,
->>>>>>> zai-org/main
                 messageId,
               },
       });
@@ -5119,16 +4547,7 @@ export function SessionPane({
             });
             return;
           }
-<<<<<<< HEAD
           handleDraftSessionCreated(ack.result.sessionId, replay.clientContext?.groupedDraftTask);
-=======
-          return handleDraftSessionCreated(
-            ack.result.sessionId,
-            replay.clientContext?.sessionCreateSource,
-            replay.payload.firstInput ? ack.commandId : undefined,
-            replay.clientContext?.taskGroupId,
-          );
->>>>>>> zai-org/main
         }
       })
       .catch((error) => {
@@ -5156,13 +4575,7 @@ export function SessionPane({
       submissionReady={composerSubmissionReady && runtimeReady && !recoveringDraft}
       updateComposerContent={updateComposerContent}
       createSubmissionFromComposer={createSubmissionFromComposer}
-<<<<<<< HEAD
       contextHeader={isDraft ? draftComposerHeader : undefined}
-=======
-      telemetryDraftConfig={telemetryDraftConfig}
-      // 完整视图浮窗默认是一条输入框：草稿项目栏不进入浮窗，切到对话 tab 再选择项目。
-      contextHeader={isDraft && !isFloatingPresentation ? draftComposerHeader : undefined}
->>>>>>> zai-org/main
       centered={isDraft}
       layout={isFloatingPresentation ? "inline" : "stacked"}
       workingDurationMs={
@@ -5391,27 +4804,8 @@ export function SessionPane({
       ) : null}
     </>
   );
-<<<<<<< HEAD
   // 进入/退出分享时 chat dock 与分享 dock 高度不同；共享同一个 grid 单元做上下位移淡入淡出，
   // 避免父高度突变导致的硬跳。prefers-reduced-motion 由 transition 组件内部降级为立即切换。
-=======
-  // 插件 ui/message 的图片走与粘贴截图相同的 v4 attachmentPut；草稿（无 sessionId）没有插件 UI。
-  const pluginUiUploadAttachment = useCallback(
-    async (input: { fileName: string; mime: string; dataBase64: string }) => {
-      if (!sessionId) throw new Error("Plugin UI attachments need an open session");
-      const { ref } = await attachmentPut({ sessionId, ...input });
-      const padding = input.dataBase64.endsWith("==") ? 2 : input.dataBase64.endsWith("=") ? 1 : 0;
-      return {
-        ref,
-        fileName: input.fileName,
-        mime: input.mime,
-        bytes: Math.floor((input.dataBase64.length * 3) / 4) - padding,
-      };
-    },
-    [attachmentPut, sessionId],
-  );
-  // 分享浮窗不再替换输入区，保持 Composer 与对话滚动位置稳定。
->>>>>>> zai-org/main
   const conversationBottomDock = conversationBottomDockContent ? (
     <ConversationBottomDockTransition mode="chat">
       {conversationBottomDockContent}
@@ -5419,7 +4813,6 @@ export function SessionPane({
   ) : null;
 
   return (
-<<<<<<< HEAD
     <div
       data-testid={testId(TID_V4_SESSION_PANE, paneId)}
       data-session-id={sessionId ?? "draft"}
@@ -5436,17 +4829,6 @@ export function SessionPane({
       onDragLeave={effectiveDropTargetController?.onDragLeave}
       onDrop={effectiveDropTargetController?.onDrop}
       className="relative flex h-full min-h-0 flex-col"
-=======
-    <PluginUiSessionProvider
-      workspacePath={workspacePath}
-      workspaceIdentity={workspaceIdentity}
-      remoteSessionId={remoteSessionId}
-      sessionId={runtimeReady ? sessionId : null}
-      readOnly={readOnly || !runtimeReady}
-      sendText={dispatchSendText}
-      uploadAttachment={pluginUiUploadAttachment}
-      projectionStore={sessionLeaseReady ? lease?.store : null}
->>>>>>> zai-org/main
     >
       {effectiveDropTargetController?.active ? (
         <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-accent/55 backdrop-blur-sm">
@@ -5472,30 +4854,8 @@ export function SessionPane({
       />
 
       <div
-<<<<<<< HEAD
         ref={conversationLayoutContainerRef}
         className="@container/conversation relative flex min-h-0 flex-1 flex-col"
-=======
-        ref={paneRef}
-        data-testid={testId(TID_V4_SESSION_PANE, paneId)}
-        data-session-id={sessionId ?? "draft"}
-        data-initial-draft-provider={initialDraftConfigForDiagnostics?.provider ?? ""}
-        data-initial-draft-model={initialDraftConfigForDiagnostics?.model ?? ""}
-        data-projection-seq={snapshot?.seq ?? ""}
-        data-running-subagent-ids={subagents.running.map((item) => item.childSessionId).join(",")}
-        data-running-subagent-work-ids={(snapshot?.backgroundWorks ?? [])
-          .filter((work) => work.kind === "subagent" && work.status === "running")
-          .map((work) => work.childSessionId ?? work.workId)
-          .join(",")}
-        data-v4-conversation-drop-target="true"
-        onDragOver={effectiveDropTargetController?.onDragOver}
-        onDragLeave={effectiveDropTargetController?.onDragLeave}
-        onDrop={effectiveDropTargetController?.onDrop}
-        className={cn(
-          "relative flex h-full min-h-0 flex-col",
-          compactForRemoteControl && "min-w-0",
-        )}
->>>>>>> zai-org/main
       >
         <ConversationShareSelectionScrim
           visible={shareSelectionPanelVisible}
@@ -5590,7 +4950,6 @@ export function SessionPane({
             {controlLastError.message}
           </div>
         ) : null}
-<<<<<<< HEAD
 
         {errored ? (
           <SessionSubscriptionErrorPanel
@@ -5685,80 +5044,6 @@ export function SessionPane({
                       selectedRowIds: selectedShareRowIds,
                       onToggle: handleShareSelectionToggle,
                     }
-=======
-        <ConversationHeader
-          title={snapshot?.meta.title ?? ""}
-          onClosePane={onClosePane}
-          workspaceBadge={workspaceBadge}
-        />
-
-        <div
-          ref={conversationLayoutContainerRef}
-          className={cn(
-            "@container/conversation relative flex min-h-0 flex-1 flex-col",
-            compactForRemoteControl && "min-w-0",
-          )}
-        >
-          {sessionId && !compactForRemoteControl ? (
-            <ConversationSharePopover
-              key={sessionId}
-              sessionId={sessionId}
-              open={shareActive}
-              publishing={sharePublishing}
-              selecting={shareSelectionPanelVisible}
-              onClose={handleShareCancel}
-              onCancelSelection={dismissShareSelectionPanel}
-            >
-              {sharePopoverContent}
-            </ConversationSharePopover>
-          ) : null}
-          <ConversationShareSelectionPanel
-            visible={shareSelectionPanelVisible}
-            items={shareItems}
-            selectedRowIds={pendingShareRowIds}
-            selectedCount={pendingShareTurnCount}
-            preflight={sharePreflight}
-            onSelectAllChange={handleSelectAllShareRows}
-            onToggle={handleShareSelectionToggle}
-            onInspect={handleShareSelectionInspect}
-            onConfirm={handleConfirmShareSelection}
-            onCancel={dismissShareSelectionPanel}
-          />
-          {!isDraft ? (
-            <ConversationStatusPanel
-              workspacePath={workspacePath}
-              workspaceIdentity={workspaceIdentity}
-              gitSummary={gitSummary}
-              gitDirtyFileCount={gitDirtyFileCount}
-              gitWorktreeReviewSourceId={gitWorktreeReviewSourceId}
-              gitWorktreeChangeSummary={gitWorktreeChangeSummary}
-              activeTaskChangeSummary={activeTaskChangeSummary}
-              goal={selectionSideChat ? null : (snapshot?.goal ?? null)}
-              sessionPlans={state.sessionPlans}
-              plan={snapshot?.plan ?? null}
-              backgroundWorks={snapshot?.backgroundWorks ?? []}
-              runningSubagents={subagents.running}
-              workflowRuns={snapshot?.workflowRuns?.runs ?? []}
-              endedSubagentCount={subagents.endedTotal}
-              rootSessionId={rootSessionId ?? sessionId ?? undefined}
-              parentSessionId={sessionId ?? undefined}
-              isWebRemoteControl={compactForRemoteControl}
-              isMobileViewport={isMobileTextInputViewport}
-              layoutMode={statusPanelLayout}
-              summaryPanelVariantOverride={effectiveSummaryPanelVariantOverride}
-              onVariantChange={handleSummaryPanelVariantChange}
-              terminalSectionOpen={terminalSectionOpen}
-              onTerminalSectionOpenChange={setTerminalSectionOpen}
-              agentSectionOpen={agentSectionOpen}
-              onAgentSectionOpenChange={setAgentSectionOpen}
-              workflowSectionOpen={workflowSectionOpen}
-              onWorkflowSectionOpenChange={setWorkflowSectionOpen}
-              onRefreshGit={onRefreshGit}
-              onOpenGitReview={onOpenGitReview}
-              onPauseGoal={
-                !readOnly && !selectionSideChat && snapshot?.availability.pauseGoal.allowed
-                  ? handlePauseGoal
->>>>>>> zai-org/main
                   : undefined
               }
               selectionActions={
@@ -5775,157 +5060,8 @@ export function SessionPane({
                   : undefined
               }
             />
-<<<<<<< HEAD
           </SessionPluginReferenceIconBoundary>
         )}
-=======
-          ) : null}
-
-          {readOnly && controlLastError ? (
-            <div
-              role="alert"
-              data-testid="v4-subagent-readonly-error"
-              className="mx-4 mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-3 py-2 text-ui-base text-[var(--color-danger)]"
-            >
-              {controlLastError.message}
-            </div>
-          ) : null}
-
-          {errored && remoteAvailable ? (
-            <SessionSubscriptionErrorPanel
-              error={state.lastError ?? intl.formatMessage({ id: "chat.error.connectionLost" })}
-              sessionId={sessionId}
-              workspacePath={workspacePath}
-              onReconnect={handleRetrySubscribe}
-            />
-          ) : (
-            <SessionPluginReferenceIconBoundary
-              enabled={pluginReferenceIconsEnabled}
-              remoteSessionId={remoteSessionId}
-              sessionId={sessionId}
-              workspaceIdentity={workspaceIdentity}
-              workspacePath={workspacePath}
-            >
-              <BotGroupDeliveryProvider
-                taskId={sessionId}
-                workspacePath={workspacePath}
-                workspaceIdentity={workspaceIdentity}
-              >
-                <ConversationTimeline
-                  compactForRemoteControl={compactForRemoteControl}
-                  scrollToBottomActionRef={timelineScrollToBottomRef}
-                  scrollToQueryActionRef={timelineScrollToQueryRef}
-                  selectionPanelLayoutContainerRef={conversationLayoutContainerRef}
-                  rows={timelineSnapshot?.rows.window ?? []}
-                  pendingGuides={timelineSnapshot ? pendingGuideProjection?.pendingGuides : []}
-                  apiRetry={timelineSnapshot?.control.apiRetry ?? null}
-                  totalCount={timelineSnapshot?.rows.totalCount ?? 0}
-                  sessionKey={sessionId ?? "draft"}
-                  scrollMemoryKey={timelineScrollMemoryKey}
-                  rowContext={rowContext}
-                  onFork={forkActionsEnabled ? handleFork : undefined}
-                  onRetry={retryActionsEnabled ? handleRetry : undefined}
-                  onFeedbackChange={
-                    !readOnly && !selectionSideChat && sessionId
-                      ? handleAssistantFeedback
-                      : undefined
-                  }
-                  onEdit={editActionsEnabled ? handleEdit : undefined}
-                  canLoadOlder={timelineSnapshot ? hasOlderRows(timelineSnapshot) : false}
-                  loadingOlder={timelineSnapshot ? state.loadingOlder : false}
-                  onLoadOlder={handleLoadOlder}
-                  onLoadAllOlder={handleLoadAllOlder}
-                  turnNavigatorDirectoryRevision={state.turnNavigatorDirectoryRevision}
-                  bottomDock={conversationBottomDock}
-                  hideTurnNavigator={shareSelectionPanelVisible && !compactForRemoteControl}
-                  backgroundScrollLocked={false}
-                  headerSlot={
-                    // unsupportedRowCount 也要开这个门：整份副本的行都被本 build 跳过时
-                    // rows 为空，但只读块必须留下来显示「需要更新 ZCode」，不能整块消失。
-                    importedShare &&
-                    (importedShare.rows.length > 0 || importedShare.unsupportedRowCount > 0) ? (
-                      <ConversationShareImportNotice
-                        rows={importedShare.rows}
-                        contentBlocks={importedShare.contentBlocks}
-                        unsupportedRowCount={importedShare.unsupportedRowCount}
-                        artifactNames={importedShareArtifactNames}
-                        artifactWorkspaceRelativePaths={importedShareArtifactWorkspaceRelativePaths}
-                        workspacePath={workspacePath}
-                        {...(workspaceIdentity ? { workspaceIdentity } : {})}
-                        {...(remoteSessionId ? { workspaceRemoteSessionId: remoteSessionId } : {})}
-                        locale={locale}
-                        theme={theme}
-                        codePreviewSettings={codePreviewSettings}
-                        onOpenShareUrl={onOpenBrowserUrl ? handleOpenImportedShareUrl : undefined}
-                        onOpenFileLink={onOpenFileLink}
-                        onOpenCodeViewer={onOpenCodeViewer}
-                      />
-                    ) : null
-                  }
-                  emptyState={
-                    !remoteAvailable ? (
-                      <div className="p-6 text-center text-ui-base text-foreground-subtle">
-                        {intl.formatMessage({ id: "remote.conversation.placeholder" })}
-                      </div>
-                    ) : isDraft ? (
-                      <div data-testid={TID_CHAT_EMPTY} className="w-full">
-                        <ConversationDraftEmptyState
-                          compactForRemoteControl={compactForRemoteControl}
-                        />
-                      </div>
-                    ) : null
-                  }
-                  // 浮窗形态只露出底部输入区，空会话也必须贴底，不能居中。
-                  centerEmptyStateWithDock={isDraft && !isFloatingPresentation}
-                  floatingComposerDock={isFloatingPresentation}
-                  onComposerDockHeightChange={
-                    isFloatingPresentation && focused
-                      ? panePresentation.reportComposerDockHeight
-                      : undefined
-                  }
-                  onLatestTurnSummaryChange={
-                    isFloatingPresentation && focused
-                      ? handleFloatingLatestTurnSummaryChange
-                      : undefined
-                  }
-                  compactEmptyStateWithDock={compactForRemoteControl}
-                  summaryPanelLayout={statusPanelLayout}
-                  conversationFindQuery={!isDraft && focused ? conversationFindQuery : ""}
-                  conversationFindActiveIndex={
-                    !isDraft && focused ? conversationFindActiveIndex : -1
-                  }
-                  conversationFindNavigationRequestId={
-                    !isDraft && focused ? conversationFindNavigationRequestId : 0
-                  }
-                  onConversationFindMatchStateChange={
-                    !isDraft && focused ? onConversationFindMatchStateChange : undefined
-                  }
-                  searchResultHighlightRequest={isDraft ? null : searchResultHighlightRequest}
-                  onSearchResultHighlightDone={onSearchResultHighlightDone}
-                  sessionPhase={isDraft ? undefined : snapshot?.control.phase}
-                  selectionActions={
-                    !isDraft &&
-                    sessionId &&
-                    !readOnly &&
-                    !selectionSideChat &&
-                    !isMobileTextInputViewport
-                      ? {
-                          enabled: resolveConversationSelectionTooltipEnabled({
-                            selectionActionsEnabled: focused && !blockingInteractionId,
-                            partialShareActive: shareActive,
-                          }),
-                          sideActionDisabled: selectionSideActionBlocked,
-                          onAddToCurrentTask: handleAddSelectionToCurrentTask,
-                          onAskInSideChat: handleOpenSelectionSideConversation,
-                        }
-                      : undefined
-                  }
-                />
-              </BotGroupDeliveryProvider>
-            </SessionPluginReferenceIconBoundary>
-          )}
-        </div>
->>>>>>> zai-org/main
       </div>
     </div>
   );

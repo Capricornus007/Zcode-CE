@@ -381,7 +381,8 @@ export function resolveServerProjectService(params: {
         ? tasks.listPinnedTasks(scope)
         : kind === "archived"
           ? tasks.listArchivedTasks(scope)
-          : tasks.listTasks(scope);    },
+          : tasks.listTasks(scope);
+    },
     ensureConversation: async () =>
       (await params.connectionServices.fileService.ensureConversationWorkspace()).path,
   });

@@ -10,7 +10,6 @@ import {
   TID_LOGOUT_BUTTON,
   TID_TASK_SETTINGS_BUTTON,
 } from "@zcode/shared/test-ids";
-} from "@zcode/shared";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { RemoteControlEntryButton, type RemoteControlEntry } from "@/RemoteControlEntryButton.js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.js";

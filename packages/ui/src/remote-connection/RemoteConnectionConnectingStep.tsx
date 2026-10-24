@@ -291,13 +291,7 @@ export function RemoteConnectionConnectingStep({
   onContinueToDirectory?: () => void;
 }) {
   const { intl } = useZCodeIntl();
-<<<<<<< HEAD
   const { runFeedbackEntry } = useFeedbackEntryAction();
-=======
-  const credentialInputId = useId();
-  const platform = usePlatform();
-  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
->>>>>>> zai-org/main
   const logContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldFollowLatestLogRef = useRef(true);
   const latestLogId = logs.at(-1)?.id;
@@ -415,7 +409,6 @@ export function RemoteConnectionConnectingStep({
     runFeedbackEntry({
       title:
         errorMessage.slice(0, 80) ||
-<<<<<<< HEAD
         intl.formatMessage({
           id:
             kind === "ssh"
@@ -425,13 +418,6 @@ export function RemoteConnectionConnectingStep({
                 : "feedback.submit.template.section.remoteConnectFailed",
         }),
       ...(errorMessage ? { errorSummary: errorMessage } : {}),
-=======
-        intl.formatMessage({ id: "feedback.submit.template.section.remoteConnectFailed" }),
-      type: "bug",
-      module: kind === "ssh" ? "SSH连接失败" : kind === "wsl" ? "WSL连接失败" : "Agent任务执行失败",
-      severity: "P2-中",
-      includeLogs: false,
->>>>>>> zai-org/main
       description: buildRemoteConnectionFeedbackDescription(errorMessage, logs, (id, values) =>
         intl.formatMessage({ id }, values),
       ),

@@ -1,7 +1,6 @@
 import { access, chmod, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { createRuntimeManifest, type ServerTarget } from "../runtime/manifest.js";
-<<<<<<< HEAD
 import { assertPackagedNodePtyPayloadVerified } from "../../../../packages/desktop/scripts/node-pty-package-assets.mjs";
 import { isTarCommand, resolveHostTarCommand } from "./tarCommand.js";
 
@@ -144,20 +143,6 @@ function isTargetSpecificPackage(packageName: string, target: ServerTarget): boo
   if (!packageName.startsWith("@mbears/opentui-core-")) return true;
   return packageName === `@mbears/opentui-core-${target}`;
 }
-=======
-import {
-  collectBareModuleSpecifiers,
-  copyPackageDir,
-  ensureNodePtyPrebuild,
-  isNodePtyRuntimePath,
-  isTargetSpecificPackage,
-  pruneKoffiRuntime,
-  resolveProductionPackageClosure,
-} from "./stageDependencies.js";
-import { createComponentArchive, hashPaths, runPackagingCommand } from "./stageArchives.js";
-
-export { collectBareModuleSpecifiers, isNodePtyRuntimePath, resolveProductionPackageClosure };
->>>>>>> zai-org/main
 
 interface StageOptions {
   target: ServerTarget;
@@ -208,7 +193,6 @@ const WINDOWS_LAUNCHER = [
   "",
 ].join("\r\n");
 
-<<<<<<< HEAD
 async function copyPackageDir(
   sourceDir: string,
   targetDir: string,
@@ -286,8 +270,6 @@ async function hashPaths(
   return { sha256: hash.digest("hex"), sizeBytes };
 }
 
-=======
->>>>>>> zai-org/main
 async function copyDirectoryIfPresent(
   sourceDir: string | undefined,
   targetDir: string,
@@ -298,13 +280,9 @@ async function copyDirectoryIfPresent(
   } catch {
     return [];
   }
-<<<<<<< HEAD
   const names = (
     await (await import("node:fs/promises")).readdir(sourceDir, { withFileTypes: true })
   )
-=======
-  const candidates = (await readdir(sourceDir, { withFileTypes: true }))
->>>>>>> zai-org/main
     .filter((entry) => entry.isDirectory() && entry.name.endsWith("-plugin"))
     .map((entry) => entry.name)
     .filter((name) => name !== "superpowers-plugin")
@@ -331,8 +309,6 @@ async function copyDirectoryIfPresent(
   return names.map((name) => name.replace(/-plugin$/u, ""));
 }
 
-<<<<<<< HEAD
-=======
 const PLUGIN_ROOT_PLACEHOLDER_PREFIX = "${ZCODE_PLUGIN_ROOT}/";
 
 /**
@@ -379,7 +355,6 @@ async function assertOfficialPluginRuntime(stagedDir: string, name: string): Pro
 
 const BUNDLED_SKILL_PACK_TOP_LEVEL_PATHS: readonly string[] = ["README.md", "skills"];
 
->>>>>>> zai-org/main
 async function copyNativeTools(
   sourceDir: string | undefined,
   targetDir: string,
@@ -423,7 +398,6 @@ async function copyNativeTools(
   return copied;
 }
 
-<<<<<<< HEAD
 async function createComponentArchive(
   releaseDir: string,
   outputDir: string,
@@ -465,9 +439,6 @@ async function createComponentArchive(
 }
 
 /** 组装 `zcode-server-<os>-<arch>/` 发行目录；只做本地组装，不上传、不发布。 */
-=======
-/** 组装 `zcode-server-<os>-<arch>/` 发行目录（spec §7.1）；只做本地组装，不上传、不发布。 */
->>>>>>> zai-org/main
 export async function stageRelease(options: StageOptions): Promise<StagedRelease> {
   for (const [name, value] of Object.entries(options.notices)) {
     if (!value.trim()) throw new Error(`Missing distribution notice: ${name}`);
@@ -621,26 +592,12 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
         "runtime/THIRD-PARTY-NOTICES.md",
       ],
     },
-<<<<<<< HEAD
     { id: "agent-runtime", paths: ["runtime/zcode.cjs", "runtime/licenses/agent"] },
-=======
-    {
-      id: "agent-runtime",
-      paths: ["runtime/zcode.cjs", "runtime/packages/bundled-skills", "runtime/licenses/agent"],
-    },
->>>>>>> zai-org/main
     ...(plugins.length > 0
       ? [
           {
             id: "official-plugins",
-<<<<<<< HEAD
             paths: ["runtime/packages", "runtime/licenses/official-plugins"],
-=======
-            paths: [
-              ...plugins.map((name) => `runtime/packages/${name}-plugin`),
-              "runtime/licenses/official-plugins",
-            ],
->>>>>>> zai-org/main
           },
         ]
       : []),
@@ -663,7 +620,6 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     plugins,
     components: componentMeta,
   });
-<<<<<<< HEAD
   await writeFile(
     join(releaseDir, "manifest.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -680,22 +636,6 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     );
     component.archivePath = relative(outputRoot, archive.archivePath).split(sep).join("/");
     componentArchivePaths.push(archive.archivePath);
-=======
-  // SSH 开发验证只安装整包；独立组件归档会重复哈希、复制和压缩同一批内容。
-  // 仅跳过归档生成，保留上方组件身份计算和完整资源校验；默认发布链仍生成组件包。
-  if (options.componentArchives !== false) {
-    for (const component of componentMeta) {
-      const archive = await createComponentArchive(
-        releaseDir,
-        outputRoot,
-        options.target,
-        component.id,
-        component.paths,
-      );
-      component.archivePath = relative(outputRoot, archive.archivePath).split(sep).join("/");
-      componentArchivePaths.push(archive.archivePath);
-    }
->>>>>>> zai-org/main
   }
   await writeFile(
     join(releaseDir, "manifest.json"),
@@ -708,7 +648,6 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     const extension = options.target.startsWith("win32-") ? "zip" : "tar.gz";
     archivePath = join(outputRoot, `${releaseName}.${extension}`);
     await rm(archivePath, { force: true });
-<<<<<<< HEAD
     // Windows 宿主显式 System32 bsdtar，不依赖调用方 PATH（原因同 tarCommand.ts）。
     const tarCommand = resolveHostTarCommand();
     if (extension === "zip") {
@@ -718,11 +657,6 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     } else if (process.platform === "win32") {
       await runCommand(tarCommand, ["-czf", archivePath, releaseName], outputRoot);
     } else await runCommand("tar", ["-czf", archivePath, releaseName], outputRoot);
-=======
-    if (extension === "zip")
-      await runPackagingCommand("zip", ["-qr", archivePath, releaseName], outputRoot);
-    else await runPackagingCommand("tar", ["-czf", archivePath, releaseName], outputRoot);
->>>>>>> zai-org/main
   }
 
   return {
@@ -732,7 +666,6 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     packagedDependencies: [...closure.keys()].sort(),
   };
 }
-<<<<<<< HEAD
 
 async function pruneKoffiRuntime(
   sourceDir: string,
@@ -822,5 +755,3 @@ async function ensureNodePtyPrebuild(
     // 非 darwin 平台没有 spawn-helper，忽略。
   }
 }
-=======
->>>>>>> zai-org/main

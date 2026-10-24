@@ -112,14 +112,11 @@ import {
   type ExplicitStartupWorkspaceRequest,
   resolveExplicitStartupWorkspaceBootstrap,
 } from "./startupWorkspaceDeepLinkGate.js";
-<<<<<<< HEAD
-=======
 import { createWebRemoteControlManager } from "./webRemoteControlManager.js";
 import { createWebRemoteControlDeviceStorage } from "#src/main/web-remote-relay/index.js";
 import { createWebRemoteControlFeatureGate } from "./webRemoteControlFeatureGate.js";
 import { reconnectWebRemoteControlWorkspaceInRenderer } from "./webRemoteControlRendererReconnect.js";
 import { sendWebRemoteControlStatusChangedToWindow } from "./webRemoteControlStatusEvents.js";
->>>>>>> zai-org/main
 import { executeDesktopCommand } from "./desktopCommandHandlers.js";
 import { clampDesktopZoomLevel, resolveDesktopZoomLevelFromFactor } from "./desktopZoom.js";
 import {
@@ -726,50 +723,9 @@ function awaitFirstHostSpawnDecision(): Promise<void> {
   })();
   return firstHostSpawnDecisionPromise;
 }
-<<<<<<< HEAD
 // 遥测移除（P1）：这里原有 appTelemetryCore（createTelemetryCore + 三个 Loader + OTLP fetch）、
 // appTelemetryRuntime（启动门 / renderer 上下文 / interactive 状态）、reportRemoteUsageEventForRenderer
 // 与 syncAppTelemetryInteractiveState。整套业务事件上报链路已删除，不再需要 credential service。
-=======
-const appTelemetryCore = createTelemetryCore({
-  loadUserId: createTelemetryUserIdLoader(appTelemetryCredentialService),
-  loadAuthorization: createTelemetryAuthorizationLoader(appTelemetryCredentialService),
-  loadMarketingParams: createTelemetryMarketingParamsLoader(appTelemetryCredentialService),
-  resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
-  fetchImpl: createDesktopTelemetryFetch({
-    fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
-  }),
-});
-const appTelemetryRuntime = createAppTelemetryRuntime({
-  telemetryCore: appTelemetryCore,
-  appLaunchCoordinator,
-});
-
-function reportRemoteUsageEventForRenderer(rendererId: number, event: TelemetryEventPayload): void {
-  const context =
-    appTelemetryRuntime.getRendererContext(rendererId) ??
-    appTelemetryRuntime.getLatestRendererContext();
-  if (!context) {
-    logger.warn("[remote-usage-telemetry] renderer context unavailable", {
-      elementName: event.elementName,
-      rendererId,
-    });
-    return;
-  }
-  // 最终失败由 TelemetryCore 统一记录一条脱敏告警；这里仅隔离远程连接主链路。
-  void appTelemetryCore.reportEvent({ context, ...event }).catch(() => {});
-}
-
-function syncAppTelemetryInteractiveState(): void {
-  appTelemetryRuntime.setInteractive(
-    getApplicationWindowsExcludingCuaIndicator().some(
-      (win) => !win.isDestroyed() && win.isVisible() && win.isFocused(),
-    ),
-  );
-  // 登出/切号发生在 host 子进程，主进程无即时信号；窗口聚焦时兜底刷新 ARMS user.name
-  void armsUserIdentitySync.refresh();
-}
->>>>>>> zai-org/main
 
 app.on("browser-window-focus", (_event, win) => {
   rebuildMenu();
@@ -795,8 +751,6 @@ const remoteSessionManager = createRemoteWorkspaceSessionManager({
   // 两个 ARMS 远程连接指标回调，随 desktopRemoteUsageArmsTelemetry 删除。
 });
 
-<<<<<<< HEAD
-=======
 // 复用既有只读账号入口；HTTP 由 main 的 Node fetch 执行，不触发 host OAuth 登出。
 const loadRemoteControlUserId = createTelemetryUserIdLoader(webRemoteControlCredentialService);
 const loadRemoteControlAuthorization = createTelemetryAuthorizationLoader(
@@ -807,7 +761,6 @@ const webRemoteControlSharedHostAttachments = createWebRemoteControlSharedHostAt
   attachRemoteWorkspaceSessionHost: remoteSessionManager.attachRemoteWorkspaceSessionHost,
   logger,
 });
->>>>>>> zai-org/main
 const deviceMid = ensureDesktopDeviceMidSync();
 // 帮助配置是公开读取，不能复用下面附带账号鉴权的灰度响应缓存。
 const readHelpConfig = createDesktopHelpConfigReader({
@@ -855,8 +808,6 @@ let startupOpenWorkspaceRequest: ExplicitStartupWorkspaceRequest | null =
       ? { path: startupDeepLinkWorkspacePath, source: "deep-link" }
       : null;
 
-<<<<<<< HEAD
-=======
 const webRemoteControlManager = createWebRemoteControlManager({
   getEndpointUrls: async () => {
     const derived = buildZCodeEndpointUrls(await resolveCurrentZCodeEndpointOrigin(), {
@@ -966,7 +917,6 @@ const webRemoteControlManager = createWebRemoteControlManager({
 });
 webRemoteControlManagerRef.current = webRemoteControlManager;
 
->>>>>>> zai-org/main
 let forceUpdateMainWindowCreationBlocked = false;
 
 function resolveExternalWorkspaceConfirmationCopy() {
@@ -1054,11 +1004,7 @@ function syncCloseToTrayOnWindows(value: unknown) {
   logger.info(`[settings] closeToTrayOnWindows=${value}`);
 }
 
-<<<<<<< HEAD
 function syncImmediateAppSettings(patch: AppSettingsSyncPatch) {
-=======
-function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchema.parse>) {
->>>>>>> zai-org/main
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
 
   if (patch.remoteAssetCdnBaseUrl !== undefined) {
@@ -1834,41 +1780,15 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
             windowsCuaOperationIndicator.handleState(source, event),
           onCuaOperationStateSourceExited: (source) =>
             windowsCuaOperationIndicator.clearSource(source),
-<<<<<<< HEAD
           // 遥测移除（P1）：这里原有 5 个 onAgentProcess* 回调（Agent 进程生命周期 → ARMS
           // perf_* 事件）、onMcpTelemetry 与 onSessionCreateTelemetry。只删遥测回调，
           // Host 进程生命周期管理的其它选项全部保留。
-=======
-          onAgentProcessExited: (event) => reportAgentProcessExitToArms(event, logger),
-          onAgentProcessError: (event) => reportAgentProcessSpawnErrorToArms(event, logger),
-          onAgentProcessException: (event) => reportAgentProcessExceptionToArms(event, logger),
-          onAgentProcessReady: (event) => reportAgentProcessReadyToArms(event, logger),
-          onAgentProcessSpawned: (event) => reportAgentProcessStartToArms(event, logger),
-          onMcpTelemetry: (message) =>
-            reportMcpTelemetryToArms(message.event, message.runtimeSurface),
-          onPluginTelemetry: (message) => {
-            void appTelemetryCore.reportEvent(message.event).catch(() => {});
-          },
-          onSessionCreateTelemetry: (message) => {
-            void appTelemetryCore.reportEvent(message.event).catch(() => {});
-          },
->>>>>>> zai-org/main
           onCronRunResult: forwardCronRunResult,
           onOffPeakRunResult: forwardOffPeakRunResult,
           onCronSchedulerWakeRequested: wakeCronScheduler,
           onOffPeakSchedulerWakeRequested: wakeOffPeakScheduler,
           authorizeLocalMediaPreviewPath: localMediaPreviewPathRegistry.authorize,
-<<<<<<< HEAD
           // browser-use：main 用 WebContentsView+CDP 执行命令。
-=======
-          registerPluginSandbox: (input) => {
-            const host = getPluginSandboxHost();
-            if (!host) throw new Error("Plugin UI sandbox host is not installed.");
-            const { requestId: _requestId, ...registerInput } = input;
-            return host.registerFromHost(registerInput);
-          },
-          // browser-use：main 用 WebContentsView+CDP 执行命令（替换 T4 占位）。
->>>>>>> zai-org/main
           handleBrowserExecuteRequest: ({ win: browserWin, ...request }) =>
             runBrowserCommandOnView({ win: browserWin, ...request }),
         },
@@ -1997,28 +1917,8 @@ app.whenReady().then(async () => {
   installLocalMediaPreviewProtocol(session.defaultSession.protocol, {
     isPathAuthorized: localMediaPreviewPathRegistry.isAuthorized,
   });
-<<<<<<< HEAD
   // Electron 的 net.request 只能在 app ready 后使用；灰度请求仍是旁路预热，不阻塞首个 Host。
   void desktopContextPromptRollout?.refresh();
-=======
-  // 插件 UI 沙箱：注册表 + renderer 可调 IPC；scheme 的 privileged 注册已随 zcode-media 在 ready 前完成。
-  installPluginSandboxHost({
-    preloadPath: join(import.meta.dirname, "../preload/pluginSandbox.cjs"),
-    rendererDir: join(import.meta.dirname, "../renderer"),
-    aliasDir: join(import.meta.dirname, "../plugin-sandbox"),
-    // 开发模式 out/renderer 没有 shell 产物，从 renderer dev server 代理（同 cua-permission-panel 的做法）。
-    ...(!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]
-      ? { devServerUrl: process.env["ELECTRON_RENDERER_URL"] }
-      : {}),
-    logger: console,
-    // e2e L05（配额）：只在 e2e run 里允许缩小注册表容量。
-    ...(process.env.ZCODE_E2E_RUN_ID?.trim() &&
-    Number.isInteger(Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
-    Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
-      ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
-      : {}),
-  });
->>>>>>> zai-org/main
   installBrowserRestoreBootstrapProtocol(
     session.fromPartition(EMBEDDED_BROWSER_PARTITION).protocol,
   );
@@ -2365,13 +2265,10 @@ app.whenReady().then(async () => {
     getDesktopSessionActivity: () => ({
       runningAgentSessionCount: getRunningAgentSessionCount(),
     }),
-<<<<<<< HEAD
-=======
     syncWebRemoteControlWorkspaces: (windowId, workspaces) => {
       webRemoteControlManager.syncAvailableWorkspaces(windowId, workspaces);
       void webRemoteControlManager.restorePreviouslyEnabled(windowId, workspaces);
     },
->>>>>>> zai-org/main
     syncAppSettings: syncImmediateAppSettings,
     setShortcutRecordingActive,
     deviceMid,

@@ -7,34 +7,17 @@ import type {
   CommandResult,
   SubmissionMode,
 } from "@zcode/shared/zcode-protocol-v4";
-<<<<<<< HEAD
 import type { ModelSelection } from "@zcode/shared";
 import { createModelExecutionContext } from "../../../zcode-protocol/model-execution.js";
 import type { SteerTurnOptions } from "../../../app/types.js";
 import { parseProviderQualifiedModelSelection } from "../../../app/provider-registry-selection.js";
 import type { TurnAttachment } from "@zcode/core";
 import { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
-=======
-import { isHighspeedProviderId } from "@zcode/shared";
-import { createModelExecutionContext } from "../../../session-execution/index.js";
-import { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
-import {
-  applyHeldQueueDisposition,
-  hasPromptInput,
-  resolveOrdinaryQueueModelSelection,
-  resolveSubmittedExecutionState,
-  V4InputAdmissionRejectedError,
-} from "../input-admission.js";
->>>>>>> zai-org/main
 import { inputIntentMetadata } from "../input-intent.js";
 import { startPromptTurn, turnBackgroundAttributionOf } from "../prompt-turn.js";
 import { resetHeldQueueAfterModelSelectionChange } from "../../queue-held-reset.js";
 import { requireRecord } from "../record-access.js";
-<<<<<<< HEAD
 import type { V4CommandCoreHost, V4SessionRecordView } from "../types.js";
-=======
-import type { V4CommandCoreHost, V4SessionRecordView, V4TurnExecution } from "../types.js";
->>>>>>> zai-org/main
 import { V4CommandNoopError } from "../../v4-gateway.js";
 
 /** 等 idle 轮询参数：25ms 间隔、5s 超时。 */
@@ -207,16 +190,8 @@ async function sendText(
 ): Promise<CommandResult | undefined> {
   const payload = envelope.payload as CommandPayloadMap["sendText"];
   const record = requireRecord(host, envelope.sessionId);
-<<<<<<< HEAD
   // 旧校验只看正文，UI 已允许的 attachment-only query 会在 CLI 被误判为空。
   if (!hasPromptInput(payload.text, payload.attachments)) {
-=======
-  // Bug 根因：旧校验只看正文，UI 已允许的 attachment-only query 会在 CLI 被误判为空。
-  if (
-    !hasPromptInput(rawPayload.text, rawPayload.attachments) &&
-    !rawPayload.conversationQuotes?.length
-  ) {
->>>>>>> zai-org/main
     throw new V4InputAdmissionRejectedError("proto.invalidPayload", "input must not be empty");
   }
   // 提交前快照会话选型：core 在 turn 内部才应用本次选型（turn-model.ts:51-70），
@@ -228,8 +203,6 @@ async function sendText(
     inputIntentMetadata(envelope, { ...options, ...submittedExecutionState });
   const routingMode = host.getInputRoutingMode?.(envelope.sessionId ?? "") ?? null;
   const forceStartNow = payload.requestedDelivery === "startNow";
-<<<<<<< HEAD
-=======
   // 加速本轮由「标准 Selection 指向加速 Provider + 单次执行材料」表达；判定必须用 Family
   // 谓词，不能和单个 provider id 常量比较，否则 BigModel 账号的卡会被当成普通轮静默丢弃。
   const highspeedExecution: V4TurnExecution | undefined = isHighspeedProviderId(
@@ -318,7 +291,6 @@ async function sendText(
     // 原子准入，避免跨层 busy 快照在 await 期间失效后用普通模型直接启动。
     return await queueHighspeedTurn();
   }
->>>>>>> zai-org/main
   const foregroundPromotionLeaseId = forceStartNow ? `send-now:${envelope.commandId}` : undefined;
   let foregroundPromotionLeaseAcquired = false;
   let preempted = false;

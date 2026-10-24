@@ -40,17 +40,7 @@ import type { AssistantFeedbackHandler } from "@/v4/ConversationRowView.js";
 import { ConversationTurnNavigator } from "@/v4/ConversationTurnNavigator.js";
 import { syncConversationShareSelectionPanelLayout } from "@/v4/conversationShareSelectionPanelLayout.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
-<<<<<<< HEAD
 import { splitConversationTimelineLiveTail } from "@/v4/conversationTimelineLiveTail.js";
-=======
-import {
-  isSameConversationLatestTurnSummary,
-  resolveConversationLatestTurnSummary,
-  splitConversationTimelineLiveTail,
-  type ConversationLatestTurnSummary,
-} from "@/v4/conversationTimelineLiveTail.js";
-import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
->>>>>>> zai-org/main
 import {
   getConversationContentWidthClassName,
   getConversationStatusPanelOffsetClassName,
@@ -448,8 +438,6 @@ function ConversationTimelineImpl({
     [renderUnits],
   );
   const hasRunningUnit = useMemo(() => renderUnits.some((unit) => unit.isRunning), [renderUnits]);
-<<<<<<< HEAD
-=======
   const latestTurnSummary = useMemo(
     () => resolveConversationLatestTurnSummary(renderUnits),
     [renderUnits],
@@ -481,7 +469,6 @@ function ConversationTimelineImpl({
     () => resolveNextHighspeedExpiryMs(rows, liveNowMs),
     [liveNowMs, rows],
   );
->>>>>>> zai-org/main
   const turnNavigatorQueryRowIds = useMemo(
     () =>
       new Set(
@@ -1949,15 +1936,7 @@ function ConversationTimelineImpl({
           // 分享选择面板展开时改为 overflow-hidden：scrollTop 与 scrollbar-gutter 都保持不变，
           // 但原生滚动条、滚轮和键盘翻页都不再能移动背景，勾选目标不会漂走。
           backgroundScrollLocked && "!overflow-y-hidden",
-<<<<<<< HEAD
           // Conversation turn map 覆盖 timeline 左侧 48px；表格增强滚动如果仍按
-=======
-          compactForRemoteControl && "min-w-0",
-          // 浮窗形态：滚动容器止于输入框上方 12px，消息底部再留 16px 空白。
-          floatingComposerDock &&
-            "mb-[calc(var(--v4-floating-composer-dock-height,0px)+12px)] pb-4",
-          // 修复原因：Conversation turn map 覆盖 timeline 左侧 48px；表格增强滚动如果仍按
->>>>>>> zai-org/main
           // 普通 16px 边距借位，会有 32px 落到 turn map 下方，必须把完整占用计入左边界。
           turnNavigatorQueryRowIds.size >= 2 &&
             "@min-[864px]/conversation:[--markdown-table-layout-left-inset:48px]",

@@ -74,11 +74,7 @@ import {
   zcodeWorkspaceGenerateTextParamsSchema,
   getConversationMessageProjectionPolicy,
   parseRemoteWorkspaceIdentity,
-<<<<<<< HEAD
   type DangerousCommandPolicy,
-=======
-  type AppToolSearchMode,
->>>>>>> zai-org/main
   type ZCodeAutomationBotDeliveryTarget,
   type ZCodeSessionCreateParams,
   type ZCodeDeliveryKind,
@@ -152,20 +148,11 @@ type ZCodeSessionRecordParams = (
 ) & { taskType?: SessionTaskType };
 
 interface SessionStartupPreferences {
-<<<<<<< HEAD
   memoryEnabled: boolean;
   modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
   nativeSearchEnhancementsEnabled: boolean;
   /** 工具与权限页的危险命令策略。缺席即严格（core 侧解释）。 */
   dangerousCommandPolicy?: DangerousCommandPolicy;
-=======
-  additionalDirectories?: readonly string[];
-  subagentRuntimeConfigEnabled?: boolean;
-  memoryEnabled: boolean;
-  modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
-  nativeSearchEnhancementsEnabled: boolean;
-  toolSearchMode: AppToolSearchMode;
->>>>>>> zai-org/main
   resolveInitialBashShellSelection: () => Promise<ExecutionShellSelection | undefined>;
 }
 
@@ -3409,13 +3396,9 @@ async function resolveSessionStartupPreferences(
       memoryEnabled: source.parent.memoryEnabled,
       modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
       nativeSearchEnhancementsEnabled: source.parent.nativeSearchEnhancementsEnabled,
-<<<<<<< HEAD
       // 子会话继承父会话冻结的策略，而不是重新去问 Host：
       // 否则「新建会话后生效」会在子代理上变成"立即生效"，用户看到的语义就不一致了。
       dangerousCommandPolicy: source.parent.dangerousCommandPolicy,
-=======
-      toolSearchMode: source.parent.toolSearchMode,
->>>>>>> zai-org/main
       resolveInitialBashShellSelection: async () => inheritedShellSelection,
     };
   }
@@ -3434,19 +3417,10 @@ async function resolveSessionStartupPreferences(
     runtimePreferences.askUserQuestionAutoResolutionEnabled,
   );
   return {
-<<<<<<< HEAD
     memoryEnabled: runtimePreferences.memoryEnabled,
     modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     nativeSearchEnhancementsEnabled: runtimePreferences.nativeSearchEnhancementsEnabled,
     dangerousCommandPolicy: runtimePreferences.dangerousCommandPolicy,
-=======
-    additionalDirectories: runtimePreferences.additionalDirectories,
-    subagentRuntimeConfigEnabled: runtimePreferences.subagentRuntimeConfigEnabled,
-    memoryEnabled: runtimePreferences.memoryEnabled,
-    modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-    nativeSearchEnhancementsEnabled: runtimePreferences.nativeSearchEnhancementsEnabled,
-    toolSearchMode: runtimePreferences.toolSearchMode,
->>>>>>> zai-org/main
     resolveInitialBashShellSelection: async () => {
       const executionPreferences = await requestSessionRuntimePreferences(
         context,
@@ -3604,14 +3578,10 @@ async function createRecord(
     memoryEnabled: startupPreferences.memoryEnabled,
     modelContextBudgetStrategy: startupPreferences.modelContextBudgetStrategy,
     nativeSearchEnhancementsEnabled: startupPreferences.nativeSearchEnhancementsEnabled,
-<<<<<<< HEAD
     // 记在 record 上供子会话 inherit（见 resolveSessionStartupPreferences 的 inherit 分支）。
     ...(startupPreferences.dangerousCommandPolicy
       ? { dangerousCommandPolicy: startupPreferences.dangerousCommandPolicy }
       : {}),
-=======
-    toolSearchMode: startupPreferences.toolSearchMode,
->>>>>>> zai-org/main
     ...(parentSessionId ? { parentSessionId } : {}),
     persistence: "persistence" in params ? (params.persistence ?? "immediate") : "immediate",
     protocolEventSequences: new Map(),

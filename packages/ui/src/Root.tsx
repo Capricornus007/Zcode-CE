@@ -1,24 +1,4 @@
-<<<<<<< HEAD
 /* eslint-disable max-lines -- Root 当前集中编排启动和 workspace shell wiring，先保持入口收口避免跨层状态拆散。 */
-=======
-import { ProjectDirectoryProvider } from "@/project-sidebar/ProjectDirectoryProvider.js";
-import { RemoteProjectPicker } from "@/project-sidebar/RemoteProjectPicker.js";
-import {
-  buildRemoteWorkspaceIdentity,
-  buildServerRemoteWorkspaceIdentity,
-  remoteHostIdFromWorkspaceIdentity,
-} from "@zcode/shared";
-import type { RemoteProjectHost } from "@zcode/services";
-import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
-import { RemoteConnectionProgressProvider } from "@/remote-connection-flow/ui/RemoteConnectionProgress.js";
-/* eslint-disable max-lines -- Root 当前集中编排启动、workspace shell wiring 和 Web 远控同步，先保持入口收口避免跨层状态拆散。 */
-import { RemoteProjectPresentationProvider } from "@/hooks/RemoteProjectPresentationContext.js";
-import {
-  RequestSecurityHost,
-  RequestSecurityWorkspaceBridge,
-  setRequestSecurityReporter,
-} from "@/request-security-edition/index.js";
->>>>>>> zai-org/main
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LucideProvider, RefreshCw } from "lucide-react";
 import {
@@ -29,21 +9,8 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
-<<<<<<< HEAD
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { useDynamicWorkflowAvailabilityLoader } from "@/hooks/useDynamicWorkflowAvailability.js";
-=======
-import { ServiceProvider, useComposerClientNamespace } from "@/hooks/useServices.js";
-import {
-  readComposerWorkspaceScope,
-  readV4ComposerDraft,
-  V4_DRAFT_SCOPE_ROOT,
-} from "@/v4/composer/composerDraftStore.js";
-import {
-  useDynamicWorkflowAvailabilityLoader,
-  useDynamicWorkflowUserModeSync,
-} from "@/hooks/useDynamicWorkflowAvailability.js";
->>>>>>> zai-org/main
 import { DirectoryBrowser } from "@/DirectoryBrowser.js";
 import { attachRemoteProjectWorkspace, resolveEntryProject } from "@/project-sidebar/index.js";
 import { useTabPersistence, type WorkspacePersistenceGate } from "@/hooks/useTabPersistence.js";
@@ -56,12 +23,7 @@ import { setPendingSettingsSectionIntent } from "@/lib/settingsNavigation.js";
 import { CodingPlanUpgradeDialogProvider } from "@/settings/CodingPlanUpgradeDialogProvider.js";
 import { WelcomeScreen, type LoginCompleteReason } from "@/WelcomeScreen.js";
 import { setDefaultFileDisplayBasePath } from "@/lib/fileDisplay.js";
-<<<<<<< HEAD
 import { countAllUnreadTasks } from "@/lib/unreadTaskCount.js";
-=======
-import { readRendererLaunchTimings, shouldReportLaunchToInput } from "@/lib/launchToInputReport.js";
-import { reportUiLaunchToInput } from "@/lib/uiPerfArmsTelemetry.js";
->>>>>>> zai-org/main
 import {
   isProviderStartupSyncPending,
   shouldEnableProviderAvailabilityLoginEntryGuard,
@@ -97,10 +59,7 @@ import { useRootWorkspaceActions } from "@/root/useRootWorkspaceActions.js";
 import { registerBaseWorkspaceServices } from "@/store/remoteWorkspaceSessionStore.js";
 import type { RootProps } from "@/root/types.js";
 import { DiffsWorkerPoolProvider } from "@/root/DiffsWorkerPoolProvider.js";
-<<<<<<< HEAD
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
-=======
->>>>>>> zai-org/main
 import { ScopedErrorBoundary } from "@/ErrorBoundary.js";
 import { useRemoteConnectionLogs } from "@/hooks/useRemoteConnectionLogs.js";
 import {
@@ -118,8 +77,6 @@ import { ensureProviderFamilyDomainMigration } from "@/lib/providerFamilyDomainM
 import { useSettings } from "@/hooks/useSettingService.js";
 import { CLOSE_ACTIVE_CONTEXT_REQUEST_EVENT } from "@/lib/closeActiveContext.js";
 import { AssistantCodeCommentFeatureProvider } from "@/AssistantCodeCommentFeatureProvider.js";
-<<<<<<< HEAD
-=======
 import {
   disposeConversationTelemetrySupervisors,
   reconcileConversationTelemetryWorkspaceScopes,
@@ -131,7 +88,6 @@ import type {
   DeviceAdditionReturnTarget,
   RemoteConnectionOpenPreference,
 } from "@/app-shell/types.js";
->>>>>>> zai-org/main
 
 const DEFAULT_LUCIDE_STROKE_WIDTH = 1.5;
 type WelcomeScreenOpenReason =
@@ -170,7 +126,6 @@ export function Root(props: RootProps) {
               initialIsRestoringOAuthSession
             >
               <TabStoreProvider>
-<<<<<<< HEAD
                 <DiffsWorkerPoolProvider>
                   <AssistantCodeCommentFeatureProvider
                     enabled={props.assistantCodeCommentCardsEnabled}
@@ -180,28 +135,6 @@ export function Root(props: RootProps) {
                     </CodingPlanUpgradeDialogProvider>
                   </AssistantCodeCommentFeatureProvider>
                 </DiffsWorkerPoolProvider>
-=======
-                <ProjectDirectoryProvider isDesktop={props.isDesktop}>
-                  <DiffsWorkerPoolProvider>
-                    <WebRemoteControlFeatureProvider enabled={props.webRemoteControlFeatureEnabled}>
-                      <AssistantCodeCommentFeatureProvider
-                        enabled={props.assistantCodeCommentCardsEnabled}
-                      >
-                        <CodingPlanUpgradeDialogProvider>
-                          <RewardsProvider desktop={props.isDesktop === true}>
-                            <RequestSecurityHost />
-                            <MarketingTouchProvider desktop={props.isDesktop === true}>
-                              <RemoteConnectionProgressProvider>
-                                <RootInner {...props} />
-                              </RemoteConnectionProgressProvider>
-                            </MarketingTouchProvider>
-                          </RewardsProvider>
-                        </CodingPlanUpgradeDialogProvider>
-                      </AssistantCodeCommentFeatureProvider>
-                    </WebRemoteControlFeatureProvider>
-                  </DiffsWorkerPoolProvider>
-                </ProjectDirectoryProvider>
->>>>>>> zai-org/main
               </TabStoreProvider>
             </StoreProvider>
           </PlatformProvider>
@@ -229,13 +162,10 @@ function RootInner({
   preferDirectoryBrowser,
   supportsEmbeddedBrowser: explicitSupportsEmbeddedBrowser,
   allowRemoteWorkspace = true,
-<<<<<<< HEAD
-=======
   webRemoteControlWorkspaceSwitcher,
   initialSidebarFileTreeOpen,
   initialWebRemoteControlMobileNavigationIntent,
   webRemoteControlTerminalTransportState,
->>>>>>> zai-org/main
   initialWorkspaceLoadingFallback,
 }: RootProps) {
   useEffect(() => {
@@ -433,8 +363,6 @@ function RootInner({
   const addTab = useTabStore((state) => state.addTab);
   const activateTabByPath = useTabStore((state) => state.activateTabByPath);
   const tabStoreApi = useTabStoreApi();
-<<<<<<< HEAD
-=======
   const deviceAdditionReturn = useRef<{
     target: DeviceAdditionReturnTarget;
     completion?: "checking" | "delivered";
@@ -507,7 +435,6 @@ function RootInner({
   });
   const webRemoteControlSessionActive =
     webRemoteControlStatus.status === "running" || webRemoteControlStatus.status === "active";
->>>>>>> zai-org/main
   const refreshProviderState = useRootProviderStateRefresh(services);
   useRootProviderSettingsSnapshot(services);
   useEffect(() => {
@@ -601,54 +528,10 @@ function RootInner({
     registerBaseWorkspaceServices(services);
   }, [services]);
 
-<<<<<<< HEAD
   const handleOpenRemoteConnection = useCallback((preference?: RemoteConnectionOpenPreference) => {
     setRemoteConnectionOpenPreference(preference ?? null);
     setRemoteConnectionDialogOpen(true);
   }, []);
-=======
-  useBotBroadcastEffects(services, tabStoreApi);
-
-  const handleOpenRemoteConnection = useCallback(
-    (preference?: RemoteConnectionOpenPreference) => {
-      if (
-        preference?.returnTarget &&
-        (remoteConnectionInProgress ||
-          (deviceAdditionReturn.current && !deviceAdditionReturn.current.completion))
-      )
-        return false;
-      if (!remoteConnectionInProgress) {
-        // 新入口替换尚在资格校验的旧返回，先解除旧 owner 的门禁，再使其迟到结果失效。
-        deviceAdditionReturn.current?.target.onVisibilityChange?.(false);
-        const tabs = tabStoreApi.getState();
-        const tab = tabs.tabs.find((item) => item.id === tabs.activeTabId);
-        deviceAdditionReturn.current = preference?.returnTarget
-          ? {
-              target: preference.returnTarget,
-              tabId: tabs.activeTabId,
-              workspaceKey:
-                tab?.kind === "workspace"
-                  ? tab.workspaceIdentity?.trim() || tab.workspacePath
-                  : undefined,
-            }
-          : null;
-        // 返回目标曾被等同于新增设备，导致已有设备重连也切到设置。
-        if (preference?.returnTarget?.kind === "add-device") {
-          setPendingSettingsSectionIntent("remoteDevices");
-          tabStoreApi.getState().openSettingsTab();
-        }
-      }
-      // 明确入口与卡片恢复分离：空闲流程接受新意图，即使 Profile/目标值相同也重新读取。
-      if (!remoteConnectionInProgress) {
-        setRemoteConnectionOpenPreference(preference ?? null);
-        setRemoteConnectionOpenIntentId((current) => current + 1);
-      }
-      deviceAdditionReturn.current?.target.onVisibilityChange?.(true);
-      setRemoteConnectionDialogOpen(true);
-    },
-    [remoteConnectionInProgress, tabStoreApi],
-  );
->>>>>>> zai-org/main
   const handleOpenDirectoryBrowser = useCallback(() => {
     setDirectoryBrowserOpen(true);
   }, []);
@@ -690,14 +573,11 @@ function RootInner({
     },
     userId: user?.id,
     onOpenRemoteConnection: allowRemoteWorkspace ? handleOpenRemoteConnection : undefined,
-<<<<<<< HEAD
-=======
     openRemoteProjectWorkspace: openPreparedRemoteProjectWorkspace,
     openMobileProjectDraft: webRemoteControlWorkspaceSwitcher?.openProjectDraft,
     workbenchGroupClientMode: isWebRemoteControlRoot
       ? "web-remote-replayable"
       : "desktop-continuous",
->>>>>>> zai-org/main
   });
   const handleRemoteWorkspaceActivated = useCallback(
     ({
@@ -890,8 +770,6 @@ function RootInner({
     buildPersistPatch: buildPersistedTabPatch,
   });
 
-<<<<<<< HEAD
-=======
   useEffect(() => {
     if (!isDesktop || !hasCompletedFullRestore) return;
     // Bug 原因：active-first 的单 workspace 只是 Renderer 首屏投影，若立刻对外同步，
@@ -913,7 +791,6 @@ function RootInner({
     <RequestSecurityWorkspaceBridge workspaceTabs={windowWorkspaceTabs} />
   ) : null;
 
->>>>>>> zai-org/main
   const { tryRefresh, clearCredentials } = useTokenRefresh();
   void tryRefresh;
   void clearCredentials;
@@ -958,11 +835,7 @@ function RootInner({
     activeWorkspaceIdentity,
     reconnectingRemoteWorkspaceKeys,
     remoteWorkspaceErrorByWorkspaceKey,
-<<<<<<< HEAD
     totalUnreadTaskCount,
-=======
-    webRemoteControlFeatureEnabled,
->>>>>>> zai-org/main
     hasCompletedFullTabRestore: hasCompletedFullRestore,
     intl,
     isRestoringOAuthSession: isResolvingStartupAuthState || providerStartupSyncPending,
@@ -1423,10 +1296,7 @@ function RootInner({
     return (
       <RootShell>
         {rootModelSelectionErrorNode}
-<<<<<<< HEAD
-=======
         {requestSecurityBridgeNode}
->>>>>>> zai-org/main
         {remoteConnectionDialog}
         {directoryBrowserDialog}
         {/* HTML 启动壳已经展示 ZCode SVG，但 React 接管 root 后旧壳会被整棵替换。
@@ -1441,10 +1311,7 @@ function RootInner({
     return (
       <RootShell>
         {rootModelSelectionErrorNode}
-<<<<<<< HEAD
-=======
         {requestSecurityBridgeNode}
->>>>>>> zai-org/main
         {remoteConnectionDialog}
         {directoryBrowserDialog}
         <WelcomeScreen onComplete={handleWelcomeScreenComplete} />
@@ -1481,10 +1348,7 @@ function RootInner({
     return (
       <RootShell>
         {rootModelSelectionErrorNode}
-<<<<<<< HEAD
-=======
         {requestSecurityBridgeNode}
->>>>>>> zai-org/main
         {initialWorkspaceLoadingFallback}
         {directoryBrowserDialog}
       </RootShell>
@@ -1504,10 +1368,7 @@ function RootInner({
   return (
     <RootShell>
       {rootModelSelectionErrorNode}
-<<<<<<< HEAD
-=======
       {requestSecurityBridgeNode}
->>>>>>> zai-org/main
       {remoteConnectionDialog}
       {directoryBrowserDialog}
       <OccupationOnboarding
@@ -1529,7 +1390,6 @@ function RootInner({
             </ScopedErrorBoundary>
           ) : null
         ) : (
-<<<<<<< HEAD
           <RootWorkspaceContent
             workspaceScopedServices={workspaceScopedServices}
             baseFeedbackService={services.feedbackService}
@@ -1570,63 +1430,6 @@ function RootInner({
             isWindowsDesktop={isWindowsDesktop}
             supportsEmbeddedBrowser={supportsEmbeddedBrowser}
           />
-=======
-          <RemoteWorkspaceControllerProvider controller={remoteWorkspaceController}>
-            <RemoteProjectPresentationProvider
-              reconnectingKeys={reconnectingRemoteWorkspaceKeys}
-              errors={remoteWorkspaceErrorByWorkspaceKey}
-              recovery={remoteWorkspaceRecoveryByWorkspaceKey}
-              onReconnect={
-                webRemoteControlWorkspaceSwitcher?.reconnectWorkspace ??
-                handleReconnectRemoteWorkspace
-              }
-            >
-              <RootWorkspaceContent
-                workspaceScopedServices={workspaceScopedServices}
-                baseFeedbackService={services.feedbackService}
-                workspaceShellPath={workspaceShellPath}
-                workspaceIdentity={workspaceShellIdentity}
-                workspaceRemoteSessionId={workspaceShellRemoteSessionId}
-                activeWorkspacePath={activeWorkspacePath}
-                isSettingsTabActive={isSettingsTabActive}
-                handleConnectRemote={handleConnectRemote}
-                handleSelectRemoteProject={handleSelectRemoteProject}
-                handleCancelRemoteProject={handleCancelRemoteProject}
-                handleReconnectRemoteWorkspace={handleReconnectRemoteWorkspace}
-                handleCreateTask={handleCreateTask}
-                handleCreateConversationTask={handleCreateConversationTask}
-                handleResolveConversationWorkspace={handleResolveConversationWorkspaceForShell}
-                handleOpenWorkspace={handleOpenWorkspace}
-                handleOpenFolderFromWorkspaceMenu={handleOpenFolderFromWorkspaceMenu}
-                handleOpenRemoteWorkspace={
-                  allowRemoteWorkspace ? handleOpenRemoteConnection : undefined
-                }
-                remoteConnectionInProgress={remoteConnectionInProgress}
-                remoteWorkspaceSessions={remoteWorkspaceSessions}
-                allowRemoteWorkspace={allowRemoteWorkspace}
-                handleBackFromSettings={handleBackFromSettings}
-                handleLogout={user ? handleLogout : undefined}
-                onLogin={!user ? handleOpenLoginEntry : undefined}
-                user={user}
-                reconnectingRemoteWorkspaceKeys={reconnectingRemoteWorkspaceKeys}
-                remoteWorkspaceRecoveryByWorkspaceKey={remoteWorkspaceRecoveryByWorkspaceKey}
-                remoteWorkspaceErrorByWorkspaceKey={remoteWorkspaceErrorByWorkspaceKey}
-                remoteConnectionLogs={remoteConnectionLogs}
-                allowOpenWorkspace={allowOpenWorkspace}
-                webRemoteControlWorkspaceSwitcher={webRemoteControlWorkspaceSwitcher}
-                initialSidebarFileTreeOpen={initialSidebarFileTreeOpen}
-                initialWebRemoteControlMobileNavigationIntent={
-                  initialWebRemoteControlMobileNavigationIntent
-                }
-                webRemoteControlTerminalTransportState={webRemoteControlTerminalTransportState}
-                isDesktop={isDesktop}
-                isMacDesktop={isMacDesktop}
-                isWindowsDesktop={isWindowsDesktop}
-                supportsEmbeddedBrowser={supportsEmbeddedBrowser}
-              />
-            </RemoteProjectPresentationProvider>
-          </RemoteWorkspaceControllerProvider>
->>>>>>> zai-org/main
         )}
         <ScopedErrorBoundary
           scope="onboarding-dialog"

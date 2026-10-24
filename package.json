@@ -20,7 +20,6 @@
     "audit:agent-remnants": "node scripts/audit-zcode-agent-remnants.mjs",
     "audit:conversation-session-coverage": "node scripts/audit-conversation-session-case-coverage.mjs --check",
     "audit:conversation-session-complete": "node scripts/audit-conversation-session-case-coverage.mjs --check --require-complete",
-    "test": "pnpm run test:unit",
     "test:e2e": "pnpm --filter @zcode/desktop test:e2e",
     "test:e2e:all:coverage": "pnpm --filter @zcode/desktop test:e2e:all:coverage",
     "test:e2e:windows:sharded": "pnpm --filter @zcode/desktop test:e2e:windows:sharded",

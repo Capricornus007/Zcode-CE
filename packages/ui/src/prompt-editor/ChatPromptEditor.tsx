@@ -339,8 +339,6 @@ export function ChatPromptEditor({
       ? dragAttachmentHint
       : undefined;
 
-<<<<<<< HEAD
-=======
   const editorNode = (
     // 单行时输入区至少占一半宽度，上下留白与 h-7 控件对齐；两行布局下 contents 不改变原有排版。
     <div className={isInline ? "min-w-1/2 flex-1 py-1 [&_[contenteditable]]:min-h-5" : "contents"}>
@@ -390,7 +388,6 @@ export function ChatPromptEditor({
     </span>
   ) : null;
 
->>>>>>> zai-org/main
   return (
     <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className={cn("relative", className)}>
       {triggerPanelContainer ? null : (
@@ -421,7 +418,6 @@ export function ChatPromptEditor({
           </div>
         ) : null}
 
-<<<<<<< HEAD
         {topContent}
         <LexicalChatInput
           placeholder={placeholder}
@@ -474,30 +470,6 @@ export function ChatPromptEditor({
                 />
               ) : null}
               {/* 权限/模式选择曾作为 leadingActions 先于动作菜单渲染，导致常驻顺序与产品规范相反。*/}
-=======
-        {topContent ? (
-          // 单行布局下附件等内容单独占输入行上方一整行。
-          <div className={isInline ? "basis-full" : "contents"}>{topContent}</div>
-        ) : null}
-        {/* 单行布局把「+」放到输入区左侧；只有菜单按钮换位置重新挂载，编辑器位置不变。 */}
-        {isInline ? actionMenuNode : null}
-        {inputLeadingContent ? (
-          <div className={cn("flex min-w-0 items-start gap-2", isInline && "flex-1")}>
-            <div className="shrink-0">{inputLeadingContent}</div>
-            <div className="min-w-0 flex-1">{editorNode}</div>
-          </div>
-        ) : (
-          editorNode
-        )}
-        <div
-          ref={toolbarRef}
-          className={cn("group/toolbar flex items-end gap-3", isInline && "shrink-0 gap-1.5")}
-        >
-          <div className="flex min-w-0 flex-1 items-center" data-composer-leading-actions>
-            <div className="flex shrink-0 items-center gap-1" data-composer-leading-content>
-              {isInline ? null : actionMenuNode}
-              {/* Bugfix：权限/模式选择曾作为 leadingActions 先于动作菜单渲染，导致常驻顺序与产品规范相反。 */}
->>>>>>> zai-org/main
               {leadingActions}
               {onModeSwitchContainerChange ? (
                 <span ref={onModeSwitchContainerChange} className="flex shrink-0 items-center" />

@@ -757,13 +757,8 @@ export function SettingsPage({
   const [embeddedBrowserAllowInsecureCertificates, setEmbeddedBrowserAllowInsecureCertificates] =
     useState(false);
   const [taskAutoArchiveEnabled, setTaskAutoArchiveEnabled] = useState(false);
-<<<<<<< HEAD
   const [taskAutoArchiveOlderThanDays, setTaskAutoArchiveOlderThanDays] = useState(7);
   const [closeToTrayOnWindows, setCloseToTrayOnWindows] = useState(true);
-=======
-  const [taskAutoArchiveOlderThanDays, setTaskAutoArchiveOlderThanDays] = useState(30);
-  const [closeToTrayOnWindows, setCloseToTrayOnWindows] = useState(Boolean(isWindowsDesktop));
->>>>>>> zai-org/main
   const [
     desktopChromiumHardwareAccelerationEnabled,
     setDesktopChromiumHardwareAccelerationEnabled,
@@ -852,13 +847,9 @@ export function SettingsPage({
         setEmbeddedBrowserAllowInsecureCertificates(
           settings.embeddedBrowserAllowInsecureCertificates ?? false,
         );
-<<<<<<< HEAD
         setTaskAutoArchiveEnabled(settings.taskAutoArchiveEnabled ?? false);
         setTaskAutoArchiveOlderThanDays(settings.taskAutoArchiveOlderThanDays ?? 7);
         setCloseToTrayOnWindows(settings.closeToTrayOnWindows ?? true);
-=======
-        setCloseToTrayOnWindows(settings.closeToTrayOnWindows ?? Boolean(isWindowsDesktop));
->>>>>>> zai-org/main
         setDesktopChromiumHardwareAccelerationEnabled(
           settings.desktopChromiumHardwareAccelerationEnabled ?? true,
         );
@@ -884,32 +875,7 @@ export function SettingsPage({
           });
       })
       .catch(() => {});
-<<<<<<< HEAD
   }, [localHostServices.systemService, services.settingService]);
-=======
-    return () => {
-      active = false;
-    };
-  }, [localHostServices.systemService, localHostServices.settingService, isWindowsDesktop]);
-
-  useEffect(() => {
-    let active = true;
-    // 终端 Profile 与任务归档由目标 Environment 消费，仍读 Source；切换后丢弃旧响应。
-    services.settingService
-      .get()
-      .then((settings: AppSettings) => {
-        if (!active) return;
-        setTerminalInheritSystemProfile(settings.terminalInheritSystemProfile ?? true);
-        setTerminalFontFamily(settings.terminalFontFamily ?? "");
-        setTaskAutoArchiveEnabled(settings.taskAutoArchiveEnabled ?? false);
-        setTaskAutoArchiveOlderThanDays(settings.taskAutoArchiveOlderThanDays ?? 30);
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [services.settingService]);
->>>>>>> zai-org/main
 
   useEffect(() => {
     if (!sharedSettings) {
@@ -1510,19 +1476,8 @@ export function SettingsPage({
           {isWindowsDesktop ? <WindowsTopLeftLogo /> : null}
 
           {usesInlineWindowControls ? (
-<<<<<<< HEAD
             <div className="absolute right-1 top-1 z-30 mt-px mr-px flex h-12 items-center gap-0.5 px-2 pointer-events-auto [app-region:no-drag]">
               {/* Windows/Linux 设置页仍保留旧 caption 下箭头，与主界面和 macOS 的帮助入口不一致。
-=======
-            <div
-              className={cn(
-                "absolute z-30 mt-px mr-px flex h-12 items-center gap-0.5 px-2 pointer-events-auto [app-region:no-drag]",
-                // 外沿留白变化后，悬浮操作组也必须同步，否则与内容 Header 错位。
-                isWindowsDesktop ? "right-1.5 top-1.5" : "right-1 top-1",
-              )}
-            >
-              {/* Bug 原因：Windows/Linux 设置页仍保留旧 caption 下箭头，与主界面和 macOS 的帮助入口不一致。
->>>>>>> zai-org/main
                   统一复用问号帮助按钮，并让它在普通 flex 流中紧邻自绘窗控。
                   Settings 的独立标题层还需计入 4px 外层留白和 1px 边框，才能与 Workspace 控制组对齐。 */}
               <WorkspaceHelpMenuButton isDesktop={Boolean(isDesktop)} />
@@ -1808,7 +1763,6 @@ export function SettingsPage({
                             <GeneralSectionHeader localePreference={localePreference} />
                           ) : null}
                         </div>
-<<<<<<< HEAD
                         {activeSection === "general" ? (
                           <GeneralSectionHeader localePreference={localePreference} />
                         ) : null}
@@ -1980,25 +1934,6 @@ export function SettingsPage({
                               workspacePath={activeWorkspacePath ?? captionWorkspacePath ?? ""}
                               connectivityWorkspacePath={
                                 localModelProviderConnectivityWorkspacePath
-=======
-                        <div className="space-y-8">
-                          {activeSection === "general" ? (
-                            <GeneralSectionContent
-                              localePreference={localePreference}
-                              interfaceMode={interfaceMode}
-                              setInterfaceMode={setInterfaceMode}
-                              isDesktop={isDesktop}
-                              isWindowsDesktop={isWindowsDesktop}
-                              isLinuxDesktop={isLinuxDesktop}
-                              linuxCloseToTray={linuxCloseToTray}
-                              platform={platform}
-                              notificationEnabled={notificationEnabled}
-                              notificationSoundEnabled={notificationSoundEnabled}
-                              closeToTrayOnWindows={closeToTrayOnWindows}
-                              keepAwakeWhileRunning={sharedSettings?.keepAwakeWhileRunning ?? false}
-                              desktopChromiumHardwareAccelerationEnabled={
-                                desktopChromiumHardwareAccelerationEnabled
->>>>>>> zai-org/main
                               }
                               receivePreviewUpdates={receivePreviewUpdates}
                               autoDownloadAndInstallUpdates={autoDownloadAndInstallUpdates}
@@ -2251,7 +2186,6 @@ export function SettingsPage({
                                 })
                               }
                             />
-<<<<<<< HEAD
                           </ServiceProvider>
                         ) : activeSection === "plugin" ? (
                           <PluginsSection
@@ -2387,169 +2321,6 @@ export function SettingsPage({
                           // createSettingsPageConfig 里就被过滤掉，这里不会到达。
                           <RemoteAssetsSetting />
                         ) : null}
-=======
-                          ) : activeSection === "shortcuts" ? (
-                            <ShortcutSettingsSection isDesktop={Boolean(isDesktop)} />
-                          ) : activeSection === "modelProvider" ? (
-                            <ServiceProvider services={localHostServices}>
-                              {/* 模型配置属于本机全局事实源；激活远端 workspace 时也不能注入远端 Host。 */}
-                              <ModelProviderSection
-                                workspacePath={activeWorkspacePath ?? captionWorkspacePath ?? ""}
-                                connectivityWorkspacePath={
-                                  localModelProviderConnectivityWorkspacePath
-                                }
-                                connectivityWorkspaceRequired={isRemoteModelProviderWorkspace}
-                                pendingModelProviderTarget={pendingModelProviderTarget}
-                                onConsumePendingModelProviderTarget={() =>
-                                  setPendingModelProviderTarget(undefined)
-                                }
-                              />
-                            </ServiceProvider>
-                          ) : activeSection === "memory" ? (
-                            <ServiceProvider services={localHostServices}>
-                              {/* Memory catalog 始终使用本地 Host，避免远程 workspace 误读本机数据。 */}
-                              <MemorySettingsSection
-                                memoryEnabled={memoryEnabled}
-                                memoryService={localHostServices.memoryService}
-                                onMemoryEnabledChange={handleMemoryEnabledChange}
-                                projectMemoryViewerAvailable={Boolean(isDesktop)}
-                                workspaceDisplayNames={memoryWorkspaceDisplayNames}
-                              />
-                            </ServiceProvider>
-                          ) : activeSection === "plugin" ? (
-                            <PluginsSection
-                              key={`plugin:${settingsSectionNavigationVersion}`}
-                              isDesktop={Boolean(isDesktop)}
-                              isMacDesktop={Boolean(isMacDesktop)}
-                              isWindowsDesktop={Boolean(isWindowsDesktop)}
-                              isWebRemoteControl={isWebRemoteControl}
-                              initialTab={pluginTab}
-                              initialScopeKey={pluginScopeKey}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              showMarketplaceBreadcrumb={pluginNavigationOrigin === "plugin-store"}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "mcp" ? (
-                            <PluginsSection
-                              key={`mcp:${settingsSectionNavigationVersion}`}
-                              mode="mcp"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "skill" ? (
-                            <PluginsSection
-                              key={`skill:${settingsSectionNavigationVersion}`}
-                              mode="skill"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "migration" ? (
-                            <MigrationSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              isDesktop={isDesktop}
-                            />
-                          ) : activeSection === "archives" ? (
-                            <div className="min-w-0 space-y-6">
-                              <TaskAutoArchiveSettings
-                                taskAutoArchiveEnabled={taskAutoArchiveEnabled}
-                                taskAutoArchiveOlderThanDays={taskAutoArchiveOlderThanDays}
-                                onTaskAutoArchiveEnabledChange={handleTaskAutoArchiveEnabledChange}
-                                onTaskAutoArchiveOlderThanDaysChange={
-                                  handleTaskAutoArchiveOlderThanDaysChange
-                                }
-                              />
-                              <ArchiveManagement />
-                            </div>
-                          ) : activeSection === "usage" ? (
-                            <UsageStatsSection
-                              activeTab={usageActiveTab}
-                              providerSourcesLoading={usageProviderSettingsLoading}
-                              selectedCodingPlanSource={selectedUsageCodingPlanSource}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              workspacePath={activeWorkspacePath ?? undefined}
-                            />
-                          ) : activeSection === "subagents" ? (
-                            <SubagentsSection
-                              onManageModels={handleOpenModelProviderSettings}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "automations" ? (
-                            <AutomationsSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "commands" ? (
-                            <PluginsSection
-                              mode="command"
-                              isWebRemoteControl={isWebRemoteControl}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              onCreateTask={onCreateTask}
-                              onOpenPluginStore={(_returnScopeKey, intent) => {
-                                // 添加市场与浏览插件都先离开设置层，再显示商店。
-                                requestPluginStoreOpen({ returnScopeKey: "user", intent });
-                                onBack?.();
-                              }}
-                            />
-                          ) : activeSection === "hooks" ? (
-                            <HooksSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "workspaceFileSearch" ? (
-                            <WorkspaceFileSearchSection
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                            />
-                          ) : activeSection === "browser" ? (
-                            <BrowserSettingsSection
-                              isDesktop={Boolean(isDesktop)}
-                              isWindowsDesktop={isWindowsDesktop}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              embeddedBrowserAllowInsecureCertificates={
-                                embeddedBrowserAllowInsecureCertificates
-                              }
-                              onEmbeddedBrowserAllowInsecureCertificatesChange={
-                                handleEmbeddedBrowserAllowInsecureCertificatesChange
-                              }
-                            />
-                          ) : activeSection === "computerUse" ? (
-                            <ComputerUseSection
-                              isDesktop={Boolean(isDesktop)}
-                              isMacDesktop={Boolean(isMacDesktop)}
-                              isWindowsDesktop={Boolean(isWindowsDesktop)}
-                              workspacePath={activeWorkspacePath}
-                              workspaceIdentity={activeWorkspaceIdentity}
-                              remoteSessionId={activeWorkspaceTab?.remoteSessionId}
-                              remoteTarget={activeWorkspaceTab?.remoteTarget}
-                              localWorkspacePath={activeWorkspaceTab?.localWorkspacePath}
-                            />
-                          ) : null}
-                        </div>
->>>>>>> zai-org/main
                       </div>
                     </main>
                   </SettingsMachinesProvider>

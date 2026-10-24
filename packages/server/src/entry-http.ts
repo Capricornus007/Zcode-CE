@@ -1,18 +1,9 @@
-<<<<<<< HEAD
 import { createLocalServices, getAppConfigDir } from "@zcode/services/node";
 import { IBotsService, type ServiceCollection } from "@zcode/services";
-=======
-import {
-  createServerHostServices,
-  createTopicResourcePeers,
-  getAppConfigDir,
-} from "@zcode/services/node";
->>>>>>> zai-org/main
 import {
   materializeBundledZCodeBuiltinProviderConfig,
   readBundledZCodeBuiltinProviderConfig,
 } from "./bundledZCodeBuiltinProviderConfig.js";
-<<<<<<< HEAD
 import { DEFAULT_HTTP_LISTEN_HOST, assertListenSecurity, createHttpServer } from "./http.js";
 import { createAuthTokenStore, loadAuthTokensFromFile, type AuthTokenRecord } from "./authToken.js";
 import { parseTrustedProxies } from "./authThrottle.js";
@@ -71,9 +62,6 @@ function resolveCspMode(value: string | undefined): "report-only" | "enforce" | 
       return undefined;
   }
 }
-=======
-import { createHttpServer, resolveHttpServerId } from "./http.js";
->>>>>>> zai-org/main
 
 async function main(): Promise<void> {
   const port = Number(process.env["PORT"]) || 3030;
@@ -147,7 +135,6 @@ async function main(): Promise<void> {
     environmentConfigRoot: getAppConfigDir(),
     content: readBundledZCodeBuiltinProviderConfig(),
   });
-<<<<<<< HEAD
   const services = createLocalServices({
     zcodeBuiltinProviderConfigFilePath,
     providerProvisioningTargetEnabled: authEnabled,
@@ -169,28 +156,6 @@ async function main(): Promise<void> {
   const botIngressEnabled = await resolveBotIngressEnabled(services);
   const server = createHttpServer(services, port, {
     botIngress: { enabled: botIngressEnabled },
-=======
-  const port = Number(process.env["PORT"]) || 3030;
-  const host = process.env["ZCODE_SERVER_HOST"]?.trim() || process.env["HOST"]?.trim() || undefined;
-  const staticRoot = process.env["ZCODE_WEB_STATIC_ROOT"]?.trim() || undefined;
-  const authToken = process.env["ZCODE_SERVER_AUTH_TOKEN"]?.trim() || undefined;
-  const topicResourcePeers = createTopicResourcePeers();
-  const serverId = resolveHttpServerId();
-  const { services, workspaceIdentityMapper, migrationFailedPathCount } =
-    await createServerHostServices({
-      topicResourceRelayChannel: (request) => topicResourcePeers.getChannel(request),
-      sourceServerId: serverId,
-      zcodeBuiltinProviderConfigFilePath,
-      providerProvisioningTargetEnabled: Boolean(authToken),
-    });
-
-  createHttpServer(services, port, {
-    serverId,
-    workspaceIdentityMapper,
-    migrationFailedPathCount,
-    virtualProjects: true,
-    topicResourcePeers,
->>>>>>> zai-org/main
     ...(host ? { host } : {}),
     audit,
     ...(staticRoot ? { staticRoot, spaFallback: true } : {}),

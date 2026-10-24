@@ -635,7 +635,6 @@ const zhCN: Record<string, string> = {
   "conversationShare.issue.invalidServiceResponse": "分享服务返回了无法识别的响应，请稍后重试。",
   "conversationShare.issue.unknown":
     "分享未能完成，暂时无法确定原因。请重试；若仍失败，请提供错误详情。",
-    "分享在 {phase} 阶段失败，服务端未返回可定位详情，请稍后重试。",
   "conversationShare.issue.details": "错误详情",
   "conversationShare.issue.requestIdLabel": "服务端请求 ID",
   "conversationShare.issue.requestId": "服务端请求 ID：{requestId}",
@@ -1941,7 +1940,7 @@ const zhCN: Record<string, string> = {
   "workspaceSidebar.reconnectingManual": "正在手动重新连接",
   "workspaceRuntime.starting.title": "正在启动工作区…",
   "workspaceRuntime.failed.title": "「{workspace}」启动失败",
-  "workspaceRuntime.failed.reasonUnavailable":
+  "workspaceRuntime.failed.reasonUnavailable": "原因不可用",
   "workspaceRuntime.failed.retry": "重试",
   "workspaceRuntime.notStarted.title": "未启动（点开即启动，不影响其它工作区）",
   "workspaceRuntime.notStarted.persistedSessions": "已有 {count} 个会话，最近活动 {activity} 前",

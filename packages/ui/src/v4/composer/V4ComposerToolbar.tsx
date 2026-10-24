@@ -873,12 +873,7 @@ function V4ComposerModelControlsImpl({
     triggerDisplay.placeholder,
   ]);
   const handleModelValueChange = useCallback(
-<<<<<<< HEAD
     (value: string) => {
-=======
-    (value: string, reasoningLevel?: string) => {
-      if (modelLocked) return;
->>>>>>> zai-org/main
       const decoded = decodeCustomModelValue(value);
       // 草稿的点击时可见模型可能只存在于 catalog，或已经被最新 draft
       // intent 覆盖，不能让 SessionPane 再从迟到的 prewarm projection 反推。
@@ -1152,14 +1147,8 @@ function V4ComposerModelControlsImpl({
   const providerSubmenuClassName = undefined;
   useToolbarShortcutBindings({
     hasAnyOption: Boolean(modelOption) || Boolean(thoughtOption),
-<<<<<<< HEAD
     toolbarDisabled: disabled || recoveryPending,
     modelMenuDisabled: disabled || recoveryPending || !modelMenuVisible,
-=======
-    toolbarDisabled: disabled || recoveryPending || connectionSwitch.pending,
-    modelMenuDisabled:
-      disabled || recoveryPending || modelLocked || connectionSwitch.pending || !modelMenuVisible,
->>>>>>> zai-org/main
     modelOption,
     thoughtOption: thoughtOption ?? undefined,
     onOpenModelMenu: handleOpenModelMenuShortcut,
@@ -1256,17 +1245,7 @@ function V4ComposerModelControlsImpl({
           })}
           isItemLocked={isModelOptionLocked}
           onValueChange={handleModelValueChange}
-<<<<<<< HEAD
           disabled={disabled || recoveryPending || modelSelectionState.status !== "ready"}
-=======
-          disabled={
-            disabled ||
-            recoveryPending ||
-            modelLocked ||
-            (modelSelectionState.status !== "ready" &&
-              !(modelSelectionState.status === "loading" && modelSelectionState.catalog))
-          }
->>>>>>> zai-org/main
           tooltipTitle={modelTriggerDisplay.fullLabel}
           shortcutLabel={modelShortcutLabel}
           triggerRef={modelTriggerRef}
@@ -1282,14 +1261,7 @@ function V4ComposerModelControlsImpl({
           providerSubmenuClassName={providerSubmenuClassName}
         />
       ) : null}
-<<<<<<< HEAD
       {thoughtOption ? (
-=======
-      {highspeedPresented && highspeedExpiresAt !== undefined ? (
-        <HighspeedCountdown expiresAt={highspeedExpiresAt} />
-      ) : null}
-      {thoughtOption && (modelLocked || highspeedPresented) ? (
->>>>>>> zai-org/main
         <ThoughtLevelCycleControl
           composerCollapsePriority={3}
           labelVisibilityClassName="inline-flex"

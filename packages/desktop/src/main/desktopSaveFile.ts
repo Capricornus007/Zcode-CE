@@ -61,22 +61,13 @@ function parseRemoteImageUrl(value: unknown): URL | null {
   }
 }
 
-<<<<<<< HEAD
 async function resolvePublicRemoteUrl(url: URL): Promise<LookupAddress[]> {
-=======
-async function resolvePublicRemoteUrl(
-  url: URL,
-): Promise<LookupAddress[]> {
->>>>>>> zai-org/main
   const hostname = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
   if (hostname === "localhost" || hostname.endsWith(".localhost")) {
     throw new SaveFileError("remote_address_not_allowed");
   }
-<<<<<<< HEAD
   // 显式写成数组类型：ReturnType<typeof lookup> 取的是最后一个重载（all?: false → 单个地址），
   // 会让 { all: true } 的返回类型被误判成 LookupAddress。
-=======
->>>>>>> zai-org/main
   let addresses: LookupAddress[];
   try {
     addresses = await lookup(hostname, { all: true, verbatim: true });
@@ -202,7 +193,6 @@ export function registerDesktopSaveFileIpcHandler(logger: { warn: (...args: unkn
       }
       const suggestedName = basename(payload.suggestedName.trim()).slice(0, 120);
       const sourceUrl = parseRemoteImageUrl(payload.sourceUrl);
-<<<<<<< HEAD
       // 先取出局部常量：payload.data 是可选字段，instanceof 收窄必须作用在局部变量上才有效。
       const data = payload.data;
       const hasData = data instanceof ArrayBuffer;
@@ -213,17 +203,6 @@ export function registerDesktopSaveFileIpcHandler(logger: { warn: (...args: unkn
         return { success: false, error: "invalid_file_payload" };
       }
       if (hasData && data.byteLength > MAX_SAVE_FILE_BYTES) {
-=======
-      const hasData = payload.data instanceof ArrayBuffer;
-      const data = hasData ? payload.data : undefined;
-      if (!suggestedName || (sourceUrl === null && !hasData)) {
-        return { success: false, error: "invalid_file_payload" };
-      }
-      if (data && data.byteLength === 0) {
-        return { success: false, error: "invalid_file_payload" };
-      }
-      if (data && data.byteLength > MAX_SAVE_FILE_BYTES) {
->>>>>>> zai-org/main
         return { success: false, error: "file_too_large" };
       }
 
@@ -239,11 +218,7 @@ export function registerDesktopSaveFileIpcHandler(logger: { warn: (...args: unkn
       try {
         if (sourceUrl) {
           await downloadRemoteFile(sourceUrl, result.filePath);
-<<<<<<< HEAD
         } else if (hasData) {
-=======
-        } else if (data) {
->>>>>>> zai-org/main
           await writeFile(result.filePath, new Uint8Array(data));
         }
         return { success: true, path: result.filePath };

@@ -701,7 +701,6 @@ const enUS: Record<string, string> = {
     "The share service returned an unreadable response. Try again later.",
   "conversationShare.issue.unknown":
     "Sharing failed; the cause could not be determined. Retry, and provide the error details if it persists.",
-    "Share failed during {phase}; the server returned no actionable details. Try again later.",
   "conversationShare.issue.details": "Error details",
   "conversationShare.issue.requestIdLabel": "Server request ID",
   "conversationShare.issue.requestId": "Server request ID: {requestId}",
@@ -2142,10 +2141,10 @@ const enUS: Record<string, string> = {
   "workspaceSidebar.reconnectingManual": "Reconnecting manually",
   "workspaceRuntime.starting.title": "Starting workspace…",
   "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
-  "workspaceRuntime.failed.reasonUnavailable":
+  "workspaceRuntime.failed.reasonUnavailable": "Reason unavailable",
   "workspaceRuntime.failed.retry": "Retry",
-  "workspaceRuntime.notStarted.title":
-  "workspaceRuntime.notStarted.persistedSessions":
+  "workspaceRuntime.notStarted.title": "Not started (open it to start; other workspaces are unaffected)",
+  "workspaceRuntime.notStarted.persistedSessions": "{count} sessions, last active {activity} ago",
   "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
   "workspaceRuntime.notStarted.open": "Open and start",
   "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",

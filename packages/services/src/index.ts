@@ -375,7 +375,6 @@ export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/ind
 export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
 
 // 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
-}
 export {
   IPluginUiAppToolsService,
   type PluginUiAppToolCallParams,
@@ -444,4 +443,3 @@ export type {
   GroupNode,
   MoveGroupNode,
 } from "#src/task-groups/contract.js";
-}

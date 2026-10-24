@@ -72,8 +72,6 @@ export {
 export * from "./errors.js";
 // 危险命令清单：工具与权限策略页与 core 的 Bash 授权判据共用的唯一真相源。
 export * from "./dangerousCommands.js";
-export type { SessionCreateSource } from "./sessionCreateSource.js";
-export { resolveSafeEndpointHostname } from "./endpointHostname.js";
 export * from "./validation.js";
 export * from "./api.js";
 export * from "./zcode-protocol/index.js";
@@ -168,7 +166,6 @@ export type {
   BrowserViewScreenshotSurfaceReadyPayload,
   BrowserViewScreenshotSurfaceReleasePayload,
   // desktop main 的 browserScreenshotSurfaceContracts 需要它；补进具名导出名单（纯类型）。
-  BrowserViewSurfaceScaleMode,
   BrowserViewViewportChangedPayload,
   ChromeBrowserDataImportError,
   ChromeBrowserDataImportOptions,
@@ -225,7 +222,6 @@ export type {
   UpdateCheckResultPayload,
   UpdateStatePayload,
   WSLDistro,
-  WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
 } from "./platform.js";
 export type {

@@ -1,4 +1,3 @@
-import { mobilePluginDiscoveryTelemetrySchema } from "./telemetry.js";
 import { databaseStartupControlSchema, databaseStartupStateSchema } from "./database-startup.js";
 // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):沙箱登记契约用到 mcpAppInstanceSchema。
 import { mcpAppInstanceSchema } from "./mcp-apps/instance.js";
@@ -9,7 +8,6 @@ import { browserCommandSchema } from "./browser-use/commands.js";
 import { browserCommandResultSchema } from "./browser-use/result.js";
 import { modelSelectionSchema } from "./model-selection.js";
 import { localeSchema } from "./validationAppSettings.js";
-import { zcodeProcessDiagnosticSchema } from "./process-diagnostic.js";
 import { PROCESS_RESOURCE_CLI_LANES } from "./processResourceTelemetry.js";
 import {
   providerProvisioningErrorCodeSchema,
@@ -18,9 +16,7 @@ import {
 import { zcodeProviderSchema } from "./providers.js";
 import { REMOTE_ASSET_INSTALL_MODES } from "./remoteAssetInstallMode.js";
 import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
-import { zcodeAgentProviderSchema } from "./zcode-agent-policy.js";
-import { providerProvisioningTriggerSchema } from "./provider-provisioning.js";
-import { providerProvisioningErrorCodeSchema } from "./provider-provisioning.js";
+import { legacyZCodeProviderSchema as zcodeAgentProviderSchema } from "./zcode-agent-policy.js";
 import type { WebRemoteControlAppPayload } from "./web-remote-control.js";
 import { PROTOCOL_V4_LIMITS } from "./zcode-protocol-v4/core.js";
 import { sourceServerArtifactPolicySchema } from "./source-server/release.js";
@@ -32,9 +28,7 @@ import {
   zcodeProcessResourceSampleSchema,
 } from "./zcode-protocol/index.js";
 import { zcodeTaskModeSchema } from "./zcode-task-mode-schema.js";
-import { PROTOCOL_V4_LIMITS } from "./zcode-protocol-v4/core.js";
 import { errorAttributionSchema } from "./zcode-protocol-v4/snapshot.js";
-import { sessionWorkflowActivitySchema } from "./zcode-protocol-v4/sessions-index-workflow-activity.js";
 import {
   taskOwnerCommandDeliverySchema,
   taskOwnerCommandRequestSchema,

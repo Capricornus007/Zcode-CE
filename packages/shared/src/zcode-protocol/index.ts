@@ -45,20 +45,12 @@ export type { ModelExecutionSelectionFallback } from "../model-execution.js";
 export * from "../off-peak-execution.js";
 import { modelSelectionSchema } from "../model-selection.js";
 import { APP_USAGE_RANGES, appUsageSnapshotSchema } from "../usage-stats.js";
-import { DYNAMIC_WORKFLOW_MODES } from "../dynamic-workflow-feature.js";
 import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
 // 后台详情共享精简的只读响应 schema，不携带命令或计时元数据。
 export * from "../background-bash-output.js";
-import { executionOutputPreviewSchema } from "../execution-output-preview.js";
-import { zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
 import { z } from "zod";
 export * from "../process-diagnostic.js";
-import { errorAttributionSchema } from "../zcode-protocol-v4/snapshot.js";
-import { modelSelectionSchema } from "../model-selection.js";
-import { completeModelPropertiesDataSchema } from "../model-config.js";
 import { accountProviderUnavailableReasonSchema } from "../account-provider-state.js";
-import { modelExecutionSchema } from "../model-execution.js";
-import { APP_USAGE_RANGES, appUsageSnapshotSchema } from "../usage-stats.js";
 // browser-use 命令/结果契约单一来源：agent 构造、协议校验和 main executor 共用同一 schema。
 import { browserClientModeSchema, browserCommandSchema } from "../browser-use/commands.js";
 import {
@@ -74,8 +66,6 @@ import {
   dangerousCommandPolicySchema,
   integratedTerminalShellSelectionSchema,
 } from "../validationAppSettings.js";
-import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
-import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
 import {
   zcodeDeliveryKindSchema,
   zcodeMessageVisibilitySchema,

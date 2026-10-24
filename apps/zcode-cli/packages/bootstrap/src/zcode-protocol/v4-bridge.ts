@@ -75,11 +75,7 @@ import type {
   ForkCommitBundle,
   GoalStatus,
   MessageId,
-<<<<<<< HEAD
-  ModelSelection,
-=======
   MessageWithParts,
->>>>>>> zai-org/main
   SessionEvent,
   SessionId,
   StableForkGoalBoundaryMetadata,
@@ -1108,12 +1104,8 @@ export function createConversationV4Gateway(
       // gateway 靠 getSessionWorkspaceId（读 context.sessions）定位 workspace 才能把
       // session.removed 推给 sessions-index 订阅者；先 delete 再 dispose 时 workspaceId
       // 恒为 null，删除会话后侧栏列表项永不消失（e2e conversation-session-v4-sidebar 抓出）。
-<<<<<<< HEAD
-      context.v4Gateway?.disposeSession(sessionId);
-=======
       context.v4Gateway?.disposeSession(sessionId, { deleted: true });
       queuedTurnExecutions.delete(sessionId);
->>>>>>> zai-org/main
       context.sessions.delete(sessionId);
     },
     // createSession 的执行面：record 建立/事件接线/catalog 同步/失败自清理全在旧
@@ -1515,9 +1507,6 @@ export function createConversationV4Gateway(
           });
         });
     },
-<<<<<<< HEAD
-    // Gateway 的单一 READY promise 负责并发与水位；binder 只恢复 runtime。
-=======
     onHighspeedTurnTerminal: (sessionId, event, snapshot) => {
       persistHighspeedTimingOnTurnTerminal(context, sessionId, event, snapshot);
     },
@@ -1530,7 +1519,6 @@ export function createConversationV4Gateway(
         throw new Error("fault.subscribe.sessionNotFound");
       return store.messages({ sessionID: sessionId as SessionId });
     },
->>>>>>> zai-org/main
     resumePersistedSession: async (
       sessionId,
       resumeThoughtLevel,

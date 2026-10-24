@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 import { subagentProfilesFromSnapshot } from "../runtime-subagents/index.js";
 import { CliDefaultSelection } from "./cli-default-selection.js";
->>>>>>> zai-org/main
 import { isAbsolute, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -217,8 +214,6 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       storageRoot,
       workingDirectory,
     });
-<<<<<<< HEAD
-=======
     const zcodeSubagentProfileOutcome = hostSubagentSnapshot
       ? subagentProfilesFromSnapshot(hostSubagentSnapshot)
       : await loadZCodeAgentProfiles({
@@ -227,7 +222,6 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           workingDirectory,
           additionalDirectories: options.additionalDirectories,
         });
->>>>>>> zai-org/main
     const zcodeSubagentProfiles = zcodeSubagentProfileOutcome.profiles;
     const pluginOutcome = resolveStartupPlugins({
       cliStorageRoot,
@@ -833,17 +827,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           return builtinPrompt;
         }
         return await resolveZCodeCustomCommandPrompt(text, {
-<<<<<<< HEAD
-          // 动态工作流灰度关闭时 `/workflow` 不得展开成插件提示词。目录侧已经
-          // 把它从 `/` 面板剔除，但用户仍可手打命令名，两条路径必须给出同一个结论。
-          // 缺席（TUI、workflow_child，以及未显式关闭的 headless）不设门禁，
-          // 见 runtimeConfig 字段注释。
-          ...(runtimeConfig.dynamicWorkflowEnabled === false
-            ? { disabledCommandNames: DYNAMIC_WORKFLOW_GATED_COMMAND_NAMES }
-            : {}),
-=======
           additionalDirectories: options.additionalDirectories,
->>>>>>> zai-org/main
           env: options.env,
           executionPort,
           logger,

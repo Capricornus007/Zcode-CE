@@ -159,7 +159,6 @@ export function resolveServerProjectService(params: {
               : [],
         );
     },
-<<<<<<< HEAD
   });
   const readLocalAccountProviderSettings = async () => {
     const settings = await localSettingService.get();
@@ -375,17 +374,14 @@ export function resolveServerProjectService(params: {
         });
         onError(error);
       });
-=======
-    readTasks: ({ workspacePath, kind }) => {
+        readTasks: ({ workspacePath, kind }) => {
       const tasks = params.connectionServices.zcodeTaskService;
       const scope = { workspacePath };
       return kind === "pinned"
         ? tasks.listPinnedTasks(scope)
         : kind === "archived"
           ? tasks.listArchivedTasks(scope)
-          : tasks.listTasks(scope);
->>>>>>> zai-org/main
-    },
+          : tasks.listTasks(scope);    },
     ensureConversation: async () =>
       (await params.connectionServices.fileService.ensureConversationWorkspace()).path,
   });

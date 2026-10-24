@@ -58,14 +58,11 @@ type SessionFacade = Pick<
   | "cancelBackgroundTask"
   | "clearTarget"
   | "close"
-<<<<<<< HEAD
-=======
   | "callMcpToolForUi"
   | "getMcpAppConnectionSnapshot"
   | "waitForMcpAppConnection"
   | "onMcpAppConnectionInvalidated"
   | "replaceMcpAppProvidedTools"
->>>>>>> zai-org/main
   | "connectMcpServer"
   | "disconnectMcpServer"
   // Modified by ZCode:F5 mcp-ui 消费侧。
@@ -672,16 +669,12 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
           ? { options: { ...registrySelection.selection.options } }
           : {}),
       };
-<<<<<<< HEAD
-      deps.runtime.setSessionModelSelection(sessionSelection);
-=======
       if (deps.cliDefaultSelection && !options?.transient) {
         deps.cliDefaultSelection.set(sessionSelection);
       } else {
         deps.runtime.setSessionModelSelection(sessionSelection);
       }
       // transient 切换不产出 modelChange 聊天通知：应用/还原成对出现会刷出两条无意义通知。
->>>>>>> zai-org/main
       if (!options?.transient) {
         deps.runtime.recordPendingModelChange({
           fromModel: previousSelection,

@@ -11,16 +11,13 @@ import {
 } from "#src/session/tasksDatabase/schema-v1.js";
 import { importLegacyAutomationSelections } from "#src/session/tasksDatabase/provider-selection-v2.js";
 import { OFFICIAL_GLM_SELECTION_MIGRATION_SQL } from "#src/session/tasksDatabase/official-glm-selection-v3.js";
-<<<<<<< HEAD
 import { WORKSPACE_REGISTRY_MIGRATION_SQL } from "#src/session/tasksDatabase/workspace-registry-v1.js";
 import { WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL } from "#src/session/tasksDatabase/workspace-registry-v2.js";
-=======
 import { CONTROLLER_REMOTE_SCHEMA_SQL } from "#src/session/tasksDatabase/controller-remote-schema-v4.js";
 import {
   adoptSourceServerWorkspaceSchema,
   SOURCE_SERVER_SCHEMA_CHECKSUM_INPUT,
 } from "#src/session/tasksDatabase/source-server-schema-v5.js";
->>>>>>> zai-org/main
 
 // 冻结历史列声明，不能以实时 Repo/schema 代替，否则新版构建会改变已应用 checksum。
 const columns = [
@@ -101,41 +98,6 @@ const definitions = [
     checksumInput: [OFFICIAL_GLM_SELECTION_MIGRATION_SQL],
   },
   {
-<<<<<<< HEAD
-    // 0004：工作区注册表（可见工作区的唯一真相源）。只增不改：不 ALTER 既有表。
-    id: "0004_workspace_registry",
-    checksumInput: [WORKSPACE_REGISTRY_MIGRATION_SQL],
-  },
-  {
-    // 0005：注册表增加未归档会话数（active_session_count），修「说已有 N 个会话、点开是空的」。
-    // 只对 0004 建出的表 ADD COLUMN；兼容策略见 workspace-registry-v2.ts 顶部注释。
-    id: "0005_workspace_registry_active_session_count",
-    checksumInput: [WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL],
-  },
-] as const;
-
-/**
- * 迁移 id → 执行动作（显式分派）。
- *
- * 依据（修缺陷，不是改语义）：迁移循环此前用的是 if 0001 / else if 0002 / **else 执行 0003 的 SQL**
- * 兜底分支（原 migrations.ts:122-126）—— 任何新增 id 都会被静默执行成官方 GLM 迁移，是一条静默
- * 数据污染路径。现在未知 id 显式抛错（fail-closed），既有 0001-0004 的行为逐字不变。
- * 新增迁移必须在这里登记分支，否则 packages/services/test/workspaceRegistryRepo.test.ts
- * 的「未知 id 必须抛错」断言会失败。
- */
-export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSync) => void {
-  if (id === "0001_adopt_task_schema") return adoptSchema;
-  if (id === "0002_provider_selection") return importLegacyAutomationSelections;
-  if (id === "0003_official_glm_selection")
-    return (db) => db.exec(OFFICIAL_GLM_SELECTION_MIGRATION_SQL);
-  if (id === "0004_workspace_registry") return (db) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL);
-  if (id === "0005_workspace_registry_active_session_count")
-    return (db) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
-  throw new Error("Unknown task database migration id: " + id);
-}
-
-export function runTasksDatabaseMigrations(
-=======
     id: "0004_project_execution_scopes",
     touchedTables: ["automations", "off_peak_tasks"],
     checksumInput: [executionColumns, "nullable-text-v1"],
@@ -210,8 +172,42 @@ function prepareMigrations(scope: TasksDatabaseMigrationScope) {
 }
 
 export async function runTasksDatabaseMigrations(
->>>>>>> zai-org/main
-  db: DatabaseSync,
+  {
+    // 0004：工作区注册表（可见工作区的唯一真相源）。只增不改：不 ALTER 既有表。
+    id: "0004_workspace_registry",
+    touchedTables: ["workspace_registry"],
+    checksumInput: [WORKSPACE_REGISTRY_MIGRATION_SQL],
+    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL),
+  },
+  {
+    // 0005：注册表增加未归档会话数（active_session_count），修「说已有 N 个会话、点开是空的」。
+    // 只对 0004 建出的表 ADD COLUMN；兼容策略见 workspace-registry-v2.ts 顶部注释。
+    id: "0005_workspace_registry_active_session_count",
+    touchedTables: ["workspace_registry"],
+    checksumInput: [WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL],
+    apply: (db: DatabaseSync) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL),
+  },
+] as const;
+
+/**
+ * 迁移 id → 执行动作（显式分派）。
+ *
+ * 依据（修缺陷，不是改语义）：迁移循环此前用的是 if 0001 / else if 0002 / **else 执行 0003 的 SQL**
+ * 兜底分支（原 migrations.ts:122-126）—— 任何新增 id 都会被静默执行成官方 GLM 迁移，是一条静默
+ * 数据污染路径。现在未知 id 显式抛错（fail-closed），既有 0001-0004 的行为逐字不变。
+ * 新增迁移必须在这里登记分支，否则 packages/services/test/workspaceRegistryRepo.test.ts
+ * 的「未知 id 必须抛错」断言会失败。
+ */
+export function resolveTaskDatabaseMigrationAction(id: string): (db: DatabaseSync) => void {
+  if (id === "0001_adopt_task_schema") return adoptSchema;
+  if (id === "0002_provider_selection") return importLegacyAutomationSelections;
+  if (id === "0003_official_glm_selection")
+    return (db) => db.exec(OFFICIAL_GLM_SELECTION_MIGRATION_SQL);
+  if (id === "0004_workspace_registry") return (db) => db.exec(WORKSPACE_REGISTRY_MIGRATION_SQL);
+  if (id === "0005_workspace_registry_active_session_count")
+    return (db) => db.exec(WORKSPACE_REGISTRY_ACTIVE_SESSION_COUNT_MIGRATION_SQL);
+  throw new Error("Unknown task database migration id: " + id);
+}  db: DatabaseSync,
   scopeOrOptions: string | TasksDatabaseMigrationOptions = "base",
 ) {
   const options: TasksDatabaseMigrationOptions =
@@ -241,48 +237,6 @@ export async function runTasksDatabaseMigrations(
   const dataRoot = basename(directory) === "v2" ? dirname(directory) : directory;
   let currentMigrationId: string | undefined;
   try {
-<<<<<<< HEAD
-    if (!options.migration) migrationFacts.kind = inspectTasksMigrationKind(db);
-    db.exec(`CREATE TABLE IF NOT EXISTS tasks_schema_migration (
-      id TEXT PRIMARY KEY, checksum TEXT NOT NULL, time_applied INTEGER NOT NULL
-    )`);
-    // 锁内、版本 SQL 之前采集；空账本是 none，异常编号不作为遥测原文发送。
-    const baseline = db
-      .prepare("SELECT id FROM tasks_schema_migration ORDER BY id DESC LIMIT 1")
-      .get();
-    migrationFacts.lastAppliedMigrationId = baseline
-      ? databaseMigrationIdSchema.safeParse(baseline.id).data
-      : null;
-    for (const migration of definitions) {
-      currentMigrationId = migration.id;
-      const checksum = createHash("sha256")
-        .update(JSON.stringify(migration.checksumInput))
-        .digest("hex");
-      const applied = db
-        .prepare("SELECT checksum FROM tasks_schema_migration WHERE id=?")
-        .get(migration.id);
-      if (applied) {
-        if (applied.checksum !== checksum)
-          throw Object.assign(
-            new Error(`Task database migration checksum mismatch: ${migration.id}`),
-            { kind: "checksum_mismatch" },
-          );
-        continue;
-      }
-      if (migrationFacts.kind === "none") migrationFacts.kind = "upgrade";
-      options.onProgress?.("migrating", { ...migrationFacts });
-      resolveTaskDatabaseMigrationAction(migration.id)(db);
-      migrationFacts.executedCount++;
-      db.prepare("INSERT INTO tasks_schema_migration VALUES(?,?,?)").run(
-        migration.id,
-        checksum,
-        Date.now(),
-      );
-    }
-    options.onProgress?.("committing", { ...migrationFacts });
-    db.exec("COMMIT");
-    migrationFacts.committedCount = migrationFacts.executedCount;
-=======
     const result = await sqliteMigrations.migrate(db, migrations, {
       database: "tasks_schema",
       journalTable: "tasks_schema_migration",
@@ -318,7 +272,6 @@ export async function runTasksDatabaseMigrations(
     });
     facts.committedCount = facts.executedCount;
     return result;
->>>>>>> zai-org/main
   } catch (error) {
     if (error && typeof error === "object" && currentMigrationId)
       Object.assign(error, { migrationId: currentMigrationId });

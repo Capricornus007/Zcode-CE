@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import type { InputId, ZCodeProvider, ZCodeTaskMeta } from "@zcode/shared";
 import {
   getTaskMeta,
@@ -6,11 +5,6 @@ import {
   useZCodeSessionStore,
 } from "@/store/zcodeSessionStore.js";
 import { mergeTaskMetaCandidates, mergeTaskWithOptimisticMeta } from "@/lib/zcodeTaskMetaMerge.js";
-=======
-import type { ZCodeTaskMeta } from "@zcode/shared";
-import { getTaskMeta, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import { mergeTaskMetaCandidates } from "@/lib/zcodeTaskMetaMerge.js";
->>>>>>> zai-org/main
 import {
   applyTaskQueryCacheMutation,
   updateTaskQueryCacheTaskMetaPreservingMembership,
@@ -112,7 +106,6 @@ export function syncTaskMetaToTaskCaches(params: {
   }
 }
 
-<<<<<<< HEAD
 export function syncTaskMembershipEventToTaskCaches(params: {
   workspacePath: string;
   workspaceIdentity?: string;
@@ -214,8 +207,6 @@ export function patchTaskMetaInTaskCaches(params: {
   return nextTask;
 }
 
-=======
->>>>>>> zai-org/main
 export function insertTaskIntoTaskCaches(params: {
   workspacePath: string;
   workspaceIdentity?: string;
@@ -234,7 +225,6 @@ export function insertTaskIntoTaskCaches(params: {
     ensureInWorkspaceTaskCache:
       params.membership.pinned === false && params.membership.archived === false,
   });
-<<<<<<< HEAD
 }
 
 export function initializeBackgroundTaskInTaskCaches(params: {
@@ -264,6 +254,4 @@ export function initializeBackgroundTaskInTaskCaches(params: {
     previousState: ABSENT_MEMBERSHIP,
     nextState: { pinned: false, archived: false },
   });
-=======
->>>>>>> zai-org/main
 }

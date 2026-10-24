@@ -1,9 +1,5 @@
-<<<<<<< HEAD
 import { BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES, type ZCodeSlashCommand } from "@zcode/shared";
 import { DYNAMIC_WORKFLOW_SLASH_COMMAND_NAME } from "./app/dynamic-workflow-gate.js";
-=======
-import { BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES } from "@zcode/shared";
->>>>>>> zai-org/main
 
 /**
  * App `/` 面板与加号菜单按本顺序展示（UI 不维护排序白名单）。`workflow` 紧随 `goal`：两者都是
@@ -17,7 +13,6 @@ export const APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES = [
   "init",
 ] as const;
 
-<<<<<<< HEAD
 /** 仅供 App Composer 使用的命令，不扩展 CLI TUI/help surface。 */
 export const APP_PROTOCOL_APP_ONLY_BUILTIN_SLASH_COMMANDS = [
   {
@@ -44,10 +39,6 @@ const EXTRA_RESERVED_SLASH_COMMAND_NAMES = [
   // 展开也会被内置实现抢先（官方同样把 workflow 当作 known 命令）。
   DYNAMIC_WORKFLOW_SLASH_COMMAND_NAME,
 ] as const;
-=======
-// Plan 由 Composer 本地操作提供，保留名称以防自定义命令接管该入口。
-const EXTRA_RESERVED_SLASH_COMMAND_NAMES = ["compress", "plan"] as const;
->>>>>>> zai-org/main
 
 const RESERVED_SLASH_COMMAND_NAMES = new Set(
   BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES.flatMap((entry) => [

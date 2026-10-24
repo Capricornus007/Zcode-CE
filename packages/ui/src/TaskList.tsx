@@ -63,17 +63,14 @@ export const TaskList = memo(function TaskList({
   onSetTaskUnread,
   mobileActiveTaskKey,
   readOnlyReason,
-<<<<<<< HEAD
+  onOpenFileTree,
+  organizationActions,
   runtimeState,
   persistedSessionCount,
   lastActivityAt,
   runtimeFailureReason,
   onStartRuntime,
   onRetryRuntime,
-=======
-  onOpenFileTree,
-  organizationActions,
->>>>>>> zai-org/main
 }: {
   organizationActions?: React.ReactNode;
   workspacePath: string;
@@ -100,7 +97,7 @@ export const TaskList = memo(function TaskList({
   onSetTaskUnread: (taskId: string, unread: boolean) => Promise<ZCodeTaskMeta | null>;
   mobileActiveTaskKey?: string | null;
   readOnlyReason?: string;
-<<<<<<< HEAD
+  onOpenFileTree?: () => void | Promise<void>;
   /**
    * §3.2 诚实未启动态：本 workspace 的 runtime 状态。
    * 缺席 = 旧调用方，保持原「暂无任务」文案（不得因缺省而改口径）。
@@ -112,9 +109,6 @@ export const TaskList = memo(function TaskList({
   runtimeFailureReason?: string | null;
   onStartRuntime?: () => void;
   onRetryRuntime?: () => void;
-=======
-  onOpenFileTree?: () => void | Promise<void>;
->>>>>>> zai-org/main
 }) {
   const { intl } = useZCodeIntl();
   const pinnedTaskIdSet = useMemo(

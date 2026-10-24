@@ -188,7 +188,6 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.usageTitle",
     groupId: "dataAndStats",
   },
-<<<<<<< HEAD
   // 「反馈与诊断」跟随「使用统计」：两者都是关于「这次运行本身怎么样」的信息面
   // （用量 / 报障材料），放在一起符合用户的心智分组。
   {
@@ -197,7 +196,6 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
     titleId: "settings.feedback.title",
     groupId: "dataAndStats",
   },
-=======
   {
     id: "archives",
     icon: Archive,
@@ -210,7 +208,6 @@ const BASE_SETTINGS_SECTIONS: SettingsSectionDefinition[] = [
   //   icon: ArrowLeftRight,
   //   titleId: "settings.migration.title",
   // },
->>>>>>> zai-org/main
 ];
 
 // 兼容既有只读消费者：默认配置代表不带桌面平台能力的 Web 视图；

@@ -82,7 +82,6 @@ export function hasCompletedTabPersistenceInitialRestore({
   );
 }
 
-<<<<<<< HEAD
 export function getRecentProjectPathsFromSettings(
   settings: Pick<AppSettings, "lastWorkspaceSession">,
   excludedPaths: readonly string[] = [],
@@ -139,7 +138,6 @@ export function buildDefaultPersistPatch(state: TabStoreState): Partial<AppSetti
     ? workspaceTabs.findIndex((tab) => tab.workspacePath === state.activeWorkspacePath)
     : 0;
 
-=======
 function buildDefaultPersistPatch(state: TabStoreState): Partial<AppSettings> {
   const tab = state.tabs
     .filter(isWorkspaceTab)
@@ -149,7 +147,6 @@ function buildDefaultPersistPatch(state: TabStoreState): Partial<AppSettings> {
         (state.activeWorkspaceIdentity?.trim() || state.activeWorkspacePath),
     );
   if (tab?.workspaceIdentity || tab?.remoteSessionId) return {};
->>>>>>> zai-org/main
   return {
     lastActiveWorkspace: tab
       ? {

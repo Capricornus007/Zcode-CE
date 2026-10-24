@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-// Modified by ZCode: F6: 采用上游 3.15.1 版补 workflowActorModelLabels 导出(纯函数 +24 行, CE 无自研)。
-import { thoughtLevelLabelId } from "@/chat-input-toolbar/thoughtLevelOptions.js";
-=======
 import { thoughtLevelLabelId } from "@/chat-input-toolbar/thoughtLevelLabels.js";
->>>>>>> zai-org/main
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
 import { formatProviderModelLabel } from "@/v4/composer/modelTriggerDisplay.js";
 

@@ -540,9 +540,6 @@ const zhCN: Record<string, string> = {
     "某个预览文件的类型暂不支持分享，请取消选择对应对话后重试。",
   "conversationShare.error.limitExceeded": "所选对话或文件超过分享限制，请减少选择的对话数量。",
   "conversationShare.error.rateLimited": "分享操作过于频繁，请稍后再试。",
-<<<<<<< HEAD
-  "conversationShare.error.network": "无法连接分享服务，请检查网络后重试。",
-=======
   "conversationShare.error.invalidContractHttp":
     "分享服务接口异常（HTTP {status}），暂时无法完成发布。请重试；若仍失败，请提供错误详情。",
   "conversationShare.error.invalidContract":
@@ -550,7 +547,6 @@ const zhCN: Record<string, string> = {
   "conversationShare.issue.clientRequestIdLabel": "客户端请求 ID",
   "conversationShare.issue.codeLabel": "错误码",
   "conversationShare.error.network": "分享请求连接中断或超时，请检查网络后重试。",
->>>>>>> zai-org/main
   "conversationShare.error.safetyCheckTimeout": "分享安全检查超时，请稍后重试。",
   "conversationShare.error.invalidSelection": "所选对话已发生变化，请重新打开分享面板并选择。",
   "conversationShare.error.invalidConversation":
@@ -638,11 +634,8 @@ const zhCN: Record<string, string> = {
     "{artifactDisplayName} 上传回执与文件不一致，请确认文件未变化后重试。",
   "conversationShare.issue.invalidServiceResponse": "分享服务返回了无法识别的响应，请稍后重试。",
   "conversationShare.issue.unknown":
-<<<<<<< HEAD
-    "分享在 {phase} 阶段失败，服务端未返回可定位详情，请稍后重试。",
-=======
     "分享未能完成，暂时无法确定原因。请重试；若仍失败，请提供错误详情。",
->>>>>>> zai-org/main
+    "分享在 {phase} 阶段失败，服务端未返回可定位详情，请稍后重试。",
   "conversationShare.issue.details": "错误详情",
   "conversationShare.issue.requestIdLabel": "服务端请求 ID",
   "conversationShare.issue.requestId": "服务端请求 ID：{requestId}",
@@ -836,11 +829,6 @@ const zhCN: Record<string, string> = {
   "taskList.deleteAllArchivedError": "操作或列表刷新失败，请刷新后检查剩余任务。",
   "confirmDialog.taskArchiveTitle": "归档这个任务？",
   "confirmDialog.taskArchiveDescription": "任务“{taskTitle}”会移入归档列表，之后仍可恢复。",
-<<<<<<< HEAD
-  "confirmDialog.projectRemoveTitle": "移除这个项目？",
-  "confirmDialog.projectRemoveDescription":
-    "项目“{projectName}”会从侧边栏移除，但不会删除磁盘上的文件。",
-=======
   "bots.title": "机器人",
   "bots.description": "把外部聊天工具和 Webhook 接入 ZCode 机器人。",
   "bots.listTitle": "机器人",
@@ -1119,7 +1107,9 @@ const zhCN: Record<string, string> = {
   "bots.unbindSuccess": "机器人已解绑",
   "bots.unbindFailed": "解绑机器人失败：{error}",
   "bots.deleteFailed": "删除机器人失败：{error}",
->>>>>>> zai-org/main
+  "confirmDialog.projectRemoveTitle": "移除这个项目？",
+  "confirmDialog.projectRemoveDescription":
+    "项目“{projectName}”会从侧边栏移除，但不会删除磁盘上的文件。",
 
   // 登录
   "welcome.title": "Welcome to ZCode",
@@ -1310,8 +1300,6 @@ const zhCN: Record<string, string> = {
   "sidePane.openFile.category": "文件",
   "sidePane.openFile.emptyQuery": "输入内容搜索文件",
   "sidePane.review": "审查",
-<<<<<<< HEAD
-=======
   "pluginUi.loading": "正在加载插件界面...",
   "pluginUi.loadFailed": "插件界面加载失败。",
   "pluginUi.retry": "重新加载",
@@ -1348,7 +1336,6 @@ const zhCN: Record<string, string> = {
   "pluginUi.modelContext.label": "插件上下文",
   "pluginUi.modelContext.remove": "移除插件上下文",
   "sidePane.pluginUi": "插件",
->>>>>>> zai-org/main
   "whiteboard.title": "画板",
   "whiteboard.defaultName": "画板",
   "whiteboard.nameLabel": "画板名称",
@@ -1946,11 +1933,15 @@ const zhCN: Record<string, string> = {
   "settings.source.pending": "未连接",
   "settings.source.pendingDescription": "连接后会自动更新设备信息",
   "workspaceSidebar.connecting": "连接中",
-<<<<<<< HEAD
+  "workspaceSidebar.recoveringAutomatic": "正在自动恢复连接",
+  "workspaceSidebar.recoveringAutomaticShort": "自动恢复 {attempt}/{limit}",
+  "workspaceSidebar.manageDevice": "在设置中管理",
+  "workspaceSidebar.newRemoteConnection": "新建远程连接…",
+  "workspaceSidebar.recoveringAutomaticAttempt": "正在自动恢复连接（{attempt}/{limit}）",
+  "workspaceSidebar.reconnectingManual": "正在手动重新连接",
   "workspaceRuntime.starting.title": "正在启动工作区…",
   "workspaceRuntime.failed.title": "「{workspace}」启动失败",
   "workspaceRuntime.failed.reasonUnavailable":
-    "没有拿到具体原因，可重试一次；若持续失败请查看日志。",
   "workspaceRuntime.failed.retry": "重试",
   "workspaceRuntime.notStarted.title": "未启动（点开即启动，不影响其它工作区）",
   "workspaceRuntime.notStarted.persistedSessions": "已有 {count} 个会话，最近活动 {activity} 前",
@@ -1960,14 +1951,7 @@ const zhCN: Record<string, string> = {
   "workspaceSidebar.registry.hideAll": "收起未打开的工作区",
   "workspaceSidebar.registry.loadFailed": "工作区列表读取失败：{reason}",
   "workspaceSidebar.registry.retry": "重新读取",
-=======
-  "workspaceSidebar.recoveringAutomatic": "正在自动恢复连接",
-  "workspaceSidebar.recoveringAutomaticShort": "自动恢复 {attempt}/{limit}",
-  "workspaceSidebar.manageDevice": "在设置中管理",
-  "workspaceSidebar.newRemoteConnection": "新建远程连接…",
-  "workspaceSidebar.recoveringAutomaticAttempt": "正在自动恢复连接（{attempt}/{limit}）",
-  "workspaceSidebar.reconnectingManual": "正在手动重新连接",
->>>>>>> zai-org/main
+    "没有拿到具体原因，可重试一次；若持续失败请查看日志。",
   "workspaceSidebar.notConnected": "未连接",
   "remote.error.sourceServerInstallRequired": "远程设备尚未安装 ZCode Server，需要先确认安装。",
   "remote.error.sourceServerIdentityChangePending":
@@ -2254,18 +2238,6 @@ const zhCN: Record<string, string> = {
   "remote.manage": "管理",
   "remote.settingsStepTitle": "新建连接",
   "remote.history.empty": "没有匹配的历史连接",
-<<<<<<< HEAD
-  "remote.connectingStepTitle": "正在建立连接",
-  "remote.connectingStepDescription": "正在建立 {method} 连接，你可以在这里查看实时的连接进度。",
-  "remote.title": "连接远程环境",
-  "remote.description":
-    "通过 SSH、Server、WSL 或 Docker 连接远程工作区，并在当前窗口中继续选择目录。",
-  "remote.step.connect": "连接环境",
-  "remote.step.selectDirectory": "选择目录",
-  "remote.selectDirectoryTitle": "选择远程目录",
-  "remote.selectDirectoryDescription": "远程连接就绪后，选择要在当前窗口中打开的目录。",
-  "remote.backToConnection": "返回连接配置",
-=======
   "remote.connectingStepTitle": "建立连接",
   "remote.connectingStepDescription": "正在通过 {method} 连接…",
   "remote.connectingSubtitleConnected": "已连接到 {device} · 可以选择目录了",
@@ -2428,21 +2400,22 @@ const zhCN: Record<string, string> = {
   "remote.selectDirectoryTitle": "选择目录",
   "remote.selectDirectoryDescription": "在 {method} 上选择一个目录作为工作区。",
   "remote.backToConnection": "返回配置",
->>>>>>> zai-org/main
+  "remote.title": "连接远程环境",
+  "remote.description":
+  "remote.step.connect": "连接环境",
+  "remote.step.selectDirectory": "选择目录",
+    "通过 SSH、Server、WSL 或 Docker 连接远程工作区，并在当前窗口中继续选择目录。",
   "remote.selectedMethod": "当前连接方式",
   "remote.methods": "连接方式",
   "remote.connectionType": "连接类型",
   "remote.kind.ssh": "SSH",
   "remote.kind.wsl": "WSL",
   "remote.kind.docker": "Docker",
-<<<<<<< HEAD
+  "remote.kind.server.note": "Server（直连已运行的 ZCode 服务）仅在开发模式下显示。",
+  "remote.addAndConnect": "添加并连接",
   "remote.kind.ssh.wizardDescription": "远程主机",
   "remote.kind.wsl.wizardDescription": "Windows Linux 子系统",
   "remote.kind.docker.wizardDescription": "本地容器",
-=======
-  "remote.kind.server.note": "Server（直连已运行的 ZCode 服务）仅在开发模式下显示。",
-  "remote.addAndConnect": "添加并连接",
->>>>>>> zai-org/main
   "remote.connect": "连接",
   "remote.connecting": "正在连接...",
   "remote.minimize": "收起 — 连接将继续进行",
@@ -2656,9 +2629,6 @@ const zhCN: Record<string, string> = {
   "remote.log.dockerTarget": "目标 Docker 容器：{container}",
   "remote.log.requestingSession": "正在请求宿主进程创建远程 session...",
   "remote.log.sessionReady": "远程 session 已创建完成，接下来可以选择目录。",
-<<<<<<< HEAD
-  "wsl.description": "连接默认 distro，或选择这台设备上已安装的指定 distro。",
-=======
   "server.description": "连接已经运行的 ZCode server。",
   "server.url": "Server URL",
   "server.urlPlaceholder": "例如 https://studio.example.com:3030",
@@ -2671,7 +2641,7 @@ const zhCN: Record<string, string> = {
   "server.workspacePathDescription": "留空后，连接成功时再选择 server 上的目录。",
   "server.validation.urlRequired": "Server URL 不能为空",
   "server.validation.invalidUrl": "Server URL 格式不正确",
->>>>>>> zai-org/main
+  "wsl.description": "连接默认 distro，或选择这台设备上已安装的指定 distro。",
   "wsl.distro": "发行版",
   "wsl.defaultDistro": "默认发行版",
   "wsl.user": "Linux 用户",
@@ -6137,14 +6107,10 @@ const zhCN: Record<string, string> = {
   "chat.backgroundResult.workflow.stall.body":
     "本实例已有 {minutes} 分钟没有一次成功的模型请求。它仍在运行并按退避重试；不再需要时可在运行卡上停止。",
   "chat.backgroundResult.workflow.stall.reason": "重试原因",
-<<<<<<< HEAD
-  "chat.backgroundResult.workflow.stall.cap": "当前并发数",
-=======
   "chat.backgroundResult.workflow.stall.cap": "最大并发数",
   // 主代理闲着、run 还欠着决定时的提醒：计数词复用 digest.question(s) / card.hole(s)。
   "chat.backgroundResult.workflow.blocked": "工作流等待主代理",
   "chat.backgroundResult.workflow.blocked.openFor": "已等待 {minutes} 分钟",
->>>>>>> zai-org/main
   "chat.backgroundResult.workflow.waiting": "子代理正在等待回答",
   "chat.backgroundResult.workflow.answered": "子代理的问题已回答",
   "chat.backgroundResult.workflow.asked": "子代理提出了问题",

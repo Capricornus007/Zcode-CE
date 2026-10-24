@@ -1,14 +1,11 @@
-<<<<<<< HEAD
-import { createBotTopicAdmission } from "./botTopicAdmission.js";
-import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
-=======
 import { isAuxiliarySessionKind } from "@zcode/shared";
 import { createBotTopicAdmission } from "#src/zcode-agent/botTopicAdmission.js";
 import {
   readBotGroupRuntimeSnapshot,
   waitBotGroupExecutionEnd,
 } from "#src/zcode-agent/groupRuntimeSnapshot.js";
->>>>>>> zai-org/main
+import { createBotTopicAdmission } from "./botTopicAdmission.js";
+import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
 import { createZCodeAgentConnectionScope } from "./zcodeAgentConnectionScope.js";
 /* Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 3 个支撑模块 + 连接 scope 导入。 */
@@ -158,16 +155,13 @@ import {
 } from "./zcodeV4HostCommand.js";
 import { claudeNativeSessionImportRepo } from "#src/session/claude-native/claudeNativeSessionImportRepo.js";
 import { importClaudeNativeSessions } from "#src/session/claude-native/claudeNativeSessionImportService.js";
-<<<<<<< HEAD
+import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
+import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
 import { buildImportedClaudeTaskId } from "#src/session/claude-native/buildImportedClaudeTaskFile.js";
 import {
   readLegacyImportedClaudeHistory,
   repairImportedClaudeSessionSnapshot,
 } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
-=======
-import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
-import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
->>>>>>> zai-org/main
 import {
   MODEL_CONFIG_ID,
   MODE_CONFIG_ID,
@@ -278,13 +272,9 @@ export function createZCodeTaskServiceAdapter(
   const toolProjectionMemoryByTaskKey = new Map<string, ZCodeToolProjectionMemory>();
   const liveToolProjectionsByTaskKey = new Map<string, Map<string, LiveToolProjection>>();
   let liveToolProjectionOrder = 0;
-<<<<<<< HEAD
-  // 内存诊断计数器：只读各 per-task 表的 size。
-=======
   const legacySnapshotTaskKeys = new Set<string>();
   // 内存诊断计数器（docs/monitoring/memory-diagnostics-log.md）：对应审计里 deleteTask
   // 不清理的 per-task 表，只读 size。
->>>>>>> zai-org/main
   const memoryDiagnostics = registerMemoryDiagnosticsProvider("task", () => ({
     runtimeCommands: runtimeCommands.size,
     toolMemoryTasks: toolProjectionMemoryByTaskKey.size,
@@ -1184,9 +1174,6 @@ export function createZCodeTaskServiceAdapter(
     return /\bSession (not found|is not active):/i.test(message);
   }
 
-<<<<<<< HEAD
-  async function resumeTaskSnapshot(
-=======
   async function readLegacyTaskSnapshot(params: TaskTarget): Promise<ZCodeTaskSnapshot | null> {
     const paths = [
       getLegacyTaskSessionSnapshotPath(
@@ -1256,41 +1243,12 @@ export function createZCodeTaskServiceAdapter(
   }
 
   async function resumeSnapshotOrLegacy(
->>>>>>> zai-org/main
     params: TaskTargetWithMcpServers,
   ): Promise<ZCodeSessionStateSnapshot> {
     let snapshot: ZCodeSessionStateSnapshot;
     try {
       snapshot = await resumeSnapshot(params);
     } catch (error) {
-<<<<<<< HEAD
-      if (!isSessionMissingError(error)) throw error;
-      // 早期原生历史导入只保存了带 migrationSource 的快照，仍需升级成真实 ZCode session。
-      // 复用导入模块的严格来源校验，避免清理 ACP 时误删这条独立的数据迁移路径。
-      const history = await readLegacyImportedClaudeHistory(params);
-      if (!history) throw error;
-      const mcpServers = await resolveProductMcpServers(params.mcpServers);
-      const restored = await options.zcodeAgentService.createSession({
-        workspacePath: params.workspacePath,
-        workspaceIdentity: params.workspaceIdentity,
-        sessionId: params.taskId,
-        sessionTraceId: history.traceId ?? createSessionTraceId(),
-        persistence: "immediate",
-        model: params.model ? parseModelPickerValue(params.model) : undefined,
-        ...(mcpServers ? { mcpServers } : {}),
-        ...(params.toolDenylist ? { toolDenylist: params.toolDenylist } : {}),
-        importedHistory: {
-          source: "claudeCode",
-          title: history.title,
-          createdAt: history.createdAt,
-          updatedAt: history.updatedAt,
-          messages: history.messages,
-        },
-      });
-      const meta = await syncTaskIndexSnapshot(restored);
-      await syncTaskIndexMeta({ ...meta, migrationSource: "claudeCode" });
-      return restored;
-=======
       if (!isSessionMissingError(error)) {
         throw error;
       }
@@ -1343,7 +1301,6 @@ export function createZCodeTaskServiceAdapter(
         error,
       );
       return { kind: "legacy", snapshot: legacySnapshot };
->>>>>>> zai-org/main
     }
     return repairEmptyImportedClaudeSnapshot(params, snapshot);
   }
@@ -1814,53 +1771,6 @@ export function createZCodeTaskServiceAdapter(
           "createSession",
           await options.zcodeAgentService.sendConversationCommandV4({
             ...target,
-<<<<<<< HEAD
-            sessionId: draftSessionId,
-          });
-          if (requestedSelection) {
-            if (!sameModelSelection(snapshot.settings.model.current, requestedSelection)) {
-              // replayable 首发复用 draft session 时，draft 可能仍停在预热时的旧模型。
-              // 复用前必须同步 UI 当前模型，否则手机远控首发会显示新模型但真实请求仍用旧模型。
-              snapshot = await options.zcodeAgentService.setModel({
-                ...target,
-                sessionId: draftSessionId,
-                model: requestedSelection,
-              });
-            }
-          }
-          if (
-            requestedSelection?.options?.reasoningLevel &&
-            snapshot.settings.thoughtLevel.current !== requestedSelection.options.reasoningLevel
-          ) {
-            // replayable 首发复用 draft session 时也必须以 UI 当前 thought_level 为准。
-            // 否则手机远控可能复用旧 draft session，导致首发请求沿用过期推理强度。
-            snapshot = await options.zcodeAgentService.setThoughtLevel({
-              ...target,
-              sessionId: draftSessionId,
-              thoughtLevel: requestedSelection.options.reasoningLevel,
-            });
-          }
-        } catch (error) {
-          if (!isSessionMissingError(error)) {
-            throw error;
-          }
-          // 手机端草稿 session 和桌面一样只存在 agent runtime 内存里。
-          // 远端重连/agent 重启后旧 draftSessionId 可能失效；首发消费点降级新建，避免用户卡死。
-          logger.warn(undefined, "手机 replayable draft session 已失效，降级创建新 task", {
-            draftSessionId,
-            workspaceIdentity: target.workspaceIdentity ?? null,
-            workspacePath: target.workspacePath,
-          });
-        }
-      }
-      if (!snapshot) {
-        // v4 createSession 命令已原生（desktop
-        // v4 UI 在用），但 replayable createTask 需要 mcpServers/model/importedHistory
-        // 载荷与 snapshot 返回值（task index 同步依赖），v4 命令面均未建模；
-        // 迁移属 v4 生命周期收口。
-        snapshot = await options.zcodeAgentService.createSession({
-          ...target,
-=======
             projectId: params.projectId ?? null,
             envelope: createHostCommandEnvelope({
               type: "createSession",
@@ -1897,18 +1807,13 @@ export function createZCodeTaskServiceAdapter(
           ...target,
           projectId: params.projectId ?? null,
           additionalDirectories: params.additionalDirectories,
->>>>>>> zai-org/main
           sessionTraceId: createSessionTraceId(),
           mode: toZCodeMode(params.mode),
           model: requestedSelection,
           thoughtLevel: requestedSelection?.options?.reasoningLevel,
           ...(params.automationId || params.deferPersistenceUntilFirstPrompt
             ? {
-<<<<<<< HEAD
-                // automation / 闲时任务新建空 session 后会立即 sendText。session_input 有
-=======
                 // 修复原因：automation / 闲时任务新建空 session 后会立即 sendText。session_input 有
->>>>>>> zai-org/main
                 // session 外键，必须让 V4 admission 在首发前统一持久化 session 主记录；
                 // 否则 create 返回成功后第一条 prompt 会稳定触发 FOREIGN KEY constraint failed。
                 persistence: "deferred" as const,
@@ -1919,11 +1824,7 @@ export function createZCodeTaskServiceAdapter(
                 titleGenerationEnabled: false,
               }
             : {}),
-<<<<<<< HEAD
-          // replayable task facade 创建 session 时同样会启动 runtime；
-=======
           // Bugfix: replayable task facade 创建 session 时同样会启动 runtime；
->>>>>>> zai-org/main
           // 之前这里丢掉 mcpServers，导致手机远控路径和 desktop-continuous 的 MCP 行为不一致。
           mcpServers,
         });
@@ -2586,8 +2487,6 @@ export function createZCodeTaskServiceAdapter(
         mcpServers: params.mcpServers,
         additionalDirectories: params.additionalDirectories,
       });
-<<<<<<< HEAD
-=======
       if (restored.kind === "legacy") {
         const meta = await updateIndexedPresentation({
           ...restored.snapshot.meta,
@@ -2600,7 +2499,6 @@ export function createZCodeTaskServiceAdapter(
         return meta;
       }
       const snapshot = restored.snapshot;
->>>>>>> zai-org/main
       emitWorkspaceConfig(params, snapshot.settings);
       const snapshotMeta = await syncTaskIndexSnapshot(snapshot);
       const meta =
@@ -2714,8 +2612,6 @@ export function createZCodeTaskServiceAdapter(
         thoughtLevel,
       });
       const resumeDurationMs = Date.now() - resumeStartedAt;
-<<<<<<< HEAD
-=======
       if (restored.kind === "legacy") {
         const limitStartedAt = Date.now();
         const legacySnapshot = limitTaskSnapshotMessages(restored.snapshot, params.messageLimit);
@@ -2739,7 +2635,6 @@ export function createZCodeTaskServiceAdapter(
         return { ...legacySnapshot, meta: indexedMeta };
       }
       const snapshot = restored.snapshot;
->>>>>>> zai-org/main
       const projectionStartedAt = Date.now();
       const zcodeSnapshot = limitTaskSnapshotMessages(
         snapshotToZCode(snapshot, {

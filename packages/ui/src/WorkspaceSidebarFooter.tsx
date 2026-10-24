@@ -2,24 +2,17 @@ import { SidebarNativeTooltip, ControlHintTooltip } from "@/ControlHintTooltip.j
 /* oxlint-disable eslint(max-lines) -- footer 聚合账户、主题、模式和快捷键菜单。 */
 // Modified by ZCode: F11(账户菜单): 增加套餐 badge(profile-menu-plan)与复制用户 ID(copy-user-id)入口;不引入 rewards。
 import type { Locale, UserInfo } from "@zcode/shared";
-<<<<<<< HEAD
-import { memo, useCallback, useEffect, useState } from "react";
-=======
 import { memo, useCallback, useEffect, useState, type ReactNode } from "react";
 import { DesktopCommandIds } from "@zcode/shared";
->>>>>>> zai-org/main
 import {
   TID_LOGIN_MENU_ITEM,
   TID_LOGIN_TRIGGER,
   TID_LOGOUT_BUTTON,
   TID_TASK_SETTINGS_BUTTON,
-<<<<<<< HEAD
+} from "@zcode/shared/test-ids";
 } from "@zcode/shared";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { RemoteControlEntryButton, type RemoteControlEntry } from "@/RemoteControlEntryButton.js";
-=======
-} from "@zcode/shared/test-ids";
->>>>>>> zai-org/main
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";

@@ -72,8 +72,6 @@ function isModelConfigMissingError(error: Pick<ZCodeUiError, "code" | "message">
   return Boolean(error.code && MODEL_CONFIG_MISSING_CODES.has(error.code));
 }
 
-<<<<<<< HEAD
-=======
 function parseClaudeUnknownCommandMessage(message: string): {
   command: string;
   args?: string;
@@ -95,7 +93,6 @@ function parseClaudeUnknownCommandMessage(message: string): {
  */
 export type ChatErrorBannerModelConfigTarget = "local" | "remote";
 
->>>>>>> zai-org/main
 export function resolveChatErrorBannerDisplayMessage(
   error: ZCodeUiError,
   intl: IntlInstance,
@@ -185,26 +182,11 @@ export function ChatErrorBanner({
   }
 
   const handleOpenFeedback = async () => {
-<<<<<<< HEAD
     // 改造前这里无条件打开官方工单弹窗（连官方域名，fork 用户点了等于没反应）。
     // 现在改走「反馈与诊断」的渠道配置：errorSummary 让错误现场自动出现在预填正文里，
     // 用户不必再从横幅手抄一遍报错。原始错误对象与堆栈不进上下文，只传可读 message 与模板正文。
     const outcome = runFeedbackEntry({
       errorSummary: localizedErrorMessage,
-=======
-    openFeedbackSubmit({
-      title: localizedErrorMessage.slice(0, 80),
-      type: "bug",
-      module: remoteConnectionFailure
-        ? remoteKind === "ssh"
-          ? "SSH连接失败"
-          : remoteKind === "wsl"
-            ? "WSL连接失败"
-            : "其它"
-        : "模型调用报错",
-      severity: "P2-中",
-      includeLogs: true,
->>>>>>> zai-org/main
       description: buildErrorFeedbackDescription({
         message: localizedErrorMessage,
         detail: error.detail,

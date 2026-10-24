@@ -1,11 +1,8 @@
-<<<<<<< HEAD
-import type { RuntimeInputPresentation } from "@zcode/contracts";
-=======
 import type { ToolSearchExecutionContext, ToolSearchMode } from "@zcode/contracts";
 import type { RequestVerificationReason } from "@zcode/shared";
 import type { GetAgentDefinitions, LoadAgentDefinitions } from "../subagent/definitions.js";
 import type { RuntimeInputPresentation, TurnExecutionModelFallbackReason } from "@zcode/contracts";
->>>>>>> zai-org/main
+import type { RuntimeInputPresentation } from "@zcode/contracts";
 /* eslint-disable max-lines -- Runtime 类型集中承载 core/runtime 对外结构，拆分需要单独迁移。 */
 import { PermissionService, ToolScheduler } from "./deps.js";
 import type {
@@ -464,8 +461,6 @@ export interface ModelExecutionContext {
     foregroundModel: "submission";
     background: "deny" | "allow";
   };
-<<<<<<< HEAD
-=======
   /**
    * 本次执行的 Selection 失败时，同一 Turn 内退回原模型继续跑完（保留已提交历史，只替换后续请求的
    * 模型），而不是让整轮直接失败。触发条件必须由发起方声明：`providerId` 限定只匹配本轮 execution
@@ -482,7 +477,6 @@ export interface ModelExecutionContext {
     }>;
     target?: ModelSelection;
   };
->>>>>>> zai-org/main
 }
 
 export interface ExecuteTurnOptionsBase {

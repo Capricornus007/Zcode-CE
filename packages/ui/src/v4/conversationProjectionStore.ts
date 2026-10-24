@@ -44,17 +44,12 @@ const RUNTIME_RECYCLE_RETRY_DELAYS_MS = [250, 1_000, 3_000] as const;
  * 路径只相差一个 renderer/network round-trip。把窗口设为 2s 可以覆盖正常 desktop/mobile
  * 延迟，又能尽快从“CLI 继续工作、订阅完全静默”的半开通道自愈。超时只恢复订阅，不重放命令。
  */
-<<<<<<< HEAD
-const ACCEPTED_INPUT_PROJECTION_GRACE_MS = 2_000;
-const ACCEPTED_INPUT_COMMAND_TYPES = new Set(["sendText"]);
-=======
 export const ACCEPTED_INPUT_PROJECTION_GRACE_MS = 2_000;
 const ACCEPTED_INPUT_COMMAND_TYPES = new Set(["sendText", "editUserQuery"]);
 
 export function requiresAcceptedInputProjection(type: string): boolean {
   return ACCEPTED_INPUT_COMMAND_TYPES.has(type);
 }
->>>>>>> zai-org/main
 
 /** 退避耗尽时展示给用户的 lastError（无底层 error 对象可引用的换代路径）。 */
 const RUNTIME_RECYCLED_ERROR = "ZCode agent runtime 已被回收，重连未成功";

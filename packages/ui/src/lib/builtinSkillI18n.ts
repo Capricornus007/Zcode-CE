@@ -94,13 +94,6 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US":
       "Professional PDF toolkit for reports, creative visuals, academic LaTeX, and existing-PDF workflows. Supports reports, posters, papers, resumes, extraction, merge, split, forms, and conversion.",
   },
-<<<<<<< HEAD
-  pptx: {
-    "zh-CN":
-      "检查并窄范围更新从 PPTX 预览区选择的元素。通过完整文件指纹和 OOXML 定位校验 shape 文本或表格单元格，冲突时停止而不猜测。",
-    "en-US":
-      "Inspect and narrowly update elements selected in PPTX Preview Pane. Verifies the whole-file fingerprint and OOXML locator for shape or table-cell text, and stops on conflicts instead of guessing.",
-=======
   "pdf-viewer": {
     "zh-CN": "在 PDF 侧栏与用户一起查看和讨论 PDF 文件。适用于打开、阅读、审阅或询问工作区中的 PDF，用户提到在查看器中选中或引用的内容，或需要检查刚生成的 PDF。",
     "en-US": "View and discuss PDF files with the user in the PDF side panel. Use to open, read, review, or ask about a workspace PDF, when the user refers to a selection or reference in the viewer, or to check a PDF you just produced.",
@@ -108,7 +101,11 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
   "pptx": {
     "zh-CN": "检查并窄范围更新从 PPTX 预览区选择的元素。通过完整文件指纹和 OOXML 定位校验 shape 文本或表格单元格，冲突时停止而不猜测。",
     "en-US": "Inspect and narrowly update elements selected in PPTX Preview Pane. Verifies the whole-file fingerprint and OOXML locator for shape or table-cell text, and stops on conflicts instead of guessing.",
->>>>>>> zai-org/main
+  pptx: {
+    "zh-CN":
+      "检查并窄范围更新从 PPTX 预览区选择的元素。通过完整文件指纹和 OOXML 定位校验 shape 文本或表格单元格，冲突时停止而不猜测。",
+    "en-US":
+      "Inspect and narrowly update elements selected in PPTX Preview Pane. Verifies the whole-file fingerprint and OOXML locator for shape or table-cell text, and stops on conflicts instead of guessing.",
   },
   "pptx-viewer": {
     "zh-CN": "在演示文稿侧栏与用户一起查看和讨论 .pptx 演示文稿。适用于一起打开、审阅或询问工作区中的演示文稿，用户提到在查看器中选中或引用的幻灯片或元素，或需要检查刚生成的演示文稿。",

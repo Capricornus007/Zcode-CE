@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import {
   createRemoteProjectService,
   IRemoteProjectService,
@@ -25,7 +23,6 @@ import { createTaskGroupService, ITaskGroupService, groupTaskKey } from "#src/ta
 import { IGenUiService } from "./gen-ui/contract.js";
 import { createGenUiService } from "./gen-ui/node.js";
 import { channelReplyHostRequestSchema, channelReplyResultSchema } from "@zcode/shared";
->>>>>>> zai-org/main
 /* eslint-disable max-lines -- host process 服务注册和启动装配需要集中维护，拆散后会更难追踪依赖注入顺序 */
 // Node.js service implementations — NOT safe to import in browser code
 import { readFileSync } from "node:fs";
@@ -153,11 +150,8 @@ export type {
   CuaHelperInstaller,
   CuaHelperInstallerOptions,
 } from "./cua-permission-broker/index.js";
-<<<<<<< HEAD
-=======
 export { createProjectWorkspaceNavigation } from "#src/project-workspace-navigation/index.js";
 export { createBotsService } from "./bots/botsService.js";
->>>>>>> zai-org/main
 export { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
 export { createOAuthService } from "./oauth/oauthService.js";
 export { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js";
@@ -420,12 +414,6 @@ import { IBotsService } from "./bots/bots.js";
 import { createZCodeSessionService } from "./zcode-session/zcodeSessionService.js";
 import { createZCodeTaskIndexSyncer } from "./zcode-agent/zcodeTaskIndexSyncer.js";
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
-<<<<<<< HEAD
-import type { SessionMessageSendRequested } from "#src/session/sessionMailbox.js";
-import { createFileWatcherService } from "./fileWatcher/fileWatcherService.js";
-import { createOAuthService } from "./oauth/oauthService.js";
-import { isCurrentOAuthCredentialRequest } from "#src/oauth/oauthUnauthorizedRequest.js";
-=======
 import { AutomationRepo } from "#src/session/automationRepo.js";
 import type { AppSettings } from "@zcode/shared";
 import { createBotsService } from "./bots/botsService.js";
@@ -443,7 +431,6 @@ import {
   resolveOAuthBusinessCredentialValidationRequest,
   isCurrentOAuthCredentialRequest,
 } from "#src/oauth/oauthUnauthorizedRequest.js";
->>>>>>> zai-org/main
 import { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js";
 import { OAuthCredentialRepo } from "./oauth/repo/oauthCredentialRepo.js";
 import { readLegacyZCodeConfigProviders } from "./model-provider/legacyZCodeConfigProviderReader.js";
@@ -577,10 +564,7 @@ import {
   isScreenCaptureProbeSuccess,
   markCuaProductHelperAgentEnvUnavailable,
   reapOrphanedHelpers,
-<<<<<<< HEAD
-=======
   resolveStandaloneStatusLaunchAppPath,
->>>>>>> zai-org/main
   shouldRunCuaScreenCaptureProbe,
   waitForCuaHelperStartup,
   type CuaHelperHost,
@@ -1603,30 +1587,14 @@ export function createLocalServices(options: {
     onZcodeJwtInvalid: (input, headers) => zcodeJwtLogoutHandlerRef.current?.(input, headers),
     isZcodeJwtRequest: (input, headers) =>
       isCurrentOAuthCredentialRequest({ input, headers, credentialService }),
-<<<<<<< HEAD
-=======
     isBusinessUnauthorizedRequest: (input, _headers) =>
       isOAuthBusinessRequest({ input, credentialService }),
     resolveBusinessCredentialValidationRequest: (input, headers) =>
       resolveOAuthBusinessCredentialValidationRequest({ input, headers, credentialService }),
->>>>>>> zai-org/main
     resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
     resolveClientLanguage: options?.resolveClientLanguage,
   });
   const systemService = createSystemService();
-<<<<<<< HEAD
-  // onboarding 完成记录：userId 由登录态补全（apikey/未登录为 null）。
-  //
-  // hasExistingLocalTask 用 ref 延迟求值：taskIndexRepo 在下方才创建（它持有
-  // tasks-index.sqlite 的连接句柄，必须在 sqliteReposToClose 里统一登记关闭，
-  // 不能为了这里提前 new 一个未登记的句柄——Windows 上会撞 EBUSY）。
-  // 与上面 zcodeJwtLogoutHandlerRef 是同一个套路：装配期只注册闭包，运行时才解引用。
-  const hasExistingLocalTaskRef: { current: (() => Promise<boolean>) | null } = { current: null };
-  const onboardingRecordService = createOnboardingRecordService({
-    loadUserId: async () => (await oauthCredentialRepo.loadActiveUserProfile())?.id ?? null,
-    // 不传 workspacePath 即全量查询，与官方 hasExistingLocalTask 同义（「本机已有任务」）。
-    hasExistingLocalTask: async () => (await hasExistingLocalTaskRef.current?.()) ?? false,
-=======
   // onboarding 资格与任务列表共用同一份全局 tasks-index；repo 懒加载数据库，提前构造不会
   // 增加启动 I/O，后续 session syncer 也继续复用这一实例。
   const taskIndexRepo = new TaskIndexRepo(undefined, options?.projectStorageHostId);
@@ -1661,7 +1629,6 @@ export function createLocalServices(options: {
       },
       resolveLegacyTaskSessionsDir: () => join(resolveAppConfigDir(), "sessions"),
     }),
->>>>>>> zai-org/main
   });
   let handleOAuthProviderLogout: ReturnType<typeof createOAuthProviderLogoutHandler> | null = null;
   // 独立日志域：损坏 OAuth 会话清理后派生 provider 刷新失败的可观测入口（A2 容错）。
@@ -1674,7 +1641,6 @@ export function createLocalServices(options: {
       // OAuth 删除已经完成，派生刷新交回原 Account Source 队列，后台只观察失败。
       void Promise.all(
         providers.map((provider) => handleOAuthProviderLogout?.(provider) ?? Promise.resolve()),
-<<<<<<< HEAD
       ).catch((error) => {
         // Modified by ZCode: 容错对齐上游 3.15.3（闭源修复 A2）。原写法在任一派生 provider
         // 刷新失败时整体 reject；回调本身又挂在清理流程上，会把「清理损坏 OAuth 会话」一起拽失败，
@@ -1682,10 +1648,6 @@ export function createLocalServices(options: {
         // 清理照常完成；repo 层的 try/catch 兜底仍在（两层语义不同：repo 层保证清理不被阻断，
         // 回调层留下可定位的失败日志）。不加重试：派生凭据随下次账号同步自然重建。
         oauthCredentialRecoveryLogger.warn(
-=======
-      ).catch((error: unknown) => {
-        createServiceLogger("oauth-credential-recovery").warn(
->>>>>>> zai-org/main
           "refresh derived providers after corrupt OAuth cleanup failed",
           { error },
         );
@@ -2089,24 +2051,6 @@ export function createLocalServices(options: {
     const { execFile } = await import("node:child_process");
     const { promisify } = await import("node:util");
     const socketPath = resolveBrokerSocketPath();
-<<<<<<< HEAD
-    // standaloneHelperCandidatePaths 未在上游 exports 白名单——此处按同一规则枚举安装候选
-    //（dev-desktop → dev/ 前缀；app 名一律取 helperConstants，不写字面量）。
-    const home = process.env.ZCODE_HOME?.trim() || join(homedir(), ".zcode");
-    const baseRoot = join(home, "computer-use");
-    // 安装布局见上游 helperLauncher.resolveCuaHelperInstallRoot：dev 是独立子根 `dev/` 且 app
-    // 名换成 DEV_HELPER_APP_NAME；preview 是独立子根 `preview/` 但**沿用**稳定 app 名
-    //（分根的理由是 build id 不同、共享根会互相覆盖安装，不是改名）。
-    // 只枚举 HELPER_APP_NAME 导致 dev 下永远找不到候选，设置页拉起静默失败、
-    // 权限显示未知。dev 的两种名字都留着：一键 dev bundle 也可能装成稳定名。
-    const candidates = [
-      join(baseRoot, "dev", DEV_HELPER_APP_NAME),
-      join(baseRoot, "dev", HELPER_APP_NAME),
-      join(baseRoot, HELPER_APP_NAME),
-      join(baseRoot, "preview", HELPER_APP_NAME),
-    ];
-    const appPath = candidates.find((candidate) => existsSync(candidate));
-=======
     let appPath: string | null;
     try {
       appPath = await resolveStandaloneStatusLaunchAppPath({
@@ -2126,7 +2070,6 @@ export function createLocalServices(options: {
       });
       return null;
     }
->>>>>>> zai-org/main
     if (!appPath) return null;
     // Helper 启动参数统一由 buildHelperOpenArgs 构造，避免多处手写导致漏传或漂移。
     // 设置页只读权限探测不承载 PiP，不传 --launcher-pid 和 --pip-mode；
@@ -2746,14 +2689,6 @@ export function createLocalServices(options: {
     settingService,
     cuaProductMcpServerResolver,
   });
-<<<<<<< HEAD
-  // Bot Channel：远端 workspace 桥（main ↔ host）。parentPort 缺省即本地形态。
-  const botRemoteWorkspaceService = createBotRemoteWorkspaceService({
-    parentPort: options?.parentPort,
-    settingService,
-    credentialService,
-  });
-=======
   const botsRepo = new BotsRepo();
   const botLog = createServiceLogger("bots");
   const botRemoteWorkspaceService = options.resolveBotProjectConnection
@@ -2787,7 +2722,8 @@ export function createLocalServices(options: {
         warn: (message) => botLog.warn(message),
       })
     : undefined;
->>>>>>> zai-org/main
+        // CE 边界保留：desktop-attached 远端不抢跑 bot 轮询、runtime lock 与模型候选缓存，
+        // 这些后台任务属于本地 host；也是「未配置 bot 时零出网」之外的第二道边界。
   const oauthService = createOAuthService(credentialService, {
     apiClient,
     onProviderLogout: handleOAuthProviderLogout,
@@ -2911,17 +2847,11 @@ export function createLocalServices(options: {
         broadcastService,
         settingService,
         modelSelectionService: providerRuntime.modelSelection,
-<<<<<<< HEAD
-        remoteWorkspaceService: botRemoteWorkspaceService,
-        // 与上游一致：desktop-attached 远端不抢跑 bot 轮询、runtime lock 与模型候选缓存，
-        // 这些后台任务属于本地 host。这也是「未配置 bot 时零出网」之外的第二道边界。
-=======
         remoteWorkspaceService: botRemoteWorkspaceService
           ? { ...botRemoteWorkspaceService, resolveWorkspace: options?.resolveBotRemoteWorkspace }
           : undefined,
         // 远端与本地 Bot 都读取所属 Environment 的 Model Selection View。
         // 远端启动期不再轮询旧 Preset，避免重新制造一套模型候选事实。
->>>>>>> zai-org/main
         runStartupBackgroundTasks: !isDesktopAttachedRemote,
       }),
     )
@@ -3042,8 +2972,6 @@ export function createLocalServices(options: {
         return offPeakTaskService;
       })(),
     )
-<<<<<<< HEAD
-=======
     .register(
       IHighspeedCardService,
       (() => {
@@ -3141,7 +3069,6 @@ export function createLocalServices(options: {
         });
       })(),
     )
->>>>>>> zai-org/main
     .register(ISkillsService, skillsService)
     .register(ISkillSyncService, createSkillSyncService())
     .register(IMcpSyncService, mcpSyncService)
@@ -3346,8 +3273,6 @@ export async function disposeServiceResourcesAndWait(services: ServiceCollection
     ?.disposeAndWait()
     .catch(() => {});
 }
-<<<<<<< HEAD
-=======
 
 /** 所有应用入口在开放 RPC / 调度器前等待；失败不启动业务写者。 */
 export async function migrateApplicationStorage(
@@ -3421,4 +3346,3 @@ export async function createServerHostServices(options: {
 
 export { scopeConversationShareServiceForAttachment } from "./conversation-share/conversationShareConnectionScope.js";
 export { localRuntimeNetworkCapture } from "./zcode-agent/localRuntimeNetworkCapture.js";
->>>>>>> zai-org/main

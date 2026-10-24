@@ -198,17 +198,10 @@ export function WorkflowCardHeader({
           min-content，而 truncate 的 white-space:nowrap 让细节串的 min-content 就是整串字宽
           —— overflow:hidden 与子元素的 min-w-0 都不会把它算小。不写簇的 min-w-0，簇的地板
           就是「整串细节 + 按钮」，它一个像素都不会缩，按钮照样被顶出卡外（本次修复的起因）。
-<<<<<<< HEAD
-          浏览器实测（本仓 1280x800 Chromium，卡宽逐档收窄，实测脚本在 .reverse/90-upstream-v3143/overflow-harness/ 下）：
-          修复前零溢出的下限是 480px（440px 时两个按钮一起右移 17px）；修复后 220px 仍零溢出，
-          带待答问题芯片时 280px —— 芯片也是 shrink-0，它把地板整体抬高。 */}
-      <span className="flex min-w-0 items-center gap-2">
-=======
           浏览器实测（卡宽逐档收窄）：修复前 520px 起按钮就出界；修复后 290px 以上零溢出，
           带待答问题芯片时 380px——芯片也是 shrink-0，它把地板整体抬高。
           ml-auto 只在右簇换行到独立行时生效（分享页窄屏）：名称是 flex-1，同行时它没有作用。 */}
       <span className="ml-auto flex min-w-0 items-center gap-2">
->>>>>>> zai-org/main
         {leading}
         {status}
         {detail === undefined || detail.length === 0 ? null : (

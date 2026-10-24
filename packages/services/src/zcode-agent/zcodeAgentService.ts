@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 import { isAuxiliarySessionKind } from "@zcode/shared";
 import {
   pluginUiToolResultNotificationSchema,
@@ -25,7 +23,6 @@ import {
   type ChannelReplyHostRequest,
   type ChannelReplyResult,
 } from "@zcode/shared";
->>>>>>> zai-org/main
 import { requestPluginReferenceCatalog } from "#src/zcode-agent/pluginReferenceCatalogRequest.js";
 import {
   localTtftFactsSchema,
@@ -152,15 +149,12 @@ import {
   zcodeWorkspaceUpdateOffPeakToolPolicyResultSchema,
   zcodeWorkspaceUpdateDynamicWorkflowPolicyResultSchema,
   type DynamicWorkflowClientConfig,
-<<<<<<< HEAD
-=======
   type DynamicWorkflowMode,
   applyDynamicWorkflowUserMode,
   createDynamicWorkflowClientConfig,
   DEFAULT_DYNAMIC_WORKFLOW_MODE,
   isDynamicWorkflowModeEnabled,
   normalizeDynamicWorkflowMode,
->>>>>>> zai-org/main
   type AgentLaneResourceSample,
   type ProcessResourceCliLane,
   type ZCodeMcpTelemetryEvent,
@@ -2521,8 +2515,6 @@ export function createZCodeAgentService(
                     memoryEnabled: false,
                   },
                 );
-<<<<<<< HEAD
-=======
                 if (
                   parsed.data.scope === "runtime-materialization" &&
                   options?.resolveSessionDirectories
@@ -2538,7 +2530,6 @@ export function createZCodeAgentService(
                     workspace.workspaceIdentity &&
                     isRemoteWorkspaceIdentity(workspace.workspaceIdentity)
                   );
->>>>>>> zai-org/main
               } catch (error) {
                 await client.respondError(request.id, {
                   code: -32603,
@@ -3746,9 +3737,6 @@ export function createZCodeAgentService(
         return false;
       }
     })();
-<<<<<<< HEAD
-    return dynamicWorkflowGate;
-=======
     return dynamicWorkflowOffer;
   }
 
@@ -3829,7 +3817,6 @@ export function createZCodeAgentService(
     return isDynamicWorkflowModeEnabled(mode)
       ? { dynamicWorkflowEnabled: true, dynamicWorkflowMode: mode }
       : { dynamicWorkflowEnabled: false };
->>>>>>> zai-org/main
   }
 
   async function buildConversationCommandEnvelope(
@@ -3837,16 +3824,8 @@ export function createZCodeAgentService(
   ): Promise<CommandEnvelope> {
     const envelope = params.envelope;
     if (envelope.type === "createSession") {
-<<<<<<< HEAD
-      // V4 createSession 绕过 legacy session/create 的参数构造，工具面 flag 必须在
-      // 信封处同源注入；门禁 false 时不写字段（缺省即 fail-closed，与 legacy 一致）。
-      const dynamicWorkflowEnabled = await resolveDynamicWorkflowGate();
-      const offPeakToolEnabled = isOffPeakToolSupported(params);
-      if (!offPeakToolEnabled && !dynamicWorkflowEnabled) return envelope;
-=======
       const { dynamicWorkflowEnabled, dynamicWorkflowMode } =
         await resolveDynamicWorkflowSessionFlags();
->>>>>>> zai-org/main
       const payload = commandPayloadSchemas.createSession.parse(envelope.payload);
       const sessionId =
         params.projectId !== undefined || options?.prepareSessionCreation
@@ -3881,12 +3860,6 @@ export function createZCodeAgentService(
           ...(sessionId ? { sessionId } : {}),
           ...(additionalDirectories !== undefined ? { additionalDirectories } : {}),
           ...(offPeakToolEnabled ? { offPeakToolEnabled: true } : {}),
-<<<<<<< HEAD
-          // 动态工作流灰度：V4 createSession 是桌面新会话的实际创建路径，不透传则九个工具
-          // 永不注册。
-          ...(dynamicWorkflowEnabled ? { dynamicWorkflowEnabled: true } : {}),
-=======
->>>>>>> zai-org/main
         },
       };
     }
@@ -5901,13 +5874,10 @@ export function createZCodeAgentService(
           compression: "none" as const,
           workspaceHookReview: true,
           independentPlanState: true,
-<<<<<<< HEAD
-=======
           // 与 connection scope 的 hello 同一份能力集：直连 base service 的宿主内部消费者
           // 也能收到 `workflowRun.*` 增量（是否真收由它自己的 clientHello 决定）。
           workflowRunDeltas: true,
           historyFirst: true,
->>>>>>> zai-org/main
         },
         auth: {},
       };
@@ -6020,9 +5990,6 @@ export function createZCodeAgentService(
           topic,
           connectionId: connection.connectionId,
           clientMode: connection.clientMode,
-<<<<<<< HEAD
-          // 冷订阅过去只传 sessionId，CLI 只能从历史 session.path 反推
-=======
           // 与 clientMode 同族的可信位（10 §3.1）：只由这里从连接的 clientHello 注入。
           // 缺席即 CLI 按旧消费者发整键 patch，并先裁到旧界——重订阅、recovery、手机
           // relay attachment 都走这一条 subscribe，所以这一处写全即可。
@@ -6036,7 +6003,6 @@ export function createZCodeAgentService(
               }
             : {}),
           // Bug 根因：冷订阅过去只传 sessionId，CLI 只能从历史 session.path 反推
->>>>>>> zai-org/main
           // workspace 身份；该路径已可能被 path.resolve 改写。当前 attachment 才是权威来源。
           workspace: buildWorkspaceRef(params),
           ...(resumeThoughtLevel ? { resumeThoughtLevel } : {}),

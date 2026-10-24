@@ -585,15 +585,12 @@ const enUS: Record<string, string> = {
   "conversationShare.error.limitExceeded":
     "The selected conversation or its files exceed the sharing limit. Select fewer conversations.",
   "conversationShare.error.rateLimited": "Too many share attempts. Wait a moment, then try again.",
-<<<<<<< HEAD
-=======
   "conversationShare.error.invalidContractHttp":
     "The share service returned HTTP {status}. Retry, and provide the error details if the problem persists.",
   "conversationShare.error.invalidContract":
     "ZCode could not read the share service’s response, so sharing could not finish. Try again later. If it still fails, copy the request ID from Error details and contact support.",
   "conversationShare.issue.clientRequestIdLabel": "Client request ID",
   "conversationShare.issue.codeLabel": "Error code",
->>>>>>> zai-org/main
   "conversationShare.error.network":
     "Could not reach the sharing service. Check your connection and try again.",
   "conversationShare.error.safetyCheckTimeout":
@@ -703,11 +700,8 @@ const enUS: Record<string, string> = {
   "conversationShare.issue.invalidServiceResponse":
     "The share service returned an unreadable response. Try again later.",
   "conversationShare.issue.unknown":
-<<<<<<< HEAD
-    "Share failed during {phase}; the server returned no actionable details. Try again later.",
-=======
     "Sharing failed; the cause could not be determined. Retry, and provide the error details if it persists.",
->>>>>>> zai-org/main
+    "Share failed during {phase}; the server returned no actionable details. Try again later.",
   "conversationShare.issue.details": "Error details",
   "conversationShare.issue.requestIdLabel": "Server request ID",
   "conversationShare.issue.requestId": "Server request ID: {requestId}",
@@ -918,11 +912,6 @@ const enUS: Record<string, string> = {
   "confirmDialog.taskArchiveTitle": "Archive this task?",
   "confirmDialog.taskArchiveDescription":
     "Task “{taskTitle}” will move to the archive list and can still be restored later.",
-<<<<<<< HEAD
-  "confirmDialog.projectRemoveTitle": "Remove this project?",
-  "confirmDialog.projectRemoveDescription":
-    "Project “{projectName}” will be removed from the sidebar, but files on disk will remain untouched.",
-=======
   "bots.title": "Bots",
   "bots.description": "Connect external chats and webhooks to ZCode bots.",
   "bots.listTitle": "Bots",
@@ -1228,7 +1217,9 @@ const enUS: Record<string, string> = {
   "bots.unbindSuccess": "Bot unbound",
   "bots.unbindFailed": "Failed to unbind bot: {error}",
   "bots.deleteFailed": "Failed to delete bot: {error}",
->>>>>>> zai-org/main
+  "confirmDialog.projectRemoveTitle": "Remove this project?",
+  "confirmDialog.projectRemoveDescription":
+    "Project “{projectName}” will be removed from the sidebar, but files on disk will remain untouched.",
 
   // Welcome / Login
   "welcome.title": "Welcome to ZCode",
@@ -1298,8 +1289,6 @@ const enUS: Record<string, string> = {
   "app.workspace": "Workspace",
   "browser.title": "Browser",
   "browser.addressPlaceholder": "Enter a URL and press Enter",
-<<<<<<< HEAD
-=======
   "browser.permission.promptAriaLabel": "Site permission request",
   "browser.permission.wantsToUse": "wants to use",
   "browser.permission.siteInfo": "View site information",
@@ -1348,7 +1337,6 @@ const enUS: Record<string, string> = {
   "browser.permission.stateAllow": "Allow",
   "browser.permission.stateDeny": "Block",
   "browser.permission.stateAsk": "Ask",
->>>>>>> zai-org/main
   "browser.back": "Back",
   "browser.forward": "Forward",
   "browser.reload": "Refresh",
@@ -1473,8 +1461,6 @@ const enUS: Record<string, string> = {
   "sidePane.openFile.category": "Files",
   "sidePane.openFile.emptyQuery": "Type to search files",
   "sidePane.review": "Review",
-<<<<<<< HEAD
-=======
   "pluginUi.loading": "Loading plugin UI...",
   "pluginUi.loadFailed": "Plugin UI failed to load.",
   "pluginUi.retry": "Reload",
@@ -1511,7 +1497,6 @@ const enUS: Record<string, string> = {
   "pluginUi.modelContext.label": "Plugin context",
   "pluginUi.modelContext.remove": "Remove plugin context",
   "sidePane.pluginUi": "Plugin",
->>>>>>> zai-org/main
   "whiteboard.title": "Whiteboard",
   "whiteboard.defaultName": "Whiteboard",
   "whiteboard.nameLabel": "Whiteboard name",
@@ -2148,23 +2133,6 @@ const enUS: Record<string, string> = {
   "settings.source.pending": "Not connected",
   "settings.source.pendingDescription": "Device details update automatically after connecting",
   "workspaceSidebar.connecting": "Connecting",
-<<<<<<< HEAD
-  "workspaceRuntime.starting.title": "Starting workspace…",
-  "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
-  "workspaceRuntime.failed.reasonUnavailable":
-    "No specific reason was reported. Retry once; check logs if it keeps failing.",
-  "workspaceRuntime.failed.retry": "Retry",
-  "workspaceRuntime.notStarted.title":
-    "Not started (opening starts it; other workspaces are unaffected)",
-  "workspaceRuntime.notStarted.persistedSessions":
-    "{count} sessions on record, last active {activity} ago",
-  "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
-  "workspaceRuntime.notStarted.open": "Open and start",
-  "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",
-  "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
-  "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
-  "workspaceSidebar.registry.retry": "Reload",
-=======
   "workspaceSidebar.recoveringAutomatic": "Recovering connection automatically",
   "workspaceSidebar.recoveringAutomaticShort": "Recovering {attempt}/{limit}",
   "workspaceSidebar.manageDevice": "Manage in settings",
@@ -2172,7 +2140,21 @@ const enUS: Record<string, string> = {
   "workspaceSidebar.recoveringAutomaticAttempt":
     "Recovering connection automatically ({attempt}/{limit})",
   "workspaceSidebar.reconnectingManual": "Reconnecting manually",
->>>>>>> zai-org/main
+  "workspaceRuntime.starting.title": "Starting workspace…",
+  "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
+  "workspaceRuntime.failed.reasonUnavailable":
+  "workspaceRuntime.failed.retry": "Retry",
+  "workspaceRuntime.notStarted.title":
+  "workspaceRuntime.notStarted.persistedSessions":
+  "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
+  "workspaceRuntime.notStarted.open": "Open and start",
+  "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",
+  "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
+  "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
+  "workspaceSidebar.registry.retry": "Reload",
+    "No specific reason was reported. Retry once; check logs if it keeps failing.",
+    "Not started (opening starts it; other workspaces are unaffected)",
+    "{count} sessions on record, last active {activity} ago",
   "workspaceSidebar.notConnected": "Not connected",
   "remote.error.sourceServerInstallRequired":
     "The remote device is not installed. Confirm installation to continue.",
@@ -2495,20 +2477,6 @@ const enUS: Record<string, string> = {
   "remote.manage": "Manage",
   "remote.settingsStepTitle": "New connection",
   "remote.history.empty": "No matching saved connections",
-<<<<<<< HEAD
-  "remote.connectingStepTitle": "Connecting",
-  "remote.connectingStepDescription":
-    "We are establishing the {method} connection. You can follow the live setup progress here.",
-  "remote.title": "Connect remote environment",
-  "remote.description":
-    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
-  "remote.step.connect": "Connect",
-  "remote.step.selectDirectory": "Choose directory",
-  "remote.selectDirectoryTitle": "Choose remote directory",
-  "remote.selectDirectoryDescription":
-    "Choose which directory to open in this window after the remote connection is ready.",
-  "remote.backToConnection": "Back to connection settings",
-=======
   "remote.connectingStepTitle": "Establish link",
   "remote.connectingStepDescription": "Connecting through {method}…",
   "remote.connectingSubtitleConnected": "Connected to {device} · ready to choose a directory",
@@ -2678,22 +2646,25 @@ const enUS: Record<string, string> = {
   "remote.selectDirectoryTitle": "Choose directory",
   "remote.selectDirectoryDescription": "Choose a directory on {method} as the workspace.",
   "remote.backToConnection": "Back to configuration",
->>>>>>> zai-org/main
+  "remote.title": "Connect remote environment",
+  "remote.description":
+  "remote.step.connect": "Connect",
+  "remote.step.selectDirectory": "Choose directory",
+    "We are establishing the {method} connection. You can follow the live setup progress here.",
+    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
+    "Choose which directory to open in this window after the remote connection is ready.",
   "remote.selectedMethod": "Selected method",
   "remote.methods": "Connection method",
   "remote.connectionType": "Connection type",
   "remote.kind.ssh": "SSH",
   "remote.kind.wsl": "WSL",
   "remote.kind.docker": "Docker",
-<<<<<<< HEAD
-  "remote.kind.ssh.wizardDescription": "Remote host",
-  "remote.kind.wsl.wizardDescription": "Windows Subsystem for Linux",
-  "remote.kind.docker.wizardDescription": "Local container",
-=======
   "remote.kind.server.note":
     "Server (direct connection to a running ZCode service) is shown only in development builds.",
   "remote.addAndConnect": "Add and connect",
->>>>>>> zai-org/main
+  "remote.kind.ssh.wizardDescription": "Remote host",
+  "remote.kind.wsl.wizardDescription": "Windows Subsystem for Linux",
+  "remote.kind.docker.wizardDescription": "Local container",
   "remote.connect": "Connect",
   "remote.connecting": "Connecting...",
   "remote.minimize": "Collapse — connection will continue",
@@ -2920,10 +2891,6 @@ const enUS: Record<string, string> = {
   "remote.log.requestingSession": "Requesting the host process to create a remote session...",
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
-<<<<<<< HEAD
-  "wsl.description":
-    "Connect to the default distro, or choose a specific distro installed on this device.",
-=======
   "server.description": "Connect to an already running ZCode server.",
   "server.url": "Server URL",
   "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
@@ -2937,7 +2904,8 @@ const enUS: Record<string, string> = {
     "Leave empty to choose a directory on the server after connecting.",
   "server.validation.urlRequired": "Server URL is required",
   "server.validation.invalidUrl": "Server URL is invalid",
->>>>>>> zai-org/main
+  "wsl.description":
+    "Connect to the default distro, or choose a specific distro installed on this device.",
   "wsl.distro": "Distribution",
   "wsl.defaultDistro": "Default distribution",
   "wsl.user": "Linux user",
@@ -5294,11 +5262,8 @@ const enUS: Record<string, string> = {
   "settings.plugins.marketplacePlugins.install": "Install",
   "settings.plugins.marketplacePlugins.installed": "Installed",
   "settings.plugins.marketplace.searchPlaceholder": "Search Plugins, Skills, MCPs...",
-<<<<<<< HEAD
-=======
   "settings.plugins.marketplace.recommendTitle": "Recommend",
   "settings.plugins.marketplace.claudeCodePlugins": "Claude Code Plugins",
->>>>>>> zai-org/main
   "settings.plugins.marketplace.catalogLoading": "Loading plugins…",
   "settings.plugins.marketplace.sourceInfo.label": "Discover source information",
   "settings.plugins.marketplace.sourceInfo.title": "Discover uses GitHub marketplaces",
@@ -6569,14 +6534,10 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.stall.body":
     "No model request in this run has succeeded for {minutes} min. It is still running and retrying with backoff; stop it from the run card if you no longer need it.",
   "chat.backgroundResult.workflow.stall.reason": "Retry reason",
-<<<<<<< HEAD
-  "chat.backgroundResult.workflow.stall.cap": "Current fan-out",
-=======
   "chat.backgroundResult.workflow.stall.cap": "Max concurrency",
   // 主代理闲着、run 还欠着决定时的提醒：计数词复用 digest.question(s) / card.hole(s)。
   "chat.backgroundResult.workflow.blocked": "Workflow waiting on the agent",
   "chat.backgroundResult.workflow.blocked.openFor": "open for {minutes} min",
->>>>>>> zai-org/main
   "chat.backgroundResult.workflow.waiting": "Subagent is waiting for an answer",
   "chat.backgroundResult.workflow.answered": "Subagent question answered",
   "chat.backgroundResult.workflow.asked": "Subagent asked a question",

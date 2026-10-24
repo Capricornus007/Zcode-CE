@@ -7,15 +7,10 @@ import { runCommand } from "./spawn-command.mjs";
 
 // adapters tsc 在内存受限机器上会 OOM（exit 134），给整条构建链路提高堆上限。
 process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS ? process.env.NODE_OPTIONS + " " : ""}--max-old-space-size=8192`;
-<<<<<<< HEAD
 import {
   stageBuiltinProviderConfig,
   resolveBuiltinProviderBuildEnvironment,
 } from "./builtin-provider-config.mjs";
-=======
-import { stageDevCuaPluginRuntime } from "./stage-dev-cua-plugin-runtime.mjs";
-import { resolveBuiltinProviderBuildEnvironment } from "./builtin-provider-config.mjs";
->>>>>>> zai-org/main
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const useTurboBuild = process.env.ZCODE_DESKTOP_AGENT_BUILD_MODE === "turbo";
@@ -122,7 +117,6 @@ function stageDevAgentBundle() {
   });
 }
 
-<<<<<<< HEAD
 /**
  * 暂存 dev 运行链真正会读的构建期载荷（office 三库 bundle + Computer Use 驱动）。
  *
@@ -156,11 +150,6 @@ async function runBootstrapWithRemoteBuild() {
     return;
   }
 
-=======
-function runBootstrapWithRemoteBuild() {
-  // Bug 原因：bootstrap 过去把 dist/zcode.cjs 存在当作本轮已构建，源码变化后仍会
-  // 把上一代 Agent 放进 Source Server archive。bootstrap 成功必须代表本轮真实重建。
->>>>>>> zai-org/main
   for (const { packageDir, prepareScript } of cliWorkspaceBuilds) {
     // bootstrap:with-remote 会在 remote assets 阶段构建 agent bundle。
     // 通过 pnpm 逐包执行 tsc 时会再走 shim/env node 层，低内存本地环境里容易长时间卡住。

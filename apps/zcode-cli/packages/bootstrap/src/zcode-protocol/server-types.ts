@@ -15,11 +15,8 @@ import type { WorkspaceHookPolicyProvider } from "@zcode/core";
 import type { AccountProviderConfigSnapshot } from "@zcode/provider";
 import {
   zcodeProtocolErrorCodes,
-<<<<<<< HEAD
-  type DangerousCommandPolicy,
-=======
   type AppToolSearchMode,
->>>>>>> zai-org/main
+  type DangerousCommandPolicy,
   type ZCodeAutomationBotDeliveryTarget,
   type ZCodeDeliveryKind,
   type ModelSelection,
@@ -89,15 +86,12 @@ export interface ZCodeProtocolSessionRecord {
   app: ZCodeApp;
   memoryEnabled: boolean;
   nativeSearchEnhancementsEnabled: boolean;
-<<<<<<< HEAD
+  toolSearchMode: AppToolSearchMode;
   /**
    * 创建/恢复时冻结的危险命令策略；子会话 inherit 时原样继承。
    * 用 `DangerousCommandPolicy` 的可选字段语义（缺席即严格），不用 null 表示"没配置"。
    */
   dangerousCommandPolicy?: DangerousCommandPolicy;
-=======
-  toolSearchMode: AppToolSearchMode;
->>>>>>> zai-org/main
   modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
   createdAt: number;
   deliveryKind?: ZCodeDeliveryKind;

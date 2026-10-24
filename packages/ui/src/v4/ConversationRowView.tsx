@@ -17,6 +17,7 @@ import {
   TrendingUpDownIcon,
   XIcon,
 } from "lucide-react";
+import { parseAutomationRunId } from "@zcode/shared";
 import {
   TID_V4_EDIT,
   TID_V4_EDIT_ATTACHMENT_REMOVE,
@@ -30,7 +31,7 @@ import {
   TID_V4_ROW,
   TID_V4_ROW_ATTACHMENTS,
   testId,
-} from "@zcode/shared";
+} from "@zcode/shared/test-ids";
 import type {
   AttachmentRef,
   ArtifactRow,

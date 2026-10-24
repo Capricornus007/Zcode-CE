@@ -1,4 +1,10 @@
+<<<<<<< HEAD
+=======
+import { subagentProfilesFromSnapshot } from "../runtime-subagents/index.js";
+import { CliDefaultSelection } from "./cli-default-selection.js";
+>>>>>>> zai-org/main
 import { isAbsolute, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import {
   createInMemorySessionEventStore,
   createNodeToolArtifactStore,
@@ -211,6 +217,17 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       storageRoot,
       workingDirectory,
     });
+<<<<<<< HEAD
+=======
+    const zcodeSubagentProfileOutcome = hostSubagentSnapshot
+      ? subagentProfilesFromSnapshot(hostSubagentSnapshot)
+      : await loadZCodeAgentProfiles({
+          logger,
+          storageRoot,
+          workingDirectory,
+          additionalDirectories: options.additionalDirectories,
+        });
+>>>>>>> zai-org/main
     const zcodeSubagentProfiles = zcodeSubagentProfileOutcome.profiles;
     const pluginOutcome = resolveStartupPlugins({
       cliStorageRoot,
@@ -295,6 +312,10 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     const pluginReferenceCatalog = buildPluginReferenceCatalog(pluginOutcome.plugins);
     runtimeConfig.pluginReferenceCatalog = pluginReferenceCatalog;
     let runtime: AgentRuntime | undefined;
+    const cliDefaultSelection =
+      options.modelSelectionMode === "cli-default"
+        ? new CliDefaultSelection(runtimeConfig.modelSelection)
+        : undefined;
     const workspaceHookRuntimeSecurity = createWorkspaceHookRuntimeSecurity({
       appVersion,
       logger,
@@ -400,6 +421,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           caCertFile: configResult.config.network.caCertFile,
         },
         outputRootDir: join(storageRoot, "cli", "exec"),
+        bashOutputTempDir: tmpdir(),
         processEnv: options.env ?? process.env,
       });
     const ownsExecutionPort = options.executionPort === undefined;
@@ -469,6 +491,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       // 只查模型是否存在会把缺档位/已删除的选择重新绑定进 Runtime，
       // 抵消了未绑定初始化。历史恢复不要求可执行模型，只有完整选择可以绑定。
       getRuntime().setSessionModelSelection(validation?.ok ? selection : undefined);
+      cliDefaultSelection?.set(validation?.ok ? selection : undefined);
       // 恢复结果是保存意图，不是执行绑定。过去在这里置空/删档位，Host 的
       // Selection View 就再也拿不到原意图，账号切换和配置恢复后也无法重新解析。
       return selection;
@@ -745,6 +768,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         configResult.config.features.skill && configResult.config.skills.enabled
           ? (options.skillPort ??
             createNodeSkillAdapter({
+              additionalDirectories: options.additionalDirectories,
               extraRoots: configResult.config.skills.roots,
               extraResolvedRoots: [...pluginOutcome.skillRoots, ...bundledSkillRoots],
               disabledPaths: [
@@ -764,6 +788,9 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           : undefined,
       mcpPort,
       eventSink: options.eventSink,
+      onOffPeakLifecycleEvent: options.onOffPeakLifecycleEvent
+        ? (event) => options.onOffPeakLifecycleEvent!({ ...event, sessionId })
+        : undefined,
       modelFactory,
       modelIoDir,
       providerRuntimeHeadersPort: options.providerRuntimeHeadersPort,
@@ -793,6 +820,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     });
     scheduleStartupLogRetentionCleanup(loggerFactory, logger);
     const inputFacade = createInputFacade({
+      cliDefaultSelection,
       artifactStore,
       customCommandPromptResolver: async (text, resolverOptions) => {
         const builtinPrompt = resolveZCodeBuiltinPromptCommand(text, {
@@ -805,6 +833,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           return builtinPrompt;
         }
         return await resolveZCodeCustomCommandPrompt(text, {
+<<<<<<< HEAD
           // 动态工作流灰度关闭时 `/workflow` 不得展开成插件提示词。目录侧已经
           // 把它从 `/` 面板剔除，但用户仍可手打命令名，两条路径必须给出同一个结论。
           // 缺席（TUI、workflow_child，以及未显式关闭的 headless）不设门禁，
@@ -812,6 +841,9 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           ...(runtimeConfig.dynamicWorkflowEnabled === false
             ? { disabledCommandNames: DYNAMIC_WORKFLOW_GATED_COMMAND_NAMES }
             : {}),
+=======
+          additionalDirectories: options.additionalDirectories,
+>>>>>>> zai-org/main
           env: options.env,
           executionPort,
           logger,
@@ -854,6 +886,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       workingDirectory,
     });
     const sessionFacade = createSessionFacade({
+      cliDefaultSelection,
       // App 关闭时停下本会话拥有的 dwf run：
       // 引擎活在本 App 的闭包里，关掉 App 而不停它，journal 行会停在 running 等下一次孤儿收敛。
       ...(dynamicWorkflowRunPort === undefined

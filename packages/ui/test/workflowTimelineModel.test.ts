@@ -503,6 +503,7 @@ test("C. runIndex：节点扫描次数与卡数无关（确定性判据）", () 
   assert.ok(many <= 64, "扫描趟数应远小于卡数×节点数，实测 " + many);
 });
 
+<<<<<<< HEAD
 test("C. 反向：旧实现的扫描趟数确实随卡数放大（证明上一条的判据有牙齿）", () => {
   // 用与上面同一个替身量**旧算法**：它必须随卡数放大，否则上一条断言量错了对象。
   const measure = (cardCount: number, perCard: number): number => {
@@ -519,4 +520,29 @@ test("C. 反向：旧实现的扫描趟数确实随卡数放大（证明上一�
   const few = measure(4, 2);
   const many = measure(32, 2);
   assert.ok(many > few * 4, "旧实现的扫描趟数本应随卡数放大（4卡=" + few + "，32卡=" + many + "）");
+=======
+  it("分道按空各算各的：两条轨道各有一个循环时，两条弧都贴着自己的轨道", () => {
+    const twoLoops = bandGraph(
+      [undefined, undefined, [1], [2], [3], undefined],
+      [
+        [0, 1],
+        [3, 1],
+        [4, 2],
+        [3, 5],
+        [4, 5],
+      ],
+    );
+    const model = buildWorkflowTimeline(twoLoops, undefined);
+    expect(model.bands[0]!.tracks.map((track) => track.stations)).toEqual([
+      [1, 3],
+      [2, 4],
+    ]);
+    // 两条弧在 x 上相交（[1,3] 与 [2,4]），但它们在不同的空里，各自都是最低的一道。
+    expect(model.arcs).toEqual([
+      { air: 0, from: 3, ink: "faint", lane: 0, to: 1 },
+      { air: 1, from: 4, ink: "faint", lane: 0, to: 2 },
+    ]);
+    expect(arcLaneCount(model.arcs.filter((arc) => arc.air === 0))).toBe(1);
+  });
+>>>>>>> zai-org/main
 });

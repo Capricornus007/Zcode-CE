@@ -1,10 +1,7 @@
-/* eslint-disable max-lines -- 发行包 staging 流程按步骤线性组装，oxfmt 换行后略超 400 行，拆分会增加跨步骤状态同步。 */
-import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
-import { access, chmod, cp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
-import { builtinModules } from "node:module";
+import { access, chmod, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { createRuntimeManifest, type ServerTarget } from "../runtime/manifest.js";
+<<<<<<< HEAD
 import { assertPackagedNodePtyPayloadVerified } from "../../../../packages/desktop/scripts/node-pty-package-assets.mjs";
 import { isTarCommand, resolveHostTarCommand } from "./tarCommand.js";
 
@@ -147,6 +144,20 @@ function isTargetSpecificPackage(packageName: string, target: ServerTarget): boo
   if (!packageName.startsWith("@mbears/opentui-core-")) return true;
   return packageName === `@mbears/opentui-core-${target}`;
 }
+=======
+import {
+  collectBareModuleSpecifiers,
+  copyPackageDir,
+  ensureNodePtyPrebuild,
+  isNodePtyRuntimePath,
+  isTargetSpecificPackage,
+  pruneKoffiRuntime,
+  resolveProductionPackageClosure,
+} from "./stageDependencies.js";
+import { createComponentArchive, hashPaths, runPackagingCommand } from "./stageArchives.js";
+
+export { collectBareModuleSpecifiers, isNodePtyRuntimePath, resolveProductionPackageClosure };
+>>>>>>> zai-org/main
 
 interface StageOptions {
   target: ServerTarget;
@@ -155,6 +166,8 @@ interface StageOptions {
   distDir: string;
   /** 既有 CLI/Agent bundle（zcode.cjs，自包含 CJS） */
   agentBundlePath: string;
+  /** CLI 内置技能包；不依赖官方插件缓存。 */
+  bundledSkillsDir: string;
   /** 已准备好的目标平台 Node 二进制 */
   nodeBinaryPath: string;
   /** 构建入口从统一合规 owner 核验后传入；组件组装不能自行拼凑许可。 */
@@ -171,6 +184,8 @@ interface StageOptions {
   officialPluginsDir?: string;
   /** 是否同时产出 tar.gz（默认 true） */
   archive?: boolean;
+  /** 是否生成独立组件归档（默认 true）；关闭时仍保留组件内容哈希和大小。 */
+  componentArchives?: boolean;
 }
 
 interface StagedRelease {
@@ -193,6 +208,7 @@ const WINDOWS_LAUNCHER = [
   "",
 ].join("\r\n");
 
+<<<<<<< HEAD
 async function copyPackageDir(
   sourceDir: string,
   targetDir: string,
@@ -270,6 +286,8 @@ async function hashPaths(
   return { sha256: hash.digest("hex"), sizeBytes };
 }
 
+=======
+>>>>>>> zai-org/main
 async function copyDirectoryIfPresent(
   sourceDir: string | undefined,
   targetDir: string,
@@ -280,19 +298,88 @@ async function copyDirectoryIfPresent(
   } catch {
     return [];
   }
+<<<<<<< HEAD
   const names = (
     await (await import("node:fs/promises")).readdir(sourceDir, { withFileTypes: true })
   )
+=======
+  const candidates = (await readdir(sourceDir, { withFileTypes: true }))
+>>>>>>> zai-org/main
     .filter((entry) => entry.isDirectory() && entry.name.endsWith("-plugin"))
     .map((entry) => entry.name)
     .filter((name) => name !== "superpowers-plugin")
     .sort();
+  // Bug 原因：只按 "-plugin" 后缀识别官方插件，会把 checkout 残留的僵尸目录也算进去。CI 用
+  // GIT_CLEAN_FLAGS "-e node_modules/" 跨 job 保留 node_modules，别的分支（例如把 zcode-cua-plugin
+  // 改名为 computer-use-plugin 的分支）install 过的插件目录切回来后只剩 node_modules；tracked 文件
+  // 全没了，但目录还在。官方插件的 package.json 都是 tracked 文件，以它是否存在判定"该目录属于
+  // 当前 checkout"；通过判定的插件仍走下方 fail-closed 校验，不放松对残缺插件的拒绝。
+  const names: string[] = [];
+  for (const name of candidates) {
+    try {
+      await access(join(sourceDir, name, "package.json"));
+      names.push(name);
+    } catch {
+      // 无 package.json ⇒ 不是当前 checkout 的 workspace 包，跳过。
+    }
+  }
   for (const name of names) {
-    await copyPackageDir(join(sourceDir, name), join(targetDir, name));
+    const stagedDir = join(targetDir, name);
+    await copyPackageDir(join(sourceDir, name), stagedDir);
+    await assertOfficialPluginRuntime(stagedDir, name);
   }
   return names.map((name) => name.replace(/-plugin$/u, ""));
 }
 
+<<<<<<< HEAD
+=======
+const PLUGIN_ROOT_PLACEHOLDER_PREFIX = "${ZCODE_PLUGIN_ROOT}/";
+
+/**
+ * Bug 原因：legacy prepare-prebuilds.mjs 曾显式构建并断言 android-emulator / ios-simulator /
+ * browser-use 的 `dist/mcp/server.js`；切到 stageRelease 后只剩整目录复制，而插件 dist 被
+ * gitignore，干净 CI 工作区会把只有 plugin.json 与 skills、却没有 MCP 入口的插件静默打进
+ * archive，远端启用插件后 MCP server 启动时才报找不到文件。这里以 plugin.json 声明为事实源做
+ * fail-closed 校验：manifest 缺失，或 mcpServers 的 command/args 引用的 `${ZCODE_PLUGIN_ROOT}/...`
+ * 文件不在 staged 目录里，staging 直接失败，而不是产出残缺 archive。
+ */
+async function assertOfficialPluginRuntime(stagedDir: string, name: string): Promise<void> {
+  const manifestPath = join(stagedDir, ".zcode-plugin", "plugin.json");
+  let manifest: {
+    mcpServers?: Record<string, { command?: unknown; args?: unknown } | undefined>;
+  };
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, "utf8")) as typeof manifest;
+  } catch (error) {
+    throw new Error(`Official plugin ${name} has no readable manifest: ${manifestPath}`, {
+      cause: error,
+    });
+  }
+  const missing: string[] = [];
+  for (const server of Object.values(manifest.mcpServers ?? {})) {
+    if (!server) continue;
+    const references = [server.command, ...(Array.isArray(server.args) ? server.args : [])];
+    for (const reference of references) {
+      if (typeof reference !== "string" || !reference.startsWith(PLUGIN_ROOT_PLACEHOLDER_PREFIX))
+        continue;
+      const relativePath = reference.slice(PLUGIN_ROOT_PLACEHOLDER_PREFIX.length);
+      try {
+        await access(join(stagedDir, ...relativePath.split("/")));
+      } catch {
+        missing.push(relativePath);
+      }
+    }
+  }
+  if (missing.length > 0) {
+    throw new Error(
+      `Official plugin ${name} manifest references MCP runtime files missing from the staged package: ${missing.join(", ")} (build the plugin before staging)`,
+    );
+  }
+}
+
+const BUNDLED_SKILL_PACK_TOP_LEVEL_PATHS: readonly string[] = ["README.md", "skills"];
+
+>>>>>>> zai-org/main
 async function copyNativeTools(
   sourceDir: string | undefined,
   targetDir: string,
@@ -336,6 +423,7 @@ async function copyNativeTools(
   return copied;
 }
 
+<<<<<<< HEAD
 async function createComponentArchive(
   releaseDir: string,
   outputDir: string,
@@ -377,6 +465,9 @@ async function createComponentArchive(
 }
 
 /** 组装 `zcode-server-<os>-<arch>/` 发行目录；只做本地组装，不上传、不发布。 */
+=======
+/** 组装 `zcode-server-<os>-<arch>/` 发行目录（spec §7.1）；只做本地组装，不上传、不发布。 */
+>>>>>>> zai-org/main
 export async function stageRelease(options: StageOptions): Promise<StagedRelease> {
   for (const [name, value] of Object.entries(options.notices)) {
     if (!value.trim()) throw new Error(`Missing distribution notice: ${name}`);
@@ -388,7 +479,10 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
   await rm(releaseDir, { force: true, recursive: true });
   // staging 是发布目录的重建操作：删除同 target 的旧组件归档，避免上一次构建的
   // hash 仍被误上传到 CDN，导致 catalog 暴露无法与本次 manifest 对齐的组件。
-  await rm(join(outputRoot, "components", options.target), { force: true, recursive: true });
+  await rm(join(outputRoot, "components", options.target), {
+    force: true,
+    recursive: true,
+  });
   await rm(join(outputRoot, ".components"), { force: true, recursive: true });
   await mkdir(join(releaseDir, "bin"), { recursive: true });
   await mkdir(runtimeDir, { recursive: true });
@@ -416,7 +510,25 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     `${JSON.stringify({ name: releaseName, private: true, type: "module" }, null, 2)}\n`,
     "utf8",
   );
-  await cp(options.agentBundlePath, join(runtimeDir, "zcode.cjs"), { dereference: true });
+  await cp(options.agentBundlePath, join(runtimeDir, "zcode.cjs"), {
+    dereference: true,
+  });
+  // 修复原因：dynamic-workflows 已迁出插件，按 -plugin 复制会漏带工作流的必需技能。
+  // 随 Agent 组件独立交付并参与内容哈希，不能依赖服务器旧版本的插件缓存。
+  for (const file of ["SKILL.md", "patterns.md", "examples.md"]) {
+    const skillPath = join(options.bundledSkillsDir, "skills/dynamic-workflows", file);
+    try {
+      await access(skillPath);
+    } catch (cause) {
+      throw new Error(`Missing bundled skill required asset: ${skillPath}`, { cause });
+    }
+  }
+  // 插件缓存可能缺包或过期；只复制 Agent 源中的发布资产，避免二次复制覆盖。
+  await copyPackageDir(
+    options.bundledSkillsDir,
+    join(runtimeDir, "packages/bundled-skills"),
+    (relativePath) => BUNDLED_SKILL_PACK_TOP_LEVEL_PATHS.includes(relativePath.split(sep)[0] ?? ""),
+  );
   // Agent bundle 是第三个实际运行入口；只扫描 Server bundle 会漏掉外置的 TUI/Playwright。
   bundleSources.push(await readFile(options.agentBundlePath, "utf8"));
 
@@ -509,12 +621,26 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
         "runtime/THIRD-PARTY-NOTICES.md",
       ],
     },
+<<<<<<< HEAD
     { id: "agent-runtime", paths: ["runtime/zcode.cjs", "runtime/licenses/agent"] },
+=======
+    {
+      id: "agent-runtime",
+      paths: ["runtime/zcode.cjs", "runtime/packages/bundled-skills", "runtime/licenses/agent"],
+    },
+>>>>>>> zai-org/main
     ...(plugins.length > 0
       ? [
           {
             id: "official-plugins",
+<<<<<<< HEAD
             paths: ["runtime/packages", "runtime/licenses/official-plugins"],
+=======
+            paths: [
+              ...plugins.map((name) => `runtime/packages/${name}-plugin`),
+              "runtime/licenses/official-plugins",
+            ],
+>>>>>>> zai-org/main
           },
         ]
       : []),
@@ -537,6 +663,7 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     plugins,
     components: componentMeta,
   });
+<<<<<<< HEAD
   await writeFile(
     join(releaseDir, "manifest.json"),
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -553,6 +680,22 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     );
     component.archivePath = relative(outputRoot, archive.archivePath).split(sep).join("/");
     componentArchivePaths.push(archive.archivePath);
+=======
+  // SSH 开发验证只安装整包；独立组件归档会重复哈希、复制和压缩同一批内容。
+  // 仅跳过归档生成，保留上方组件身份计算和完整资源校验；默认发布链仍生成组件包。
+  if (options.componentArchives !== false) {
+    for (const component of componentMeta) {
+      const archive = await createComponentArchive(
+        releaseDir,
+        outputRoot,
+        options.target,
+        component.id,
+        component.paths,
+      );
+      component.archivePath = relative(outputRoot, archive.archivePath).split(sep).join("/");
+      componentArchivePaths.push(archive.archivePath);
+    }
+>>>>>>> zai-org/main
   }
   await writeFile(
     join(releaseDir, "manifest.json"),
@@ -565,6 +708,7 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     const extension = options.target.startsWith("win32-") ? "zip" : "tar.gz";
     archivePath = join(outputRoot, `${releaseName}.${extension}`);
     await rm(archivePath, { force: true });
+<<<<<<< HEAD
     // Windows 宿主显式 System32 bsdtar，不依赖调用方 PATH（原因同 tarCommand.ts）。
     const tarCommand = resolveHostTarCommand();
     if (extension === "zip") {
@@ -574,6 +718,11 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     } else if (process.platform === "win32") {
       await runCommand(tarCommand, ["-czf", archivePath, releaseName], outputRoot);
     } else await runCommand("tar", ["-czf", archivePath, releaseName], outputRoot);
+=======
+    if (extension === "zip")
+      await runPackagingCommand("zip", ["-qr", archivePath, releaseName], outputRoot);
+    else await runPackagingCommand("tar", ["-czf", archivePath, releaseName], outputRoot);
+>>>>>>> zai-org/main
   }
 
   return {
@@ -583,6 +732,7 @@ export async function stageRelease(options: StageOptions): Promise<StagedRelease
     packagedDependencies: [...closure.keys()].sort(),
   };
 }
+<<<<<<< HEAD
 
 async function pruneKoffiRuntime(
   sourceDir: string,
@@ -672,3 +822,5 @@ async function ensureNodePtyPrebuild(
     // 非 darwin 平台没有 spawn-helper，忽略。
   }
 }
+=======
+>>>>>>> zai-org/main

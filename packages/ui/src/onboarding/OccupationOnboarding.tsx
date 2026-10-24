@@ -73,7 +73,11 @@ export function OccupationOnboarding({
   const [needsOnboarding, markOnboarded] = useOnboardingTrigger({
     onboardingRecord,
     userId,
+<<<<<<< HEAD
     hasStoredOccupation: Boolean(settings?.onboardingOccupation),
+=======
+    loadDeviceMid,
+>>>>>>> zai-org/main
     update,
   });
   const onboardingVisible = requested || (needsOnboarding === true && !dismissed);

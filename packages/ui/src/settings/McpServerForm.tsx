@@ -12,7 +12,7 @@ import {
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { McpDisabledToolsField } from "@/settings/McpDisabledToolsField.js";
 import { PluginScopeMenu } from "@/settings/PluginScopeMenu.js";
-import type { WorkspaceTabState } from "@/store/tabStore.js";
+import type { ConfigWorkspaceTarget } from "@/workspace-config-catalog/index.js";
 import { SettingsFormTextarea } from "@/settings/SettingsFormTextarea.js";
 import { SettingsFormActions } from "@/settings/SettingsFormActions.js";
 import { ChevronDown, ChevronUpIcon as ChevronUp, Trash2 } from "lucide-react";
@@ -39,7 +39,7 @@ function McpScopeMenu({
 }: {
   disabled: boolean;
   scopeKey: string;
-  workspaceTabs: WorkspaceTabState[];
+  workspaceTabs: ConfigWorkspaceTarget[];
   onChange: (scopeKey: string) => void;
 }) {
   const { intl } = useZCodeIntl();
@@ -76,7 +76,7 @@ export function McpServerForm({
   editorMode: McpEditorMode;
   source?: McpSource;
   scopeKey: string;
-  workspaceTabs: WorkspaceTabState[];
+  workspaceTabs: ConfigWorkspaceTarget[];
   onScopeKeyChange: (scopeKey: string) => void;
   onEditorModeChange: (mode: McpEditorMode) => void;
   onSave: (form: FormState, prevServer?: ZCodeMcpServer) => void;

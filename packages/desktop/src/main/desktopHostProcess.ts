@@ -16,6 +16,10 @@ import {
   type HostAgentProcessReadyResponse,
   type HostAgentProcessSpawnedResponse,
   type HostCuaOperationStateResponse,
+  type HostMcpTelemetryResponse,
+  type HostSessionCreateTelemetryResponse,
+  type HostPluginTelemetryResponse,
+  type RemoteTarget,
   type TaskRealtimeHostDeliveryKind,
   formatZCodeHostProcessName,
   HostMessageTypes,
@@ -47,6 +51,8 @@ import {
 } from "./desktopRuntimeEnv.js";
 import { createFeedbackLogArchiveFromExportLogs } from "./exportLogs.js";
 import { buildHostE2ECoverageEnv } from "./e2eCoverage.js";
+import type { RemoteAssetDirs } from "./desktopRuntimeEnv.js";
+import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
 
 export interface WindowBootstrapOptions {
   restoreSession?: boolean;
@@ -72,6 +78,7 @@ export interface HostInitMessage {
     workspaceIdentity?: string;
   }>;
   agentSpawnFallbackCwd?: string;
+  remoteAssets?: RemoteAssetDirs;
   /** Main 解析后的 ZCode Built-in Provider Config 路径；Host/Services 不感知 Electron 安装布局。 */
   zcodeBuiltinProviderConfigFilePath: string;
   /** Main 提前异步采集并过滤的本机 runtime 环境；只允许传给 InitLocal。 */
@@ -170,6 +177,7 @@ export function spawnHostProcess(
     onAgentProcessException?: (event: HostAgentProcessExceptionResponse) => void;
     onAgentProcessReady?: (event: HostAgentProcessReadyResponse) => void;
     onAgentProcessSpawned?: (event: HostAgentProcessSpawnedResponse) => void;
+    // CE：遥测已移除（P1）——上游 onMcpTelemetry / onPluginTelemetry / onSessionCreateTelemetry 回调随上报链路移除。
     onCuaOperationStateChanged?: (
       source: ElectronUtilityProcess,
       event: HostCuaOperationStateResponse,
@@ -188,6 +196,7 @@ export function spawnHostProcess(
     onOffPeakRunResult?: (result: {
       offPeakTaskId: string;
       ok: boolean;
+      lifecycleManaged?: true;
       conversationId?: string;
       sessionId?: string;
       error?: string;
@@ -297,6 +306,35 @@ export function spawnHostProcess(
     // 资源管理器窗口的进程行采样结果：本地 UI 能力，与遥测无关，保留。
     if (result.data.type === HostResponseTypes.ResourceUsageSnapshotResult) {
       resolveHostResourceUsageResult(label, result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.ToolExecResource) {
+      ingestToolExecResource(result.data.sample, result.data.runtimeSurface);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.McpResourceSamples) {
+      ingestMcpResourceSamples(
+        result.data.samples,
+        result.data.runtimeSurface,
+        result.data.environmentKey,
+      );
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.McpTelemetry) {
+      dependencies.onMcpTelemetry?.(result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.PluginTelemetry) {
+      dependencies.onPluginTelemetry?.(result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.SessionCreateTelemetry) {
+      dependencies.onSessionCreateTelemetry?.(result.data);
       return;
     }
 
@@ -459,6 +497,7 @@ export function spawnHostProcess(
       dependencies.onOffPeakRunResult?.({
         offPeakTaskId: result.data.offPeakTaskId,
         ok: result.data.ok,
+        lifecycleManaged: result.data.lifecycleManaged,
         conversationId: result.data.conversationId,
         sessionId: result.data.sessionId,
         error: result.data.error,

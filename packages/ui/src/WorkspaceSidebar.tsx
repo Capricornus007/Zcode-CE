@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* eslint-disable max-lines -- 归档视图开关沿用现有 sidebar 结构，先保持同文件收口。 */
 import {
   memo,
@@ -1930,3 +1931,8 @@ export const WorkspaceSidebar = memo(function WorkspaceSidebarComponent({
     </aside>
   );
 });
+=======
+// 项目树是唯一组织视图；workspace tab 继续只负责导航与执行目录。
+export { ProjectSidebar as WorkspaceSidebar } from "@/project-sidebar/index.js";
+export type { SidebarFileTreeOpenRequest } from "@/project-sidebar/contract.js";
+>>>>>>> zai-org/main

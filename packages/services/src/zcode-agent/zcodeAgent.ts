@@ -1,4 +1,9 @@
-import type { BackgroundBashOutputResult, SessionDebugSnapshot } from "@zcode/shared";
+import type { PluginUiToolResultNotification } from "@zcode/shared/mcp-apps";
+import type {
+  BackgroundBashOutputResult,
+  SessionDebugSnapshot,
+  ZCodeSessionContentProfile,
+} from "@zcode/shared";
 /* eslint-disable max-lines -- ZCode agent service 接口集中声明 protocol/session/workspace 方法，拆分会增加 service descriptor 迁移成本。 */
 import type { Event, IDisposable } from "@zcode/rpc";
 import { ServiceChannels } from "@zcode/shared";
@@ -91,6 +96,7 @@ import type {
   ConversationRowTarget,
   HelloMessage,
   SessionsIndexTopicWireCandidate,
+  SessionsIndexReconcileResult,
   V4AttachmentBeginResult,
   V4AttachmentChunkResult,
   V4AttachmentCommitResult,
@@ -172,6 +178,7 @@ export interface ZCodeAgentSessionTarget extends ZCodeAgentWorkspaceTarget {
 }
 
 export interface ZCodeAgentResumeSessionParams extends ZCodeAgentSessionTarget {
+  additionalDirectories?: string[];
   model?: ModelSelection;
   thoughtLevel?: string;
   mcpServers?: ZCodeAgentMcpServer[];
@@ -234,6 +241,8 @@ export type ZCodeAgentCuaPermissionObservation = CuaPermissionObservation &
   ZCodeAgentWorkspaceTarget;
 
 export interface ZCodeAgentCreateSessionParams extends ZCodeAgentWorkspaceTarget {
+  projectId?: string | null;
+  additionalDirectories?: string[];
   sessionId?: string;
   sessionTraceId?: TraceId;
   parentSessionId?: string;
@@ -252,7 +261,6 @@ export interface ZCodeAgentCreateSessionParams extends ZCodeAgentWorkspaceTarget
 export interface ZCodeAgentListSessionsParams extends ZCodeAgentWorkspaceTarget {
   sessionIds?: string[];
   runtimePolicy?: ZCodeAgentRuntimePolicy;
-  includeArchived?: boolean;
   limit?: number;
 }
 
@@ -428,6 +436,7 @@ export interface ZCodeAgentSessionSubscribeParams extends ZCodeAgentSessionTarge
 // v4/conversation/frame 通知按 workspace fan-out 给 renderer。
 
 export interface ZCodeAgentConversationSubscribeParams extends ZCodeAgentSessionTarget {
+  retryInitialization?: string;
   /** 水位不变量：仅当客户端真持有该时刻一致状态才允许带。 */
   base?: { logEpoch: string; seq: number };
   visibility?: "foreground" | "background";
@@ -525,6 +534,8 @@ export interface ZCodeAgentConversationFileRewindPreviewParams extends ZCodeAgen
 }
 
 export interface ZCodeAgentConversationCommandParams extends ZCodeAgentWorkspaceTarget {
+  /** 仅 Host 消费；显式 NULL 表示全局任务，不向 CLI 发送项目概念。 */
+  projectId?: string | null;
   envelope: CommandEnvelope;
   /** 仅 host 内部用于 Browser Use runtime 边界，不进入 v4 wire envelope。 */
   clientMode?: ZCodeTaskClientMode;
@@ -990,9 +1001,25 @@ export interface IZCodeAgentService {
   onDynamicConversationTelemetryFact(
     params: ZCodeAgentWorkspaceTarget,
   ): Event<ConversationTelemetryFact>;
+  /** Host 消费驻留 CLI 的闲时生命周期；不参与聊天快照恢复。 */
+  onDynamicOffPeakLifecycle(
+    params: ZCodeAgentWorkspaceTarget,
+  ): Event<import("@zcode/shared").OffPeakLifecycleNotification>;
+  controlOffPeakExecutionV4(
+    params: ZCodeAgentWorkspaceTarget & { control: import("@zcode/shared").OffPeakControlParams },
+  ): Promise<import("@zcode/shared").OffPeakControlResult>;
   /** 当前窗口全部本地 live task 的 CUA 权限观察；历史、远程与 replayable 不在此事件面。 */
   onDynamicCuaPermissionObservation(): Event<ZCodeAgentCuaPermissionObservation>;
-  // ── sessions-index 通道（列表活性）──
+  /** 本地桌面窗口创建插件页面，不依赖 conversation 订阅。 */
+  onDynamicPluginUiToolResult(): Event<
+    PluginUiToolResultNotification & { workspacePath: string; workspaceIdentity?: string }
+  >;
+
+  /** 只读 CLI 持久事实；不恢复会话运行实例。旧远端可以不提供此能力。 */
+  reconcileSessionsIndexV4?(
+    params: ZCodeAgentWorkspaceTarget & { sessionIds: string[] },
+  ): Promise<SessionsIndexReconcileResult>;
+  // ── M5 sessions-index 通道（列表活性）──
   subscribeSessionsIndexV4(
     params: ZCodeAgentSessionsIndexSubscribeParams,
   ): Promise<V4SessionsIndexSubscribeResult>;

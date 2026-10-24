@@ -1,18 +1,35 @@
+import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
+import { resolveWorkspaceRemoteSessionId } from "@/lib/workspaceServiceResolver.js";
+import { RemoteConnectionStateIcon } from "@/remote-connection/RemoteConnectionStateIcon.js";
+import { useRemoteProjectPresentationFacts } from "@/hooks/RemoteProjectPresentationContext.js";
+import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
+import {
+  formatRemoteDeviceName,
+  resolveRemoteConnectionPresentation,
+} from "@/lib/remoteConnectionPresentation.js";
 import { WorkspaceContextPath } from "@/WorkspaceHeaderSections/WorkspaceContextPath.js";
 import { WorkspaceLastActivity } from "@/WorkspaceHeaderSections/WorkspaceLastActivity.js";
 /* eslint-disable max-lines -- Header 标题区当前同时承载 task 菜单、路径上下文和 workspace 级状态提示，先保持单文件收口，避免菜单链路迁移时再引入回归。 */
 import {
-  TID_WORKSPACE_MORE_BUTTON,
-  TID_WORKSPACE_PATH,
-  TID_WORKSPACE_TITLE,
+  parseRemoteWorkspaceIdentity,
+  remoteHostIdFromWorkspaceIdentity,
   type RemoteTarget,
   type ZCodeTaskMeta,
 } from "@zcode/shared";
+import {
+  TID_WORKSPACE_MORE_BUTTON,
+  TID_WORKSPACE_PATH,
+  TID_WORKSPACE_TITLE,
+} from "@zcode/shared/test-ids";
 import { useMemo, useRef, useState } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
+<<<<<<< HEAD
 import { Cloud, Ellipsis, Folder, GitBranch, LoaderIcon, SquareTerminalIcon } from "lucide-react";
+=======
+import { Ellipsis, Folder, GitBranch, LoaderIcon } from "lucide-react";
+>>>>>>> zai-org/main
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useGlobalTaskList } from "@/hooks/useGlobalTaskList.js";
 import { useBaseWorkspaceServices, useWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
@@ -42,8 +59,6 @@ import type {
 } from "@/WorkspaceHeaderSections/shared.js";
 import { applyTaskQueryCacheMutation } from "@/store/taskQueryCacheStore.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import { useRemotePinnedTaskStore } from "@/store/remotePinnedTaskStore.js";
-import { useRemoteTimelineTaskStore } from "@/store/remoteTimelineTaskStore.js";
 import { TaskRenameDialog } from "@/TaskRenameDialog.js";
 import {
   RemoteSyncDialogs,
@@ -54,6 +69,8 @@ import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSk
 import { refreshSharedSkillStoreForWorkspace } from "@/lib/skillStoreRefresh.js";
 import { refreshWorkspacePluginCapabilitiesAfterRemoteSync } from "@/lib/remotePluginSyncRefresh.js";
 import { useMcpStore } from "@/store/mcpStore.js";
+import { useSourceServerDisplayNames } from "@/hooks/useSourceServerDisplayNames.js";
+import { useRemoteDevicePresentationInput } from "@/hooks/useSourceServerStatuses.js";
 
 export type { WorkspaceHeaderState, WorkspaceHeaderTitleSectionProps };
 export {
@@ -185,6 +202,7 @@ export function WorkspaceHeaderTitleSection({
   const remoteWorkspaceHostLabel = remoteTarget
     ? formatRemoteWorkspaceHeaderHostLabel(remoteTarget)
     : null;
+<<<<<<< HEAD
   const workspaceDisplayLabel = formatRemoteWorkspaceDisplayLabel(projectName, remoteTarget);
   const showRemoteWorkspaceHostLabel = Boolean(
     remoteWorkspaceHostLabel && workspaceDisplayLabel === projectName,
@@ -192,6 +210,44 @@ export function WorkspaceHeaderTitleSection({
   const workspaceContextLabel = showRemoteWorkspaceHostLabel
     ? `${workspaceDisplayLabel} @ ${remoteWorkspaceHostLabel}`
     : workspaceDisplayLabel;
+=======
+  const sourceServerDisplayNames = useSourceServerDisplayNames();
+  const sourceServerId = parseRemoteWorkspaceIdentity(workspaceIdentity ?? "")?.sourceServerId;
+  const sourceServerDisplayName = sourceServerId
+    ? sourceServerDisplayNames.get(sourceServerId)?.trim()
+    : undefined;
+  const deviceInput = useRemoteDevicePresentationInput(sourceServerId);
+  // 远控 tab 只携带身份，bridge 已在身份索引登记；直接读 tab sessionId 会误报断线。
+  const attached = useRemoteWorkspaceSessionStore((state) => {
+    const sessionId = resolveWorkspaceRemoteSessionId(
+      { workspacePath: workspaceAbsPath, workspaceIdentity, remoteSessionId, remoteTarget },
+      state,
+    );
+    return Boolean(sessionId && state.sessionsById[sessionId]?.services);
+  });
+  // 远控没有 Source 管理服务，设备名称复用窗口目录；精确 Host 身份避免同路径串设备。
+  const projectDirectory = useOptionalProjectDirectory();
+  const hostId = remoteHostIdFromWorkspaceIdentity(workspaceIdentity ?? "");
+  const directoryTarget = projectDirectory?.directory.hosts.find(
+    (host) => host.id === hostId,
+  )?.target;
+  const projectFacts = useRemoteProjectPresentationFacts(
+    workspaceIdentity?.trim() || workspaceAbsPath,
+  );
+  const presentation = resolveRemoteConnectionPresentation({
+    ...deviceInput,
+    attached,
+    ...projectFacts,
+  });
+  const remoteStatusLabel = presentation.recovery
+    ? intl.formatMessage({ id: presentation.recovery.messageId }, presentation.recovery.values)
+    : intl.formatMessage({ id: presentation.shortMessageId });
+  const workspaceDisplayLabel = formatRemoteWorkspaceDisplayLabel(projectName, remoteTarget);
+  const remoteDeviceName =
+    formatRemoteDeviceName(remoteTarget ?? directoryTarget ?? undefined, sourceServerDisplayName) ??
+    intl.formatMessage({ id: "workspaceSidebar.remoteProject" });
+  const workspaceContextLabel = workspaceDisplayLabel;
+>>>>>>> zai-org/main
   const workspaceBranchLabel = gitSummary.isRepository
     ? resolveGitBranchTriggerLabel({
         headRefType: gitSummary.headRefType,
@@ -206,7 +262,11 @@ export function WorkspaceHeaderTitleSection({
   const showRemoteSkillSyncAction = shouldShowRemoteSkillSyncAction({
     remoteSessionId,
     remoteTarget,
+<<<<<<< HEAD
     clientMode: "desktop-continuous" as const,
+=======
+    clientMode: isWebRemoteControl ? "web-remote-replayable" : "desktop-continuous",
+>>>>>>> zai-org/main
     hasLocalSourceService: Boolean(
       baseServices.skillSyncService &&
       baseServices.mcpSyncService &&
@@ -303,6 +363,7 @@ export function WorkspaceHeaderTitleSection({
         ...(workspaceIdentity ? { workspaceIdentity } : {}),
       });
       upsertOptimisticTaskListItem(workspaceAbsPath, renamedTask, workspaceIdentity);
+<<<<<<< HEAD
       if (workspaceIdentity) {
         if (isPinned) {
           useRemotePinnedTaskStore.getState().upsertTask(renamedTask);
@@ -310,6 +371,8 @@ export function WorkspaceHeaderTitleSection({
           useRemoteTimelineTaskStore.getState().upsertTask(renamedTask);
         }
       }
+=======
+>>>>>>> zai-org/main
       applyTaskQueryCacheMutation({
         previousTask: buildHeaderTaskSnapshot(renamedTask, {
           title: currentTitle,
@@ -360,6 +423,7 @@ export function WorkspaceHeaderTitleSection({
         // Header 更多菜单不能只依赖 zcodeTaskMetaMerge：归档后只有旧列表状态被更新。
         // 这里改成和 Sidebar 一样同步清理运行态与 sqlite cache，避免 Header 操作后列表不刷新。
         removeTaskState(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
+<<<<<<< HEAD
         if (workspaceIdentity) {
           useRemotePinnedTaskStore
             .getState()
@@ -368,6 +432,8 @@ export function WorkspaceHeaderTitleSection({
             .getState()
             .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
         }
+=======
+>>>>>>> zai-org/main
         applyTaskQueryCacheMutation({
           previousTask: buildHeaderTaskSnapshot(meta),
           nextTask: meta,
@@ -402,7 +468,7 @@ export function WorkspaceHeaderTitleSection({
           void handleSubmitRenameTask();
         }}
       />
-      {!isDraftNewTask ? (
+      {!isDraftNewTask || isRemoteWorkspace ? (
         <ControlHintTooltip
           open={workspaceContextOpen}
           onOpenChange={setWorkspaceContextOpen}
@@ -416,7 +482,11 @@ export function WorkspaceHeaderTitleSection({
             >
               <span className="flex min-w-0 items-start gap-2">
                 {isRemoteWorkspace ? (
+<<<<<<< HEAD
                   <Cloud className="size-4 shrink-0" />
+=======
+                  <RemoteConnectionStateIcon presentation={presentation} project />
+>>>>>>> zai-org/main
                 ) : (
                   <Folder className="size-4 shrink-0" />
                 )}
@@ -424,7 +494,34 @@ export function WorkspaceHeaderTitleSection({
                   <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                     {workspaceContextLabel}
                   </span>
+<<<<<<< HEAD
                   {workspaceContextOpen ? (
+=======
+                  {isRemoteWorkspace ? (
+                    <span className="inline-flex w-fit min-w-0 max-w-full items-center gap-1 rounded-full bg-surface py-px pl-1.5 pr-2 text-ui-sm font-normal text-foreground-subtle">
+                      <span className={cn("size-1.5 shrink-0 rounded-full", presentation.dot)} />
+                      <span className="truncate">{remoteDeviceName}</span>
+                      {presentation.status !== "online" ? (
+                        <span>
+                          {presentation.recovery
+                            ? intl.formatMessage(
+                                { id: presentation.recovery.messageId },
+                                presentation.recovery.values,
+                              )
+                            : intl.formatMessage({ id: presentation.shortMessageId })}
+                    </span>
+                  ) : null}
+                    </span>
+                  ) : null}
+                  {workspaceContextOpen && isRemoteWorkspace ? (
+                    <span
+                      data-workspace-context-path=""
+                      className="break-all font-mono text-ui-sm text-foreground-subtle"
+                    >
+                      {workspaceAbsPath}
+                    </span>
+                  ) : workspaceContextOpen ? (
+>>>>>>> zai-org/main
                     <WorkspaceContextPath
                       workspacePath={workspaceAbsPath}
                       workspaceIdentity={workspaceIdentity}
@@ -452,23 +549,42 @@ export function WorkspaceHeaderTitleSection({
           <Button
             type="button"
             variant="ghost"
-            size={compact ? "icon-sm" : "icon-md"}
+            size={isRemoteWorkspace ? "sm" : compact ? "icon-sm" : "icon-md"}
+            className={
+              isRemoteWorkspace
+                ? "min-w-0 max-w-40 gap-1.5 px-1.5 text-foreground-subtle"
+                : undefined
+            }
             data-testid={TID_WORKSPACE_PATH}
+<<<<<<< HEAD
             // 窄屏（手机）收起这个工作区/分支图标：标题簇 [文件夹 28][标题][⋯ 28] 在 360 宽下
             // 只能把标题压到 58px（阶段 2 §9.3 的遗留项）。工作区名在侧栏、分支名在草稿态
             // 上下文行都有等价展示；桌面（≥768）逐项不变。
             className="max-md:hidden"
+=======
+            // 上下文信息改为 tooltip 承载后，这个按钮不再有 DOM title；工作区绝对路径
+            // 是 e2e 判定“header 属于哪个工作区”的唯一锚点（aria-label 只有显示名），
+            // 因此单独用数据属性暴露，避免和 tooltip 争抢原生提示。
+            data-workspace-abs-path={workspaceAbsPath}
+            aria-description={isRemoteWorkspace ? remoteStatusLabel : undefined}
+>>>>>>> zai-org/main
             aria-label={[workspaceContextLabel, workspaceBranchLabel].filter(Boolean).join(" · ")}
             onClick={() => setWorkspaceContextOpen(true)}
           >
             {isRemoteWorkspace ? (
-              <Cloud className="size-4 text-foreground-subtle" />
+              <>
+                <RemoteConnectionStateIcon presentation={presentation} project />
+                <span data-workspace-device-name="" className="min-w-0 truncate text-ui-sm">
+                  {remoteDeviceName}
+                </span>
+              </>
             ) : (
               <Folder className="size-4 text-foreground-subtle" />
             )}
           </Button>
         </ControlHintTooltip>
       ) : null}
+      {!isDraftNewTask ? (
       <h1
         data-testid={TID_WORKSPACE_TITLE}
         className={cn(
@@ -494,6 +610,7 @@ export function WorkspaceHeaderTitleSection({
           </>
         ) : null} */}
       </h1>
+      ) : null}
       <div className="flex min-w-0 shrink-0 items-center gap-1">
         {!isDraftNewTask ? (
           <DropdownMenu open={taskMenuOpen} onOpenChange={setTaskMenuOpen}>
@@ -509,6 +626,7 @@ export function WorkspaceHeaderTitleSection({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
+<<<<<<< HEAD
               {/* 窄屏：头部为了给标题留宽度收起了终端按钮，这里补一个带文字标签的等价入口
                   （1 次点击可达的替代路径，不是死路）。桌面保持原样：头部已有终端按钮。 */}
               {simplifyForNarrowRemote && onToggleTerminal ? (
@@ -525,6 +643,8 @@ export function WorkspaceHeaderTitleSection({
                   <DropdownMenuSeparator />
                 </>
               ) : null}
+=======
+>>>>>>> zai-org/main
               {showRemoteSkillSyncAction && remoteTarget ? (
                 <>
                   <RemoteSyncMenuItems
@@ -545,6 +665,10 @@ export function WorkspaceHeaderTitleSection({
                 taskSessionFile={taskSessionFile}
                 activeSessionId={activeSessionId}
                 taskNativeSessionLogFile={taskNativeSessionLogFile}
+<<<<<<< HEAD
+=======
+                providerConfigFile={providerConfigFile}
+>>>>>>> zai-org/main
                 disableTaskTargetActions={disableTaskTargetActions || taskMenuMembershipLoading}
                 disableTaskActions={Boolean(readOnlyReason)}
                 disabledReason={readOnlyReason}
@@ -558,6 +682,7 @@ export function WorkspaceHeaderTitleSection({
                   }
                   const optimisticTask = activeTaskMeta ?? null;
                   if (optimisticTask) {
+<<<<<<< HEAD
                     // Header 里切换 pin 以前只等 RPC 成功后更新列表缓存，
                     // pinned 区会在请求期间被旧查询结果覆盖。先乐观切换，失败再回滚。
                     if (workspaceIdentity && !isPinned) {
@@ -572,6 +697,8 @@ export function WorkspaceHeaderTitleSection({
                         .removeTask(workspaceAbsPath, resolvedTaskActionTaskId, workspaceIdentity);
                       useRemoteTimelineTaskStore.getState().upsertTask(optimisticTask);
                     }
+=======
+>>>>>>> zai-org/main
                     applyTaskQueryCacheMutation({
                       previousTask: optimisticTask,
                       nextTask: optimisticTask,
@@ -592,6 +719,7 @@ export function WorkspaceHeaderTitleSection({
                         resolvedTaskActionTaskId,
                         workspaceIdentity,
                       );
+<<<<<<< HEAD
                       if (workspaceIdentity && !isPinned) {
                         useRemotePinnedTaskStore.getState().upsertTask(meta);
                         useRemoteTimelineTaskStore
@@ -612,6 +740,8 @@ export function WorkspaceHeaderTitleSection({
                           );
                         useRemoteTimelineTaskStore.getState().upsertTask(meta);
                       }
+=======
+>>>>>>> zai-org/main
                       applyTaskQueryCacheMutation({
                         previousTask: buildHeaderTaskSnapshot(meta),
                         nextTask: meta,
@@ -621,6 +751,7 @@ export function WorkspaceHeaderTitleSection({
                     })
                     .catch(() => {
                       if (optimisticTask) {
+<<<<<<< HEAD
                         if (workspaceIdentity && !isPinned) {
                           useRemotePinnedTaskStore
                             .getState()
@@ -641,6 +772,8 @@ export function WorkspaceHeaderTitleSection({
                               workspaceIdentity,
                             );
                         }
+=======
+>>>>>>> zai-org/main
                         applyTaskQueryCacheMutation({
                           previousTask: optimisticTask,
                           nextTask: optimisticTask,
@@ -674,6 +807,7 @@ export function WorkspaceHeaderTitleSection({
                         workspaceIdentity,
                       );
                       upsertOptimisticTaskListItem(workspaceAbsPath, meta, workspaceIdentity);
+<<<<<<< HEAD
                       if (workspaceIdentity) {
                         if (isPinned) {
                           useRemotePinnedTaskStore.getState().upsertTask(meta);
@@ -681,6 +815,8 @@ export function WorkspaceHeaderTitleSection({
                           useRemoteTimelineTaskStore.getState().upsertTask(meta);
                         }
                       }
+=======
+>>>>>>> zai-org/main
                       applyTaskQueryCacheMutation({
                         previousTask: buildHeaderTaskSnapshot(meta),
                         nextTask: meta,
@@ -730,6 +866,12 @@ export function WorkspaceHeaderTitleSection({
                       }
                     : undefined
                 }
+<<<<<<< HEAD
+=======
+                onOpenProviderConfig={() => {
+                  void handleOpenProviderConfig();
+                }}
+>>>>>>> zai-org/main
               />
             </DropdownMenuContent>
           </DropdownMenu>
@@ -761,7 +903,6 @@ export function WorkspaceHeaderTitleSection({
           workspaceIdentity={workspaceIdentity}
           onSkillsSynced={async () => {
             await invalidateDeferredDraftSessionForSkillChange({
-              zcodeSessionService: services.zcodeSessionService,
               workspacePath: workspaceAbsPath,
               workspaceIdentity,
               reason: "header-remote-skill-sync",
@@ -790,7 +931,6 @@ export function WorkspaceHeaderTitleSection({
               workspaceIdentity,
               workspacePath: workspaceAbsPath,
               zcodeAgentService: services.zcodeAgentService,
-              zcodeSessionService: services.zcodeSessionService,
             });
           }}
         />

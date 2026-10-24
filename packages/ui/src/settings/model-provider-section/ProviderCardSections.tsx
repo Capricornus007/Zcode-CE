@@ -22,6 +22,7 @@ import {
   TID_MODEL_PROVIDER_NAME_EDIT_BUTTON,
   TID_MODEL_PROVIDER_NAME_INPUT,
   testId,
+<<<<<<< HEAD
 } from "@zcode/shared";
 import {
   Download,
@@ -32,6 +33,10 @@ import {
   Trash2,
   MoreHorizontal,
 } from "lucide-react";
+=======
+} from "@zcode/shared/test-ids";
+import { InfoIcon, LockKeyholeIcon, Plus, Pencil, Trash2, MoreHorizontal } from "lucide-react";
+>>>>>>> zai-org/main
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import {

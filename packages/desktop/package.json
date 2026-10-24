@@ -5,6 +5,10 @@
   "author": "ZCode",
   "type": "module",
   "main": "out/main/index.js",
+  "imports": {
+    "#e2e/*": "./test/e2e/*.ts",
+    "#src/*": "./src/*"
+  },
   "scripts": {
     "pre-dev": "node scripts/ensure-local-runtime-assets.mjs && node -e \"require('node:fs').rmSync('./out',{recursive:true,force:true})\"",
     "dev": "node ../../scripts/dev-desktop-env.mjs production",
@@ -13,13 +17,40 @@
     "dev:runtime": "concurrently -k -n tsup,vite,electron \"tsup --watch src --watch ../services/src --watch ../server/src --watch ../shared/src --watch ../rpc/src --watch ../client/src --watch ../provider/src --watch ../provider-node/src --ignore-watch 'mock-cdn/**' --ignore-watch 'bundled-agents/**' --ignore-watch '.e2e-cache/**' --ignore-watch '.e2e-artifacts/**' --ignore-watch '.e2e-home-*/**' --ignore-watch 'dist-cua-helper/**'\" \"vite dev\" \"node scripts/dev.mjs\"",
     "prepare:build-meta": "node scripts/build-metadata.mjs",
     "prepare:runtime-assets": "node scripts/prepare-runtime-assets.mjs",
+<<<<<<< HEAD
     "prepare:remote-assets": "node ../../scripts/prepare-prebuilds.mjs",
+=======
+    "prepare:glm": "node ../../scripts/download-glm.mjs",
+>>>>>>> zai-org/main
     "prepare:agent-bundle": "node scripts/prepare-agent-node-bundle.mjs",
     "prepare:native-search": "node ../../scripts/prepare-native-search-tools.mjs",
     "prepare:browser-import-helper": "node scripts/build-windows-browser-import-helper.mjs",
     "prepare:macos-window-bounds": "node scripts/build-macos-window-bounds.mjs",
     "build:no-runtime-assets": "pnpm prepare:build-meta && node scripts/run-production-build.mjs",
     "build": "pnpm prepare:runtime-assets && pnpm run build:no-runtime-assets",
+<<<<<<< HEAD
+=======
+    "test:installer-nsh-smoke": "node scripts/test-installer-nsh-smoke.mjs",
+    "test:auto-update-install-reentry-smoke": "node scripts/auto-update-install-reentry-smoke.mjs",
+    "test:browser-background-activity-smoke": "electron scripts/browser-background-activity-smoke.mjs",
+    "test:browser-hidden-guest-screenshot-smoke": "electron scripts/browser-hidden-guest-screenshot-smoke.mjs",
+    "test:browser-screenshot-surface-smoke": "electron scripts/browser-screenshot-surface-smoke.mjs",
+    "pretest:browser-webm-recording-smoke": "tsup",
+    "test:browser-webm-recording-smoke": "electron scripts/browser-webm-recording-smoke.mjs",
+    "pretest:e2e": "pnpm --filter @zcode/e2e-report build:node",
+    "test:e2e": "node scripts/run-windows-e2e-shards.mjs",
+    "test:e2e:all:coverage": "node scripts/run-all-e2e-coverage.mjs",
+    "pretest:e2e:serial": "pnpm --filter @zcode/e2e-report build:node",
+    "test:e2e:serial": "wdio run wdio.conf.ts",
+    "test:e2e:windows:sharded": "pnpm test:e2e -- --shards=10",
+    "e2e:fixture:check": "node scripts/check-e2e-fixtures.mjs",
+    "e2e:promote": "node scripts/promote-conversation-e2e.mjs",
+    "e2e:docker:admit": "node scripts/admit-conversation-e2e-docker.mjs",
+    "e2e:docker:admit:plugins": "node scripts/admit-plugin-e2e-docker.mjs",
+    "e2e:promote:plugins": "node scripts/promote-plugin-e2e.mjs",
+    "e2e:session-lifecycle:stress": "node scripts/run-e2e-session-lifecycle-stress.mjs",
+    "typecheck:e2e": "pnpm --filter @zcode/e2e-report build:node && tsc -p tsconfig.e2e.json --noEmit",
+>>>>>>> zai-org/main
     "bundle": "node scripts/bundle.mjs",
     "audit:bundle-size": "node scripts/audit-bundle-size.mjs",
     "postinstall": "node scripts/node-pty-rebuild.mjs",

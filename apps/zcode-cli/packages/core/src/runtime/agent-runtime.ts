@@ -1,3 +1,9 @@
+import { configureOffPeakRuntime, controlOffPeakRuntime } from "./off-peak/runtime.js";
+import {
+  createTurnAgentDefinitions,
+  createAgentDefinitionsReader,
+  type GetAgentDefinitions,
+} from "../subagent/definitions.js";
 import { DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY, resolveExecutionState } from "@zcode/shared";
 import type { BackgroundBashOutputResult } from "@zcode/shared";
 import {
@@ -121,6 +127,10 @@ import type {
 } from "./types.js";
 import type { AgentRuntimeInternal } from "./internal.js";
 import { InMemoryRuntimeTaskRegistry, type RuntimeTaskRegistry } from "../runtime-task/registry.js";
+import type { WorkflowBlockedReminderClock } from "../runtime-task/workflow-blocked-reminder.js";
+import { createWorkflowBlockedReminder } from "./methods/dynamic-workflow-blocked-reminder.js";
+import { createMemoryRecallState } from "../memory/recall/index.js";
+import type { MemoryRecallState } from "../memory/recall/index.js";
 import type { ChildClientPortsContext, ClientFacingPorts } from "./helpers/child-client-ports.js";
 import type { ProjectMemoryExtractionScheduler } from "./helpers/project-memory-extraction.js";
 import { projectPersistentAgentMemoryTools } from "../subagent/persistent-memory.js";
@@ -131,6 +141,14 @@ import { cloneModelSelection } from "./model-selection.js";
 
 // oxlint-disable typescript-eslint/no-unsafe-declaration-merging
 export class AgentRuntime {
+  controlOffPeakExecution(
+    input: import("@zcode/shared").OffPeakControlParams,
+  ): Promise<import("@zcode/shared").OffPeakControlResult> {
+    return controlOffPeakRuntime(
+      this as unknown as import("./internal.js").AgentRuntimeInternal,
+      input,
+    );
+  }
   private sessionId: SessionId;
   private turnNumber: number;
   private config: AgentRuntimeConfig;
@@ -177,6 +195,8 @@ export class AgentRuntime {
   private dynamicWorkflowRunPort?: DynamicWorkflowRunPort;
   private modelCatalogPort?: ModelCatalogPort;
   private runtimeTaskRegistry: RuntimeTaskRegistry;
+  // 「run 还欠着决定、主代理闲着」的提醒钟；由命令队列的忙 / 闲沿驱动，beginShutdown 停掉。
+  private workflowBlockedReminder: WorkflowBlockedReminderClock;
   private branchGeneration = 0;
   private artifactStore?: ToolArtifactStorePort;
   private executionPort?: ExecutionPort;
@@ -231,11 +251,23 @@ export class AgentRuntime {
     this.sessionId = sessionId;
     this.turnNumber = 0;
     // 3.12.2：兼容旧 Host/内部调用传入 legacy，但本版本 Runtime、日志和子 Agent 只使用 preflight。
-    this.config = projectPersistentAgentMemoryTools({
+    this.config = {
       ...config,
       modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-    });
+    };
     Object.assign(this.config, resolveExecutionState(config));
+    const definitions = createTurnAgentDefinitions(
+      deps.getAgentDefinitions ??
+        createAgentDefinitionsReader(this.config.subagents?.profiles ?? [], {
+          builtInModelSelectionOverrides: this.config.subagents?.builtInModelSelectionOverrides,
+        }),
+      deps.loadAgentDefinitions,
+    );
+    // Host 每轮加载的快照会替代启动配置；在统一读取出口补齐 Memory 工具，
+    // 避免子 Agent 有持久记忆提示却没有 Write/Edit，也不回写原始配置。
+    this.getAgentDefinitions = () =>
+      projectPersistentAgentMemoryTools(definitions.get(), this.config.memory);
+    this.prepareAgentDefinitions = definitions.prepare;
     this.agentTelemetry = new RuntimeTelemetryFacade({
       agentName: config.agentName,
       causation: deps.agentTelemetryCausation,
@@ -272,6 +304,10 @@ export class AgentRuntime {
     this.providerRuntimeHeadersPort = deps.providerRuntimeHeadersPort;
     this.browserControlPort = deps.browserControlPort;
     this.modelRequestAdmission = deps.modelRequestAdmission;
+    configureOffPeakRuntime(
+      this as unknown as import("./internal.js").AgentRuntimeInternal,
+      deps.onOffPeakLifecycleEvent,
+    );
     // 旧会话的选择缺失不能阻断历史恢复；不在这里制造默认模型。
     this.sessionModelSelection =
       config.modelSelection && cloneModelSelection(config.modelSelection);
@@ -284,6 +320,7 @@ export class AgentRuntime {
     this.mcpPort = deps.mcpPort;
     this.runtimeTaskRegistry = deps.runtimeTaskRegistry ?? new InMemoryRuntimeTaskRegistry();
     this.runtimeTaskRegistry.setActiveBranchGeneration?.(this.branchGeneration);
+    this.workflowBlockedReminder = createWorkflowBlockedReminder(runtime);
     this.artifactStore = deps.artifactStore;
     this.executionPort = deps.executionPort;
     this.fileSystemPort = deps.fileSystemPort;
@@ -329,6 +366,8 @@ export class AgentRuntime {
     // ExecutionPort.close() 会把后台 Bash 收口为 cancelled；若允许
     // teardown terminal event 再唤醒模型，并与随后关闭的 session store 竞态。
     this.shuttingDown = true;
+    // 同一条理由：会话在关，提醒钟不能再到点唤起一轮。
+    this.workflowBlockedReminder.stop();
     // 关闭单个 session 后进程仍存活，
     // 因此必须先终止该 runtime 的 Extraction，不能只在超时后放弃等待。
     this.memoryExtractionScheduler?.shutdown();

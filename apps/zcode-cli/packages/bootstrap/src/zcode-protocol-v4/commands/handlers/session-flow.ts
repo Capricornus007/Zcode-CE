@@ -7,17 +7,34 @@ import type {
   CommandResult,
   SubmissionMode,
 } from "@zcode/shared/zcode-protocol-v4";
+<<<<<<< HEAD
 import type { ModelSelection } from "@zcode/shared";
 import { createModelExecutionContext } from "../../../zcode-protocol/model-execution.js";
 import type { SteerTurnOptions } from "../../../app/types.js";
 import { parseProviderQualifiedModelSelection } from "../../../app/provider-registry-selection.js";
 import type { TurnAttachment } from "@zcode/core";
 import { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
+=======
+import { isHighspeedProviderId } from "@zcode/shared";
+import { createModelExecutionContext } from "../../../session-execution/index.js";
+import { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
+import {
+  applyHeldQueueDisposition,
+  hasPromptInput,
+  resolveOrdinaryQueueModelSelection,
+  resolveSubmittedExecutionState,
+  V4InputAdmissionRejectedError,
+} from "../input-admission.js";
+>>>>>>> zai-org/main
 import { inputIntentMetadata } from "../input-intent.js";
 import { startPromptTurn, turnBackgroundAttributionOf } from "../prompt-turn.js";
 import { resetHeldQueueAfterModelSelectionChange } from "../../queue-held-reset.js";
 import { requireRecord } from "../record-access.js";
+<<<<<<< HEAD
 import type { V4CommandCoreHost, V4SessionRecordView } from "../types.js";
+=======
+import type { V4CommandCoreHost, V4SessionRecordView, V4TurnExecution } from "../types.js";
+>>>>>>> zai-org/main
 import { V4CommandNoopError } from "../../v4-gateway.js";
 
 /** 等 idle 轮询参数：25ms 间隔、5s 超时。 */
@@ -190,8 +207,16 @@ async function sendText(
 ): Promise<CommandResult | undefined> {
   const payload = envelope.payload as CommandPayloadMap["sendText"];
   const record = requireRecord(host, envelope.sessionId);
+<<<<<<< HEAD
   // 旧校验只看正文，UI 已允许的 attachment-only query 会在 CLI 被误判为空。
   if (!hasPromptInput(payload.text, payload.attachments)) {
+=======
+  // Bug 根因：旧校验只看正文，UI 已允许的 attachment-only query 会在 CLI 被误判为空。
+  if (
+    !hasPromptInput(rawPayload.text, rawPayload.attachments) &&
+    !rawPayload.conversationQuotes?.length
+  ) {
+>>>>>>> zai-org/main
     throw new V4InputAdmissionRejectedError("proto.invalidPayload", "input must not be empty");
   }
   // 提交前快照会话选型：core 在 turn 内部才应用本次选型（turn-model.ts:51-70），
@@ -203,6 +228,97 @@ async function sendText(
     inputIntentMetadata(envelope, { ...options, ...submittedExecutionState });
   const routingMode = host.getInputRoutingMode?.(envelope.sessionId ?? "") ?? null;
   const forceStartNow = payload.requestedDelivery === "startNow";
+<<<<<<< HEAD
+=======
+  // 加速本轮由「标准 Selection 指向加速 Provider + 单次执行材料」表达；判定必须用 Family
+  // 谓词，不能和单个 provider id 常量比较，否则 BigModel 账号的卡会被当成普通轮静默丢弃。
+  const highspeedExecution: V4TurnExecution | undefined = isHighspeedProviderId(
+    payload.modelSelection?.providerId,
+  )
+    ? payload.modelExecution
+    : undefined;
+  const highspeedActiveTurn = highspeedExecution
+    ? record.app.runtime?.getActiveTurnInfo?.()
+    : undefined;
+  const highspeedRequiresQueue =
+    !forceStartNow &&
+    highspeedExecution !== undefined &&
+    (record.activeAbortController !== undefined ||
+      highspeedActiveTurn !== undefined ||
+      routingMode === "enqueue" ||
+      routingMode === "guide");
+
+  const queueHighspeedTurn = async (): Promise<CommandResult | undefined> => {
+    const highspeedSelection = payload.modelSelection;
+    if (!highspeedExecution || !highspeedSelection) {
+      throw new V4InputAdmissionRejectedError(
+        "fault.command.inputRejected",
+        "Highspeed queue requires turn execution material",
+      );
+    }
+    const ordinarySelection = resolveOrdinaryQueueModelSelection(
+      record,
+      highspeedExecution.selectionFallback?.target,
+    );
+    const retainQueuedTurnExecution = host.retainQueuedTurnExecution;
+    // Bug 根因：队列曾把单轮 Highspeed Selection 持久化进 QueueItem，撤回编辑会把它
+    // 恢复到 Composer，并污染下一次 fallback。队列只保存普通提交模型；加速 Selection
+    // 与凭据必须作为同一 execution bundle 驻留 CLI 内存。
+    if (retainQueuedTurnExecution) {
+      retainQueuedTurnExecution(record.app.sessionId, envelope.commandId, {
+        modelSelection: highspeedSelection,
+        modelExecution: highspeedExecution,
+      });
+    }
+    try {
+      const requestedDelivery = routingMode === "guide" ? "guide" : "queue";
+      const intent = submissionIntent({
+        text: payload.text,
+        requestedDelivery,
+        admittedDelivery: "queue",
+        ...(routingMode === "guide" ? { fallbackReasonCode: HIGHSPEED_QUEUE_FALLBACK_REASON } : {}),
+        attachmentRefs: payload.attachments,
+      });
+      intent.modelSelection = ordinarySelection;
+      if (!retainQueuedTurnExecution) delete intent.highspeed;
+      // 入队与 canonical 编辑入队一致，只提交普通 Selection：Core 用它写会话常驻模型，
+      // execution 不进入准入，只在提升边界由暂存 bundle 应用。
+      const queued = await startPromptTurn(host, record, {
+        content: payload.text,
+        ...(payload.browserAmbientContext
+          ? { browserAmbientContext: payload.browserAmbientContext }
+          : {}),
+        inputId: envelope.commandId,
+        intent,
+        requireQueue: true,
+        ...(attachments ? { attachments } : {}),
+        toolDisallowlist: payload.toolDisallowlist,
+      });
+      if (queued.admission.kind !== "queued") {
+        throw new V4InputAdmissionRejectedError(
+          "fault.command.inputRejected",
+          "Highspeed input was not admitted to the queue",
+        );
+      }
+      return {
+        type: "inputAccepted",
+        delivery: "queue",
+        inputId: envelope.commandId,
+      };
+    } catch (error) {
+      if (retainQueuedTurnExecution) {
+        host.deleteQueuedTurnExecution?.(record.app.sessionId, envelope.commandId);
+      }
+      throw error;
+    }
+  };
+
+  if (highspeedRequiresQueue) {
+    // Bug 根因：临时 Highspeed provider 不能 guide 到当前 turn；交给 Core 的 requireQueue
+    // 原子准入，避免跨层 busy 快照在 await 期间失效后用普通模型直接启动。
+    return await queueHighspeedTurn();
+  }
+>>>>>>> zai-org/main
   const foregroundPromotionLeaseId = forceStartNow ? `send-now:${envelope.commandId}` : undefined;
   let foregroundPromotionLeaseAcquired = false;
   let preempted = false;

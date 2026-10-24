@@ -1,3 +1,5 @@
+import { getRemoteConnectionFailureCode } from "@/lib/remoteWorkspaceServiceError.js";
+import { formatRemoteConnectionError } from "@/lib/remoteConnectionPresentation.js";
 import { CodingPlanEntryButton } from "@/settings/CodingPlanEntryButton.js";
 /**
  * ChatErrorBanner — 错误提示组件
@@ -9,10 +11,12 @@ import {
   MEDIA_BUDGET_CURRENT_ATTACHMENT_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_IMAGE_TOO_LARGE_ERROR_CODE,
   MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE_ERROR_CODE,
+} from "@zcode/shared";
+import {
   TID_CHAT_ERROR_DETAILS_BUTTON,
   TID_CHAT_ERROR_BANNER,
   TID_CHAT_ERROR_HOOK_ICON,
-} from "@zcode/shared";
+} from "@zcode/shared/test-ids";
 import { AnchorIcon, CopyIcon, InfoIcon, RocketIcon, SettingsIcon, X } from "lucide-react";
 import { useZCodeIntl } from "./i18n/IntlProvider.js";
 import type { IntlInstance } from "./i18n/IntlProvider.js";
@@ -68,12 +72,49 @@ function isModelConfigMissingError(error: Pick<ZCodeUiError, "code" | "message">
   return Boolean(error.code && MODEL_CONFIG_MISSING_CODES.has(error.code));
 }
 
+<<<<<<< HEAD
+=======
+function parseClaudeUnknownCommandMessage(message: string): {
+  command: string;
+  args?: string;
+} | null {
+  const match = message.match(/Claude Code 未知命令\s+(\S+?)(?:（参数：([^）]+)）)?。/u);
+  if (!match?.[1]) {
+    return null;
+  }
+
+  return {
+    command: match[1],
+    ...(match[2]?.trim() ? { args: match[2].trim() } : {}),
+  };
+}
+
+/**
+ * 缺模型横幅的措辞目标。远端 workspace 的模型目录来自远端 Registry，但本机配置保存后
+ * 会由 Provisioning 自动下发到远端，因此只区分措辞，配置/升级动作始终指向本机。
+ */
+export type ChatErrorBannerModelConfigTarget = "local" | "remote";
+
+>>>>>>> zai-org/main
 export function resolveChatErrorBannerDisplayMessage(
   error: ZCodeUiError,
   intl: IntlInstance,
+  modelConfigTarget: ChatErrorBannerModelConfigTarget = "local",
 ): string {
+  const remoteCode = getRemoteConnectionFailureCode(error);
+  if (remoteCode)
+    return formatRemoteConnectionError({
+      fallback: error.message,
+      reasonCode: remoteCode,
+      formatMessage: intl.formatMessage,
+    });
   if (isModelConfigMissingError(error)) {
-    return intl.formatMessage({ id: "chat.error.noAvailableModel" });
+    return intl.formatMessage({
+      id:
+        modelConfigTarget === "remote"
+          ? "chat.error.remoteNoAvailableModel"
+          : "chat.error.noAvailableModel",
+    });
   }
 
   const providerBusinessCode =
@@ -111,21 +152,32 @@ export function ChatErrorBanner({
   onDismiss,
   onOpenModelSettings,
   onOpenUpgrade,
+  modelConfigTarget = "local",
+  onReconnect,
+  remoteKind,
 }: {
   error: ZCodeUiError;
+  onReconnect?: () => void;
+  remoteKind?: string;
   onRetry?: () => void;
   retryLabel?: string;
   retryDisabled?: boolean;
   onDismiss?: () => void;
   onOpenModelSettings?: () => void;
   onOpenUpgrade?: () => void;
+  modelConfigTarget?: ChatErrorBannerModelConfigTarget;
 }) {
   const { intl } = useZCodeIntl();
   const { runFeedbackEntry } = useFeedbackEntryAction();
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const actionButtonClassName = "shrink-0";
   const iconButtonClassName = "shrink-0";
-  const localizedErrorMessage = resolveChatErrorBannerDisplayMessage(error, intl);
+  const localizedErrorMessage = resolveChatErrorBannerDisplayMessage(
+    error,
+    intl,
+    modelConfigTarget,
+  );
+  const remoteConnectionFailure = Boolean(getRemoteConnectionFailureCode(error));
   const modelConfigMissing = isModelConfigMissingError(error);
   const hookBlocked = error.code === "fault.runtime.hookBlocked";
   if (shouldSuppressChatErrorBanner(error)) {
@@ -133,11 +185,26 @@ export function ChatErrorBanner({
   }
 
   const handleOpenFeedback = async () => {
+<<<<<<< HEAD
     // 改造前这里无条件打开官方工单弹窗（连官方域名，fork 用户点了等于没反应）。
     // 现在改走「反馈与诊断」的渠道配置：errorSummary 让错误现场自动出现在预填正文里，
     // 用户不必再从横幅手抄一遍报错。原始错误对象与堆栈不进上下文，只传可读 message 与模板正文。
     const outcome = runFeedbackEntry({
       errorSummary: localizedErrorMessage,
+=======
+    openFeedbackSubmit({
+      title: localizedErrorMessage.slice(0, 80),
+      type: "bug",
+      module: remoteConnectionFailure
+        ? remoteKind === "ssh"
+          ? "SSH连接失败"
+          : remoteKind === "wsl"
+            ? "WSL连接失败"
+            : "其它"
+        : "模型调用报错",
+      severity: "P2-中",
+      includeLogs: true,
+>>>>>>> zai-org/main
       description: buildErrorFeedbackDescription({
         message: localizedErrorMessage,
         detail: error.detail,
@@ -210,22 +277,24 @@ export function ChatErrorBanner({
 
         {modelConfigMissing ? (
           <>
-            <CodingPlanEntryButton
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={onOpenUpgrade}
-              className={cn(
-                actionButtonClassName,
-                "button-gradient gap-1.5 text-white hover:bg-transparent hover:opacity-90 dark:bg-[#484A58] dark:hover:bg-[#484A58]",
-              )}
-              aria-label={intl.formatMessage({
-                id: "chat.quota.action.upgrade",
-              })}
-            >
-              <RocketIcon className="size-3.5" />
-              {intl.formatMessage({ id: "chat.quota.action.upgrade" })}
-            </CodingPlanEntryButton>
+            {onOpenUpgrade ? (
+              <CodingPlanEntryButton
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={onOpenUpgrade}
+                className={cn(
+                  actionButtonClassName,
+                  "button-gradient gap-1.5 text-white hover:bg-transparent hover:opacity-90 dark:bg-[#484A58] dark:hover:bg-[#484A58]",
+                )}
+                aria-label={intl.formatMessage({
+                  id: "chat.quota.action.upgrade",
+                })}
+              >
+                <RocketIcon className="size-3.5" />
+                {intl.formatMessage({ id: "chat.quota.action.upgrade" })}
+              </CodingPlanEntryButton>
+            ) : null}
             <Button
               type="button"
               variant="outline"
@@ -308,7 +377,12 @@ export function ChatErrorBanner({
           </Button>
         ) : null}
 
-        {!modelConfigMissing && onRetry ? (
+        {remoteConnectionFailure && onReconnect ? (
+          <Button variant="outline" size="sm" onClick={onReconnect}>
+            {intl.formatMessage({ id: "remote.conversation.reconnect" })}
+          </Button>
+        ) : null}
+        {!remoteConnectionFailure && !modelConfigMissing && onRetry ? (
           <Button variant="outline" size="sm" onClick={onRetry} disabled={retryDisabled}>
             {retryLabel ?? intl.formatMessage({ id: "chat.error.retry" })}
           </Button>

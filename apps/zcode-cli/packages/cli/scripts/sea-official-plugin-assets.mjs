@@ -17,6 +17,7 @@ const browserUseRequiredRuntimePaths = [
   "skills/web-gui-tester/SKILL.md",
 ];
 
+<<<<<<< HEAD
 // 四个内容型插件（office 三件 + pdf）：只有 skills/agents/scripts（check_office.py 之类），
 // 没有 MCP server、没有构建产物。requiresRuntime: false 让 collectSeaOfficialPluginAssets()
 // 跳过 assertPluginRuntime() 的 dist/mcp/server.js 校验 —— 那个校验对内容型插件必然失败。
@@ -96,6 +97,10 @@ const cuaSeaPlugin = {
   rootPath: join("packages", "zcode-cua-plugin"),
   version: "0.6.3",
 };
+=======
+// 文档插件查看面板的构建产物（office-runtime 输出到各插件 dist/）。
+const officeViewerRuntimePaths = ["dist/server.mjs", "dist/ui/assets.json", "dist/ui/panel.html"];
+>>>>>>> zai-org/main
 
 export const officialSeaPlugins = [
   {
@@ -111,6 +116,93 @@ export const officialSeaPlugins = [
   },
   {
     marketplace: "zcode-plugins-official",
+<<<<<<< HEAD
+=======
+    name: "android-emulator",
+    packageName: "@zcode/android-emulator-plugin",
+    requiresRuntime: true,
+    requiredRuntimePaths: ["dist/mcp/server.js"],
+    rootPath: join("packages", "android-emulator-plugin"),
+    version: "0.1.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "documents",
+    packageName: "@zcode/documents-plugin",
+    // 0.2.0 起带查看面板：SEA 必须在嵌入前校验 office-runtime 构建出的 server 与面板资源。
+    requiresRuntime: true,
+    requiredRuntimePaths: officeViewerRuntimePaths,
+    requiredSeedPaths: [
+      "agents/visual-judge.md",
+      "skills/docx/SKILL.md",
+      "skills/docx-viewer/SKILL.md",
+    ],
+    rootPath: join("packages", "documents-plugin"),
+    // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
+    version: "0.2.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "image-search",
+    packageName: "@zcode/image-search-plugin",
+    requiresRuntime: false,
+    requiredSeedPaths: [".mcp.json"],
+    rootPath: join("packages", "image-search-plugin"),
+    // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
+    version: "0.1.1",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "pdf",
+    packageName: "@zcode/pdf-plugin",
+    // 0.2.0 起带查看面板：SEA 必须在嵌入前校验 office-runtime 构建出的 server 与面板资源。
+    requiresRuntime: true,
+    requiredRuntimePaths: officeViewerRuntimePaths,
+    requiredSeedPaths: [
+      "agents/visual-judge.md",
+      "skills/pdf/SKILL.md",
+      "skills/pdf-viewer/SKILL.md",
+    ],
+    rootPath: join("packages", "pdf-plugin"),
+    // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
+    version: "0.2.1",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "presentations",
+    packageName: "@zcode/presentations-plugin",
+    // 0.2.0 起带查看面板：SEA 必须在嵌入前校验 office-runtime 构建出的 server 与面板资源。
+    requiresRuntime: true,
+    requiredRuntimePaths: officeViewerRuntimePaths,
+    requiredSeedPaths: [
+      "agents/visual-judge.md",
+      "skills/pptx/SKILL.md",
+      "skills/pptx-viewer/SKILL.md",
+    ],
+    rootPath: join("packages", "presentations-plugin"),
+    // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
+    version: "0.2.0",
+  },
+  {
+    marketplace: "zcode-plugins-official",
+    name: "spreadsheets",
+    packageName: "@zcode/spreadsheets-plugin",
+    // 0.2.0 起带查看面板：SEA 必须在嵌入前校验 office-runtime 构建出的 server 与面板资源。
+    requiresRuntime: true,
+    requiredRuntimePaths: officeViewerRuntimePaths,
+    requiredSeedPaths: [
+      "agents/visual-judge.md",
+      "skills/xlsx/SKILL.md",
+      "skills/xlsx-viewer/SKILL.md",
+    ],
+    rootPath: join("packages", "spreadsheets-plugin"),
+    // 修复原因：SEA manifest 必须与 package、plugin manifest 和官方 definition 同步，避免发布产物嵌入旧版本。
+    version: "0.2.0",
+  },
+  {
+    // browser-use 使用真实 node_repl MCP runtime，SEA 必须校验并嵌入 server.js。
+    marketplace: "zcode-plugins-official",
+>>>>>>> zai-org/main
     name: "browser-use",
     packageName: "@zcode/browser-use-plugin",
     requiresRuntime: true,

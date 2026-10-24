@@ -188,6 +188,9 @@ function postDispatchRequest(
       : {}),
     ...(automation.mode ? { mode: automation.mode } : {}),
     workspacePath: automation.workspacePath,
+    projectId: automation.projectId,
+    hostId: automation.hostId,
+    additionalDirectories: automation.additionalDirectories,
     ...(automation.workspaceIdentity ? { workspaceIdentity: automation.workspaceIdentity } : {}),
   };
   parentPort?.postMessage(request);
@@ -237,13 +240,14 @@ async function handleOffPeakClaimed(task: ZCodeOffPeakTask, now: number): Promis
     await offPeakRepo.releaseClaim(task.offPeakTaskId, { now });
     return;
   }
-  // claimDue 已按 readOffPeakModelSelection 逐行过滤：缺 Provider 身份的历史行不会被认领。
-  // 类型上 modelSelection 仍是可选，这里显式收窄，不放宽 schedulerProtocol 的必填约定
-  // （main→host 的 OffPeakRun 同样要求完整 Selection）。真出现空值时释放认领、留在队列等修复。
-  const modelSelection = task.modelSelection;
-  if (!modelSelection) {
+  if (!task.modelSelection) {
+    // 仓库只认领 schedulable=1 的任务，而清空 Selection 时会同步写 schedulable=0，
+    // 所以这里理论上不可达；保留守卫是为了不把"待修复"任务派发成无模型的 run。
     await offPeakRepo.releaseClaim(task.offPeakTaskId, { now });
-    log("warn", `off-peak task ${task.offPeakTaskId} has no model selection; dispatch skipped`);
+    log(
+      "warn",
+      `off-peak task claimed without model selection, released task=${task.offPeakTaskId}`,
+    );
     return;
   }
   offPeakInFlight.add(task.offPeakTaskId);
@@ -257,6 +261,9 @@ async function handleOffPeakClaimed(task: ZCodeOffPeakTask, now: number): Promis
     ...(task.sessionId ? { sessionId: task.sessionId } : {}),
     ...(task.serverTicketId ? { serverTicketId: task.serverTicketId } : {}),
     workspacePath: task.workspacePath,
+    projectId: task.projectId,
+    hostId: task.hostId,
+    additionalDirectories: task.additionalDirectories,
     ...(task.workspaceIdentity ? { workspaceIdentity: task.workspaceIdentity } : {}),
   };
   parentPort?.postMessage(request);

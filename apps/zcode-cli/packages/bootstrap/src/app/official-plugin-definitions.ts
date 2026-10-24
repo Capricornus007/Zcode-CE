@@ -35,6 +35,11 @@ const OFFICIAL_CUA_PLUGIN_NAME = "computer-use";
 export const OFFICIAL_CUA_PLUGIN_ID = `${OFFICIAL_CUA_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 
 export interface OfficialPluginDefinition {
+  /**
+   * 卸载（抑制）后的可恢复条目没有运行时信息，商店只能靠这里判断是否归入「UI 插件」。
+   * 插件包 manifest 声明 ui.surfaces 时必须同时声明 "ui"，由 bootstrap 测试校验一致。
+   */
+  componentTypes?: readonly string[];
   // 内容型 plugin (无 MCP server / 无系统依赖) 可以设为 true,
   // 这样用户首次 `/skill <name>` 就能用,不必先 `zcode plugins enable`。
   // 默认 false 保持 ios-simulator / android-emulator 这类重负载 plugin 原来行为。
@@ -58,6 +63,13 @@ const ZAI_AUTHOR = { name: "Z.ai", url: "https://z.ai" } as const;
 const OFFICIAL_PLUGIN_ASSETS_BASE_URL = "https://cdn-zcode.z.ai/zcode/official-plugin/assets";
 
 const OFFICIAL_NODE_REPL_HOST_REQUIRED_SEED_PATHS = ["dist/mcp/server.js"] as const;
+
+/** 文档插件（documents / pdf / presentations / spreadsheets）查看面板的构建产物。 */
+export const OFFICIAL_OFFICE_VIEWER_RUNTIME_PATHS = [
+  "dist/server.mjs",
+  "dist/ui/assets.json",
+  "dist/ui/panel.html",
+] as const;
 
 export const OFFICIAL_BROWSER_USE_REQUIRED_SEED_PATHS = [
   "docs/api.json",
@@ -214,13 +226,15 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
   },
   ...(
     [
-      ["documents", "docx", "Documents", "Word文档"],
-      ["pdf", "pdf", "PDF", "PDF"],
-      ["presentations", "pptx", "Presentations", "演示文档"],
-      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格"],
+      // 版本按插件各自升：pdf 0.2.1 起面板带中日韩字体回退，换新缓存目录，不复用 0.2.0 的旧缓存。
+      ["documents", "docx", "Documents", "Word文档", "0.2.0"],
+      ["pdf", "pdf", "PDF", "PDF", "0.2.1"],
+      ["presentations", "pptx", "Presentations", "演示文档", "0.2.0"],
+      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格", "0.2.0"],
     ] as const
   ).map(
-    ([name, skill, displayName, chineseName]): OfficialPluginDefinition => ({
+    ([name, skill, displayName, chineseName, version]): OfficialPluginDefinition => ({
+      componentTypes: ["ui"],
       defaultEnabled: true,
       listing: {
         author: ZAI_AUTHOR,
@@ -232,10 +246,20 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
         description_i18n: { "zh-CN": `创建、编辑与审阅${chineseName}（${skill.toUpperCase()}）。` },
       },
       name,
+<<<<<<< HEAD
       requiredSeedPaths: [
         "agents/visual-judge.md",
         `skills/${skill}/SKILL.md`,
         ...(DOCUMENT_PLUGIN_EXTRA_REQUIRED_SEED_PATHS[name] ?? []),
+=======
+      // 0.2.0 起文档插件同时提供查看面板：MCP server 与面板资源由 office-runtime 构建进 dist/，
+      // 缺任一项都会 seed 出能看到面板入口却无法启动的残缺插件。
+      requiredSeedPaths: [
+        "agents/visual-judge.md",
+        `skills/${skill}/SKILL.md`,
+        `skills/${skill}-viewer/SKILL.md`,
+        ...OFFICIAL_OFFICE_VIEWER_RUNTIME_PATHS,
+>>>>>>> zai-org/main
       ],
       rootCandidates: [
         `packages/${name}-plugin`,
@@ -243,7 +267,11 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
         `../../${name}-plugin`,
         `../../../${name}-plugin`,
       ],
+<<<<<<< HEAD
       version: "0.1.7",
+=======
+      version,
+>>>>>>> zai-org/main
     }),
   ),
   {
@@ -400,7 +428,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     // isZCodeCuaInternalFeatureEnabled（打包层默认 true）与输入框入口 hidden 默认值的联动语义。
     name: "computer-use",
     hostMcpServerNames: ["node_repl"],
-    // 用户露出名统一为「Computer Use / 电脑控制」。包名与 producer 仓库仍保持 zcode-cua，
+    // 用户露出名统一为「Computer Use / 电脑控制」。包名与 producer workspace 包仍保持 zcode-cua，
     // 以兼容原生 Helper identity；EN 描述基线走 manifest
     // description，这里只放 zh-CN 覆盖；resolveLocalizedText 在 en-US 时回退到 manifest。
     listing: {
@@ -421,6 +449,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../../zcode-cua-plugin",
     ],
     requiredSeedPaths: OFFICIAL_CUA_REQUIRED_SEED_PATHS,
+<<<<<<< HEAD
     // 2026-09-22（fix.3）：插件资产已从官方发行包原样搬进 apps/zcode-cli/packages/zcode-cua-plugin
     // （4 文件逐字节全等，许可见 docs/development/computer-use.md 的表）。这里仍不复制 native runtime：
     // 本构建的 CUA 驱动改走 MIT 许可的 @trycua/cua-driver（packages/zcode-cua/index.js:19-32），
@@ -435,6 +464,15 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     // 且官方发行包本来就是「manifest 0.6.1 / 定义 0.6.3」并存，这个差不是我们引入的缺陷。改成 0.6.1
     // 会破坏上一条注释的追踪不变量，并让 producer bump 工作流失去正确的比较基线。
     version: "0.6.3",
+=======
+    // Bug 根因：迁移 node_repl 时把旧 MCP launcher 与 SDK 仍需的 Sharp runtime 一并裁掉了。
+    // Dev/desktop 会把最小 Sharp 闭包 stage 到这里；官方 cache 必须继续携带 node_modules，
+    // 否则 seed 原子替换后首次截图才会报 Cannot find module 'sharp'。
+    runtimeTopLevelPaths: ["node_modules"],
+    // 这里的 version 追踪上游 zcode-cua runtime 版本，使插件 UI 展示、缓存路径、
+    // marketplace 条目都对齐；具体版本由原子 producer bump 工作流维护。
+    version: "0.6.5",
+>>>>>>> zai-org/main
   },
 ];
 

@@ -38,11 +38,14 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  MessageChannelMain,
   nativeImage,
   protocol,
   session,
+  shell,
   webContents,
 } from "electron";
+import { randomUUID } from "node:crypto";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
@@ -54,11 +57,15 @@ import {
   getConversationWorkspaceDir,
   normalizeRuntimeProcessEnv,
   setDataBaseDir,
+  migrateApplicationStorage,
+  resolveDefaultZCodeAgentCommand,
+  startupStorage,
 } from "@zcode/services/node";
 import {
   desktopMenuMessageIds,
   type Locale,
   type AppSettings,
+  type appSettingsPatchSchema,
   PlatformChannels,
   ZCODE_ENV,
   ZCODE_PRODUCT_FLAVOR,
@@ -69,6 +76,7 @@ import {
   resolveZCodeEndpointOrigin,
   type UpdateStatePayload,
   HostMessageTypes,
+  InternalChannels,
 } from "@zcode/shared";
 import { logger } from "./logger.js";
 import { registerWebServiceIpc } from "./web-service/ipc.js";
@@ -104,6 +112,14 @@ import {
   type ExplicitStartupWorkspaceRequest,
   resolveExplicitStartupWorkspaceBootstrap,
 } from "./startupWorkspaceDeepLinkGate.js";
+<<<<<<< HEAD
+=======
+import { createWebRemoteControlManager } from "./webRemoteControlManager.js";
+import { createWebRemoteControlDeviceStorage } from "#src/main/web-remote-relay/index.js";
+import { createWebRemoteControlFeatureGate } from "./webRemoteControlFeatureGate.js";
+import { reconnectWebRemoteControlWorkspaceInRenderer } from "./webRemoteControlRendererReconnect.js";
+import { sendWebRemoteControlStatusChangedToWindow } from "./webRemoteControlStatusEvents.js";
+>>>>>>> zai-org/main
 import { executeDesktopCommand } from "./desktopCommandHandlers.js";
 import { clampDesktopZoomLevel, resolveDesktopZoomLevelFromFactor } from "./desktopZoom.js";
 import {
@@ -710,9 +726,50 @@ function awaitFirstHostSpawnDecision(): Promise<void> {
   })();
   return firstHostSpawnDecisionPromise;
 }
+<<<<<<< HEAD
 // 遥测移除（P1）：这里原有 appTelemetryCore（createTelemetryCore + 三个 Loader + OTLP fetch）、
 // appTelemetryRuntime（启动门 / renderer 上下文 / interactive 状态）、reportRemoteUsageEventForRenderer
 // 与 syncAppTelemetryInteractiveState。整套业务事件上报链路已删除，不再需要 credential service。
+=======
+const appTelemetryCore = createTelemetryCore({
+  loadUserId: createTelemetryUserIdLoader(appTelemetryCredentialService),
+  loadAuthorization: createTelemetryAuthorizationLoader(appTelemetryCredentialService),
+  loadMarketingParams: createTelemetryMarketingParamsLoader(appTelemetryCredentialService),
+  resolveZCodeEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
+  fetchImpl: createDesktopTelemetryFetch({
+    fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
+  }),
+});
+const appTelemetryRuntime = createAppTelemetryRuntime({
+  telemetryCore: appTelemetryCore,
+  appLaunchCoordinator,
+});
+
+function reportRemoteUsageEventForRenderer(rendererId: number, event: TelemetryEventPayload): void {
+  const context =
+    appTelemetryRuntime.getRendererContext(rendererId) ??
+    appTelemetryRuntime.getLatestRendererContext();
+  if (!context) {
+    logger.warn("[remote-usage-telemetry] renderer context unavailable", {
+      elementName: event.elementName,
+      rendererId,
+    });
+    return;
+  }
+  // 最终失败由 TelemetryCore 统一记录一条脱敏告警；这里仅隔离远程连接主链路。
+  void appTelemetryCore.reportEvent({ context, ...event }).catch(() => {});
+}
+
+function syncAppTelemetryInteractiveState(): void {
+  appTelemetryRuntime.setInteractive(
+    getApplicationWindowsExcludingCuaIndicator().some(
+      (win) => !win.isDestroyed() && win.isVisible() && win.isFocused(),
+    ),
+  );
+  // 登出/切号发生在 host 子进程，主进程无即时信号；窗口聚焦时兜底刷新 ARMS user.name
+  void armsUserIdentitySync.refresh();
+}
+>>>>>>> zai-org/main
 
 app.on("browser-window-focus", (_event, win) => {
   rebuildMenu();
@@ -738,11 +795,25 @@ const remoteSessionManager = createRemoteWorkspaceSessionManager({
   // 两个 ARMS 远程连接指标回调，随 desktopRemoteUsageArmsTelemetry 删除。
 });
 
+<<<<<<< HEAD
+=======
+// 复用既有只读账号入口；HTTP 由 main 的 Node fetch 执行，不触发 host OAuth 登出。
+const loadRemoteControlUserId = createTelemetryUserIdLoader(webRemoteControlCredentialService);
+const loadRemoteControlAuthorization = createTelemetryAuthorizationLoader(
+  webRemoteControlCredentialService,
+);
+const webRemoteControlSharedHostAttachments = createWebRemoteControlSharedHostAttachments({
+  windowHostProcessMap,
+  attachRemoteWorkspaceSessionHost: remoteSessionManager.attachRemoteWorkspaceSessionHost,
+  logger,
+});
+>>>>>>> zai-org/main
 const deviceMid = ensureDesktopDeviceMidSync();
 // 帮助配置是公开读取，不能复用下面附带账号鉴权的灰度响应缓存。
 const readHelpConfig = createDesktopHelpConfigReader({
   appVersion: ZCODE_VERSION || app.getVersion(),
   deviceMid,
+  getClientLanguage: () => currentApplicationLocale,
   resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
 });
 // 同一个 /api/v1/client/configs fetcher 供两个灰度 rollout 共用（请求参数与鉴权完全一致，
@@ -750,6 +821,7 @@ const readHelpConfig = createDesktopHelpConfigReader({
 const electronClientConfigsFetcher = createElectronDesktopContextPromptConfigFetcher({
   appVersion: ZCODE_VERSION || app.getVersion(),
   deviceMid,
+  getClientLanguage: () => currentApplicationLocale,
   resolveEndpointOrigin: resolveCurrentZCodeEndpointOrigin,
 });
 desktopContextPromptRollout = createDesktopContextPromptRollout({
@@ -783,6 +855,118 @@ let startupOpenWorkspaceRequest: ExplicitStartupWorkspaceRequest | null =
       ? { path: startupDeepLinkWorkspacePath, source: "deep-link" }
       : null;
 
+<<<<<<< HEAD
+=======
+const webRemoteControlManager = createWebRemoteControlManager({
+  getEndpointUrls: async () => {
+    const derived = buildZCodeEndpointUrls(await resolveCurrentZCodeEndpointOrigin(), {
+      appVersion: webRemoteControlAppVersion,
+    });
+    return {
+      ...derived,
+      relayWsUrl: resolveWebRemoteControlRelayWsUrl({
+        endpointOrigin: derived.origin,
+        overrideUrl: webRemoteControlRelayWsEnvOverride,
+      }),
+      remoteUrl: webRemoteControlUrlEnvOverride || derived.remoteUrl,
+    };
+  },
+  relayWsUrl: resolveWebRemoteControlRelayWsUrl({
+    endpointOrigin: DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+    overrideUrl: webRemoteControlRelayWsEnvOverride,
+  }),
+  mobileRemoteControlUrl: webRemoteControlUrlEnvOverride || defaultZCodeEndpointUrls.remoteUrl,
+  deviceMid,
+  deviceName: hostname(),
+  appVersion: webRemoteControlAppVersion,
+  getLogin: async () => {
+    const userId = await loadRemoteControlUserId();
+    const authorization = await loadRemoteControlAuthorization(userId);
+    return authorization ? { userId, jwt: authorization.slice("Bearer ".length) } : undefined;
+  },
+  deviceStorage: createWebRemoteControlDeviceStorage({
+    deleteLegacyCredential: () =>
+      webRemoteControlCredentialService.delete("web-remote-control:external-relay:pass_hash"),
+    loadSettings: () => mainSettingService.get(),
+    patchSettings: (patch) => mainSettingService.update(patch),
+  }),
+  startupRestoreStorageProvider: {
+    load: async () => (await mainSettingService.get()).webRemoteControlLastEnabledContext,
+    save: async (context) => {
+      await mainSettingService.update({
+        webRemoteControlLastEnabledContext: {
+          workspacePath: context.workspacePath,
+          workspaceIdentity: context.workspaceIdentity,
+          initialTaskId: context.initialTaskId,
+        },
+      });
+    },
+    clear: async () => {
+      await mainSettingService.update({
+        webRemoteControlLastEnabledContext: undefined,
+      });
+    },
+  },
+  featureGate: createWebRemoteControlFeatureGate(),
+  logger,
+  relayMessageLogger: webRemoteControlRelayLogger,
+  platformHandlers: {
+    isDockerAvailable: () => isDockerDaemonAvailable(),
+    listWSLDistros: () => listAvailableWSLDistros(),
+    listDockerContainers: () => listAvailableDockerContainers(),
+    listSSHConfigAliases: () => listSSHConfigAliases(),
+    createTempTextAttachment: (payload) => createTempTextAttachment(payload),
+    loadMcpFromUserDirectory: (payload) => loadCliMcpFromUserDirectory(payload),
+    saveMcpToUserDirectory: async (payload) => {
+      try {
+        await saveCliMcpToUserDirectory(payload);
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.warn("[web-remote-control] MCP save failed", message);
+        return { success: false, error: message };
+      }
+    },
+    migrateLegacyCommonMcp: (payload) => migrateLegacyCommonMcp(payload),
+  },
+  reconnectWorkspace: reconnectWebRemoteControlWorkspaceInRenderer,
+  prepareProjectWorkspace: async (windowId, project, requestId) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (!win || win.isDestroyed()) throw new Error("项目导航窗口已关闭");
+    return remoteSessionManager.prepareProjectWorkspace(win, project, requestId);
+  },
+  cancelProjectPreparation: (windowId, requestId) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (win && !win.isDestroyed())
+      remoteSessionManager.cancelPendingRemoteWorkspaceSessionsForWindow(
+        win.webContents.id,
+        "mobile-navigation-superseded",
+        requestId,
+      );
+  },
+  reportRendererTelemetryEvent: (event) => {
+    void appTelemetryCore.reportEvent(event).catch(() => {});
+  },
+  reportRemoteUsageEvent: (windowId, event) => {
+    const win = BrowserWindow.fromId(windowId);
+    if (!win || win.webContents.isDestroyed()) {
+      return;
+    }
+    reportRemoteUsageEventForRenderer(win.webContents.id, event);
+  },
+  onStatusChanged: (windowId, status) => {
+    sendWebRemoteControlStatusChangedToWindow(BrowserWindow.fromId(windowId), status);
+  },
+  attachWorkspaceHost: webRemoteControlSharedHostAttachments.attachWorkspaceHost,
+  releaseWorkspaceHostAttachment: webRemoteControlSharedHostAttachments.releaseAttachment,
+  disposeWorkspaceHostAttachmentsForWindow: (windowId) =>
+    webRemoteControlSharedHostAttachments.disposeWindow(windowId),
+  disposeWorkspaceHostAttachmentsForRemoteSession: (remoteSessionId) =>
+    webRemoteControlSharedHostAttachments.disposeRemoteSession(remoteSessionId),
+});
+webRemoteControlManagerRef.current = webRemoteControlManager;
+
+>>>>>>> zai-org/main
 let forceUpdateMainWindowCreationBlocked = false;
 
 function resolveExternalWorkspaceConfirmationCopy() {
@@ -870,7 +1054,11 @@ function syncCloseToTrayOnWindows(value: unknown) {
   logger.info(`[settings] closeToTrayOnWindows=${value}`);
 }
 
+<<<<<<< HEAD
 function syncImmediateAppSettings(patch: AppSettingsSyncPatch) {
+=======
+function syncImmediateAppSettings(patch: ReturnType<typeof appSettingsPatchSchema.parse>) {
+>>>>>>> zai-org/main
   syncCloseToTrayOnWindows(patch.closeToTrayOnWindows);
 
   if (patch.remoteAssetCdnBaseUrl !== undefined) {
@@ -1646,15 +1834,41 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
             windowsCuaOperationIndicator.handleState(source, event),
           onCuaOperationStateSourceExited: (source) =>
             windowsCuaOperationIndicator.clearSource(source),
+<<<<<<< HEAD
           // 遥测移除（P1）：这里原有 5 个 onAgentProcess* 回调（Agent 进程生命周期 → ARMS
           // perf_* 事件）、onMcpTelemetry 与 onSessionCreateTelemetry。只删遥测回调，
           // Host 进程生命周期管理的其它选项全部保留。
+=======
+          onAgentProcessExited: (event) => reportAgentProcessExitToArms(event, logger),
+          onAgentProcessError: (event) => reportAgentProcessSpawnErrorToArms(event, logger),
+          onAgentProcessException: (event) => reportAgentProcessExceptionToArms(event, logger),
+          onAgentProcessReady: (event) => reportAgentProcessReadyToArms(event, logger),
+          onAgentProcessSpawned: (event) => reportAgentProcessStartToArms(event, logger),
+          onMcpTelemetry: (message) =>
+            reportMcpTelemetryToArms(message.event, message.runtimeSurface),
+          onPluginTelemetry: (message) => {
+            void appTelemetryCore.reportEvent(message.event).catch(() => {});
+          },
+          onSessionCreateTelemetry: (message) => {
+            void appTelemetryCore.reportEvent(message.event).catch(() => {});
+          },
+>>>>>>> zai-org/main
           onCronRunResult: forwardCronRunResult,
           onOffPeakRunResult: forwardOffPeakRunResult,
           onCronSchedulerWakeRequested: wakeCronScheduler,
           onOffPeakSchedulerWakeRequested: wakeOffPeakScheduler,
           authorizeLocalMediaPreviewPath: localMediaPreviewPathRegistry.authorize,
+<<<<<<< HEAD
           // browser-use：main 用 WebContentsView+CDP 执行命令。
+=======
+          registerPluginSandbox: (input) => {
+            const host = getPluginSandboxHost();
+            if (!host) throw new Error("Plugin UI sandbox host is not installed.");
+            const { requestId: _requestId, ...registerInput } = input;
+            return host.registerFromHost(registerInput);
+          },
+          // browser-use：main 用 WebContentsView+CDP 执行命令（替换 T4 占位）。
+>>>>>>> zai-org/main
           handleBrowserExecuteRequest: ({ win: browserWin, ...request }) =>
             runBrowserCommandOnView({ win: browserWin, ...request }),
         },
@@ -1695,6 +1909,7 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
     // 已恢复 workspace 建立后台索引。始终注入 canonical fallback，才能覆盖非 active 历史目录已删除的情况。
     agentSpawnFallbackCwd: getConversationWorkspaceDir(),
     deviceMid,
+    remoteAssets: resolveRemoteAssetDirs({ locale: currentApplicationLocale }, hostProcessLocalEnv),
     runtimeProcessEnvPatchPromise: runtimeProcessEnvPreparation.patchPromise,
     runtimeProcessEnvFallbackPatch: runtimeProcessEnvPreparation.fallbackPatch,
     initialDesktopZoomLevel: currentDesktopZoomLevel,
@@ -1782,8 +1997,28 @@ app.whenReady().then(async () => {
   installLocalMediaPreviewProtocol(session.defaultSession.protocol, {
     isPathAuthorized: localMediaPreviewPathRegistry.isAuthorized,
   });
+<<<<<<< HEAD
   // Electron 的 net.request 只能在 app ready 后使用；灰度请求仍是旁路预热，不阻塞首个 Host。
   void desktopContextPromptRollout?.refresh();
+=======
+  // 插件 UI 沙箱：注册表 + renderer 可调 IPC；scheme 的 privileged 注册已随 zcode-media 在 ready 前完成。
+  installPluginSandboxHost({
+    preloadPath: join(import.meta.dirname, "../preload/pluginSandbox.cjs"),
+    rendererDir: join(import.meta.dirname, "../renderer"),
+    aliasDir: join(import.meta.dirname, "../plugin-sandbox"),
+    // 开发模式 out/renderer 没有 shell 产物，从 renderer dev server 代理（同 cua-permission-panel 的做法）。
+    ...(!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]
+      ? { devServerUrl: process.env["ELECTRON_RENDERER_URL"] }
+      : {}),
+    logger: console,
+    // e2e L05（配额）：只在 e2e run 里允许缩小注册表容量。
+    ...(process.env.ZCODE_E2E_RUN_ID?.trim() &&
+    Number.isInteger(Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
+    Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
+      ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
+      : {}),
+  });
+>>>>>>> zai-org/main
   installBrowserRestoreBootstrapProtocol(
     session.fromPartition(EMBEDDED_BROWSER_PARTITION).protocol,
   );
@@ -1891,6 +2126,10 @@ app.whenReady().then(async () => {
   if (!loadedBootstrapLocale) {
     currentApplicationLocale = resolveSystemApplicationLocale();
   }
+  // Electron 的 net.request 只能在 app ready 后使用；灰度请求仍是旁路预热，不阻塞首个 Host。
+  // 预热曾在读取持久化语言之前启动，X-Client-Language 会带默认语言并进入 1 小时缓存；
+  // 必须在 currentApplicationLocale 确定之后再启动。
+  void desktopContextPromptRollout?.refresh();
   installFinderOpenFolderWorkflow({
     platform: process.platform,
     locale: currentApplicationLocale,
@@ -1998,6 +2237,10 @@ app.whenReady().then(async () => {
     const capability = await closeToTrayCapabilityMonitor.refresh();
     if (capability.supported) {
       desktopTrayReady = createDesktopTray({ ...desktopTrayOptions, platform: "linux" }) !== null;
+      // 托盘补建成功时回放当前未读数：创建前已有的未读不能等到下一次计数变化才出现在红点上。
+      if (desktopTrayReady) {
+        syncApplicationUnreadBadge(windowUnreadCountMap);
+      }
     }
   };
   if (process.platform === "linux") {
@@ -2032,8 +2275,8 @@ app.whenReady().then(async () => {
       }
       return result;
     },
-    updateBrowserGuestViewport: (tabId, viewport, windowId, desktopZoomFactor) =>
-      browserGuestManager.updateViewportFromRenderer(tabId, viewport, windowId, desktopZoomFactor),
+    updateBrowserGuestViewport: (tabId, viewport, windowId) =>
+      browserGuestManager.updateViewportFromRenderer(tabId, viewport, windowId),
     reportBrowserScreenshotSurfaceReady: (windowId, senderWebContentsId, payload) => {
       logger.debug("[browser-screenshot-surface] renderer ready", {
         windowId,
@@ -2062,6 +2305,10 @@ app.whenReady().then(async () => {
     },
     applyApplicationLocale: async (locale) => {
       currentApplicationLocale = locale;
+      // Host 的 ZCode endpoint 请求以此为实时语言；setting.json 写入可能滞后或失败，不能作为来源。
+      for (const child of windowHostProcessMap.values()) {
+        child.postMessage({ type: HostMessageTypes.ApplicationLocaleChanged, locale });
+      }
       windowsCuaOperationIndicator.refreshContent();
       rebuildMenu();
       for (const win of getApplicationWindowsExcludingCuaIndicator()) {
@@ -2118,6 +2365,13 @@ app.whenReady().then(async () => {
     getDesktopSessionActivity: () => ({
       runningAgentSessionCount: getRunningAgentSessionCount(),
     }),
+<<<<<<< HEAD
+=======
+    syncWebRemoteControlWorkspaces: (windowId, workspaces) => {
+      webRemoteControlManager.syncAvailableWorkspaces(windowId, workspaces);
+      void webRemoteControlManager.restorePreviouslyEnabled(windowId, workspaces);
+    },
+>>>>>>> zai-org/main
     syncAppSettings: syncImmediateAppSettings,
     setShortcutRecordingActive,
     deviceMid,
@@ -2135,6 +2389,28 @@ app.whenReady().then(async () => {
       remoteSessionManager.cancelPendingRemoteWorkspaceSessionsForWindow,
     bindRemoteWorkspaceSessionContext: remoteSessionManager.bindRemoteWorkspaceSessionContext,
     confirmRendererAttachmentReady: remoteSessionManager.confirmRendererAttachmentReady,
+    attachSourceSettings: (sender, sourceServerId) => {
+      const child = windowHostProcessMap.get(sender.id);
+      if (!child) throw new Error("Desktop Window Host is unavailable");
+      const { port1, port2 } = new MessageChannelMain();
+      const attachmentId = `source-settings-${randomUUID()}`;
+      child.postMessage(
+        {
+          type: HostMessageTypes.AttachServicePort,
+          requestId: randomUUID(),
+          attachmentId,
+          clientMode: "desktop-continuous",
+          scope: { kind: "source-settings", sourceServerId },
+        },
+        [port2],
+      );
+      sender.postMessage(
+        InternalChannels.SourceSettingsServicePort,
+        { attachmentId, sourceServerId },
+        [port1],
+      );
+      return { attachmentId };
+    },
     isDockerDaemonAvailable,
     listAvailableWSLDistros,
     listAvailableDockerContainers,
@@ -2223,7 +2499,7 @@ app.whenReady().then(async () => {
   });
 
   const protocolUrl = extractDeepLinkUrlFromArgs(process.argv);
-  if (startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
+  if (protocolUrl && startupDeepLinkConsumptionGate.shouldHandleReadyProtocolUrl(protocolUrl)) {
     handleDeepLink(protocolUrl, logger, {
       confirmationCopy: resolveExternalWorkspaceConfirmationCopy(),
       resolveApplicationWindow: () => getApplicationWindowsExcludingCuaIndicator()[0] ?? null,

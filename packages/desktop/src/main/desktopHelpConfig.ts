@@ -10,10 +10,11 @@ export function createDesktopHelpConfigReader(options: {
   resolveEndpointOrigin: () => Promise<string>;
   appVersion: string;
   deviceMid: string;
+  /** 当前界面语言；以前不传，X-Client-Language 固定为 unknown。 */
+  getClientLanguage: () => string;
 }) {
-  // shared 的 fetchImpl 契约是 typeof fetch（入参允许 URL），而 Electron net.fetch 只接受 string | Request。
   const read = createHelpAppConfigReader({
-    fetchImpl: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init),
+    fetchImpl: (input, init) => net.fetch(input instanceof URL ? input.href : input, init),
   });
   return async () => {
     const endpointOrigin = await options.resolveEndpointOrigin();
@@ -26,6 +27,7 @@ export function createDesktopHelpConfigReader(options: {
       buildZCodeSourceHeadersFromContext({
         endpointOrigin,
         appVersion: options.appVersion,
+        clientLanguage: options.getClientLanguage(),
         deviceMid: options.deviceMid,
         platform: process.platform,
         arch: process.arch,

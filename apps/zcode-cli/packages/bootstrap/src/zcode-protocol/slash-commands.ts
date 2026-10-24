@@ -4,7 +4,6 @@ import {
   type ListZCodeCustomCommandsOptions,
 } from "../custom-commands.js";
 import {
-  APP_PROTOCOL_APP_ONLY_BUILTIN_SLASH_COMMANDS,
   APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES,
   isReservedZCodeSlashCommandName,
 } from "../slash-command-surface.js";
@@ -86,5 +85,5 @@ function listAppProtocolBuiltinSlashCommands(): ZCodeSlashCommand[] {
       },
     ];
   });
-  return [...sharedBuiltins, ...APP_PROTOCOL_APP_ONLY_BUILTIN_SLASH_COMMANDS];
+  return sharedBuiltins;
 }

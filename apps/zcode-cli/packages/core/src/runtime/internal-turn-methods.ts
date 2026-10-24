@@ -1,5 +1,5 @@
 import type { BackgroundBashOutputResult } from "@zcode/shared";
-import type { RuntimeInputPresentation } from "@zcode/contracts";
+import type { ModelToolContract, RuntimeInputPresentation } from "@zcode/contracts";
 import type {
   CompactPhase,
   CompactReason,
@@ -215,6 +215,7 @@ export interface AgentRuntimeTurnMethods {
       trigger?: CompactTrigger;
       model?: Model;
       activeEntries?: readonly RuntimeMessageEntry[];
+      getContinuationTools?: () => readonly ModelToolContract[];
     },
   ): Promise<{
     displayText: string;

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import type { InputId, ZCodeProvider, ZCodeTaskMeta } from "@zcode/shared";
 import {
   getTaskMeta,
@@ -5,80 +6,24 @@ import {
   useZCodeSessionStore,
 } from "@/store/zcodeSessionStore.js";
 import { mergeTaskMetaCandidates, mergeTaskWithOptimisticMeta } from "@/lib/zcodeTaskMetaMerge.js";
+=======
+import type { ZCodeTaskMeta } from "@zcode/shared";
+import { getTaskMeta, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { mergeTaskMetaCandidates } from "@/lib/zcodeTaskMetaMerge.js";
+>>>>>>> zai-org/main
 import {
   applyTaskQueryCacheMutation,
-  removeTaskFromTaskQueryCaches,
   updateTaskQueryCacheTaskMetaPreservingMembership,
   upsertTaskQueryCacheTaskMeta,
   useTaskQueryCacheStore,
   type TaskListMembershipState,
 } from "@/store/taskQueryCacheStore.js";
-import { buildTaskEntityKey, buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
+import { buildTaskEntityKey } from "@/lib/taskQueryCache.js";
 
 const ABSENT_MEMBERSHIP: TaskListMembershipState = {
   pinned: true,
   archived: true,
 };
-
-function inferTaskMembershipFromQueryCaches(params: {
-  workspacePath: string;
-  workspaceIdentity?: string;
-  taskId: string;
-}): TaskListMembershipState | null {
-  const entityKey = buildTaskEntityKey(params);
-  const workspaceKey = buildTaskWorkspaceKey(params.workspacePath, params.workspaceIdentity);
-  const { resultsByQueryKey } = useTaskQueryCacheStore.getState();
-  let foundActive = false;
-  let foundPinned = false;
-
-  for (const result of Object.values(resultsByQueryKey)) {
-    if (!result.taskKeys.includes(entityKey)) {
-      continue;
-    }
-    if (!result.descriptor.workspaceKeys.includes(workspaceKey)) {
-      continue;
-    }
-    if (result.descriptor.kind === "archived") {
-      return { pinned: false, archived: true };
-    }
-    if (result.descriptor.kind === "pinned") {
-      foundPinned = true;
-      continue;
-    }
-    if (
-      result.descriptor.kind === "workspace" ||
-      result.descriptor.kind === "timeline" ||
-      // Bugfix: active 是搜索/Command Center 使用的正式 active 列表。
-      // 漏掉它会把 active-only 可见 task 推断成 absent，置顶/归档事件会误增减 total。
-      result.descriptor.kind === "active"
-    ) {
-      foundActive = true;
-    }
-  }
-
-  if (foundPinned) {
-    return { pinned: true, archived: false };
-  }
-  if (foundActive) {
-    return { pinned: false, archived: false };
-  }
-
-  return null;
-}
-
-function membershipForWorkspaceEventReason(
-  reason: "task_archived" | "task_unarchived" | "task_pinned" | "task_unpinned",
-): TaskListMembershipState {
-  switch (reason) {
-    case "task_archived":
-      return { pinned: false, archived: true };
-    case "task_pinned":
-      return { pinned: true, archived: false };
-    case "task_unarchived":
-    case "task_unpinned":
-      return { pinned: false, archived: false };
-  }
-}
 
 function sortTasksByUpdatedAt(tasks: readonly ZCodeTaskMeta[]): ZCodeTaskMeta[] {
   return [...tasks].sort((left, right) => {
@@ -167,6 +112,7 @@ export function syncTaskMetaToTaskCaches(params: {
   }
 }
 
+<<<<<<< HEAD
 export function syncTaskMembershipEventToTaskCaches(params: {
   workspacePath: string;
   workspaceIdentity?: string;
@@ -268,6 +214,8 @@ export function patchTaskMetaInTaskCaches(params: {
   return nextTask;
 }
 
+=======
+>>>>>>> zai-org/main
 export function insertTaskIntoTaskCaches(params: {
   workspacePath: string;
   workspaceIdentity?: string;
@@ -286,6 +234,7 @@ export function insertTaskIntoTaskCaches(params: {
     ensureInWorkspaceTaskCache:
       params.membership.pinned === false && params.membership.archived === false,
   });
+<<<<<<< HEAD
 }
 
 export function initializeBackgroundTaskInTaskCaches(params: {
@@ -315,4 +264,6 @@ export function initializeBackgroundTaskInTaskCaches(params: {
     previousState: ABSENT_MEMBERSHIP,
     nextState: { pinned: false, archived: false },
   });
+=======
+>>>>>>> zai-org/main
 }

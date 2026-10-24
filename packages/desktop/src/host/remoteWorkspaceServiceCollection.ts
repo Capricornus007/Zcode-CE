@@ -159,6 +159,8 @@ export function resolveServerProjectService(params: {
               : [],
         );
     },
+    // desktop-attached remote 只复用本机已解析或旧存储中的 Key；远端刷新仍由本机正式账号链负责。
+    resolveProviderApiKey: async () => null,
   });
   const readLocalAccountProviderSettings = async () => {
     const settings = await localSettingService.get();
@@ -171,78 +173,49 @@ export function resolveServerProjectService(params: {
     const providerId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
     return (await localOAuthCredentialRepo.loadUserProfile(providerId))?.id ?? null;
   };
-  const localAccountRequestAuthService =
-    (params.sourceServices ? getAccountRequestAuthService(params.sourceServices) : undefined) ??
-    (() => {
-      // 旧实现仅取磁盘 Key 且 resolve 恒为空；迁移后须复用正式 owner 或在此边界换证。
-      const tokenClient = createAccountProjectTokenClient(localApiClient, localCredentialService);
-      fallbackTokenClient = tokenClient;
-      // 401 恢复必须把失败 PAT 指纹贯穿个人/团队回调，否则缓存会再次返回被拒绝的凭据。
-      const credentialResolver = createAccountProviderCredentialService({
-        async loadOAuthAccessToken(family) {
-          const providerId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
-          return (await localOAuthCredentialRepo.loadTokenSet(providerId))?.accessToken ?? null;
-        },
-        async resolveProviderMaterial(
-          family,
-          loginToken,
-          accountIdentity,
-          rejectedProjectTokenFingerprint,
-        ) {
-          const result = await tokenClient.resolve({
-            origin:
-              family === "zai"
-                ? resolveZaiBusinessBaseUrl(process.env)
-                : resolveBigModelApiOrigin(process.env),
-            family,
-            loginToken,
-            accountId: accountIdentity,
-            rejectedProjectTokenFingerprint,
-          });
-          return result;
-        },
-      });
-      return createAccountRequestAuthService(
-        createAccountProviderRequestAuthService({
-          resolveCurrentAccountAccess: (access) =>
-            resolveCurrentAccountAccess({
-              access,
-              readSettings: readLocalAccountProviderSettings,
-              loadAccountIdentity: loadLocalAccountIdentity,
-            }),
-          loadOAuthTokenSet: (providerId) => localOAuthCredentialRepo.loadTokenSet(providerId),
-          async loadIndividualPlanMaterial(providerId, family, rejectedProjectTokenFingerprint) {
-            const oauthProviderId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
-            const accountIdentity = (
-              await localOAuthCredentialRepo.loadUserProfile(oauthProviderId)
-            )?.id;
-            if (!accountIdentity) return null;
-            return credentialResolver.loadCodingPlanMaterial({
-              providerId,
-              family,
-              accountIdentity,
-              rejectedProjectTokenFingerprint,
-            });
-          },
-          resolveTeamPlanMaterial: async (access, rejectedProjectTokenFingerprint) => {
-            const accountIdentity = await loadLocalAccountIdentity(access.family);
-            if (!accountIdentity) return null;
-            return resolveAccountTeamPlanRuntimeMaterial({
-              apiClient: localApiClient,
-              credentialService: localCredentialService,
-              accountIdentity,
-              tokenClient,
-              access,
-              rejectedProjectTokenFingerprint,
-            });
-          },
+  const localAccountRequestAuthService = createAccountRequestAuthService(
+    createAccountProviderRequestAuthService({
+      resolveCurrentAccountAccess: (access) =>
+        resolveCurrentAccountAccess({
+          access,
+          readSettings: readLocalAccountProviderSettings,
+          loadAccountIdentity: loadLocalAccountIdentity,
         }),
-      );
-    })();
+      loadOAuthTokenSet: (providerId) => localOAuthCredentialRepo.loadTokenSet(providerId),
+      async loadIndividualPlanApiKey(providerId, family) {
+        const oauthProviderId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
+        const accountIdentity = (await localOAuthCredentialRepo.loadUserProfile(oauthProviderId))
+          ?.id;
+        if (!accountIdentity) return null;
+        return localAccountProviderCredentialService.loadCodingPlanApiKey({
+          providerId,
+          family,
+          accountIdentity,
+        });
+      },
+      resolveTeamPlanApiKey: (access) =>
+        resolveAccountTeamPlanRuntimeApiKey({
+          apiClient: localApiClient,
+          credentialService: localCredentialService,
+          access,
+        }),
+    }),
+  );
   const localCodingPlanSubscriptionService = createCodingPlanSubscriptionService({
     apiClient: localApiClient,
     credentialService: localCredentialService,
   });
+    readTasks: ({ workspacePath, kind }) => {
+      const tasks = params.connectionServices.zcodeTaskService;
+      const scope = { workspacePath };
+      return kind === "pinned"
+        ? tasks.listPinnedTasks(scope)
+        : kind === "archived"
+          ? tasks.listArchivedTasks(scope)
+          : tasks.listTasks(scope);
+    },
+    ensureConversation: async () =>
+      (await params.connectionServices.fileService.ensureConversationWorkspace()).path,
   handleOAuthProviderLogout = createOAuthProviderLogoutHandler({
     accountProviderCredentialStore: localAccountProviderCredentialStore,
   });
@@ -373,16 +346,7 @@ export function resolveServerProjectService(params: {
           error: error instanceof Error ? error.message : String(error),
         });
         onError(error);
-      });
-        readTasks: ({ workspacePath, kind }) => {
-      const tasks = params.connectionServices.zcodeTaskService;
-      const scope = { workspacePath };
-      return kind === "pinned"
-        ? tasks.listPinnedTasks(scope)
-        : kind === "archived"
-          ? tasks.listArchivedTasks(scope)
-          : tasks.listTasks(scope);
-    },
+      });    },
     ensureConversation: async () =>
       (await params.connectionServices.fileService.ensureConversationWorkspace()).path,
   });

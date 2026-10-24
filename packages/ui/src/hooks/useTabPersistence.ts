@@ -375,3 +375,4 @@ export function useTabPersistence({
 
   return { isRestoring, hasCompletedInitialRestore, hasCompletedFullRestore };
 }
+}

@@ -401,6 +401,7 @@ export {
   BOT_MAX_ATTACHMENT_SIZE_BYTES,
 } from "./bots/botAttachmentLimits.js";
 export { IHighspeedCardService } from "./highspeed/highspeedCard.js";
+export { IOutputStyleService } from "./output-style/outputStyle.js";
 export {
   HighspeedCardService,
   createHighspeedHttpTransport,

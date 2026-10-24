@@ -254,6 +254,27 @@ export interface CreateTempTextAttachmentResult {
   sizeBytes: number;
 }
 
+/**
+ * dwf 产物「作为文件打开」：把某一版产物的字节落成宿主本机上的一份副本
+ * （docs/dynamic-workflow/authoring.md「How the user sees them」）。
+ *
+ * ⚠ 术语：artifact = 脚本经 `artifact.*` 发布给用户看的产出，不是引擎的 `RunSettlement.artifact`。
+ */
+export interface MaterializeWorkflowArtifactFileRequest {
+  runId: string;
+  artifactId: string;
+  /** 这份字节属于哪一版；副本按版本分目录，一版一份。 */
+  version: number;
+  /** 期望的文件名（含扩展名，扩展名决定系统用哪个 App 打开）；宿主会再清洗一次。 */
+  fileName: string;
+  bytes: Uint8Array;
+}
+
+export interface MaterializeWorkflowArtifactFileResult {
+  /** 副本在宿主本机上的绝对路径。 */
+  localPath: string;
+}
+
 export type SaveFileRequest =
   | {
       data: ArrayBuffer;
@@ -281,7 +302,9 @@ export interface PrintPageToPdfResult {
   error?: string;
 }
 
-export function createOpenInEditorRemoteTarget(target: RemoteTarget): OpenInEditorRemoteTarget {
+export function createOpenInEditorRemoteTarget(
+  target: RemoteTarget,
+): OpenInEditorRemoteTarget | undefined {
   switch (target.kind) {
     case "ssh":
       // openInEditor 只需要构造 VS Code Remote-SSH URI 的连接标识，
@@ -306,6 +329,8 @@ export function createOpenInEditorRemoteTarget(target: RemoteTarget): OpenInEdit
         kind: "docker",
         container: target.container,
       };
+    case "server":
+      return undefined;
   }
 }
 
@@ -465,6 +490,13 @@ export interface RemoteSessionReconnectedEvent {
   sessionId: string;
   workspacePath: string;
   workspaceIdentity: string;
+}
+
+export interface BotRemoteWorkspaceReconnectedEvent {
+  sessionId: string;
+  workspacePath: string;
+  workspaceIdentity: string;
+  target: RemoteTarget;
 }
 
 /**
@@ -875,6 +907,10 @@ export interface IPlatformService {
 
   /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
   onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
+  /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
+  onBotRemoteWorkspaceReconnected?(
+    handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
+  ): () => void;
 
   /** 检查目录是否已在其他窗口打开；如果是则激活该窗口并切到对应 tab */
   activateOrSetWorkspace(path: string): Promise<{ activated: boolean }>;

@@ -16,9 +16,6 @@ import {
   type HostAgentProcessReadyResponse,
   type HostAgentProcessSpawnedResponse,
   type HostCuaOperationStateResponse,
-  type HostMcpTelemetryResponse,
-  type HostSessionCreateTelemetryResponse,
-  type HostPluginTelemetryResponse,
   type RemoteTarget,
   type TaskRealtimeHostDeliveryKind,
   formatZCodeHostProcessName,
@@ -29,14 +26,13 @@ import {
   LAUNCH_MARKS_QUERY_KEY,
   RUNTIME_ZCODE_DEBUG,
   serializeLaunchMarks,
-  type RemoteTarget,
   type WorkspacePurpose,
   ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
 } from "@zcode/shared";
 import { getMainLaunchPartialMarks } from "./desktopLaunchMarks.js";
 import { BroadcastHub } from "./broadcastHub.js";
-import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
 import { createHostLogRelay } from "./hostLogRelay.js";
+import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
 import {
   registerHostAgentProcess,
   registerHostProcess,
@@ -52,7 +48,6 @@ import {
 import { createFeedbackLogArchiveFromExportLogs } from "./exportLogs.js";
 import { buildHostE2ECoverageEnv } from "./e2eCoverage.js";
 import type { RemoteAssetDirs } from "./desktopRuntimeEnv.js";
-import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
 
 export interface WindowBootstrapOptions {
   restoreSession?: boolean;
@@ -306,35 +301,6 @@ export function spawnHostProcess(
     // 资源管理器窗口的进程行采样结果：本地 UI 能力，与遥测无关，保留。
     if (result.data.type === HostResponseTypes.ResourceUsageSnapshotResult) {
       resolveHostResourceUsageResult(label, result.data);
-      return;
-    }
-
-    if (result.data.type === HostResponseTypes.ToolExecResource) {
-      ingestToolExecResource(result.data.sample, result.data.runtimeSurface);
-      return;
-    }
-
-    if (result.data.type === HostResponseTypes.McpResourceSamples) {
-      ingestMcpResourceSamples(
-        result.data.samples,
-        result.data.runtimeSurface,
-        result.data.environmentKey,
-      );
-      return;
-    }
-
-    if (result.data.type === HostResponseTypes.McpTelemetry) {
-      dependencies.onMcpTelemetry?.(result.data);
-      return;
-    }
-
-    if (result.data.type === HostResponseTypes.PluginTelemetry) {
-      dependencies.onPluginTelemetry?.(result.data);
-      return;
-    }
-
-    if (result.data.type === HostResponseTypes.SessionCreateTelemetry) {
-      dependencies.onSessionCreateTelemetry?.(result.data);
       return;
     }
 

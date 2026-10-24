@@ -1,7 +1,6 @@
 import { copyFile, mkdtemp, open, rm, writeFile } from "node:fs/promises";
 import type { LookupAddress } from "node:dns";
 import { lookup } from "node:dns/promises";
-import type { LookupAddress } from "node:dns";
 import { BlockList } from "node:net";
 import type { LookupFunction } from "node:net";
 import { tmpdir } from "node:os";

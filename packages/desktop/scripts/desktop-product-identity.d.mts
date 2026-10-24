@@ -35,6 +35,7 @@ export function resolveWindowsAppUserModelId(
   env?: Record<string, string | undefined>,
   runtime?: { isPackaged: boolean },
 ): string;
+export function resolveLinuxDesktopFileNameForFlavor(flavor: DesktopProductFlavor): string;
 export const desktopProductIdentities: Readonly<{
   production: DesktopProductIdentity;
   preview: DesktopProductIdentity;

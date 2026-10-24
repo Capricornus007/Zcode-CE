@@ -3,6 +3,7 @@
  *
  * This subpath must not be imported by renderer/browser bundles.
  */
+export { createNodeNetworkCapture, withoutNetworkCapture } from "./node/networkCapture.js";
 export { acquireFileLock } from "./node/atomicFileLock.js";
 export {
   // Modified by ZCode: 增量自上游 aac47556——gen-ui 输出根路径（node 侧）导出。

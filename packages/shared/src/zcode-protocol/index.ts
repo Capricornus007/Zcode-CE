@@ -59,7 +59,6 @@ import {
 } from "../browser-use/backend.js";
 import { browserCommandResultSchema } from "../browser-use/result.js";
 import { appToolSearchModeSchema } from "../app-runtime-preferences.js";
-import { integratedTerminalShellSelectionSchema } from "../validationAppSettings.js";
 import { zcodeTaskModeSchema } from "../zcode-task-mode-schema.js";
 import { OFFICIAL_MCP_AUTH_PORT_FAILURE_REASONS } from "../official-mcp-auth.js";
 import {
@@ -429,6 +428,7 @@ export const zcodeProtocolNotifications = {
   toolExecResource: "process/toolExecResource",
   pluginOperationProgress: "plugins/operationProgress",
   processResourceSample: "process/resourceSample",
+  processNetworkRequests: "process/networkRequests",
 } as const;
 
 /** 启动控制面独立于 task stream；数据库身份不可携带路径/凭据。 */
@@ -2755,6 +2755,14 @@ export const zcodeProviderRuntimeHeadersRequestParamsSchema = z
     modelSelection: modelSelectionSchema,
     providerId: nonEmptyString,
     accountAccess: zcodeProviderAccountAccessSchema.optional(),
+    expectedAccountScope: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    rejectedProjectTokenFingerprint: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     reason: zcodeProviderRuntimeHeadersRequestReasonSchema,
   })
   .strict();

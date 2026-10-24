@@ -209,10 +209,10 @@ async function verifyHelperPermissionIdentityUnchanged(
  * 直接把 NonNullable<unknown> 当返回类型会让对象字面量失去上下文类型（TS7006/TS7019），故在此显式声明。
  */
 interface CuaHelperInstallerLogger {
-  debug(traceId: string, ...args: unknown[]): void;
-  info(traceId: string, ...args: unknown[]): void;
-  warn(traceId: string, ...args: unknown[]): void;
-  error(traceId: string, ...args: unknown[]): void;
+  debug(traceId: string | undefined, ...args: unknown[]): void;
+  info(traceId: string | undefined, ...args: unknown[]): void;
+  warn(traceId: string | undefined, ...args: unknown[]): void;
+  error(traceId: string | undefined, ...args: unknown[]): void;
 }
 
 function toInstallerLogger(

@@ -4,6 +4,7 @@ import type { WindowProjectDirectoryServices } from "#src/window-project-directo
 import type { IProjectService } from "#src/project/contract.js";
 import type { IGenUiService } from "./gen-ui/contract.js";
 import { IOffPeakTaskService } from "./session/offPeakTask.js";
+import type { IHighspeedCardService } from "./highspeed/highspeedCard.js";
 import type { IFileService } from "./file/file.js";
 import type { IMediaPreviewService } from "./media-preview/mediaPreview.js";
 import type { IGitService } from "./git/git.js";
@@ -30,7 +31,6 @@ import type { IClientScenesService } from "./client-scenes/clientScenes.js";
 import type { ISkillsService } from "./skills/skills.js";
 import type { ISkillSyncService } from "./skill-sync/skillSync.js";
 import type { IMcpSyncService } from "./mcp-sync/mcpSync.js";
-import type { IGenUiService } from "./gen-ui/contract.js";
 import type { IPluginSyncService } from "./plugin-sync/pluginSync.js";
 import type { IPluginsService } from "./plugins/plugins.js";
 import type { IPluginManagementService } from "./plugins/pluginManagement.js";
@@ -90,6 +90,8 @@ export interface IServiceAccessor {
   readonly clientScenesService: IClientScenesService;
   /** 闲时任务管理（独立服务面）。 */
   readonly offPeakTaskService: IOffPeakTaskService;
+  /** Highspeed 加速卡服务（桌面侧能力；web home-only 环境按不支持处理）。 */
+  readonly highspeedCardService: IHighspeedCardService;
   /**
    * 工作区注册表（M1.3）：侧栏枚举的唯一真相源。
    * 旧 server wire / 测试 double 可不提供——缺省时客户端必须回落到「本客户端显式列出」，

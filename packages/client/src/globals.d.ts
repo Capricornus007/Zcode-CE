@@ -99,9 +99,10 @@ declare global {
         options: RemoteTarget,
         requestId?: string,
         context?: {
-          workspacePath: string;
+          workspacePath?: string;
           workspaceIdentity?: string;
           connectTrigger?: import("@zcode/shared").RemoteWorkspaceConnectTrigger;
+          confirmSourceServerInstall?: boolean;
         },
       ): Promise<{ success: boolean; error?: string; sessionId?: string }>;
       requestSourceSettingsAttachment?(sourceServerId: string): Promise<{ attachmentId: string }>;
@@ -197,6 +198,9 @@ declare global {
       onRemoteConnectionLog(handler: (entry: RemoteConnectionRuntimeLog) => void): () => void;
       /** 订阅远程 workspace session 关闭事件，返回 disposer */
       onRemoteSessionClosed(handler: (event: RemoteSessionClosedEvent) => void): () => void;
+      onRemoteSessionReconnected(
+        handler: (event: import("@zcode/shared").RemoteSessionReconnectedEvent) => void,
+      ): () => void;
       /** 检查目录是否已在其他窗口打开 */
       activateOrSetWorkspace?(path: string): Promise<{ activated: boolean }>;
       /** 同步当前窗口所有 tab 的 workspace 路径到 main 进程 */

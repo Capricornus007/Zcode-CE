@@ -4,6 +4,7 @@ import type { ZCodeTaskIndexSyncer } from "#src/zcode-agent/zcodeTaskIndexSyncer
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import {
   createSessionTraceId,
+  resolveWorkspaceKey,
   type ZCodeSessionStateSnapshot,
   type ZCodeWorkspaceTaskListChanged,
 } from "@zcode/shared";
@@ -480,7 +481,17 @@ export function createZCodeSessionService({
     },
 
     respondProviderRuntimeHeaders(params) {
-      return agentService.respondProviderRuntimeHeaders(params);
+      return agentService.respondProviderRuntimeHeaders({
+        requestId: params.requestId,
+        sessionId: params.sessionId,
+        workspace: {
+          workspacePath: params.workspacePath,
+          ...(params.workspaceIdentity ? { workspaceIdentity: params.workspaceIdentity } : {}),
+          ...(params.remoteSessionId ? { remoteSessionId: params.remoteSessionId } : {}),
+          workspaceKey: resolveWorkspaceKey(params),
+        },
+        response: params.response,
+      });
     },
 
     // M5 删波次 2：onDynamicSessionEvent（renderer 侧旧 session/subscribe 订阅面）已删。

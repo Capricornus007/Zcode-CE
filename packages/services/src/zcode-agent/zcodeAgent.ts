@@ -1,6 +1,7 @@
 import type { PluginUiToolResultNotification } from "@zcode/shared/mcp-apps";
 import type {
   BackgroundBashOutputResult,
+  DynamicWorkflowMode,
   SessionDebugSnapshot,
   ZCodeSessionContentProfile,
 } from "@zcode/shared";
@@ -284,6 +285,8 @@ export interface ZCodeAgentReadSessionParams extends ZCodeAgentSessionTarget {
   afterSeq?: number;
   /** 被动索引/观察者只能读取现有 runtime，禁止为了读快照拉起 session。 */
   runtimePolicy?: ZCodeAgentRuntimePolicy;
+  /** "index" 仅供 task index：返回剥离大载荷的同结构 snapshot，禁止回写 UI 状态。 */
+  contentProfile?: ZCodeSessionContentProfile;
 }
 
 export interface ZCodeAgentReadSessionMessagesParams extends ZCodeAgentSessionTarget {
@@ -675,6 +678,12 @@ export interface IZCodeAgentService {
    * 同步 App 全局运行时偏好到所有已活动 workspace；不得为此启动空闲 Agent。
    */
   syncAppRuntimePreferences(preferences: ZCodeAgentAppRuntimePreferences): Promise<void>;
+  /**
+   * 动态工作流用户选择变化的信号（docs/dynamic-workflow/launch.md「The user's choice」）：Host 重新计算
+   * 生效模式并串行重发 workspace/updateDynamicWorkflowPolicy。有本机设置权威的 Host 以设置文件为准；
+   * desktop-attached remote Host 以传入值为准（缺席 = 跟随服务端）。不得为此启动空闲 Agent。
+   */
+  syncDynamicWorkflowUserMode(params: { mode?: DynamicWorkflowMode }): Promise<void>;
   getWorkspaceRuntimeIdentity(
     params: ZCodeAgentWorkspaceTarget,
   ): Promise<ZCodeAgentWorkspaceRuntimeIdentity>;

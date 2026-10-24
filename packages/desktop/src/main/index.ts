@@ -49,9 +49,10 @@ import { randomUUID } from "node:crypto";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { spawn } from "node:child_process";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { homedir, hostname } from "node:os";
 import {
   createSettingService,
+  createCredentialService,
   buildRuntimeProcessEnvPatch,
   captureLoginShellEnvSnapshot,
   getConversationWorkspaceDir,
@@ -73,12 +74,13 @@ import {
   DEFAULT_LOCALE,
   ZCODE_VERSION,
   buildZCodeEndpointUrls,
+  resolveWebRemoteControlRelayWsUrl,
   resolveZCodeEndpointOrigin,
   type UpdateStatePayload,
   HostMessageTypes,
   InternalChannels,
 } from "@zcode/shared";
-import { logger } from "./logger.js";
+import { logger, webRemoteControlRelayLogger } from "./logger.js";
 import { registerWebServiceIpc } from "./web-service/ipc.js";
 import { createWebServiceConnectionPlane } from "./web-service/remoteControlClient.js";
 import { createWebServiceRuntime } from "./web-service/runtime.js";
@@ -113,6 +115,7 @@ import {
   resolveExplicitStartupWorkspaceBootstrap,
 } from "./startupWorkspaceDeepLinkGate.js";
 import { createWebRemoteControlManager } from "./webRemoteControlManager.js";
+import { createWebRemoteControlSharedHostAttachments } from "./webRemoteControlSharedHostAttachments.js";
 import { createWebRemoteControlDeviceStorage } from "#src/main/web-remote-relay/index.js";
 import { createWebRemoteControlFeatureGate } from "./webRemoteControlFeatureGate.js";
 import { reconnectWebRemoteControlWorkspaceInRenderer } from "./webRemoteControlRendererReconnect.js";
@@ -670,6 +673,10 @@ const UPDATE_STATUS_WINDOW_PROGRESS_HEIGHT = 224;
 const UPDATE_STATUS_WINDOW_READY_HEIGHT = UPDATE_STATUS_WINDOW_PROGRESS_HEIGHT - 54;
 const UPDATE_STATUS_WINDOW_TRAFFIC_LIGHT_POSITION = { x: 10, y: 10 } as const;
 const mainSettingService = createSettingService();
+const webRemoteControlCredentialService = createCredentialService();
+const webRemoteControlManagerRef = {
+  current: null as ReturnType<typeof createWebRemoteControlManager> | null,
+};
 async function resolveCurrentZCodeEndpointOrigin() {
   return resolveZCodeEndpointOrigin({
     env: ZCODE_ENV,
@@ -741,6 +748,14 @@ app.on("browser-window-created", (_event, win) => {
   win.once("closed", () => cuaPipFocusRouter.removeWindow(windowKey));
 });
 
+const webRemoteControlAppVersion = ZCODE_VERSION || app.getVersion();
+const defaultZCodeEndpointUrls = buildZCodeEndpointUrls(DEFAULT_ZCODE_ENDPOINT_ORIGIN, {
+  appVersion: webRemoteControlAppVersion,
+});
+const webRemoteControlRelayWsEnvOverride =
+  process.env["ZCODE_WEB_REMOTE_CONTROL_RELAY_WS_URL"]?.trim();
+const webRemoteControlUrlEnvOverride = process.env["ZCODE_WEB_REMOTE_CONTROL_URL"]?.trim();
+
 const remoteSessionManager = createRemoteWorkspaceSessionManager({
   logger,
   windowHostProcessMap,
@@ -749,13 +764,42 @@ const remoteSessionManager = createRemoteWorkspaceSessionManager({
   resolveWslTarget: resolveCanonicalWslTarget,
   // 遥测移除（P1）：这里原有 reportRemoteConnectionStateChanged / reportRemoteDisconnect
   // 两个 ARMS 远程连接指标回调，随 desktopRemoteUsageArmsTelemetry 删除。
+  webRemoteControlManagerRef,
 });
 
 // 复用既有只读账号入口；HTTP 由 main 的 Node fetch 执行，不触发 host OAuth 登出。
-const loadRemoteControlUserId = createTelemetryUserIdLoader(webRemoteControlCredentialService);
-const loadRemoteControlAuthorization = createTelemetryAuthorizationLoader(
-  webRemoteControlCredentialService,
-);
+// CE 已剥离遥测模块（P1），这里保留同一份只读身份解析，仅用于 Web 远控登录信息。
+function readOAuthUserId(rawUserInfo: string | null): string {
+  if (!rawUserInfo) return "";
+  try {
+    const parsed = JSON.parse(rawUserInfo) as { id?: unknown; user_id?: unknown };
+    return (
+      (typeof parsed.id === "string" ? parsed.id.trim() : "") ||
+      (typeof parsed.user_id === "string" ? parsed.user_id.trim() : "")
+    );
+  } catch {
+    return "";
+  }
+}
+async function loadRemoteControlUserId(): Promise<string> {
+  const provider =
+    (await webRemoteControlCredentialService.load("oauth:active_provider"))?.trim() ?? "";
+  if (!provider) return "";
+  return readOAuthUserId(
+    await webRemoteControlCredentialService.load(`oauth:${provider}:user_info`),
+  );
+}
+async function loadRemoteControlAuthorization(userId: string): Promise<string | null> {
+  if (!userId) return null;
+  const provider = (await webRemoteControlCredentialService.load("oauth:active_provider"))?.trim();
+  if (provider !== "zai" && provider !== "bigmodel") return null;
+  const currentUserId = readOAuthUserId(
+    await webRemoteControlCredentialService.load(`oauth:${provider}:user_info`),
+  );
+  if (currentUserId !== userId) return null;
+  const jwt = (await webRemoteControlCredentialService.load("zcodejwttoken"))?.trim();
+  return jwt && /^[\x21-\x7e]+$/.test(jwt) ? `Bearer ${jwt}` : null;
+}
 const webRemoteControlSharedHostAttachments = createWebRemoteControlSharedHostAttachments({
   windowHostProcessMap,
   attachRemoteWorkspaceSessionHost: remoteSessionManager.attachRemoteWorkspaceSessionHost,
@@ -894,16 +938,6 @@ const webRemoteControlManager = createWebRemoteControlManager({
         "mobile-navigation-superseded",
         requestId,
       );
-  },
-  reportRendererTelemetryEvent: (event) => {
-    void appTelemetryCore.reportEvent(event).catch(() => {});
-  },
-  reportRemoteUsageEvent: (windowId, event) => {
-    const win = BrowserWindow.fromId(windowId);
-    if (!win || win.webContents.isDestroyed()) {
-      return;
-    }
-    reportRemoteUsageEventForRenderer(win.webContents.id, event);
   },
   onStatusChanged: (windowId, status) => {
     sendWebRemoteControlStatusChangedToWindow(BrowserWindow.fromId(windowId), status);
@@ -2155,7 +2189,7 @@ app.whenReady().then(async () => {
     // F10(aac47556):设置页置灰查询——先确保托盘实例就绪(用户装扩展后首次查询会补建),
     // 再返回合并了 trayReady 的最终能力,避免设置页显示可开启但关窗实际走确认退出的
     // 不一致(CR-01)。
-    getCloseToTrayCapability: async () => {
+    refreshCloseToTrayCapability: async () => {
       await ensureLinuxDesktopTray();
       const capability = await closeToTrayCapabilityMonitor.refresh();
       return {

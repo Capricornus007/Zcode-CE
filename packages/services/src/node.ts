@@ -20,9 +20,11 @@ export { createLegacySingleRootProjectService } from "#src/project/index.js";
 export { createRemoteProjectService } from "#src/remote-projects/index.js";
 import { getZCodeDataRootDir as projectDataRoot } from "#src/paths.js";
 import { createTaskGroupService, ITaskGroupService, groupTaskKey } from "#src/task-groups/index.js";
-import { IGenUiService } from "./gen-ui/contract.js";
-import { createGenUiService } from "./gen-ui/node.js";
-import { channelReplyHostRequestSchema, channelReplyResultSchema } from "@zcode/shared";
+import {
+  channelReplyHostRequestSchema,
+  channelReplyResultSchema,
+  type HighspeedMockScenario,
+} from "@zcode/shared";
 /* eslint-disable max-lines -- host process 服务注册和启动装配需要集中维护，拆散后会更难追踪依赖注入顺序 */
 // Node.js service implementations — NOT safe to import in browser code
 import { readFileSync } from "node:fs";
@@ -158,6 +160,8 @@ export { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js
 export { OAuthCredentialRepo } from "./oauth/repo/oauthCredentialRepo.js";
 export { ensureDeviceMid } from "./device/deviceMid.js";
 export type { EnsureDeviceMidOptions } from "./device/deviceMid.js";
+export { createTopicResourcePeers } from "./zcode-agent/topicResourcePeers.js";
+export type { TopicResourcePeers } from "./zcode-agent/topicResourcePeers.js";
 // 遥测已全部移除（P1）：telemetryCore 及其导出（createTelemetryCore / ensureTelemetryDeviceMid）
 // 已删除。deviceMid 的设备身份职责由 device/deviceMid.js 独立承担（上一行导出），
 // 它服务于 X-Device-Mid 计费头，不是遥测。
@@ -416,7 +420,6 @@ import { createZCodeTaskIndexSyncer } from "./zcode-agent/zcodeTaskIndexSyncer.j
 import { TaskIndexRepo } from "./session/taskIndexRepo.js";
 import { AutomationRepo } from "#src/session/automationRepo.js";
 import type { AppSettings } from "@zcode/shared";
-import { createBotsService } from "./bots/botsService.js";
 import { BotsRepo } from "#src/bots/repo.js";
 import {
   createBotProjectRuntime,
@@ -434,7 +437,11 @@ import {
 import { createOAuthProviderLogoutHandler } from "./oauth/oauthProviderLogout.js";
 import { OAuthCredentialRepo } from "./oauth/repo/oauthCredentialRepo.js";
 import { readLegacyZCodeConfigProviders } from "./model-provider/legacyZCodeConfigProviderReader.js";
-import { resolveAccountTeamPlanRuntimeApiKey } from "./model-provider/accountProviderTeamPlanRequestKey.js";
+import {
+  resolveAccountTeamPlanRuntimeApiKey,
+  resolveAccountTeamPlanRuntimeMaterial,
+} from "./model-provider/accountProviderTeamPlanRequestKey.js";
+import { createAccountProjectTokenClient } from "./model-provider/accountProjectTokenClient.js";
 import { createAccountProviderCredentialStore } from "./model-provider/accountProviderCredentialStore.js";
 import { createAccountProviderCredentialService } from "./model-provider/accountProviderCredentialService.js";
 import { createAccountProviderRequestAuthService } from "./model-provider/accountProviderRequestAuthService.js";
@@ -475,6 +482,14 @@ import {
 } from "./model-provider/accountRequestAuthService.js";
 import { createSourceServerWorkspaceService } from "./source-server-workspace/sourceServerWorkspaceService.js";
 import { createUsageStatsService } from "./usage-stats/usageStatsService.js";
+import type { IChannel } from "@zcode/rpc";
+import { IHighspeedCardService } from "./highspeed/highspeedCard.js";
+import {
+  HighspeedCardService,
+  buildHighspeedCodingPlanAuthHeaders,
+  createHighspeedHttpTransport,
+} from "./highspeed/highspeedCardService.js";
+import { createHighspeedMockTransport } from "./highspeed/highspeedMockTransport.js";
 import { createCodingPlanSubscriptionService } from "./coding-plan-subscription/codingPlanSubscriptionService.js";
 import { createClientConfigService } from "./client-config/clientConfigService.js";
 import { IClientConfigService } from "./client-config/clientConfig.js";
@@ -1432,9 +1447,6 @@ export function createLocalServices(options: {
   feedback?: Partial<
     Omit<CreateFeedbackServiceOptions, "apiClient" | "credentialService" | "oauthService">
   >;
-  reportPluginTelemetryEvent?: (
-    event: import("@zcode/shared").RendererTelemetryEventPayload,
-  ) => void | Promise<void>;
   processLifecycleReporter?: RuntimeProcessLifecycleReporter;
   taskRuntimeReporter?: RuntimeTaskReporter;
   /** workspace 文件搜索默认使用内置过滤器；后续规则来源只需在 Host 装配时注入最终实现。 */
@@ -1515,6 +1527,8 @@ export function createLocalServices(options: {
   };
   /** Windows desktop-local Host 的 CUA turn 状态投影；其它 authority 会在装配层拒绝。 */
   cuaOperationStateReporter?: CuaOperationStateReporter;
+  /** Bot 群/话题的 relay 通道：desktop-attached remote Host 经 MessagePort 转发到 main。 */
+  topicResourceRelayChannel?: (request: unknown) => IChannel;
 }): ServiceCollection {
   const isDesktopAttachedRemote = options?.serviceAuthorityMode === "desktop-attached-remote";
   // host / remote server 以前直接沿用当前进程环境启动后续服务。
@@ -1551,6 +1565,7 @@ export function createLocalServices(options: {
     });
   // Modified by ZCode: 增量自上游 aac47556——账号切换时失效 plugin-ui 实例绑定的回调槽。
   let invalidatePluginUiAccounts: (() => void) | undefined;
+  let invalidateProjectTokens = () => {};
   const provisioningOAuthKeys = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS);
   const credentialService = createCredentialService({
     onDidMutate: ({ key }) => {
@@ -1559,6 +1574,7 @@ export function createLocalServices(options: {
       if (key === "oauth:active_provider" || /^oauth:[^:]+:user_info$/.test(key)) {
         invalidatePluginUiAccounts?.();
       }
+      if (provisioningOAuthKeys.has(key)) invalidateProjectTokens();
       if (provisioningOAuthKeys.has(key) || isProviderProvisioningAccountCredentialKey(key)) {
         options.onProviderProvisioningSourceChanged?.("credential");
       }
@@ -1654,20 +1670,29 @@ export function createLocalServices(options: {
       });
     },
   });
+  const projectTokenClient = createAccountProjectTokenClient(apiClient, credentialService);
+  invalidateProjectTokens = () => projectTokenClient.clear();
   const accountProviderApiKeyRemoteClient = new AccountProviderApiClient(apiClient);
   const accountProviderApiKeyResolver = new AccountProviderApiKeyResolver(
     accountProviderApiKeyRemoteClient.fetchRemoteData.bind(accountProviderApiKeyRemoteClient),
+    projectTokenClient,
   );
   const accountProviderCredentialService = createAccountProviderCredentialService({
-    credentialStore: accountProviderCredentialStore,
     async loadOAuthAccessToken(family) {
       const oauthProviderId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
       return (await oauthCredentialRepo.loadTokenSet(oauthProviderId))?.accessToken ?? null;
     },
-    resolveProviderApiKey: (family, accessToken) =>
-      accountProviderApiKeyResolver.resolveProviderApiKey(
+    resolveProviderMaterial: (
+      family: "zai" | "bigmodel",
+      accessToken: string,
+      accountIdentity: string,
+      rejectedProjectTokenFingerprint?: string,
+    ) =>
+      accountProviderApiKeyResolver.resolveProviderMaterial(
         family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID,
         accessToken,
+        accountIdentity,
+        rejectedProjectTokenFingerprint,
       ),
   });
   const resolveLegacyTeamOrganization = createLegacyTeamOrganizationResolver({
@@ -1701,18 +1726,29 @@ export function createLocalServices(options: {
           loadAccountIdentity,
         }),
       loadOAuthTokenSet: (providerId) => oauthCredentialRepo.loadTokenSet(providerId),
-      async loadIndividualPlanApiKey(providerId, family) {
+      async loadIndividualPlanMaterial(providerId, family, rejectedProjectTokenFingerprint) {
         const oauthProviderId = family === "zai" ? ZAI_PROVIDER_ID : BIGMODEL_PROVIDER_ID;
         const accountIdentity = (await oauthCredentialRepo.loadUserProfile(oauthProviderId))?.id;
         if (!accountIdentity) return null;
-        return accountProviderCredentialService.loadCodingPlanApiKey({
+        return accountProviderCredentialService.loadCodingPlanMaterial({
           providerId,
           family,
           accountIdentity,
+          rejectedProjectTokenFingerprint,
         });
       },
-      resolveTeamPlanApiKey: (access) =>
-        resolveAccountTeamPlanRuntimeApiKey({ apiClient, credentialService, access }),
+      resolveTeamPlanMaterial: async (access, rejectedProjectTokenFingerprint) => {
+        const accountIdentity = await loadAccountIdentity(access.family);
+        if (!accountIdentity) return null;
+        return resolveAccountTeamPlanRuntimeMaterial({
+          apiClient,
+          credentialService,
+          access,
+          accountIdentity,
+          tokenClient: projectTokenClient,
+          rejectedProjectTokenFingerprint,
+        });
+      },
     }),
   );
   const providerConfigLog = createServiceLogger("provider-config");
@@ -1880,7 +1916,6 @@ export function createLocalServices(options: {
   });
   invalidatePluginUiAccounts = () => pluginUiAccounts.invalidate();
   const pluginUiBridgeService = createPluginUiBridgeService({
-    reportTelemetryEvent: options?.reportPluginTelemetryEvent,
     openInstance: (params) => pluginUiAccounts.open(params),
     closeInstance: (params) => pluginUiAccounts.close(params),
     validateInstance: (params) => zcodeAgentService.validateMcpUiInstance(params),
@@ -2612,10 +2647,6 @@ export function createLocalServices(options: {
   // mapServiceEvent 路径，导致 task_complete 永远不会写回 sqlite，侧边栏 spinner 不停。
   // 在 services 层装配一个共享的 taskIndexRepo + syncer，session 任意入口都会唤醒
   // shadow 订阅，把 runtime 终态收敛进 sqlite。
-  const taskIndexRepo = new TaskIndexRepo();
-  // 接线 onboarding 的「老用户」判定（上面 hasExistingLocalTaskRef 的落点）。
-  // 用 listTaskMetas 而非 countTasks：不传 workspacePath 即全量，与官方 hasExistingLocalTask 同义。
-  hasExistingLocalTaskRef.current = async () => (await taskIndexRepo.listTaskMetas({})).length > 0;
   const zcodeTaskIndexSyncer = createZCodeTaskIndexSyncer({
     agentService: zcodeAgentService,
     taskIndexRepo,
@@ -3090,7 +3121,6 @@ export function createLocalServices(options: {
       IPluginManagementService,
       createPluginManagementService({
         zcodeAgentService,
-        reportTelemetryEvent: options?.reportPluginTelemetryEvent,
       }),
     )
     .register(ISubagentsService, subagentsService)
@@ -3346,3 +3376,4 @@ export async function createServerHostServices(options: {
 
 export { scopeConversationShareServiceForAttachment } from "./conversation-share/conversationShareConnectionScope.js";
 export { localRuntimeNetworkCapture } from "./zcode-agent/localRuntimeNetworkCapture.js";
+export { createTopicResourceRelayChannel } from "./zcode-agent/topicResourceRelayChannel.js";

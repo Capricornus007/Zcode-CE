@@ -4,12 +4,14 @@ import { readFile, stat } from "node:fs/promises";
 import type { Duplex } from "node:stream";
 import type { IncomingMessage } from "node:http";
 import { basename, extname, relative, resolve, sep } from "node:path";
-import { hostname } from "node:os";
+import * as nodePath from "node:path";
+import { hostname, userInfo } from "node:os";
 import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import type { WebSocket } from "ws";
 import {
+  ChannelClient,
   Emitter,
   VSBuffer,
   SocketProtocol,
@@ -25,22 +27,30 @@ import {
   IGitService,
   ISystemService,
   ITerminalService,
+  IBotsService,
   IProviderProvisioningTargetService,
   IWorkspaceRegistryService,
 } from "@zcode/services";
 import {
+  botProviders,
   formatLogPrefix,
+  formatZodError,
+  remoteTargetSchema,
   serverRemoteInfoOutputSchema,
   SERVER_REMOTE_PROTOCOL_VERSION,
+  TOPIC_RESOURCE_RELAY_CHANNEL,
   ZCODE_RPC_HOST_CAPABILITY_HEADER,
   ZCODE_COMPATIBILITY_MANIFEST,
   ZCODE_VERSION,
+  type BotProvider,
   type ServerRemoteInfo,
   type ServerRemoteWorkspaceInfo,
 } from "@zcode/shared";
+import { connectRemote, createRemoteBackend, type RemoteConnection } from "./remote/index.js";
 import {
   SourceServerWorkspaceIdentityChannelServer,
   type SourceServerWorkspaceIdentityMapper,
+  type TopicResourcePeers,
 } from "@zcode/services/node";
 import { createHostCapabilityStore } from "./hostCapability.js";
 import { createBotIngressGate } from "./botIngress.js";
@@ -144,6 +154,8 @@ function setupChannelServer(
   services: ServiceCollection,
   clientMode: "desktop-continuous" | "web-remote-replayable",
   auditContext?: ConnectionAuditContext,
+  workspaceIdentityMapper?: SourceServerWorkspaceIdentityMapper,
+  resourcePeers?: TopicResourcePeers,
 ) {
   const socket = wrapWebSocket(ws);
   // 连接级审计（B1）：建立与断开各一条，close 带存活时长与连接 id（可把 open/close 配对）。
@@ -192,8 +204,15 @@ function setupChannelServer(
     ? new SourceServerWorkspaceIdentityChannelServer(loggedServer, workspaceIdentityMapper)
     : loggedServer;
   const agentService = services.getOptional(IZCodeAgentService);
+  // desktop-continuous 由桌面 Host 反向代理 bot 群/话题资源：由 server 侧主动挂在
+  // MessagePort 通道上，Web 客户端拿不到该通道。
+  const reverseClient =
+    clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
+  const peer = reverseClient
+    ? resourcePeers?.attach(reverseClient.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL))
+    : undefined;
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(agentService, {
+    ? createZCodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
         connectionId: `server-ws-${randomUUID()}`,
         clientMode,
         role: clientMode === "desktop-continuous" ? "trusted-host-relay" : "terminal-client",
@@ -232,11 +251,21 @@ function setupChannelServer(
       });
     }
     void connectionScope?.dispose();
+    peer?.dispose();
+    reverseClient?.dispose();
     rawServer.dispose();
   });
 }
 
+/** 存储 web 模式下的远程连接，key 为随机 ID */
+const remoteConnections = new Map<string, RemoteConnection>();
+
+function generateId(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
 export interface HttpServerOptions {
+  topicResourcePeers?: TopicResourcePeers;
   serverId?: string;
   virtualProjects?: boolean;
   migrationFailedPathCount?: number;
@@ -381,8 +410,8 @@ async function createServerInfo(
   options: HttpServerOptions,
   services: ServiceCollection,
 ): Promise<ServerRemoteInfo> {
-  return {
-    serverId: resolveServerId(options),
+  return serverRemoteInfoOutputSchema.parse({
+    serverId: resolveHttpServerId(options),
     ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
       ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
       : {}),
@@ -390,13 +419,16 @@ async function createServerInfo(
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
     authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
     workspaces: await resolveServerWorkspaces(options, services),
+    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
+    migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
+    identity: { osUser: userInfo().username, hostname: hostname() },
     capabilities: {
       desktopContinuous: true,
       websocketRpc: true,
       ...(options.virtualProjects ? { virtualProjects: true } : {}),
       processResourceTelemetry: true,
     },
-  };
+  });
 }
 
 const zcodeLiteTokenCookieName = "zcode_lite_token";
@@ -456,16 +488,6 @@ function isSecureRequest(c: Context): boolean {
   return forwardedProto?.split(",")[0]?.trim().toLowerCase() === "https";
 }
 
-/** HttpOnly + SameSite=Lax 保持不变；`Secure` 只在 https（含反代）请求上下发。 */
-function buildLiteTokenCookie(token: string, secure: boolean): string {
-  const attributes = ["Path=/", "HttpOnly", "SameSite=Lax"];
-  if (secure) {
-    attributes.push("Secure");
-  }
-  return `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; ${attributes.join("; ")}`;
-}
-
-/** 回环判定（含 ::ffff:127.x 映射形态）；未知/空地址按 false 处理，不据此告警。 */
 export function isNonLoopbackAddress(address: string | undefined): boolean {
   const value = address?.trim().toLowerCase();
   if (!value) return false;
@@ -538,6 +560,15 @@ function resolvePeerAddress(
     forwardedFor: c.req.header("x-forwarded-for"),
     trustedProxies,
   });
+}
+
+/** HttpOnly + SameSite=Lax 保持不变；`Secure` 只在 https（含反代）请求上下发。 */
+function buildLiteTokenCookie(token: string, secure: boolean): string {
+  const attributes = ["Path=/", "HttpOnly", "SameSite=Lax"];
+  if (secure) {
+    attributes.push("Secure");
+  }
+  return `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; ${attributes.join("; ")}`;
 }
 
 /**
@@ -1372,7 +1403,13 @@ export function createHttpServer(
       const auditContext = buildConnectionAuditContext(c);
       return {
         onOpen(_event, ws) {
-          setupChannelServer(ws.raw as WebSocket, services, "web-remote-replayable", auditContext);
+          setupChannelServer(
+            ws.raw as WebSocket,
+            services,
+            "web-remote-replayable",
+            auditContext,
+            options.workspaceIdentityMapper,
+          );
         },
       };
     }),
@@ -1382,7 +1419,14 @@ export function createHttpServer(
     const auditContext = buildConnectionAuditContext(c);
     return {
       onOpen(_event, ws) {
-        setupChannelServer(ws.raw as WebSocket, services, "desktop-continuous", auditContext);
+        setupChannelServer(
+          ws.raw as WebSocket,
+          services,
+          "desktop-continuous",
+          auditContext,
+          options.workspaceIdentityMapper,
+          options.topicResourcePeers,
+        );
       },
     };
   });
@@ -1460,6 +1504,53 @@ export function createHttpServer(
       };
     }),
   );
+  // Bot Channel 的 HTTP 回调（webhook provider）：鉴权与业务失败状态由 bots service 决定。
+  const handleBotCallback = async (c: Context) => {
+    const provider = c.req.param("provider") as BotProvider;
+    if (!botProviders.includes(provider)) {
+      return c.json({ error: `Unsupported provider: ${provider}` }, 400);
+    }
+    if (provider !== "webhook") {
+      return c.json({ error: `Provider ${provider} does not support HTTP callbacks.` }, 400);
+    }
+    const botsService = services.getOptional(IBotsService);
+    if (!botsService) {
+      return c.json({ error: "Bots service is not available." }, 503);
+    }
+    const rawBodyText = await c.req.text().catch(() => "");
+    let rawBody: unknown = {};
+    if (rawBodyText) {
+      try {
+        rawBody = JSON.parse(rawBodyText) as unknown;
+      } catch {
+        rawBody = { payload: rawBodyText };
+      }
+    }
+    const webhookSecret = c.req.header("x-zcode-bot-secret");
+    const botId = c.req.param("botId");
+    const result = await botsService.handleProviderCallbackResponse(provider, {
+      ...(typeof rawBody === "object" && rawBody !== null ? rawBody : { payload: rawBody }),
+      rawBody: rawBodyText,
+      ...(botId ? { botId } : {}),
+      ...(webhookSecret ? { webhookSecret } : {}),
+    });
+    const responseBody = result.responseBody ?? { ok: result.ok, replies: result.replies };
+    if (result.status === 400) {
+      return c.json(responseBody, 400);
+    }
+    if (result.status === 401) {
+      return c.json(responseBody, 401);
+    }
+    if (result.status === 503) {
+      // Bugfix：Bot 业务失败必须把可重试状态透传给 HTTP provider；返回 200 会让
+      // webhook/网关误以为消息已消费，效果与提前提交 Telegram offset 相同。
+      return c.json(responseBody, 503);
+    }
+    return c.json(responseBody, 200);
+  };
+
+  app.post("/api/bots/:provider", handleBotCallback);
+  app.post("/api/bots/:provider/:botId", handleBotCallback);
 
   if (options.staticRoot?.trim()) {
     const staticRoot = options.staticRoot.trim();

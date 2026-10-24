@@ -44,13 +44,10 @@ import type {
   StartPlanPreviewConfig,
   ZCodeModelContextBudgetStrategy,
   ForceUpdateConfig,
-  ManualClaimPlanPreviewSnapshot,
   ManualClaimPlanClaimRequest,
-  ManualClaimPlanClaimResult,
   DynamicWorkflowClientConfig,
   ManualClaimCaptchaConfig,
   ManualClaimPlanClaimOutcome,
-  ManualClaimPlanClaimRequest,
   ManualClaimPlanPreview,
 } from "@zcode/shared";
 import type { ModelSelectionView } from "@zcode/provider";
@@ -69,8 +66,6 @@ export interface ICodingPlanSubscriptionService {
   getStaticProducts(): Promise<CodingPlanStaticProductsConfig>;
   getStaticTeamProducts(): Promise<CodingPlanStaticTeamProductsConfig>;
   getStartPlanPreview(): Promise<StartPlanPreviewConfig | null>;
-  getManualClaimPlanPreviews(): Promise<ManualClaimPlanPreviewSnapshot>;
-  claimManualPlan(request: ManualClaimPlanClaimRequest): Promise<ManualClaimPlanClaimResult>;
   /** 闲时任务灰度配置（D31）：forceRefresh 供入口打开时补拉（绕过 1h 快照缓存）。 */
   getOffPeakClientConfig(options?: { forceRefresh?: boolean }): Promise<OffPeakClientConfig>;
   /**

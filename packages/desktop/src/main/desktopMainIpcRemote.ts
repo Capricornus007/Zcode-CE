@@ -1,6 +1,6 @@
 // Modified by ZCode: X5 file: 协议分流(open-external 在 URL 校验后转本地打开);自上游 zai-org/ZCode aac47556 (Apache-2.0) 行为对齐的 CE 适配。
 /* eslint-disable max-lines -- 远程连接、OAuth 回调和通知 IPC 共用窗口级上下文，集中注册避免跨文件状态漂移。 */
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, shell, type WebContents } from "electron";
 import {
   formatZodError,
   hostRemoteWorkspaceConnectFailedResponseSchema,
@@ -11,7 +11,10 @@ import {
   resolveZaiBusinessBaseUrl,
   PlatformChannels,
   remoteTargetSchema,
+  type BindRemoteWorkspaceSessionContextIpcResult,
+  type BindRemoteWorkspaceSessionContextResult,
   type RemoteTarget,
+  type WindowHostRemoteWorkspaceDescriptor,
 } from "@zcode/shared";
 import { dispatchTaskNotification } from "./desktopNotifications.js";
 import {
@@ -21,6 +24,22 @@ import {
   registerOAuthState,
 } from "./desktopOAuthDeepLink.js";
 import { openFileUrlInDefaultApp, openPathInDefaultApp } from "./desktopMainIpcHelpers.js";
+
+function toBindIpcFailure(error: unknown): BindRemoteWorkspaceSessionContextIpcResult {
+  const message = error instanceof Error ? error.message : String(error);
+  const code =
+    error instanceof Error && "code" in error ? (error as { code?: unknown }).code : undefined;
+  const retryable =
+    error instanceof Error && "retryable" in error
+      ? (error as { retryable?: unknown }).retryable
+      : undefined;
+  return {
+    success: false,
+    error: message,
+    ...(typeof code === "string" ? { reasonCode: code } : {}),
+    ...(typeof retryable === "boolean" ? { retryable } : {}),
+  };
+}
 
 function isAllowedExternalOpenUrl(value: string): boolean {
   try {
@@ -325,6 +344,8 @@ export function registerRemoteIpcHandlers(options: {
       wrappedPayload.workspaceIdentity.trim().length > 0
         ? wrappedPayload.workspaceIdentity
         : undefined;
+    // Source Server 首次安装确认：renderer 在用户确认后才带该字段，main 只做布尔归一化。
+    const confirmSourceServerInstall = wrappedPayload.confirmSourceServerInstall === true;
     // 遥测移除（P1）：connectTrigger 原本只用于 buildRemoteWorkspaceConnectResultTelemetry /
     // reportRemoteConnectResultToArms 的事件维度，已随上报链路删除。renderer 仍会带上这个字段，
     // 但 main 不再需要归一化它。
@@ -341,7 +362,13 @@ export function registerRemoteIpcHandlers(options: {
         win,
         result.data,
         requestId,
-        workspacePath ? { workspacePath, workspaceIdentity } : undefined,
+        workspacePath
+          ? {
+              workspacePath,
+              workspaceIdentity,
+              ...(confirmSourceServerInstall ? { confirmSourceServerInstall: true } : {}),
+            }
+          : undefined,
       );
       return { success: true, sessionId };
     } catch (error) {

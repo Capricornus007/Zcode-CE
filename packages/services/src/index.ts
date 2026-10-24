@@ -352,28 +352,6 @@ export type {
 export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/index.js";
 export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
 
-export { IProjectService, LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "#src/project/contract.js";
-export type {
-  ProjectTree,
-  ProjectTask,
-  ProjectTaskRef,
-  VirtualProject,
-  ProjectRoot,
-  SaveProjectInput,
-  ProjectDirectories,
-} from "#src/project/contract.js";
-
-export { IRemoteProjectService } from "#src/remote-projects/contract.js";
-export type {
-  RemoteProjectHost,
-  RemoteProjectEntry,
-  RemoteProjectCache,
-  RemoteProjectDirectory,
-} from "#src/remote-projects/contract.js";
-
-export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/index.js";
-export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
-
 // 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
 export {
   IPluginUiAppToolsService,
@@ -405,8 +383,6 @@ export {
 } from "./plugin-ui-bridge/samplingContract.js";
 export { IClientConfigService } from "./client-config/clientConfig.js";
 
-// Bots service — IBotsService is both a type (interface) and value (descriptor).
-export { IBotsService } from "./bots/bots.js";
 // 入站请求体上限的耦合依据（packages/server 的 /bot/** 上限由这两个常量推导）：
 // 合法最大 payload = ceil(N × S / 3) × 4（base64 膨胀）+ JSON 外壳。
 // 导出是为了让 packages/server 的 botIngress.test.ts 能写耦合断言而不是把 4/5MiB
@@ -431,7 +407,6 @@ export {
 } from "./highspeed/highspeedCardService.js";
 export { createHighspeedMockTransport } from "./highspeed/highspeedMockTransport.js";
 
-export { IGenUiService } from "./gen-ui/contract.js";
 export type { GenUiPrepareParams } from "./gen-ui/contract.js";
 
 export { ITaskGroupService } from "#src/task-groups/contract.js";

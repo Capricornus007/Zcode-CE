@@ -1,7 +1,7 @@
-import { ensureTelemetryDeviceMid } from "@zcode/services/node";
+import { ensureDeviceMid } from "@zcode/services/node";
 
 export interface EnsureRemoteServerDeviceMidOptions {
-  /** 仅测试注入；生产固定使用 services 的 ensureTelemetryDeviceMid。 */
+  /** 仅测试注入；生产固定使用 services 的 ensureDeviceMid。 */
   ensureDeviceMid?: () => Promise<string>;
   log: (...args: unknown[]) => void;
 }
@@ -21,9 +21,9 @@ export interface EnsureRemoteServerDeviceMidOptions {
 export async function ensureRemoteServerDeviceMid(
   options: EnsureRemoteServerDeviceMidOptions,
 ): Promise<string | undefined> {
-  const ensureDeviceMid = options.ensureDeviceMid ?? ensureTelemetryDeviceMid;
+  const resolveDeviceMid = options.ensureDeviceMid ?? ensureDeviceMid;
   try {
-    return await ensureDeviceMid();
+    return await resolveDeviceMid();
   } catch (error) {
     options.log(
       "telemetry deviceMid 初始化失败，ZCode endpoint 请求将不带 X-Device-Mid:",

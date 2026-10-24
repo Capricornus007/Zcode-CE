@@ -4,14 +4,12 @@ import {
   readBotGroupRuntimeSnapshot,
   waitBotGroupExecutionEnd,
 } from "#src/zcode-agent/groupRuntimeSnapshot.js";
-import { createBotTopicAdmission } from "./botTopicAdmission.js";
-import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
 import { createZCodeAgentConnectionScope } from "./zcodeAgentConnectionScope.js";
 /* Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 3 个支撑模块 + 连接 scope 导入。 */
 /* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { Emitter, Event } from "@zcode/rpc";
@@ -159,9 +157,9 @@ import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/
 import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
 import { buildImportedClaudeTaskId } from "#src/session/claude-native/buildImportedClaudeTaskFile.js";
 import {
-  readLegacyImportedClaudeHistory,
-  repairImportedClaudeSessionSnapshot,
-} from "#src/session/claude-native/importedClaudeHistoryRepair.js";
+  getLegacyDeletedTaskSessionSnapshotPath,
+  getLegacyTaskSessionSnapshotPath,
+} from "#src/paths.js";
 import {
   MODEL_CONFIG_ID,
   MODE_CONFIG_ID,
@@ -1244,7 +1242,10 @@ export function createZCodeTaskServiceAdapter(
 
   async function resumeSnapshotOrLegacy(
     params: TaskTargetWithMcpServers,
-  ): Promise<ZCodeSessionStateSnapshot> {
+  ): Promise<
+    | { kind: "session"; snapshot: ZCodeSessionStateSnapshot }
+    | { kind: "legacy"; snapshot: ZCodeTaskSnapshot }
+  > {
     let snapshot: ZCodeSessionStateSnapshot;
     try {
       snapshot = await resumeSnapshot(params);
@@ -1302,7 +1303,10 @@ export function createZCodeTaskServiceAdapter(
       );
       return { kind: "legacy", snapshot: legacySnapshot };
     }
-    return repairEmptyImportedClaudeSnapshot(params, snapshot);
+    return {
+      kind: "session",
+      snapshot: await repairEmptyImportedClaudeSnapshot(params, snapshot),
+    };
   }
 
   function snapshotToMeta(snapshot: ZCodeSessionStateSnapshot): ZCodeTaskMeta {
@@ -2478,7 +2482,7 @@ export function createZCodeTaskServiceAdapter(
           : await resolveTaskIndexResumeHints(params, "resume_task");
       const model = explicitModel || indexHints.model;
       const thoughtLevel = explicitThoughtLevel || indexHints.thoughtLevel;
-      const snapshot = await resumeTaskSnapshot({
+      const restored = await resumeSnapshotOrLegacy({
         taskId: params.taskId,
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
@@ -2601,7 +2605,7 @@ export function createZCodeTaskServiceAdapter(
         : {};
       const model = explicitModel || indexHints.model;
       const thoughtLevel = explicitThoughtLevel || indexHints.thoughtLevel;
-      const snapshot = await resumeTaskSnapshot({
+      const restored = await resumeSnapshotOrLegacy({
         taskId: params.taskId,
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,

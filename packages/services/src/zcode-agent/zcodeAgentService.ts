@@ -3,6 +3,7 @@ import {
   pluginUiToolResultNotificationSchema,
   type PluginUiToolResultNotification,
 } from "@zcode/shared/mcp-apps";
+import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
 import { supportsHistoryFirst } from "./independentPlanSupport.js";
 import {
   offPeakControlParamsSchema,
@@ -16,8 +17,6 @@ import {
   allowRequestVerificationHeaders,
   requestVerificationInteractionAvailable,
 } from "@zcode/shared";
-import { zcodeMcpUiSamplingResultSchema } from "@zcode/shared";
-import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
 import {
   channelReplyRequestSchema,
   type ChannelReplyHostRequest,
@@ -29,9 +28,8 @@ import {
   sessionDebugSnapshotSchema,
   type LocalTtftFacts,
 } from "@zcode/shared";
-import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
 /* oxlint-disable eslint(max-lines) -- ZCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { ensureIndependentPlanSupport } from "./independentPlanSupport.js";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -150,6 +148,7 @@ import {
   zcodeWorkspaceUpdateDynamicWorkflowPolicyResultSchema,
   type DynamicWorkflowClientConfig,
   type DynamicWorkflowMode,
+  type SubagentRuntimeConfig,
   applyDynamicWorkflowUserMode,
   createDynamicWorkflowClientConfig,
   DEFAULT_DYNAMIC_WORKFLOW_MODE,
@@ -421,14 +420,16 @@ type SessionCreateCompatField =
   | "toolAllowlist"
   | "toolDenylist"
   | "offPeakToolEnabled"
-  | "dynamicWorkflowEnabled";
+  | "dynamicWorkflowEnabled"
+  | "dynamicWorkflowMode";
 type SessionResumeCompatField =
   | "thoughtLevel"
   | "mcpServers"
   | "toolAllowlist"
   | "toolDenylist"
   | "offPeakToolEnabled"
-  | "dynamicWorkflowEnabled";
+  | "dynamicWorkflowEnabled"
+  | "dynamicWorkflowMode";
 type SessionSendCompatField =
   | "browserAmbientContext"
   | "automationId"
@@ -450,6 +451,8 @@ const SESSION_CREATE_OPTIONAL_COMPAT_FIELDS = new Set<SessionCreateCompatField>(
   // 动态工作流灰度 flag 同理：旧 CLI 不认时
   // 省略重试，工作流工具簇随之不注册，绝不让整个 create 硬失败。
   "dynamicWorkflowEnabled",
+  // 灰度 mode（launch.md「On demand: activation」）：只认布尔的 CLI 省略它后按 alwaysOn 行事。
+  "dynamicWorkflowMode",
 ]);
 const SESSION_RESUME_OPTIONAL_COMPAT_FIELDS = new Set<SessionResumeCompatField>([
   "thoughtLevel",
@@ -459,6 +462,7 @@ const SESSION_RESUME_OPTIONAL_COMPAT_FIELDS = new Set<SessionResumeCompatField>(
   "toolDenylist",
   "offPeakToolEnabled",
   "dynamicWorkflowEnabled",
+  "dynamicWorkflowMode",
 ]);
 const SESSION_SEND_OPTIONAL_COMPAT_FIELDS = new Set<SessionSendCompatField>([
   "browserAmbientContext",
@@ -680,10 +684,27 @@ function assertV4AttachmentNdjsonEnvelope(method: string, params: unknown): void
   }
 }
 
+/**
+ * 灰度 mode 与布尔同行（launch.md「On demand: activation」）：只在开启时写，且只在布尔也在写时
+ * 写——mode 单独出现对 CLI 没有意义。旧 CLI strict schema 不认时经 compat 省略，按 alwaysOn 行事。
+ */
+function buildDynamicWorkflowModeField(
+  params: { dynamicWorkflowEnabled?: boolean; dynamicWorkflowMode?: DynamicWorkflowMode },
+  omittedFields: ReadonlySet<SessionCreateCompatField | SessionResumeCompatField>,
+): { dynamicWorkflowMode?: DynamicWorkflowMode } {
+  return params.dynamicWorkflowEnabled === true &&
+    params.dynamicWorkflowMode !== undefined &&
+    !omittedFields.has("dynamicWorkflowEnabled") &&
+    !omittedFields.has("dynamicWorkflowMode")
+    ? { dynamicWorkflowMode: params.dynamicWorkflowMode }
+    : {};
+}
+
 function buildSessionCreateParams(
   params: ZCodeAgentCreateSessionParams & {
     offPeakToolEnabled?: boolean;
     dynamicWorkflowEnabled?: boolean;
+    dynamicWorkflowMode?: DynamicWorkflowMode;
   },
   omittedFields: ReadonlySet<SessionCreateCompatField> = new Set(),
 ) {
@@ -729,6 +750,7 @@ function buildSessionCreateParams(
     ...(params.dynamicWorkflowEnabled === true && !omittedFields.has("dynamicWorkflowEnabled")
       ? { dynamicWorkflowEnabled: true }
       : {}),
+    ...buildDynamicWorkflowModeField(params, omittedFields),
   };
 }
 
@@ -736,6 +758,7 @@ function buildSessionResumeParams(
   params: ZCodeAgentResumeSessionParams & {
     offPeakToolEnabled?: boolean;
     dynamicWorkflowEnabled?: boolean;
+    dynamicWorkflowMode?: DynamicWorkflowMode;
   },
   omittedFields: ReadonlySet<SessionResumeCompatField> = new Set(),
 ) {
@@ -766,6 +789,7 @@ function buildSessionResumeParams(
     ...(params.dynamicWorkflowEnabled === true && !omittedFields.has("dynamicWorkflowEnabled")
       ? { dynamicWorkflowEnabled: true }
       : {}),
+    ...buildDynamicWorkflowModeField(params, omittedFields),
   };
 }
 
@@ -959,26 +983,8 @@ interface ActiveWorkspaceClient {
    */
   modelExecutionEnabled: boolean;
   workspace: ZCodeAgentWorkspaceTarget;
-}
-
-function requiresProviderRegistryRefresh(commandType: string): boolean {
-  // Bug 原因：模型切换遗漏刷新屏障，会用存量 Worker 的旧 Registry 校验新下发的 Provider。
-  // 复用同一刷新队列，成功后才下发切换命令，失败则直接拒绝本次切换。
-  switch (commandType) {
-    case "createSession":
-    case "createSelectionSideSession":
-    case "sendText":
-    case "sendGoalCommand":
-    case "compact":
-    case "forkAssistant":
-    case "editUserQuery":
-    case "retryTurn":
-    case "sendQueuedNow":
-    case "switchModelConfig":
-      return true;
-    default:
-      return false;
-  }
+  /** 已同步给该 workspace CLI 的生效模式；用于避免重复下发与判断是否需要补发。 */
+  dynamicWorkflowPolicyMode: DynamicWorkflowMode;
 }
 
 function requiresProviderRegistryRefresh(commandType: string): boolean {
@@ -1057,6 +1063,18 @@ interface CreateZCodeAgentServiceOptions extends Omit<
    * dynamicWorkflowEnabled。缺省不传（纯 CLI 装配）= 永远关闭，与 CLI 缺省一致。
    */
   resolveDynamicWorkflowClientConfig?: () => Promise<DynamicWorkflowClientConfig | undefined>;
+  /**
+   * 用户选择的读取点（launch.md「The user's choice」）：拥有设置权威的 Host 注入，每次使用时读取
+   * 设置文件。desktop-attached remote Host 不注入，改用 desktop 推来的值（syncDynamicWorkflowUserMode）。
+   */
+  resolveDynamicWorkflowUserMode?: () => Promise<DynamicWorkflowMode | undefined>;
+  /** 用户选择同步后交给装配层转发（Desktop Host 推给本窗口的远程 Host）；值取自本机设置。 */
+  forwardDynamicWorkflowUserMode?: (mode: DynamicWorkflowMode | undefined) => void;
+  /** Host 提供 subagent 运行时配置读取（Desktop 注入；CLI 装配不传）。 */
+  readSubagentRuntimeConfig?: (workspace: {
+    workspacePath: string;
+    workspaceIdentity?: string;
+  }) => Promise<SubagentRuntimeConfig>;
   resolveOffPeakTaskService?: () =>
     | Pick<IOffPeakTaskService, "createTask" | "list" | "getCodingPlanSupport">
     | undefined;
@@ -1381,8 +1399,11 @@ export function createZCodeAgentService(
   const activeClientsByWorkspaceKey = new Map<string, ActiveWorkspaceClient>();
   const interactionPreferenceSyncByWorkspaceKey = new Map<string, Promise<void>>();
   let latestAppRuntimePreferences: ZCodeAgentAppRuntimePreferences | undefined;
-  /** 动态工作流灰度门的进程内单次判定；见 resolveDynamicWorkflowGate 的注释。 */
-  let dynamicWorkflowGate: Promise<boolean> | undefined;
+  /** 服务端「提供」的进程内单次判定；见 resolveDynamicWorkflowOffer 的注释。 */
+  let dynamicWorkflowOffer: Promise<DynamicWorkflowClientConfig | undefined> | undefined;
+  /** desktop 推来的用户选择；只在没有本机设置权威（未注入 resolveDynamicWorkflowUserMode）时使用。 */
+  let pushedDynamicWorkflowUserMode: DynamicWorkflowMode | undefined;
+  const dynamicWorkflowPolicySyncByWorkspaceKey = new Map<string, Promise<void>>();
   const waitingWorkspaceStartups = new Map<string, WaitingWorkspaceStartup>();
   function cancelWaitingWorkspaceStartup(workspaceKey: string): void {
     const waiting = waitingWorkspaceStartups.get(workspaceKey);
@@ -1469,6 +1490,8 @@ export function createZCodeAgentService(
       providerId: request.providerId,
       modelId: request.modelSelection.modelId,
       accountAccess: request.accountAccess,
+      expectedAccountScope: request.expectedAccountScope,
+      rejectedProjectTokenFingerprint: request.rejectedProjectTokenFingerprint,
       reason: request.reason,
     });
   }
@@ -3420,6 +3443,7 @@ export function createZCodeAgentService(
       client,
       modelExecutionEnabled: false,
       workspace: params,
+      dynamicWorkflowPolicyMode: "disabled",
     };
     activeClientsByWorkspaceKey.set(workspaceKey, entry);
     const interactionPreferencesReady = (async () => {
@@ -3457,28 +3481,10 @@ export function createZCodeAgentService(
         }
       }
     })();
-    // 动态工作流灰度门禁：与 Off-Peak 同一
+    // 动态工作流生效模式：与 Off-Peak 同一
     // 模式的 workspace 级事实，在允许任何 session 工作前同步给 CLI，v4 冷恢复也才拿得到工具面。
-    // 关闭时不发请求（CLI 缺省即 false，对旧 CLI/测试假客户端零打扰）。
-    const dynamicWorkflowPolicyReady = (async () => {
-      if (!(await resolveDynamicWorkflowGate())) return;
-      try {
-        await client.request(
-          zcodeProtocolMethods.workspaceUpdateDynamicWorkflowPolicy,
-          { workspace: buildWorkspaceRef(params), enabled: true },
-          zcodeWorkspaceUpdateDynamicWorkflowPolicyResultSchema,
-        );
-      } catch (error) {
-        // 与 Off-Peak 同判据：-32601 是旧 CLI 的正常降级（其 z.object 也会丢掉 session flag，
-        // 整体退回 disabled）；其它错误只记 warn，不阻断客户端就绪。
-        if (!isProtocolMethodNotFoundError(error)) {
-          logger.warn(undefined, "动态工作流策略同步失败，CLI 维持缺省关闭", {
-            workspaceKey,
-            errorMessage: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    })();
+    // 关闭时不发请求（CLI 缺省即 disabled，对旧 CLI/测试假客户端零打扰）。
+    const dynamicWorkflowPolicyReady = enqueueDynamicWorkflowPolicySync(entry);
     entry.interactionPreferencesReady = Promise.all([
       interactionPreferencesReady,
       offPeakToolPolicyReady,
@@ -3587,6 +3593,8 @@ export function createZCodeAgentService(
         client: existingClient,
         modelExecutionEnabled: false,
         workspace: params,
+        // 只提升已有 client，不重放就绪阶段的策略同步；按 CLI 缺省记为关闭，用户改选择时再补发。
+        dynamicWorkflowPolicyMode: "disabled",
       });
       return existingClient;
     }
@@ -3735,26 +3743,24 @@ export function createZCodeAgentService(
   }
 
   /**
-   * 动态工作流灰度门：Host 判定一次并在本
-   * 进程内固定。三点理由：
-   *   1. 同一次判定同时喂给 workspace/updateDynamicWorkflowPolicy 和 session flag，两者不会
-   *      出现"策略说开、create 说关"的裂口；
-   *   2. 判定落在 client 就绪路径上，不能每次建会话都等远端——3.12.2 已因此回归过一次；
-   *   3. 读取失败 fail-closed 且不再重试，避免离线时每条 create 都赔上一次请求超时；
-   *      服务端翻转灰度按设计在下一个 Host 进程生效（provider 侧另有 1h 快照与 forceRefresh）。
+   * 服务端「提供」（docs/dynamic-workflow/launch.md「Gray release」）：Host 读取一次并在本进程内固定。
+   * 三点理由：
+   *   1. 判定落在 client 就绪路径上，不能每次建会话都等远端——3.12.2 已因此回归过一次；
+   *   2. 读取失败 fail-closed 且不再重试，避免离线时每条 create 都赔上一次请求超时；
+   *   3. 服务端翻转灰度按设计在下一个 Host 进程生效（provider 侧另有 1h 快照与 forceRefresh）。
    * 与 Off-Peak 不同：远程 workspace 同样可用，所以这里不看 workspaceIdentity / remoteSessionId。
    */
-  function resolveDynamicWorkflowGate(): Promise<boolean> {
+  function resolveDynamicWorkflowOffer(): Promise<DynamicWorkflowClientConfig | undefined> {
     const resolve = options?.resolveDynamicWorkflowClientConfig;
-    if (!resolve) return Promise.resolve(false);
-    dynamicWorkflowGate ??= (async () => {
+    if (!resolve) return Promise.resolve(undefined);
+    dynamicWorkflowOffer ??= (async () => {
       try {
-        return (await resolve())?.enabled === true;
+        return await resolve();
       } catch (error) {
         logger.warn(undefined, "动态工作流灰度读取失败，按关闭处理", {
           errorMessage: error instanceof Error ? error.message : String(error),
         });
-        return false;
+        return undefined;
       }
     })();
     return dynamicWorkflowOffer;
@@ -3979,6 +3985,17 @@ export function createZCodeAgentService(
       }
     },
 
+    async syncDynamicWorkflowUserMode(params: { mode?: DynamicWorkflowMode }): Promise<void> {
+      // launch.md「The user's choice」：本机有设置权威时传入值只是变更信号，以设置文件为准；
+      // desktop-attached remote Host 没有本机设置，推来的值就是选择。
+      pushedDynamicWorkflowUserMode = normalizeDynamicWorkflowMode(params.mode);
+      options?.forwardDynamicWorkflowUserMode?.(await resolveDynamicWorkflowUserMode());
+      await Promise.all(
+        [...activeClientsByWorkspaceKey.values()].map((entry) =>
+          enqueueDynamicWorkflowPolicySync(entry),
+        ),
+      );
+    },
     async syncAppRuntimePreferences(preferences: ZCodeAgentAppRuntimePreferences): Promise<void> {
       const normalizedPreferences: ZCodeAgentAppRuntimePreferences = {
         ...preferences,
@@ -4040,11 +4057,11 @@ export function createZCodeAgentService(
       });
       const offPeakToolEnabled = isOffPeakToolSupported(params);
       // 灰度在 client 就绪时已判定，这里是进程内已解析 promise 的再次 await（不打远端）。
-      const dynamicWorkflowEnabled = await resolveDynamicWorkflowGate();
+      const dynamicWorkflowFlags = await resolveDynamicWorkflowSessionFlags();
       try {
         const snapshot = await client.request(
           zcodeProtocolMethods.sessionCreate,
-          buildSessionCreateParams({ ...params, offPeakToolEnabled, dynamicWorkflowEnabled }),
+          buildSessionCreateParams({ ...params, offPeakToolEnabled, ...dynamicWorkflowFlags }),
           zcodeSessionStateSnapshotSchema,
           sessionTraceId ? { trace: { traceId: sessionTraceId } } : undefined,
         );
@@ -4085,7 +4102,7 @@ export function createZCodeAgentService(
         const snapshot = await client.request(
           zcodeProtocolMethods.sessionCreate,
           buildSessionCreateParams(
-            { ...params, offPeakToolEnabled, dynamicWorkflowEnabled },
+            { ...params, offPeakToolEnabled, ...dynamicWorkflowFlags },
             new Set(compatFields),
           ),
           zcodeSessionStateSnapshotSchema,
@@ -4150,7 +4167,7 @@ export function createZCodeAgentService(
       const cachedTraceId = getSessionTraceId(params);
       const offPeakToolEnabled = isOffPeakToolSupported(params);
       // 冷恢复同样按 Host 的灰度判定下发，否则恢复出来的会话会丢掉工作流工具簇。
-      const dynamicWorkflowEnabled = await resolveDynamicWorkflowGate();
+      const dynamicWorkflowFlags = await resolveDynamicWorkflowSessionFlags();
       logger.info(cachedTraceId, "开始请求 ZCode Protocol session/resume", {
         mcpServerCount: getMcpServerCount(params),
         mcpServerNames: getMcpServerNames(params),
@@ -4162,7 +4179,7 @@ export function createZCodeAgentService(
       try {
         const snapshot = await client.request(
           zcodeProtocolMethods.sessionResume,
-          buildSessionResumeParams({ ...params, offPeakToolEnabled, dynamicWorkflowEnabled }),
+          buildSessionResumeParams({ ...params, offPeakToolEnabled, ...dynamicWorkflowFlags }),
           zcodeSessionStateSnapshotSchema,
         );
         const sessionTraceId = rememberSessionTrace(params, snapshot) ?? cachedTraceId;
@@ -4199,7 +4216,7 @@ export function createZCodeAgentService(
         const snapshot = await client.request(
           zcodeProtocolMethods.sessionResume,
           buildSessionResumeParams(
-            { ...params, offPeakToolEnabled, dynamicWorkflowEnabled },
+            { ...params, offPeakToolEnabled, ...dynamicWorkflowFlags },
             new Set(compatFields),
           ),
           zcodeSessionStateSnapshotSchema,

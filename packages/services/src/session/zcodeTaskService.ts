@@ -221,6 +221,7 @@ export interface IZCodeTaskService {
     deferPersistenceUntilFirstPrompt?: boolean;
     /** Bot/host 使用 v4 原生 createSession 建立 draft，再配置并发送。 */
     v4Create?: boolean;
+    permissionScope?: "session";
   }): Promise<ZCodeTaskCreateResult>;
 
   // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题输入与执行的 task service 契约。

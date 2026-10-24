@@ -174,6 +174,8 @@ export type {
   RemoteWorkspaceConnectTrigger,
   CreateTempTextAttachmentRequest,
   CreateTempTextAttachmentResult,
+  MaterializeWorkflowArtifactFileRequest,
+  MaterializeWorkflowArtifactFileResult,
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
@@ -332,3 +334,20 @@ export * from "./subagent-profile.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
 
 export * from "./conversation-share-tool-presentation.js";
+
+// 根桶补齐：以下 CE 側功能模块定义仍在，但 -X ours 合并后从根 barrel 丢失，
+// 导致 services / desktop 的公开类型解析失败。遥测类模块（telemetry /
+// remoteUsageTelemetry / rendererActionTrace / sessionCreateTelemetry /
+// telemetryRedaction）不在此列 —— CE 已剥离上报链路（P1）。
+export * from "./api-key-usage-scene.js";
+export * from "./cloudContent.js";
+export * from "./marketingTouch.js";
+export * from "./memory.js";
+export * from "./networkCapture.js";
+export * from "./output-style.js";
+export * from "./project-access-token-client.js";
+export * from "./project-access-token.js";
+export * from "./rewardsBridge.js";
+export * from "./rewardsEmbedded.js";
+export * from "./subagent-profile-parser.js";
+export * from "./zcode-session-content-profile.js";

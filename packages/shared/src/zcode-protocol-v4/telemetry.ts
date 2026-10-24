@@ -1,7 +1,18 @@
 import { z } from "zod";
-import { sanitizeTelemetrySkillName } from "../telemetry.js";
 import { zcodeSyntheticUserMessageSourceSchema } from "../zcode-protocol-legacy-types.js";
 import { timestampSchema } from "./core.js";
+
+// CE 已剥离遥测上报模块（P1）；此处保留会话活动事实所需的 Skill 标识格式约束。
+const MAX_TELEMETRY_SKILL_NAME_LENGTH = 64;
+const TELEMETRY_SKILL_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/u;
+
+function isSafeSkillIdentifier(value: string): boolean {
+  return (
+    value.length > 0 &&
+    value.length <= MAX_TELEMETRY_SKILL_NAME_LENGTH &&
+    TELEMETRY_SKILL_NAME_PATTERN.test(value)
+  );
+}
 
 const factBaseFields = {
   /** 会话创建期采用的 App Memory 开关，不表示记忆读写结果。 */
@@ -140,7 +151,7 @@ const toolLifecycleFactSchema = z
     skillName: z
       .string()
       .refine(
-        (value) => sanitizeTelemetrySkillName(value) === value,
+        (value) => isSafeSkillIdentifier(value),
         "skillName must be a bounded, safe resolved Skill identifier",
       )
       .optional(),

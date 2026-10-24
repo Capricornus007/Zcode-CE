@@ -106,7 +106,6 @@ import type {
 } from "../model-provider/providerFacadeServices.js";
 import type { ZCodeAgentAppRuntimePreferences } from "../zcode-agent/zcodeAgent.js";
 import { createServiceLogger } from "../logger/serviceLogger.js";
-import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import type {
   BotBindCodeResult,
   BotAutomationRunWatchParams,

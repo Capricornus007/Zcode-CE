@@ -21,6 +21,12 @@ import type { WebRemoteControlAppPayload } from "./web-remote-control.js";
 import { PROTOCOL_V4_LIMITS } from "./zcode-protocol-v4/core.js";
 import { sourceServerArtifactPolicySchema } from "./source-server/release.js";
 import { sessionWorkflowActivitySchema } from "./zcode-protocol-v4/sessions-index-workflow-activity.js";
+// Modified by ZCode: 上游 3.16.2 新增的网络抓包与 web 远控 RPC 传输 schema，合并时 import 行被冲突吃掉，此处补回。
+import { networkCaptureControlSchema, networkCaptureBatchSchema } from "./networkCapture.js";
+import {
+  webRemoteControlRpcTransportAckSchema,
+  webRemoteControlRpcTransportFrameSchema,
+} from "./web-remote-control-rpc-transport.js";
 import {
   // zcodeMcpTelemetryEventSchema 已随 hostMcpTelemetryResponseSchema 删除（P1），此处同步移除。
   zcodeMcpResourceSamplesSchema,
@@ -447,10 +453,20 @@ export const dockerConnectOptionsSchema = z.object({
   container: nonEmptyStringSchema,
 });
 
+export const serverConnectOptionsSchema = z.object({
+  kind: z.literal("server"),
+  url: z.string().url(),
+  name: nonEmptyStringSchema.optional(),
+  token: z.string().optional(),
+  workspacePath: z.string().optional(),
+  serverId: nonEmptyStringSchema.optional(),
+});
+
 export const remoteTargetSchema = z.discriminatedUnion("kind", [
   sshConnectOptionsSchema,
   wslConnectOptionsSchema,
   dockerConnectOptionsSchema,
+  serverConnectOptionsSchema,
 ]);
 
 export const helloMessageSchema = z.object({
@@ -1507,6 +1523,7 @@ export const hostProviderProvisioningExecutionResultResponseSchema = z
     environmentKey: nonEmptyStringSchema,
     status: z.enum(["applied", "already-applied", "unsupported", "failed", "rollback_failed"]),
     error: z.string().optional(),
+    errorCode: providerProvisioningErrorCodeSchema.optional(),
   })
   .strict();
 
@@ -1558,8 +1575,7 @@ export const hostResponseMessageSchema = z.discriminatedUnion("type", [
   hostResourceSampleResponseSchema,
   hostMcpResourceSamplesResponseSchema,
   hostToolExecResourceResponseSchema,
-  hostSessionCreateTelemetryResponseSchema,
-  hostPluginTelemetryResponseSchema,
+  // 遥测已全部移除（P1）：hostSessionCreateTelemetryResponseSchema / hostPluginTelemetryResponseSchema
   hostAgentRunningTaskCountChangedResponseSchema,
   hostWorkspaceRunningTaskCountChangedResponseSchema,
   hostCuaOperationStateResponseSchema,

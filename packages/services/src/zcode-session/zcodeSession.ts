@@ -7,6 +7,7 @@ import type {
   ModelSelection,
   ZCodePermissionRequestParams,
   ZCodeProviderRuntimeHeadersRequestParams,
+  ZCodeProviderRuntimeHeadersResponse,
   ZCodeUserInputRequestParams,
   ZCodeUserInputResponse,
   ZCodeSessionInfo,
@@ -19,7 +20,6 @@ import type {
   ZCodeWorkspacePresentation,
 } from "@zcode/shared";
 import { createServiceDescriptor } from "#src/descriptors.js";
-import type { ProviderRuntimeHeadersUiResponse } from "#src/zcode-agent/zcodeAgent.js";
 
 export interface ZCodeSessionWorkspaceTarget {
   workspacePath: string;
@@ -96,7 +96,7 @@ export interface ZCodeSessionSetModeParams extends ZCodeTaskTarget {
 
 export interface ZCodeSessionRespondProviderRuntimeHeadersParams extends ZCodeTaskTarget {
   requestId: string;
-  response: ProviderRuntimeHeadersUiResponse;
+  response: ZCodeProviderRuntimeHeadersResponse;
 }
 
 export interface ZCodeSessionSubscribeParams extends ZCodeTaskTarget {

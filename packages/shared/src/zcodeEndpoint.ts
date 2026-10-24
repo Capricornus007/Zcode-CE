@@ -108,6 +108,61 @@ export interface RuntimeZaiEndpointEnv {
 export interface RuntimeProductEndpointEnv
   extends RuntimeZCodeEndpointEnv, RuntimeBigModelApiEnv, RuntimeZaiEndpointEnv {}
 
+declare const __ZCODE_ENDPOINT_ENV__: string | undefined;
+
+const PRODUCT_ENDPOINT_ENV_KEYS = [
+  "ZCODE_ENV",
+  "ZCODE_BASE_URL",
+  "ZCODE_ENDPOINT_ORIGIN",
+  "ZCODE_TEST_BASE_URL",
+  "ZCODE_PRODUCTION_BASE_URL",
+  "BIGMODEL_API_BASE_URL",
+  "BIGMODEL_TEST_API_BASE_URL",
+  "BIGMODEL_PRODUCTION_BASE_URL",
+  "ZAI_OAUTH_ORIGIN",
+  "ZAI_TEST_OAUTH_ORIGIN",
+  "ZAI_PRODUCTION_OAUTH_ORIGIN",
+  "ZAI_BUSINESS_BASE_URL",
+  "ZAI_TEST_BUSINESS_BASE_URL",
+  "ZAI_PRODUCTION_BUSINESS_BASE_URL",
+  "ZAI_OAUTH_CLIENT_ID",
+  "ZAI_TEST_OAUTH_CLIENT_ID",
+  "ZAI_PRODUCTION_OAUTH_CLIENT_ID",
+  "ZAI_OAUTH_APP_ID",
+] as const;
+
+/** 从任意环境对象中挑出产品 endpoint 相关的键，忽略空值。 */
+export function pickProductEndpointEnv(
+  env: Record<string, string | undefined>,
+): RuntimeProductEndpointEnv {
+  const picked: RuntimeProductEndpointEnv = {};
+  for (const key of PRODUCT_ENDPOINT_ENV_KEYS) {
+    const value = env[key]?.trim();
+    if (value) {
+      picked[key] = value;
+    }
+  }
+  return picked;
+}
+
+/**
+ * 读取构建期注入的产品 endpoint 环境（tsup define `__ZCODE_ENDPOINT_ENV__`）。
+ * 非打包运行（测试 / 源码态）没有该常量，回退空对象。
+ */
+export function readProductEndpointEnv(): RuntimeProductEndpointEnv {
+  if (typeof __ZCODE_ENDPOINT_ENV__ === "undefined") {
+    return {};
+  }
+  try {
+    const parsed = JSON.parse(__ZCODE_ENDPOINT_ENV__) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? pickProductEndpointEnv(parsed as Record<string, string | undefined>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
 export interface RuntimeProductEndpointConfig {
   zcodeEnv: ZCodeEnv;
   zcodeEndpointOrigin: string;
@@ -133,6 +188,18 @@ function readRuntimeZCodeEnvScopedValue(
   productionKey: string,
 ): string | undefined {
   return readRuntimeEnvValue(env, zcodeEnv === "production" ? productionKey : testKey);
+}
+
+/**
+ * 解析 endpoint origin 的 hostname，用于可展示的 provider 名称。
+ * 非法 URL 不抛错：调用方在任务创建路径上，展示名解析失败不得阻断流程。
+ */
+export function resolveSafeEndpointHostname(origin: string): string {
+  try {
+    return new URL(origin).hostname || "unknown";
+  } catch {
+    return "unknown";
+  }
 }
 
 export function normalizeZCodeEndpointOrigin(value: string): string {

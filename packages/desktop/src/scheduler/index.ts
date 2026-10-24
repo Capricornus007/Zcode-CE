@@ -250,6 +250,7 @@ async function handleOffPeakClaimed(task: ZCodeOffPeakTask, now: number): Promis
     );
     return;
   }
+  const modelSelection = task.modelSelection;
   offPeakInFlight.add(task.offPeakTaskId);
   const request: SchedulerToMainMessage = {
     type: "offpeak-dispatch-request",

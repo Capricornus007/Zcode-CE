@@ -40,6 +40,37 @@ export interface ManualClaimPlanPreview {
   endsAt?: number;
 }
 
+export interface ManualClaimPlanPreviewSnapshot {
+  /** 本次响应的服务端时间（毫秒）；生效时间 effectiveAt 仍为 Unix 秒。 */
+  serverTime?: number;
+  plans: ManualClaimPlanPreview[];
+}
+
+export interface ManualClaimPlanClaimEntitlement {
+  entitlementId: string;
+  showName: string;
+  /** Claim 返回的权益生效时间，Unix 秒；0 表示立即生效。 */
+  effectiveAt?: number;
+}
+
+export interface ManualClaimPlanClaimResult {
+  success: boolean;
+  code: number;
+  message: string;
+  /** 失败响应中的活动结束时间，用于额度耗尽提示；不得当作已领取权益期限。 */
+  failureEndsAt?: number;
+  /** 领取接口返回的服务端时间（毫秒），不与其他响应的时间混用。 */
+  serverTime?: number;
+  plan?: {
+    userPlanId: string;
+    planId: string;
+    status: string;
+    startsAt?: number;
+    endsAt?: number;
+    entitlements?: ManualClaimPlanClaimEntitlement[];
+  };
+}
+
 /**
  * 领取失败类型。用稳定枚举而不是错误文案做流程判断：
  * UI 需要按类型给不同文案与不同后续动作（重新验证码 / 提示已领取 / 提示登录）。

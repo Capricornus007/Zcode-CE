@@ -25,6 +25,7 @@ import {
   IProviderProvisioningTargetService,
   ISourceServerWorkspaceService,
   ISourceServerManagementService,
+  IHighspeedCardService,
   IUsageStatsService,
   ICodingPlanSubscriptionService,
   IClientConfigService,
@@ -94,6 +95,7 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly sourceServerWorkspaceService: ISourceServerWorkspaceService;
   /** 仅 desktop base attachment 注册；其他 scope 必须按可选能力消费。 */
   readonly sourceServerManagementService?: ISourceServerManagementService;
+  readonly highspeedCardService: IHighspeedCardService;
   readonly usageStatsService: IUsageStatsService;
   readonly codingPlanSubscriptionService: ICodingPlanSubscriptionService;
   readonly clientConfigService: IClientConfigService;
@@ -229,6 +231,9 @@ export class RemoteServiceAccess implements IServiceAccessor {
           channelClient.getChannel(ISourceServerManagementService.channelName),
         )
       : undefined;
+  this.highspeedCardService = ProxyChannel.toService<IHighspeedCardService>(
+      channelClient.getChannel(IHighspeedCardService.channelName),
+    );
     this.usageStatsService = ProxyChannel.toService<IUsageStatsService>(
       channelClient.getChannel(IUsageStatsService.channelName),
     );

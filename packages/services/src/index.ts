@@ -400,6 +400,7 @@ export {
   BOT_MAX_ATTACHMENTS_PER_MESSAGE,
   BOT_MAX_ATTACHMENT_SIZE_BYTES,
 } from "./bots/botAttachmentLimits.js";
+export { IHighspeedCardService } from "./highspeed/highspeedCard.js";
 export {
   HighspeedCardService,
   createHighspeedHttpTransport,

@@ -3,6 +3,10 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { createRuntimeManifest, type ServerTarget } from "../runtime/manifest.js";
 import { assertPackagedNodePtyPayloadVerified } from "../../../../packages/desktop/scripts/node-pty-package-assets.mjs";
 import { isTarCommand, resolveHostTarCommand } from "./tarCommand.js";
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { realpath } from "node:fs/promises";
+import { builtinModules } from "node:module";
 
 const NODE_BUILTIN_MODULES = new Set(builtinModules);
 
@@ -280,8 +284,8 @@ async function copyDirectoryIfPresent(
   } catch {
     return [];
   }
-  const names = (
-    await (await import("node:fs/promises")).readdir(sourceDir, { withFileTypes: true })
+  const candidates = (
+    await readdir(sourceDir, { withFileTypes: true })
   )
     .filter((entry) => entry.isDirectory() && entry.name.endsWith("-plugin"))
     .map((entry) => entry.name)

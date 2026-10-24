@@ -5,6 +5,7 @@ import type {
   CodingPlanUsageRequest,
   CodingPlanRegularTpsRequest,
   CodingPlanUsageSnapshot,
+  CodingPlanRegularTpsRequest,
   CodingPlanResetOpportunityRequest,
   CodingPlanResetOpportunityResult,
   CodingPlanResetScopeRequest,
@@ -48,6 +49,8 @@ interface UsageStatsServiceDependencies {
   officialMcpCredentialSource?: OfficialMcpCredentialSource;
 }
 
+const CODING_PLAN_REGULAR_TPS_CACHE_MS = 5 * 60_000;
+
 function isCodingPlanProviderId(providerId: string | undefined): boolean {
   return Boolean(providerId && isCodingPlanModelProviderId(providerId));
 }
@@ -68,6 +71,21 @@ export function createUsageStatsService(
       ? { officialMcpCredentialSource: dependencies.officialMcpCredentialSource }
       : {}),
   });
+  const regularTpsCache = new Map<
+    string,
+    { expiresAt: number; value: number | undefined }
+  >();
+  const regularTpsInFlight = new Map<string, Promise<number | undefined>>();
+
+  function regularTpsCacheKey(request: CodingPlanRegularTpsRequest): string {
+    return JSON.stringify([
+      request.preferredProviderId,
+      // Team scope（organizationId/projectId）已内含在 accountAccess 里，整体入 key，
+      // 避免同一 provider 下不同账号或不同团队项目共用同一条 TPS 缓存。
+      request.accountAccess,
+      request.timeZone ?? null,
+    ]);
+  }
 
   // Modified by ZCode: 增量自上游 aac47556——Highspeed 常规 TPS 的短缓存 + in-flight 去重，
   // 避免同一 provider/账号在面板刷新时重复打 monitor。

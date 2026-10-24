@@ -23,7 +23,7 @@ import {
   resetHeldQueueForSubmittedModelChange,
   resolveSubmittedExecutionState,
   V4InputAdmissionRejectedError,
-} from "./session-flow.js";
+} from "../input-admission.js";
 
 /** goal/compact 组的裁决拒绝（gateway 捕获后进 ACK failed，message 透传给客户端）。 */
 export class V4GoalCompactRejectedError extends Error {

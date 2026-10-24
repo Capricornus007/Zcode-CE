@@ -44,6 +44,7 @@ import { requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 import { readWorkflowScriptFile } from "./workflow-path-source.js";
 import { formatWorkflowDiagnosticLines } from "./workflow-script-notes.js";
 import { describeWorkflowScriptPath } from "./workflow-script-path.js";
+import { requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 
 // 工具级超时是**外层兜底**，不是 snippet 的墙钟：入参 timeoutMs（≤600s）驱动 harness
 // 到点 kill 子进程并正常返回失败；这里再留编译与收尾的余量。双时钟语义刻意不存在——

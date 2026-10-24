@@ -29,7 +29,7 @@ const latestHeapUsedKbByWebContentsId = new Map<number, number>();
  * 归属只认发送方 webContents：主窗口 webContents 才是主 renderer，
  * 资源管理器 / about / DevTools / `<webview>` guest 的读数一律丢弃。
  */
-function ingestRendererHeapSample(webContentsId: number, raw: unknown): void {
+export function ingestRendererHeapSample(webContentsId: number, raw: unknown): void {
   if (!isMainApplicationWindowWebContents(webContentsId)) {
     return;
   }

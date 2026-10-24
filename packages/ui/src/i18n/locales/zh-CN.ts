@@ -1950,6 +1950,7 @@ const zhCN: Record<string, string> = {
   "workspaceSidebar.registry.hideAll": "收起未打开的工作区",
   "workspaceSidebar.registry.loadFailed": "工作区列表读取失败：{reason}",
   "workspaceSidebar.registry.retry": "重新读取",
+  "workspaceRuntime.failed.reasonUnavailable":
     "没有拿到具体原因，可重试一次；若持续失败请查看日志。",
   "workspaceSidebar.notConnected": "未连接",
   "remote.error.sourceServerInstallRequired": "远程设备尚未安装 ZCode Server，需要先确认安装。",
@@ -2401,6 +2402,7 @@ const zhCN: Record<string, string> = {
   "remote.backToConnection": "返回配置",
   "remote.title": "连接远程环境",
   "remote.description":
+    "通过 SSH、Server、WSL 或 Docker 连接远程工作区，并在当前窗口中继续选择目录。",
   "remote.step.connect": "连接环境",
   "remote.step.selectDirectory": "选择目录",
   "remote.selectDirectoryDescription":

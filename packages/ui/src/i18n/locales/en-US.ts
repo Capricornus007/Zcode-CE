@@ -2650,6 +2650,7 @@ const enUS: Record<string, string> = {
   "remote.backToConnection": "Back to configuration",
   "remote.title": "Connect remote environment",
   "remote.description":
+    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
   "remote.selectDirectoryDescription":
     "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
   "remote.step.connect": "Connect",

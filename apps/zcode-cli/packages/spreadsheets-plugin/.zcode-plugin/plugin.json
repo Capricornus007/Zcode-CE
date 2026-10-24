@@ -11,5 +11,31 @@
   },
   "license": "MIT",
   "skills": "skills",
-  "agents": "agents"
+  "agents": "agents",
+  "mcpServers": {
+    "spreadsheets": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "spreadsheets",
+        "title": {
+          "zh-CN": "电子表格",
+          "en-US": "Spreadsheets"
+        },
+        "icon": "table",
+        "server": "spreadsheets",
+        "resourceUri": "ui://spreadsheets/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
 }

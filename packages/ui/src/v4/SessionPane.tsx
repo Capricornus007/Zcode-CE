@@ -1451,6 +1451,47 @@ export function SessionPane({
   }, [activeHighspeedCard, invalidateActiveHighspeedCard, sessionId, snapshot]);
 
   useEffect(() => {
+    if (
+      !sessionId ||
+      snapshot?.sessionId !== sessionId ||
+      snapshot.control.phase !== "error" ||
+      !snapshot.control.lastError ||
+      activeHighspeedCard?.taskId !== sessionId
+    ) {
+      return;
+    }
+    const lastError = snapshot.control.lastError;
+    const attribution = lastError.attribution;
+    if (attribution?.highspeedCardId !== undefined) {
+      // 新 Agent 用 string/null 明确表达本轮是否使用 Highspeed，并在创建期或请求期失败命中退回声明、
+      // 却没有任何退回目标可创建时发布 highspeedFallbackUnavailable（spec §2.2 失败即退卡）。
+      // Bug 根因：这里曾只认 provider_not_found / model_not_found 两个目录错误码。请求期 3402 或网络
+      // 失败无处可退时没有 fallback 事件，TurnError 的 code 是 provider 错误码 "3402"，白名单漏掉它，
+      // 卡一直锁住模型选择器、下一轮继续复用已失效的卡。退卡只看 Core 发布的结构化事实，不再按错误码
+      // 推断：超窗、本地 runtime 失败等不参与退回的错误不带该字段，不会误作废卡。
+      if (
+        attribution.highspeedCardId !== activeHighspeedCard.cardId ||
+        attribution.highspeedFallbackUnavailable !== true
+      ) {
+        return;
+      }
+    } else if (
+      !["provider_not_found", "model_not_found"].includes(lastError.code) ||
+      lastError.at < activeHighspeedCard.issuedAt
+    ) {
+      // 兼容旧 Agent（无 highspeedCardId 字段）：只接受模型目录错误作为恢复边界，避免工具或本地运行时
+      // 错误误作废卡；错误终态在下一轮开始前一直留在投影里，而抽卡发生在发送之前，时间下界保证上一轮的
+      // 目录错误不清掉刚抽到的新卡（claim key 含新 cardId，去重防不住）。
+      return;
+    }
+    // 仍由 Service owner 按 cardId 作废，保留 nextDrawAt 冷却。
+    invalidateActiveHighspeedCard(
+      activeHighspeedCard.cardId,
+      `turn-error:${sessionId}:${lastError.at}:${activeHighspeedCard.cardId}`,
+    );
+  }, [activeHighspeedCard, invalidateActiveHighspeedCard, sessionId, snapshot]);
+
+  useEffect(() => {
     if (!sessionId || snapshot?.sessionId !== sessionId) return;
     const now = Date.now();
     for (const row of snapshot.rows.window) {

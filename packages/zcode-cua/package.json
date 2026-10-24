@@ -1,7 +1,6 @@
 {
   "name": "@zcode/zcode-cua",
-  "version": "0.6.3",
-  "zcodeCuaPlaceholder": true,
+  "version": "0.6.5",
   "private": true,
   "description": "Computer Use runtime for ZCode. Ships an adapter over the MIT-licensed @trycua/cua-driver (Linux, macOS, Windows); the broker/Helper surfaces remain API-compatible placeholders that fail closed.",
   "license": "Apache-2.0",

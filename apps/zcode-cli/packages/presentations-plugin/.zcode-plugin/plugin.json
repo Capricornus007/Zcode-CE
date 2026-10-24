@@ -11,5 +11,31 @@
   },
   "license": "MIT",
   "skills": "skills",
-  "agents": "agents"
+  "agents": "agents",
+  "mcpServers": {
+    "presentations": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "presentations",
+        "title": {
+          "zh-CN": "演示文稿",
+          "en-US": "Presentations"
+        },
+        "icon": "presentation",
+        "server": "presentations",
+        "resourceUri": "ui://presentations/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
 }

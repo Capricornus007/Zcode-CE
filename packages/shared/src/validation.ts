@@ -1,3 +1,4 @@
+import { mobilePluginDiscoveryTelemetrySchema } from "./telemetry.js";
 import { databaseStartupControlSchema, databaseStartupStateSchema } from "./database-startup.js";
 // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):沙箱登记契约用到 mcpAppInstanceSchema。
 import { mcpAppInstanceSchema } from "./mcp-apps/instance.js";

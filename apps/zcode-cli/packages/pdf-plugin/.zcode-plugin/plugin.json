@@ -11,5 +11,31 @@
   },
   "license": "Apache-2.0",
   "skills": "skills",
-  "agents": "agents"
+  "agents": "agents",
+  "mcpServers": {
+    "pdf": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "pdf",
+        "title": {
+          "zh-CN": "PDF",
+          "en-US": "PDF"
+        },
+        "icon": "file-text",
+        "server": "pdf",
+        "resourceUri": "ui://pdf/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
 }

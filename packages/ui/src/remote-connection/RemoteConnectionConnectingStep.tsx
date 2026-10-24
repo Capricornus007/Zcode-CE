@@ -37,6 +37,10 @@ import {
   formatRemoteLinkRailDevice,
 } from "@/remote-connection/RemoteLinkRail.js";
 import {
+  formatRemoteLinkRailTarget,
+  formatRemoteLinkRailDevice,
+} from "@/remote-connection/RemoteLinkRail.js";
+import {
   isRemoteConnectionLogScrolledToLatest,
   scrollRemoteConnectionLogsToLatestIfFollowing,
 } from "@/remote-connection/remoteConnectionLogScroll.js";

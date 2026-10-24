@@ -11,5 +11,31 @@
   },
   "license": "MIT",
   "skills": "skills",
-  "agents": "agents"
+  "agents": "agents",
+  "mcpServers": {
+    "documents": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": {
+        "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}"
+      }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "documents",
+        "title": {
+          "zh-CN": "Word 文档",
+          "en-US": "Documents"
+        },
+        "icon": "file-text",
+        "server": "documents",
+        "resourceUri": "ui://documents/panel.html",
+        "availability": "session"
+      }
+    ]
+  }
 }

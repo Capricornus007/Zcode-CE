@@ -3,6 +3,7 @@
   "name": "@zcode/pdf-plugin",
   "version": "0.1.7",
   "private": true,
+  "description": "PDF production skills and a PDF viewer panel, published as an official ZCode plugin.",
   "license": "Apache-2.0",
   "description": "PDF authoring skill for ZCode-CE. The runtime payload is a self-contained esbuild bundle staged from pdfkit and fontkit (both MIT) into scripts/pdf-node/. See docs/development/pdf-plugins.md.",
   "scripts": {

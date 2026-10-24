@@ -2641,7 +2641,6 @@ const zhCN: Record<string, string> = {
   "server.workspacePathDescription": "留空后，连接成功时再选择 server 上的目录。",
   "server.validation.urlRequired": "Server URL 不能为空",
   "server.validation.invalidUrl": "Server URL 格式不正确",
-  "wsl.description": "连接默认 distro，或选择这台设备上已安装的指定 distro。",
   "wsl.distro": "发行版",
   "wsl.defaultDistro": "默认发行版",
   "wsl.user": "Linux 用户",

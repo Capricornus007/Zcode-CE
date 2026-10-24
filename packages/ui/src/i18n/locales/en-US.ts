@@ -2904,8 +2904,6 @@ const enUS: Record<string, string> = {
     "Leave empty to choose a directory on the server after connecting.",
   "server.validation.urlRequired": "Server URL is required",
   "server.validation.invalidUrl": "Server URL is invalid",
-  "wsl.description":
-    "Connect to the default distro, or choose a specific distro installed on this device.",
   "wsl.distro": "Distribution",
   "wsl.defaultDistro": "Default distribution",
   "wsl.user": "Linux user",

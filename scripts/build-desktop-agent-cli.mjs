@@ -44,9 +44,9 @@ const cliWorkspaceBuilds = [
   { packageName: "@zcode/core", packageDir: "core" },
   { packageName: "@zcode/adapters", packageDir: "adapters" },
   { packageName: "@zcode/i18n", packageDir: "i18n" },
-  // @zcode/telemetry 已随遥测移除（P1）整包删除，构建清单同步去掉 ——
-  // 留着会让 `pnpm --filter @zcode/telemetry build` no-match 失败，
-  // 影响 pre-dev:local-cli 与 prepare-agent-node-bundle。
+  // bootstrap 的 tsc 经 node_modules 链接解析 @zcode/telemetry 的 types 入口，
+  // 干净 CI 上该包 dist 尚不存在即报 TS2307，故必须排在 bootstrap 之前。
+  { packageName: "@zcode/telemetry", packageDir: "telemetry" },
   { packageName: "@zcode/bootstrap", packageDir: "bootstrap" },
 ];
 // 官方插件 manifest 可以在 server.js 缺失时被 filesystem seed，直到 session

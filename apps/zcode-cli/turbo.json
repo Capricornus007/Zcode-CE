@@ -14,6 +14,7 @@
         "@zcode/dynamic-workflow#build",
         "@zcode/core#build",
         "@zcode/adapters#build",
+        "@zcode/telemetry#build",
         "@zcode/bootstrap#build",
         "@zcode/i18n#build"
       ],

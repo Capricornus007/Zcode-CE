@@ -385,6 +385,33 @@ export const hostTaskOwnerCommandResultMessageSchema = z.object({
   result: taskOwnerCommandResultSchema,
 });
 
+// Bot Channel（IM 机器人）远控工作区桥的三条 host 消息。
+// 与上游 v3.14.3 packages/shared/src/validation.ts:325-346 逐字段一致。
+// CE-SYNC: 機械合併把這段 CE 重植的 schema 沖掉了，按 CE main 7fc3bfe2 原位補回
+// （消費方 packages/services/src/bots/botRemoteWorkspaceBridge.ts）。
+export const hostBotRemoteWorkspaceReconnectResultMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-reconnect-result"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  sessionId: nonEmptyStringSchema.optional(),
+  error: z.string().optional(),
+});
+
+export const hostBotRemoteWorkspaceConnectionStatusResultMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-connection-status-result"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  connected: z.boolean().optional(),
+  error: z.string().optional(),
+});
+
+export const hostBotRemoteWorkspaceRuntimePortMessageSchema = z.object({
+  type: z.literal("bot-remote-workspace-runtime-port"),
+  requestId: nonEmptyStringSchema,
+  ok: z.boolean(),
+  error: z.string().optional(),
+});
+
 export const sessionMessageRequestSchema = z.object({
   content: nonEmptyStringSchema,
   createdAt: nonEmptyStringSchema,
@@ -629,6 +656,9 @@ export const hostIncomingMessageSchema = z.discriminatedUnion("type", [
   hostTaskRunLeaseResultMessageSchema,
   hostTaskOwnerCommandDeliverMessageSchema,
   hostTaskOwnerCommandResultMessageSchema,
+  hostBotRemoteWorkspaceReconnectResultMessageSchema,
+  hostBotRemoteWorkspaceConnectionStatusResultMessageSchema,
+  hostBotRemoteWorkspaceRuntimePortMessageSchema,
   hostSessionMessageDeliverMessageSchema,
   hostSessionMessageDeliveryResultMessageSchema,
   hostFeedbackLogArchiveResultMessageSchema,

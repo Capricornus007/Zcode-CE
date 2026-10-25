@@ -194,10 +194,7 @@ import {
 import { WebElementContextAttachmentChip } from "@/v4/composer/WebElementContextAttachmentChip.js";
 import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSelectionReferenceChip.js";
 import type { AttachmentPutFn } from "@/v4/composer/attachmentUpload.js";
-import { useScopedConversationTelemetrySupervisor } from "@/v4/telemetry/ConversationTelemetryAttachment.js";
-import type { ConversationPromptTelemetrySeed } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
 import type { ComposerSubmissionConfig } from "@/v4/composer/composerSubmissionConfig.js";
-import { buildV4ConversationPromptTelemetryExtraDetail } from "@/v4/telemetry/conversationPromptTelemetry.js";
 import { pendingCommandRegistry } from "@/v4/pendingCommandRegistry.js";
 import {
   subscribeComposerSubmissionSettled,
@@ -232,6 +229,18 @@ export interface ConversationComposerSendOptions {
 }
 
 export type ConversationComposerSendResult = "sent" | "blocked" | "confirmationRequired";
+
+// CE-SYNC: 上游的 ConversationPromptTelemetrySeed 住在 @/v4/telemetry/conversationTelemetrySupervisor，
+// 那個 supervisor（發送漏斗上報）與 extraDetail builder 都屬 CE 已剪除的上報鏈。這裡只留仍被真實消费的
+// 形狀：localTtft 是 v4 命令信封的協議欄位（CE 端观测器已降為 no-op，但協議兩端解析仍需它），
+// sendTime / queueConfirmed 用來讓佇列二次確認沿用同一份 seed。與 SessionPane 內的同名型別同 shape。
+export interface ConversationPromptTelemetrySeed {
+  localTtft?: import("@zcode/shared").LocalTtftContext;
+  /** 用户触发原始发送动作的 renderer 时钟。 */
+  sendTime: number;
+  /** 是否中途经过队列二次确认弹窗。 */
+  queueConfirmed?: boolean;
+}
 function getComposerAttachmentTypeLabel(filename: string, mimeType: string): string {
   const leaf = filename.split(/[\\/]/u).at(-1) ?? filename;
   const dotIndex = leaf.lastIndexOf(".");
@@ -630,11 +639,8 @@ function ConversationComposerImpl({
   const disabled = disabledProp || !remoteAvailable || targetSelectionPending;
   const { intl, locale } = useZCodeIntl();
   const services = useOptionalServices();
-  const conversationTelemetry = useScopedConversationTelemetrySupervisor({
-    workspacePath,
-    ...(workspaceIdentity ? { workspaceIdentity } : {}),
-    ...(remoteSessionId ? { remoteSessionId } : {}),
-  });
+  // CE-SYNC: 上游的 conversationTelemetry supervisor（send_click / send_result / 焦點與輸入埋點）
+  // 屬上報鏈，CE 已整條移除，此 hook 與其呼叫點一併刪除；localTtft 觀察器屬協議形状，保留。
   const draftScopeId =
     sessionId ??
     (rootDraftScopeKey ? `${V4_DRAFT_SCOPE_ROOT}:${rootDraftScopeKey}` : V4_DRAFT_SCOPE_ROOT);
@@ -1398,18 +1404,18 @@ function ConversationComposerImpl({
       });
       pendingRef.current = true;
       setPending(true);
-      // Bug 根因：草稿 intent 只保存用户显式改动，正常继承模型位于冻结初始化 config。
-      // prewarm snapshot 尚未到达时若只读 draftConfig，send_btn 会错误落成空模型/glm。
-      const telemetryConfig = telemetryDraftConfig ?? snapshotRef.current?.config ?? draftConfig;
+      // CE-SYNC: 上游此處會凍結一份 extraDetail（模式/模型/provider/套餐快照）交給 send_click 上報，
+      // 並用 recordSendClick 的返回值回填 sendClickId。CE 已移除上報鏈，因此 seed 只剩
+      // 「佇列二次確認沿用同一份」與「localTtft 協議上下文」兩個真實用途；
+      // telemetryDraftConfig / readPlanIdentitySnapshot 兩個 prop 保留給呼叫端，不再在此消費。
       let telemetrySeed: ConversationPromptTelemetrySeed;
       if (existingTelemetrySeed) {
-        // 队列二次确认复用首次点击的 seed：不重报 send_click，也不重置发送触发来源，
-        // 保证 send_click 与 send_result 严格 1:1。
+        // 队列二次确认复用首次点击的 seed：不重置发送触发来源，保证一次点击只有一条链路。
         telemetrySeed = existingTelemetrySeed;
         if (telemetrySeed.localTtft)
           getLocalTtftObserver()?.confirmation(telemetrySeed.localTtft, false);
       } else {
-        const freshSeed: ConversationPromptTelemetrySeed = {
+        telemetrySeed = {
           sendTime: Date.now(),
           localTtft: !workspaceIdentity?.trim()
             ? getLocalTtftObserver()?.start(
@@ -1420,25 +1426,8 @@ function ConversationComposerImpl({
                 trimmed.startsWith("/"),
               )
             : undefined,
-          extraDetail: buildV4ConversationPromptTelemetryExtraDetail({
-            askMode: telemetryConfig?.mode,
-            modelName: telemetryConfig?.model,
-            configProvider: telemetryConfig?.provider,
-            agentProvider: provider,
-            providerBaseURL: resolveProviderBaseURL(telemetryConfig?.provider, modelSelectionView),
-            planIdentitySnapshot: readPlanIdentitySnapshot?.(),
-          }),
         };
-        const sendTrigger = sendTriggerRef.current;
         sendTriggerRef.current = "shortcut";
-        // recordSendClick 回填 sendClickId，必须用它的返回值作为后续 seed，
-        // 否则落定时拿不到关联键，send_result 会被当成后台任务跳过。
-        telemetrySeed =
-          conversationTelemetry?.recordSendClick({
-            sessionId: sessionId ?? null,
-            seed: freshSeed,
-            trigger: sendTrigger,
-          }) ?? freshSeed;
       }
       let promptHistoryBeforeSend: readonly string[] | null = null;
       let promptHistoryAfterAppend: readonly string[] | null = null;
@@ -1556,13 +1545,8 @@ function ConversationComposerImpl({
         if (readyAttachmentRefs === null) {
           if (telemetrySeed.localTtft)
             getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "rejected");
-          // send_click 已上报，此处不落定会留下无配对的悬空样本，污染成功率分母。
-          conversationTelemetry?.settleSendResult({
-            seed: telemetrySeed,
-            sessionId: sessionId ?? null,
-            status: "fail",
-            reasonCode: "attachment_not_ready",
-          });
+          // CE-SYNC: 上游這裡的 settleSendResult(reasonCode: attachment_not_ready) 屬發送漏斗上報，
+          // CE 已移除；attachment 未就緒的用戶側行為仍由 sendAction.fail 與草稿保留邏輯承擔。
           sendAction.fail({ failureStage: "attachment_not_ready" });
           return;
         }
@@ -1653,12 +1637,7 @@ function ConversationComposerImpl({
           // 同时不 clear editor/draft/附件，让用户切换模式后可以直接重试。
           rollbackPromptHistory();
           restoreSubmittedDraft();
-          conversationTelemetry?.settleSendResult({
-            seed: telemetrySeed,
-            sessionId: sessionId ?? null,
-            status: "fail",
-            reasonCode: "blocked",
-          });
+          // CE-SYNC: 上游这里的 settleSendResult(reasonCode: blocked) 属发送漏斗上报，CE 已移除。
           sendAction.reject({ resultSource: "authority_ack", admissionResult: "rejected" });
           return;
         }
@@ -1693,13 +1672,8 @@ function ConversationComposerImpl({
           getLocalTtftObserver()?.exclude(telemetrySeed.localTtft, "failed");
         // 发送失败草稿保留在输入框（不清空），仅记录原因。
         logger.warn(`[v4-composer] 发送失败: ${String(error)}`);
-        // ACK 侧失败已由 SessionPane 落定；能走到这里的是 composer 自身链路异常。
-        conversationTelemetry?.settleSendResult({
-          seed: telemetrySeed,
-          sessionId: sessionId ?? null,
-          status: "fail",
-          reasonCode: "composer_error",
-        });
+        // CE-SYNC: 上游这里的 settleSendResult(reasonCode: composer_error) 属发送漏斗上报，CE 已移除；
+        // 失败原因仍写进日志与 sendAction.fail，用户侧草稿保留行为不变。
         sendAction.fail({ failureStage: "composer_send" });
       } finally {
         pendingRef.current = false;
@@ -1709,7 +1683,6 @@ function ConversationComposerImpl({
     [
       attachmentsApi,
       conversationSelectionReferences,
-      conversationTelemetry,
       draftConfig,
       createSubmissionFromComposer,
       submissionReady,
@@ -1902,24 +1875,9 @@ function ConversationComposerImpl({
   const stopTooltipTitle = intl.formatMessage({ id: "chat.stop" });
   const visibleError = error && !shouldSuppressChatErrorBanner(error) ? error : null;
 
-  useEffect(() => {
-    if (!visibleError || !conversationTelemetry || !telemetryVisible) return;
-    const telemetryKey = [
-      visibleError.taskId ?? sessionId ?? "",
-      visibleError.code ?? "",
-      visibleError.traceId ?? "",
-      visibleError.message,
-    ].join(":");
-    if (reportedErrorKeysRef.current.has(telemetryKey)) return;
-    reportedErrorKeysRef.current.add(telemetryKey);
-    // 错误只有经过 suppression 后真实进入 render 才曝光；同一 composer mount 相同 key 一次。
-    conversationTelemetry.reportVisibleChatError({
-      errorKey: telemetryKey,
-      displayMessage: resolveChatErrorBannerDisplayMessage(visibleError, intl),
-      error: visibleError,
-    });
-  }, [conversationTelemetry, intl, sessionId, telemetryVisible, visibleError]);
-
+  // CE-SYNC: 上游這段 useEffect 只把「真實進入 render 的錯誤」上報給 conversationTelemetry
+  // （reportVisibleChatError），CE 已整條移除上報鏈，故連同 reportedErrorKeysRef 去重集合一起刪除；
+  // visibleError 仍供錯誤橫幅渲染使用，含義不變。
   const attachmentAction = useMemo(
     () => ({
       label: intl.formatMessage({ id: "chat.composer.attachment" }),

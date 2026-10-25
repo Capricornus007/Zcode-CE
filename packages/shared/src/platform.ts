@@ -5,7 +5,6 @@ import type {
   SSHConnectOptions,
   WSLConnectOptions,
 } from "./remoteTarget.js";
-import type { PluginSandboxPlatformPort } from "./mcp-apps/contract.js";
 import type {
   LoadCliMcpFromUserDirectoryRequest,
   LoadCliMcpFromUserDirectoryResult,
@@ -13,7 +12,6 @@ import type {
   MigrateLegacyCommonMcpResult,
   SaveCliMcpToUserDirectoryRequest,
 } from "./mcp.js";
-import type { OAuthStateRegistration } from "./oauth.js";
 import type {
   WebRemoteControlAuthStateChange,
   WebRemoteControlContext,
@@ -29,13 +27,11 @@ import type {
   RendererActionTraceBatchV1,
   RendererActionTraceConfigV1,
 } from "./rendererActionTrace.js";
-import type { RendererHeapSample } from "./validation.js";
 import type {
   CuaAccessibilitySettingsResult,
   OpenCuaPermissionOnboardingOptions,
   PrepareCuaHelperPermissionDragResult,
 } from "./cuaAccessibilitySettings.js";
-import type { BrowserViewportSize } from "./browser-use/command-metadata.js";
 // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):IPlatformService.pluginSandbox 的端口类型。
 import type { PluginSandboxPlatformPort } from "./mcp-apps/contract.js";
 import type {
@@ -467,13 +463,6 @@ export interface DesktopWindowChromeState {
  * Linux 上取决于 session DBus 是否有 StatusNotifierWatcher(KDE/XFCE 原生有,
  * GNOME 需 AppIndicator 扩展);Windows 固定 supported=true;macOS/Web 不查询。
  */
-export interface DesktopCloseToTrayCapability {
-  /** 关闭驻留托盘是否可用 */
-  supported: boolean;
-  /** 是否为 GNOME 系桌面且无托盘;设置页据此追加「安装 AppIndicator 扩展」提示 */
-  gnomeLikeWithoutTray: boolean;
-}
-
 export interface RemoteServiceSession {
   sessionId: string;
 }
@@ -538,7 +527,6 @@ export interface EmbeddedBrowserPermissionScreenOption {
   thumbnailDataUrl?: string;
 }
 
-/** Main → Renderer 的内置浏览器权限弹窗请求；kind 决定 renderer 渲染哪类弹窗。 */
 export type EmbeddedBrowserPermissionPromptEvent =
   | {
       requestId: string;
@@ -596,85 +584,8 @@ export interface EmbeddedBrowserSitePermissionUpdateRequest {
   state: "allow" | "deny" | "ask";
 }
 
-<<<<<<< P5up
-export interface EmbeddedBrowserSitePermissionResetRequest {
-  origin: string;
-}
-=======
 // Modified by ZCode: 自上游 zai-org/ZCode aac47556 (Apache-2.0) 增量并入(F9 内置浏览器权限治理)。
-export interface EmbeddedBrowserPermissionDeviceOption {
-  deviceId: string;
-  name?: string;
-  vendorId?: number;
-  productId?: number;
-  serialNumber?: string;
-}
 
-export interface EmbeddedBrowserPermissionScreenOption {
-  sourceId: string;
-  name: string;
-  /** 源类型：整个屏幕 / 窗口，由 main 按 desktopCapturer source id 前缀判定。 */
-  kind: "screen" | "window";
-  thumbnailDataUrl?: string;
-}
-
-/** Main → Renderer 的内置浏览器权限弹窗请求；kind 决定 renderer 渲染哪类弹窗。 */
-export type EmbeddedBrowserPermissionPromptEvent =
-  | {
-      requestId: string;
-      kind: "permission";
-      origin: string;
-      permission: string;
-      mediaTypes?: string[];
-      /** 发起请求的 guest webContents id；renderer 据此只在归属 tab 渲染，
-       *  避免后台 tab 的请求显示在当前 tab 造成误批准。 */
-      guestWebContentsId?: number;
-    }
-  | {
-      requestId: string;
-      kind: "screen-share";
-      origin: string;
-      screens: EmbeddedBrowserPermissionScreenOption[];
-      /** 屏幕共享无 tab 锚定语义，恒缺省（兜底渲染）。 */
-      guestWebContentsId?: number;
-    }
-  | {
-      requestId: string;
-      kind: "device";
-      origin: string;
-      /** select-hid-device / select-usb-device / select-serial-port / select-bluetooth-device */
-      permission: string;
-      devices: EmbeddedBrowserPermissionDeviceOption[];
-      /** 发起请求的 guest webContents id（serial/蓝牙可取到；hid/usb 受 frame 限制
-       *  缺省，renderer 兜底渲染）。 */
-      guestWebContentsId?: number;
-    };
-
-export type EmbeddedBrowserPermissionResolution =
-  | { action: "allow-always" }
-  | { action: "allow-session" }
-  | { action: "block-always" }
-  | { action: "dismiss" }
-  | { action: "share-screen"; sourceId: string }
-  | { action: "select-device"; deviceId: string }
-  | { action: "cancel" };
-
-export interface EmbeddedBrowserPermissionResolveRequest {
-  requestId: string;
-  resolution: EmbeddedBrowserPermissionResolution;
-}
-
-export type EmbeddedBrowserSitePermissionsSnapshot = Record<
-  string,
-  Record<string, "allow" | "deny">
->;
-
-export interface EmbeddedBrowserSitePermissionUpdateRequest {
-  origin: string;
-  permission: string;
-  /** "ask" 表示删除该条记录，回到每次询问。 */
-  state: "allow" | "deny" | "ask";
-}
 
 export interface EmbeddedBrowserSitePermissionResetRequest {
   origin: string;
@@ -686,14 +597,13 @@ export interface EmbeddedBrowserSitePermissionResetRequest {
  * 遥测模块整体删除后迁到这里保留，避免业务协议依赖被连带删除。
  */
 export type RemoteWorkspaceConnectTrigger = "new" | "reconnect" | "restore";
->>>>>>> CEmain
 
 export interface ConnectRemoteRequest {
   target: RemoteTarget;
   requestId?: string;
   workspacePath?: string;
   workspaceIdentity?: string;
-  connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+  connectTrigger?: RemoteWorkspaceConnectTrigger;
   confirmSourceServerInstall?: boolean;
 }
 
@@ -796,11 +706,6 @@ export interface IPlatformService {
    */
   pluginSandbox?: PluginSandboxPlatformPort;
 
-  /**
-   * 插件 UI 沙箱平台端口。只有桌面端实现；
-   * web / 手机远控为 undefined，plugin-ui 据此回退到普通 MCP 工具卡片。
-   */
-  pluginSandbox?: PluginSandboxPlatformPort;
 
   /** 打开系统目录选择框，返回选中路径或 null */
   selectDirectory(): Promise<string | null>;
@@ -867,7 +772,7 @@ export interface IPlatformService {
     context?: {
       workspacePath?: string;
       workspaceIdentity?: string;
-      connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
+      connectTrigger?: RemoteWorkspaceConnectTrigger;
       confirmSourceServerInstall?: boolean;
     },
   ): Promise<{
@@ -1073,10 +978,7 @@ export interface IPlatformService {
 
   /** 注册内置浏览器 webview 请求打开新页面的回调，返回 disposer */
   onOpenBrowserUrl?(handler: (request: EmbeddedBrowserOpenUrlRequest) => void): () => void;
-<<<<<<< P5up
-=======
   // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F9)。
->>>>>>> CEmain
   /** 注册内置浏览器网页权限弹窗请求（main → renderer），返回 disposer */
   onEmbeddedBrowserPermissionPrompt?(
     handler: (event: EmbeddedBrowserPermissionPromptEvent) => void,
@@ -1167,12 +1069,6 @@ export interface IPlatformService {
 
   /** 读取当前桌面窗口最大化状态与系统原生圆角能力 */
   getDesktopWindowChromeState?(): Promise<DesktopWindowChromeState>;
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10)。
-  /**
-   * 查询「关闭驻留托盘」能力;桌面端 main 进程探测后返回,Web/手机远控无桥不实现。
-   * 设置页据此决定 Linux 上的开关是否置灰。
-   */
-  getCloseToTrayCapability?(): Promise<DesktopCloseToTrayCapability>;
 
   /** 注册桌面窗口最大化状态与系统原生圆角能力变化回调 */
   onDesktopWindowChromeStateChanged?(
@@ -1469,4 +1365,3 @@ export interface RemoteControlRotateTokenResult {
  * 断线重连恢复都用它），与遥测无关 —— 原先定义在 remoteUsageTelemetry.ts，
  * 遥测模块整体删除后迁到这里保留，避免业务协议依赖被连带删除。
  */
-export type RemoteWorkspaceConnectTrigger = "new" | "reconnect" | "restore";

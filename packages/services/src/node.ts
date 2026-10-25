@@ -4,6 +4,7 @@ import {
   projectWorkspaceSettings,
   readRemoteProjectDirectory,
 } from "#src/remote-projects/index.js";
+export { ensureDeviceMid } from "./device/deviceMid.js";
 export {
   createRemoteProjectConnectionAdmission,
   remoteProjectHostIdForProfile,
@@ -1341,19 +1342,12 @@ export function createLocalServices(options: {
   const provisioningOAuthKeys = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS);
   const credentialService = createCredentialService({
     onDidMutate: ({ key }) => {
-<<<<<<< P5up
-      if (key === "oauth:active_provider" || /^oauth:[^:]+:user_info$/.test(key))
-        invalidatePluginUiAccounts?.();
-      if (provisioningOAuthKeys.has(key)) invalidateProjectTokens();
-      if (provisioningOAuthKeys.has(key)) {
-=======
       // Modified by ZCode: 增量自上游 aac47556——账号切换时让 plugin-ui 实例绑定失效，
       // 防止旧 OAuth 凭据的实例句柄存活到新账号会话。
       if (key === "oauth:active_provider" || /^oauth:[^:]+:user_info$/.test(key)) {
         invalidatePluginUiAccounts?.();
       }
       if (provisioningOAuthKeys.has(key) || isProviderProvisioningAccountCredentialKey(key)) {
->>>>>>> CEmain
         options.onProviderProvisioningSourceChanged?.("credential");
       }
     },
@@ -1435,10 +1429,6 @@ export function createLocalServices(options: {
       // OAuth 删除已经完成，派生刷新交回原 Account Source 队列，后台只观察失败。
       void Promise.all(
         providers.map((provider) => handleOAuthProviderLogout?.(provider) ?? Promise.resolve()),
-<<<<<<< P5up
-      ).catch((error: unknown) => {
-        createServiceLogger("oauth-credential-recovery").warn(
-=======
       ).catch((error) => {
         // Modified by ZCode: 容错对齐上游 3.15.3（闭源修复 A2）。原写法在任一派生 provider
         // 刷新失败时整体 reject；回调本身又挂在清理流程上，会把「清理损坏 OAuth 会话」一起拽失败，
@@ -1446,7 +1436,6 @@ export function createLocalServices(options: {
         // 清理照常完成；repo 层的 try/catch 兜底仍在（两层语义不同：repo 层保证清理不被阻断，
         // 回调层留下可定位的失败日志）。不加重试：派生凭据随下次账号同步自然重建。
         oauthCredentialRecoveryLogger.warn(
->>>>>>> CEmain
           "refresh derived providers after corrupt OAuth cleanup failed",
           { error },
         );

@@ -142,10 +142,7 @@ export const TID_BROWSER_OPEN_EXTERNAL_ITEM = "browser-open-external-item";
 export const TID_BROWSER_DEVTOOLS_BUTTON = "browser-devtools-button";
 /** 浏览器网页视图 */
 export const TID_BROWSER_WEBVIEW = "browser-webview";
-<<<<<<< P5up
-=======
 // Modified by ZCode: 增量自上游 aac47556（F9 权限确认条 test ids，三方合并入本仓自研文件）。
->>>>>>> CEmain
 /** 内置浏览器权限确认条容器 */
 export const TID_BROWSER_PERMISSION_PROMPTS = "browser-permission-prompts";
 /** 权限确认条「仅本次允许」按钮 */
@@ -235,10 +232,25 @@ export const TID_SSH_CANCEL_BUTTON = "ssh-cancel-button";
 // Sidebar
 /** 侧边栏容器 */
 export const TID_SIDEBAR = "sidebar";
+// CE-SYNC: 以下 CE 專屬 test-id 在機械合併中被上游 Sidebar 版沖掉，按 CE main 7fc3bfe2 重植。
+/** 侧边栏打开工作区按钮 */
+export const TID_WORKSPACE_OPEN_BUTTON = "workspace-open-button";
+/** 侧边栏工作区列表 */
+export const TID_WORKSPACE_LIST = "workspace-list";
+/** 侧边栏工作区条目（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_ITEM = "workspace-item";
+/** 侧边栏关闭工作区按钮（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_CLOSE = "workspace-close";
+
 /** 项目视图里的对话二级分区 */
 export const TID_CONVERSATION_SECTION = "conversation-section";
 /** 项目视图里的项目二级分区 */
 export const TID_PROJECT_SECTION = "project-section";
+/** 对话分区新建任务按钮 */
+export const TID_CONVERSATION_NEW_TASK = "conversation-new-task";
+/** 项目分区添加菜单按钮 */
+export const TID_PROJECT_ADD = "project-add";
+
 /** 项目分区新建项目按钮 */
 export const TID_VIRTUAL_PROJECT_ADD = "virtual-project-add";
 /** 任务分区新建任务按钮（全局新建，cwd 为默认执行目录） */
@@ -481,6 +493,9 @@ export const TID_SUBAGENT_ROW = "subagent-row";
 export const TID_SUBAGENT_BUILT_IN_MODEL_TRIGGER = "subagent-built-in-model-trigger";
 /** 设置页使用统计顶层 tab（动态后缀为 usage tab id） */
 export const TID_SETTINGS_USAGE_TAB = "settings-usage-tab";
+/** 侧边栏头像菜单剩余额度子菜单入口 */
+export const TID_SIDEBAR_USAGE_REMAINING_TRIGGER = "sidebar-usage-remaining-trigger";
+
 /** 侧边栏头像菜单使用统计入口 */
 export const TID_SIDEBAR_CODING_PLAN_USAGE_BUTTON = "sidebar-coding-plan-usage-button";
 
@@ -560,6 +575,9 @@ export const TID_WORKSPACE_MORE_BUTTON = "workspace-more-button";
 export const TID_WORKSPACE_HELP_MENU_TRIGGER = "workspace-help-menu-trigger";
 /** 问号帮助菜单里的「资源管理器」项（仅桌面端） */
 export const TID_WORKSPACE_HELP_MENU_RESOURCE_MANAGER = "workspace-help-menu-resource-manager";
+/** 侧边栏打开工作区文件树按钮（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_FILE_TREE_BUTTON = "workspace-file-tree-button";
+
 /** 工作区文件树面板 */
 export const TID_WORKSPACE_FILE_TREE_PANEL = "workspace-file-tree-panel";
 /** 工作区文件树刷新按钮 */
@@ -577,6 +595,9 @@ export const TID_SSH_SUCCESS = "ssh-success";
 export const TID_V4_SESSION_PANE = "v4-session-pane";
 /** v4 消息时间线容器 */
 export const TID_V4_TIMELINE = "v4-timeline";
+/** v4 时间线空态占位 */
+export const TID_V4_TIMELINE_EMPTY = "v4-timeline-empty";
+
 /** v4 投影行（动态后缀为 rowId） */
 export const TID_V4_ROW = "v4-row";
 /** v4 工作区 Hook 待审核提示条容器 */
@@ -701,6 +722,9 @@ export const TID_V4_SPLIT_CLOSE = "v4-split-close";
 export const TID_V4_SPLIT_DIVIDER = "v4-split-divider";
 /** v4 pane header 的 workspace 徽标（跨 workspace pane 显示归属） */
 export const TID_V4_PANE_WORKSPACE_BADGE = "v4-pane-workspace-badge";
+/** 侧栏会话项上下文菜单「在分屏打开」（仅桌面 shell，收尾） */
+export const TID_V4_TASK_OPEN_IN_SPLIT = "v4-task-open-in-split";
+
 /** v4 时间线「加载更早」按钮（游标分页；窗口首行未到全序首行时出现） */
 export const TID_V4_TIMELINE_LOAD_OLDER = "v4-timeline-load-older";
 /** v4 对话轮次全局导航 rail（宽屏 2+ 可导航 turn 时出现） */
@@ -801,9 +825,6 @@ export const TID_PLUGIN_UI_WEBVIEW = "plugin-ui-webview";
 export const TID_START_PLAN_RECOMMENDATION_DIALOG = "start-plan-recommendation-dialog";
 // Modified by ZCode: 增量自上游 aac47556（F4/F5 插件 UI 沙箱 test ids，三方合并入口同 task-14）。
 /** 插件 UI 沙箱卡片容器与其中的 webview。 */
-export const TID_PLUGIN_UI_CARD = "plugin-ui-card";
-export const TID_PLUGIN_UI_OPEN_SIDE_PANE = "plugin-ui-open-side-pane";
-export const TID_PLUGIN_UI_WEBVIEW = "plugin-ui-webview";
 
 /** 用户反馈的诊断日志授权开关 */
 export const TID_FEEDBACK_LOGS_OPT_IN = "feedback-logs-opt-in";

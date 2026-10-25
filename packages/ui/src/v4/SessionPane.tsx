@@ -369,9 +369,7 @@ export interface ConversationPromptTelemetrySeed {
   localTtft?: import("@zcode/shared").LocalTtftContext;
   /** 用户触发原始发送动作的 renderer 时钟。 */
   sendTime: number;
-  /** 发送瞬间冻结的旧版模型/模式/套餐字段。 */
-  extraDetail: Record<string, string>;
-  sendClickId?: string;
+  /** 是否中途经过队列二次确认弹窗（队列重发时沿用同一 seed）。 */
   queueConfirmed?: boolean;
 }
 

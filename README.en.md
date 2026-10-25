@@ -16,7 +16,14 @@ ZCode-CE is the **open-source community edition** of the ZCode AI coding workben
 
 ## About this project
 
+<<<<<<< P5
 ZCode-CE is built on [zai-org/ZCode](https://github.com/zai-org/ZCode) (Apache-2.0), for users who want **full control over their own development environment**. **Community contributions are welcome** — whether it's feature development, issue reports, or documentation improvements.
+=======
+- **2026-10-19**: Updated to ZCode v3.16.2.
+- **2026-10-16**: Updated to ZCode v3.16.1.
+- 2026-10-10: Updated to ZCode v3.15.1.
+- 2026-9-23: Updated to ZCode v3.14.3.
+>>>>>>> U3162
 
 Seven differences from the official distribution:
 

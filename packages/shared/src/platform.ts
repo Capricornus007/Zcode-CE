@@ -5,6 +5,7 @@ import type {
   SSHConnectOptions,
   WSLConnectOptions,
 } from "./remoteTarget.js";
+import type { PluginSandboxPlatformPort } from "./mcp-apps/contract.js";
 import type {
   LoadCliMcpFromUserDirectoryRequest,
   LoadCliMcpFromUserDirectoryResult,
@@ -23,6 +24,11 @@ import type {
   WebRemoteControlWorkspaceTarget,
 } from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
+import type { ArmsCustomEventPayload, RendererTelemetryEventPayload } from "./telemetry.js";
+import type {
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
+} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CuaAccessibilitySettingsResult,
@@ -436,6 +442,18 @@ export interface DesktopZoomState {
   zoomLevel: number;
 }
 
+/**
+ * 桌面端"关闭驻留托盘"能力（spec：docs/desktop/linux-close-to-tray.md）。
+ * Linux 上取决于 session DBus 是否有 StatusNotifierWatcher（KDE/XFCE 原生有，
+ * GNOME 需 AppIndicator 扩展）；Windows 固定 supported=true；macOS/Web 不查询。
+ */
+export interface DesktopCloseToTrayCapability {
+  /** 关闭驻留托盘是否可用 */
+  supported: boolean;
+  /** 是否为 GNOME 系桌面且无托盘；设置页据此追加"安装 AppIndicator 扩展"提示 */
+  gnomeLikeWithoutTray: boolean;
+}
+
 export interface DesktopWindowChromeState {
   isMaximized: boolean;
   /** 本机 macOS 主版本；非 macOS 或无法解析时为 null。 */
@@ -492,112 +510,6 @@ export interface RemoteSessionReconnectedEvent {
   workspaceIdentity: string;
 }
 
-export interface BotRemoteWorkspaceReconnectedEvent {
-  sessionId: string;
-  workspacePath: string;
-  workspaceIdentity: string;
-  target: RemoteTarget;
-}
-
-/**
- * 本地 Web 服务的对外状态（契约 §5 `WebServiceStatus`）。**不含令牌**。
- *
- * 只列**真的会被产出**的取值（ce.3 硬规矩）：`starting`/`stopping` 已删 ——
- * `start`/`stop` 同步等到最终态才返回，IPC 也只在动作之后广播一次，中间态没有出口；
- * 那 15 秒的在途反馈由渲染进程本地状态承载。
- *
- * `staleReason` 仅在 `state === "stopped"` 且是"陈旧条目"时出现（上一次的服务已不在、
- * 状态文件还留着）—— 用它区分"从未开启"与"上次异常退出"。
- */
-export type WebServiceStatusState = "stopped" | "running" | "running-untrusted" | "failed";
-
-export type WebServiceStatusStaleReason = "pid-dead" | "port-closed" | "probe-timeout";
-
-export type WebServiceStatusErrorCode =
-  | "spawn-failed"
-  | "port-taken"
-  | "probe-timeout"
-  | "token-unreadable"
-  | "non-loopback-without-token";
-
-export interface WebServiceStatusPayload {
-  state: WebServiceStatusState;
-  /** true = 接管了已在跑的服务（不是我们起的）。 */
-  adopted: boolean;
-  /** false ⇒ UI 必须显示"同网段可尝试连接"的安全提示。 */
-  loopback: boolean;
-  host?: string;
-  port?: number;
-  url?: string;
-  startedAt?: number;
-  error?: { code: WebServiceStatusErrorCode; message: string };
-  staleReason?: WebServiceStatusStaleReason;
-}
-
-/** `getWebServiceConnectionInfo` 的返回。**带令牌的链接只走这一条通道**（契约 §5）。 */
-export interface WebServiceConnectionInfoPayload {
-  url: string;
-  linkWithToken: string;
-}
-
-/** 连接角色（spec §6.4）：手机/浏览器面板是 terminal-client，桌面自身的 host attachment 是 trusted-host。 */
-export type RemoteControlConnectionRole = "terminal-client" | "trusted-host";
-
-/**
- * 一条已建立的连接（spec §6.4）。
- *
- * 字段口径（都是服务端算好的事实，不在传输层做格式化）：
- * - `connectedAt` 是 epoch 毫秒，与同契约的 `WebServiceStatusPayload.startedAt` 同口径；
- *   显示成什么格式是 UI 的事（locale 相关），IPC 只传事实。
- * - `workspace` 可选：不是每条连接都绑定了工作区。
- *
- * 本结构里没有、也永远不会有令牌字段（契约 §5 的令牌不变式）：
- * 它是"谁连着"的事实，不是凭据。加字段前先读 `ipc.ts` 文件头。
- */
-export interface RemoteControlConnection {
-  /** 服务端生成、含随机量、不可猜 —— 撤销时用它指名（spec §6.4）。 */
-  id: string;
-  address: string;
-  role: RemoteControlConnectionRole;
-  userAgent: string;
-  connectedAt: number;
-  workspace?: string;
-}
-
-/**
- * `getWebServiceConnections` 的返回（spec §6.4 的 200 响应）。
- *
- * `connections: []` 与 `null` 是两个不同的事实，不能混用：
- * - `{ connections: [], revision }` = 确定 0 台设备（UI 显示"等待连接"）；
- * - `null` = 不知道（服务没在跑 / 读失败 / 鉴权失败）。
- *
- * 若把空数组也返回成 `null`，UI 就无法区分"确实没人连"与"读不到"，
- * 只能靠默认值假装其中之一 —— 那正是本仓禁止的静默降级。
- * `revision` 是同一份快照的版本号，供去重/轮询；它不含任何可反推令牌的信息。
- */
-export interface RemoteControlConnectionsPayload {
-  connections: RemoteControlConnection[];
-  revision: number;
-}
-
-/**
- * 断开连接的动作载荷（spec §6.4）：恰好是 `{ id }` 或 `{ all: true }` 之一。
- *
- * 同时给或都不给 ⇒ 服务端 400（不做"就近猜一个"的兜底：那会让"断开全部"变成
- * "断开某一个"或反之，而这两者的后果差一个数量级）。
- */
-export type RemoteControlRevokeRequest = { id: string } | { all: true };
-
-/** `revokeWebServiceConnection` 的返回。幂等：不存在/已断开的 id ⇒ `{ revoked: 0 }`。 */
-export interface RemoteControlRevokeResult {
-  revoked: number;
-}
-
-/** `rotateWebServiceToken` 的返回：轮换完成时刻（epoch 毫秒）。旧令牌立即失效。 */
-export interface RemoteControlRotateTokenResult {
-  rotatedAt: number;
-}
-
 export interface EmbeddedBrowserOpenUrlRequest {
   url: string;
   disposition: "default" | "foreground-tab" | "background-tab" | "new-window" | "other";
@@ -610,6 +522,85 @@ export interface EmbeddedBrowserOpenUrlRequest {
   sourceTabId?: string;
 }
 
+export interface EmbeddedBrowserPermissionDeviceOption {
+  deviceId: string;
+  name?: string;
+  vendorId?: number;
+  productId?: number;
+  serialNumber?: string;
+}
+
+export interface EmbeddedBrowserPermissionScreenOption {
+  sourceId: string;
+  name: string;
+  /** 源类型：整个屏幕 / 窗口，由 main 按 desktopCapturer source id 前缀判定。 */
+  kind: "screen" | "window";
+  thumbnailDataUrl?: string;
+}
+
+/** Main → Renderer 的内置浏览器权限弹窗请求；kind 决定 renderer 渲染哪类弹窗。 */
+export type EmbeddedBrowserPermissionPromptEvent =
+  | {
+      requestId: string;
+      kind: "permission";
+      origin: string;
+      permission: string;
+      mediaTypes?: string[];
+      /** 发起请求的 guest webContents id；renderer 据此只在归属 tab 渲染，
+       *  避免后台 tab 的请求显示在当前 tab 造成误批准。 */
+      guestWebContentsId?: number;
+    }
+  | {
+      requestId: string;
+      kind: "screen-share";
+      origin: string;
+      screens: EmbeddedBrowserPermissionScreenOption[];
+      /** 屏幕共享无 tab 锚定语义，恒缺省（兜底渲染）。 */
+      guestWebContentsId?: number;
+    }
+  | {
+      requestId: string;
+      kind: "device";
+      origin: string;
+      /** select-hid-device / select-usb-device / select-serial-port / select-bluetooth-device */
+      permission: string;
+      devices: EmbeddedBrowserPermissionDeviceOption[];
+      /** 发起请求的 guest webContents id（serial/蓝牙可取到；hid/usb 受 frame 限制
+       *  缺省，renderer 兜底渲染）。 */
+      guestWebContentsId?: number;
+    };
+
+export type EmbeddedBrowserPermissionResolution =
+  | { action: "allow-always" }
+  | { action: "allow-session" }
+  | { action: "block-always" }
+  | { action: "dismiss" }
+  | { action: "share-screen"; sourceId: string }
+  | { action: "select-device"; deviceId: string }
+  | { action: "cancel" };
+
+export interface EmbeddedBrowserPermissionResolveRequest {
+  requestId: string;
+  resolution: EmbeddedBrowserPermissionResolution;
+}
+
+export type EmbeddedBrowserSitePermissionsSnapshot = Record<
+  string,
+  Record<string, "allow" | "deny">
+>;
+
+export interface EmbeddedBrowserSitePermissionUpdateRequest {
+  origin: string;
+  permission: string;
+  /** "ask" 表示删除该条记录，回到每次询问。 */
+  state: "allow" | "deny" | "ask";
+}
+
+<<<<<<< P5up
+export interface EmbeddedBrowserSitePermissionResetRequest {
+  origin: string;
+}
+=======
 // Modified by ZCode: 自上游 zai-org/ZCode aac47556 (Apache-2.0) 增量并入(F9 内置浏览器权限治理)。
 export interface EmbeddedBrowserPermissionDeviceOption {
   deviceId: string;
@@ -695,13 +686,14 @@ export interface EmbeddedBrowserSitePermissionResetRequest {
  * 遥测模块整体删除后迁到这里保留，避免业务协议依赖被连带删除。
  */
 export type RemoteWorkspaceConnectTrigger = "new" | "reconnect" | "restore";
+>>>>>>> CEmain
 
 export interface ConnectRemoteRequest {
   target: RemoteTarget;
   requestId?: string;
   workspacePath?: string;
   workspaceIdentity?: string;
-  connectTrigger?: RemoteWorkspaceConnectTrigger;
+  connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
   confirmSourceServerInstall?: boolean;
 }
 
@@ -804,6 +796,12 @@ export interface IPlatformService {
    */
   pluginSandbox?: PluginSandboxPlatformPort;
 
+  /**
+   * 插件 UI 沙箱平台端口。只有桌面端实现；
+   * web / 手机远控为 undefined，plugin-ui 据此回退到普通 MCP 工具卡片。
+   */
+  pluginSandbox?: PluginSandboxPlatformPort;
+
   /** 打开系统目录选择框，返回选中路径或 null */
   selectDirectory(): Promise<string | null>;
 
@@ -850,63 +848,6 @@ export interface IPlatformService {
     payload: MaterializeWorkflowArtifactFileRequest,
   ): Promise<MaterializeWorkflowArtifactFileResult>;
 
-  /**
-   * 本地 Web 服务（远程控制）的四条查询/动作通道 + 一条订阅（契约 §5）。
-   *
-   * **全部可选**：只有桌面端主进程提供这套服务面（它才有"启动一个本机服务进程"的能力）；
-   * Web 客户端没有这条通道 ⇒ 实现里不提供 ⇒ UI 侧"能力缺失 ⇒ **不渲染**"入口与面板
-   * （spec §3.8 撤回后，web 端两者都不该出现）。这样 web/其它平台的实现**不必被迫实现**它们。
-   *
-   * **令牌不变式**：带令牌的链接**只**经 `getWebServiceConnectionInfo` 返回；
-   * `getWebServiceStatus` 的返回值**不含令牌**（契约 §5 约定）。
-   */
-  getWebServiceStatus?(): Promise<WebServiceStatusPayload>;
-
-  /** 启动本机 Web 服务；首次对局域网开放的确认弹窗由 UI 负责（决策①）。 */
-  startWebService?(options: {
-    scope: "loopback" | "lan";
-    port?: number;
-  }): Promise<WebServiceStatusPayload>;
-
-  /** 停止本机 Web 服务。 */
-  stopWebService?(): Promise<WebServiceStatusPayload>;
-
-  /** 取带令牌的连接信息；`null` = 当前没有可派发的链接（此时 UI 不渲染二维码）。 */
-  getWebServiceConnectionInfo?(): Promise<WebServiceConnectionInfoPayload | null>;
-
-  /** 订阅探活结论变化（入口据此回显，**不轮询**），返回 disposer。 */
-  onWebServiceChanged?(handler: (status: WebServiceStatusPayload) => void): () => void;
-
-  /**
-   * 连接面（谁连着）三条可选方法（spec §6.4）。
-   *
-   * 为什么可选（与上面五条同一判据，不是照抄）：这套能力描述的是"别的设备怎么连到
-   * 这台桌面"，只有桌面主进程才既持有服务端进程的 host/port 与令牌文件，又处在
-   * 渲染进程的可信侧。Web 客户端本身就是那个"别的设备"，让它去列/断开连接会构成
-   * 提权面（决策④：Web 面板只显示连接面，令牌轮换归桌面）。所以 Web 端不实现，
-   * UI 侧按"能力缺失 ⇒ 不渲染"处理。
-   *
-   * 三个方法分档探测，不合成一档：UI 分别用它们门控各自的区块（设备清单 /
-   * 断开按钮 / 轮换入口）。合成一档的话，任一方法缺失会让整个面板消失 ——
-   * 而"面板整个不渲染且无报错"正是本仓记过的最难归因的静默失效形态。
-   *
-   * 令牌不变式：这三条载荷里都不含令牌。main 侧为了请求本机服务端会在
-   * 进程内部带上令牌（那是 main 的实现细节），令牌不跨 IPC 边界 ——
-   * 它仍然只经 `getWebServiceConnectionInfo` 交给渲染进程。
-   */
-  getWebServiceConnections?(): Promise<RemoteControlConnectionsPayload | null>;
-
-  /**
-   * 断开连接（spec §6.4）。载荷恰好是 `{ id }` 或 `{ all: true }` 之一。
-   * 语义上只断连接，绝不停止服务进程（规则③：读=连接清单，写=只有撤销类动作）。
-   */
-  revokeWebServiceConnection?(
-    input: RemoteControlRevokeRequest,
-  ): Promise<RemoteControlRevokeResult>;
-
-  /** 轮换服务端令牌（桌面专属，决策④）。轮换后所有已连设备立即失效。 */
-  rotateWebServiceToken?(): Promise<RemoteControlRotateTokenResult>;
-
   /** 订阅当前窗口内远程连接过程日志，返回 disposer */
   onRemoteConnectionLog(handler: (entry: RemoteConnectionRuntimeLog) => void): () => void;
 
@@ -915,10 +856,6 @@ export interface IPlatformService {
 
   /** 订阅 Source transport 自动重连后的 logical session 换代事件。 */
   onRemoteSessionReconnected?(handler: (event: RemoteSessionReconnectedEvent) => void): () => void;
-  /** 订阅 Bot 触发的远程 workspace 重连成功事件，返回 disposer */
-  onBotRemoteWorkspaceReconnected?(
-    handler: (event: BotRemoteWorkspaceReconnectedEvent) => void,
-  ): () => void;
 
   /** 检查目录是否已在其他窗口打开；如果是则激活该窗口并切到对应 tab */
   activateOrSetWorkspace(path: string): Promise<{ activated: boolean }>;
@@ -930,7 +867,7 @@ export interface IPlatformService {
     context?: {
       workspacePath?: string;
       workspaceIdentity?: string;
-      connectTrigger?: RemoteWorkspaceConnectTrigger;
+      connectTrigger?: import("./remoteUsageTelemetry.js").RemoteWorkspaceConnectTrigger;
       confirmSourceServerInstall?: boolean;
     },
   ): Promise<{
@@ -1073,10 +1010,21 @@ export interface IPlatformService {
   /** 触发任务状态对应的系统通知，由宿主环境决定是否真正展示 */
   showTaskNotification(payload: TaskNotificationPayload): void;
 
-  // 遥测已全部移除（P1）：reportTelemetryEvent / reportArmsCustomEvent /
-  // getRendererActionTraceConfig / onRendererActionTraceConfigChanged /
-  // reportRendererActionTraceBatch / reportLocalTtftBatch 六个上报方法均已删除。
-  // 保留 reportRendererHeapSample（本地内存诊断，非上报）。
+  /** 通过宿主环境统一上报 UI 侧 telemetry 事件 */
+  reportTelemetryEvent(payload: RendererTelemetryEventPayload): Promise<void>;
+
+  /** 通过宿主环境上报 ARMS 自定义事件；Web 端当前为空实现 */
+  reportArmsCustomEvent(payload: ArmsCustomEventPayload): Promise<void>;
+
+  /** 读取 Desktop Renderer 用户操作 Trace 的当前灰度配置；Web/手机不实现。 */
+  getRendererActionTraceConfig?(): Promise<RendererActionTraceConfigV1>;
+  /** 订阅 Main 推送的 Renderer 用户操作 Trace 配置；Web/手机不实现。 */
+  onRendererActionTraceConfigChanged?(
+    callback: (config: RendererActionTraceConfigV1) => void,
+  ): () => void;
+  /** Renderer → Main：发送已结束的 ui_action batch；严格旁路、fire-and-forget。 */
+  reportRendererActionTraceBatch?(batch: RendererActionTraceBatchV1): void;
+  reportLocalTtftBatch?(batch: import("./localTtft.js").LocalTtftBatch): void;
 
   /**
    * Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，进 `renderer_main` 角色事件。单向 send、fire-and-forget；
@@ -1105,6 +1053,12 @@ export interface IPlatformService {
   /** 同步需要 main 进程即时感知的应用设置；Web fallback 可忽略 */
   syncAppSettings?(patch: Partial<AppSettings>): void;
 
+  /**
+   * 查询"关闭驻留托盘"能力；桌面端 main 进程探测后返回，Web/手机远控无桥不实现。
+   * 设置页据此决定 Linux 上的开关是否置灰。
+   */
+  getCloseToTrayCapability?(): Promise<DesktopCloseToTrayCapability>;
+
   /** 快捷键设置页录制态开关；桌面端 main 据此暂时摘除可配置菜单 accelerator，Web 可忽略 */
   setShortcutRecordingActive?(active: boolean): void;
 
@@ -1119,7 +1073,10 @@ export interface IPlatformService {
 
   /** 注册内置浏览器 webview 请求打开新页面的回调，返回 disposer */
   onOpenBrowserUrl?(handler: (request: EmbeddedBrowserOpenUrlRequest) => void): () => void;
+<<<<<<< P5up
+=======
   // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F9)。
+>>>>>>> CEmain
   /** 注册内置浏览器网页权限弹窗请求（main → renderer），返回 disposer */
   onEmbeddedBrowserPermissionPrompt?(
     handler: (event: EmbeddedBrowserPermissionPromptEvent) => void,
@@ -1380,4 +1337,136 @@ export interface IPlatformService {
    *   抗浏览器/网络/语言/时区变化，换手机才会变
    */
   getDeviceId(): string;
+
+  // ---- CE 线增量方法（ce.3 远程控制面；桌面 preload/主进程已实现，此处补齐声明）----
+
+  /** 读取本地 Web 服务的对外状态（契约 §5）。 */
+  getWebServiceStatus(): Promise<WebServiceStatusPayload>;
+  /** 启动本地 Web 服务；同步等到最终态才返回，中间态没有出口。 */
+  startWebService(options: {
+    scope: "loopback" | "lan";
+    port?: number;
+  }): Promise<WebServiceStatusPayload>;
+  /** 停止本地 Web 服务，返回停后状态。 */
+  stopWebService(): Promise<WebServiceStatusPayload>;
+  /** 取带令牌的连接信息（契约 §5：带令牌的链接只走这一条通道）；服务未在跑时为 null。 */
+  getWebServiceConnectionInfo(): Promise<WebServiceConnectionInfoPayload | null>;
+  /** 订阅服务状态变化广播；返回退订函数。 */
+  onWebServiceChanged(callback: (status: WebServiceStatusPayload) => void): () => void;
+  /** 已建立连接列表快照（spec §6.4）；null = 不知道（服务没在跑/读失败/鉴权失败）。 */
+  getWebServiceConnections?(): Promise<RemoteControlConnectionsPayload | null>;
+  /** 断开连接（按 id 或全部）；幂等。 */
+  revokeWebServiceConnection?(
+    input: RemoteControlRevokeRequest,
+  ): Promise<RemoteControlRevokeResult>;
+  /** 轮换 Web 服务令牌；旧令牌立即失效。 */
+  rotateWebServiceToken?(): Promise<RemoteControlRotateTokenResult>;
 }
+
+// ---- CE 线增量（整版升级移植：官方 3.15.1 基底 + CE WebService/RemoteControl 面）----
+
+/**
+ * 本地 Web 服务的对外状态（契约 §5 `WebServiceStatus`）。**不含令牌**。
+ *
+ * 只列**真的会被产出**的取值（ce.3 硬规矩）：`starting`/`stopping` 已删 ——
+ * `start`/`stop` 同步等到最终态才返回，IPC 也只在动作之后广播一次，中间态没有出口；
+ * 那 15 秒的在途反馈由渲染进程本地状态承载。
+ *
+ * `staleReason` 仅在 `state === "stopped"` 且是"陈旧条目"时出现（上一次的服务已不在、
+ * 状态文件还留着）—— 用它区分"从未开启"与"上次异常退出"。
+ */
+export type WebServiceStatusState = "stopped" | "running" | "running-untrusted" | "failed";
+
+export type WebServiceStatusStaleReason = "pid-dead" | "port-closed" | "probe-timeout";
+
+export type WebServiceStatusErrorCode =
+  | "spawn-failed"
+  | "port-taken"
+  | "probe-timeout"
+  | "token-unreadable"
+  | "non-loopback-without-token";
+
+export interface WebServiceStatusPayload {
+  state: WebServiceStatusState;
+  /** true = 接管了已在跑的服务（不是我们起的）。 */
+  adopted: boolean;
+  /** false ⇒ UI 必须显示"同网段可尝试连接"的安全提示。 */
+  loopback: boolean;
+  host?: string;
+  port?: number;
+  url?: string;
+  startedAt?: number;
+  error?: { code: WebServiceStatusErrorCode; message: string };
+  staleReason?: WebServiceStatusStaleReason;
+}
+
+/** `getWebServiceConnectionInfo` 的返回。**带令牌的链接只走这一条通道**（契约 §5）。 */
+export interface WebServiceConnectionInfoPayload {
+  url: string;
+  linkWithToken: string;
+}
+
+/** 连接角色（spec §6.4）：手机/浏览器面板是 terminal-client，桌面自身的 host attachment 是 trusted-host。 */
+export type RemoteControlConnectionRole = "terminal-client" | "trusted-host";
+
+/**
+ * 一条已建立的连接（spec §6.4）。
+ *
+ * 字段口径（都是服务端算好的事实，不在传输层做格式化）：
+ * - `connectedAt` 是 epoch 毫秒，与同契约的 `WebServiceStatusPayload.startedAt` 同口径；
+ *   显示成什么格式是 UI 的事（locale 相关），IPC 只传事实。
+ * - `workspace` 可选：不是每条连接都绑定了工作区。
+ *
+ * 本结构里没有、也永远不会有令牌字段（契约 §5 的令牌不变式）：
+ * 它是"谁连着"的事实，不是凭据。加字段前先读 `ipc.ts` 文件头。
+ */
+export interface RemoteControlConnection {
+  /** 服务端生成、含随机量、不可猜 —— 撤销时用它指名（spec §6.4）。 */
+  id: string;
+  address: string;
+  role: RemoteControlConnectionRole;
+  userAgent: string;
+  connectedAt: number;
+  workspace?: string;
+}
+
+/**
+ * `getWebServiceConnections` 的返回（spec §6.4 的 200 响应）。
+ *
+ * `connections: []` 与 `null` 是两个不同的事实，不能混用：
+ * - `{ connections: [], revision }` = 确定 0 台设备（UI 显示"等待连接"）；
+ * - `null` = 不知道（服务没在跑 / 读失败 / 鉴权失败）。
+ *
+ * 若把空数组也返回成 `null`，UI 就无法区分"确实没人连"与"读不到"，
+ * 只能靠默认值假装其中之一 —— 那正是本仓禁止的静默降级。
+ * `revision` 是同一份快照的版本号，供去重/轮询；它不含任何可反推令牌的信息。
+ */
+export interface RemoteControlConnectionsPayload {
+  connections: RemoteControlConnection[];
+  revision: number;
+}
+
+/**
+ * 断开连接的动作载荷（spec §6.4）：恰好是 `{ id }` 或 `{ all: true }` 之一。
+ *
+ * 同时给或都不给 ⇒ 服务端 400（不做"就近猜一个"的兜底：那会让"断开全部"变成
+ * "断开某一个"或反之，而这两者的后果差一个数量级）。
+ */
+export type RemoteControlRevokeRequest = { id: string } | { all: true };
+
+/** `revokeWebServiceConnection` 的返回。幂等：不存在/已断开的 id ⇒ `{ revoked: 0 }`。 */
+export interface RemoteControlRevokeResult {
+  revoked: number;
+}
+
+/** `rotateWebServiceToken` 的返回：轮换完成时刻（epoch 毫秒）。旧令牌立即失效。 */
+export interface RemoteControlRotateTokenResult {
+  rotatedAt: number;
+}
+
+/**
+ * 远程连接的触发来源。属于 `connectRemote` 的**业务协议字段**（preload 透传、Host 路由、
+ * 断线重连恢复都用它），与遥测无关 —— 原先定义在 remoteUsageTelemetry.ts，
+ * 遥测模块整体删除后迁到这里保留，避免业务协议依赖被连带删除。
+ */
+export type RemoteWorkspaceConnectTrigger = "new" | "reconnect" | "restore";

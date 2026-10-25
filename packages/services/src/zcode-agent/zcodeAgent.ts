@@ -1,7 +1,6 @@
 import type { PluginUiToolResultNotification } from "@zcode/shared/mcp-apps";
 import type {
   BackgroundBashOutputResult,
-  DynamicWorkflowMode,
   SessionDebugSnapshot,
   ZCodeSessionContentProfile,
 } from "@zcode/shared";
@@ -9,7 +8,9 @@ import type {
 import type { Event, IDisposable } from "@zcode/rpc";
 import { ServiceChannels } from "@zcode/shared";
 import type { AppUsageRange, AppUsageSnapshot, ZCodeTaskTokenUsageResult } from "@zcode/shared";
+import type { DynamicWorkflowMode } from "@zcode/shared";
 import type { ZCodeAutomation, ZCodeAutomationRun } from "@zcode/shared";
+import type { ZCodeWorkspaceRef } from "@zcode/shared";
 import type {
   ZCodeStorageStartupState,
   ZCodeDeliveryKind,
@@ -23,8 +24,6 @@ import type {
   ModelSelection,
   ZCodeSessionImportHistory,
   ZCodePermissionRequestParams,
-  ZCodeProviderRuntimeHeadersRequestParams,
-  ZCodeProviderRuntimeHeadersResponse,
   AgentLaneResourceSample,
   ZCodeMcpTelemetryEvent,
   ZCodeMcpResourceSample,
@@ -47,13 +46,25 @@ import type {
   ZCodePluginsInstallResult,
   ZCodePluginsReferenceCatalogResult,
   ZCodeSkillsReferenceCatalogResult,
+  ZCodeMcpReadResourceResult,
+  ZCodeMcpUiCallToolResult,
+  ZCodeMcpUiCancelCallResult,
+  ZCodeMcpUiReadResourceResult,
+  ZCodeMcpUiListResourcesResult,
+  ZCodeMcpUiAppToolAcceptedResult,
+  ZCodeMcpUiRegisterAppToolsResult,
+  ZCodeMcpUiUnregisterAppToolsResult,
+  ZCodeMcpUiListResourceTemplatesResult,
+  ZCodePluginsListUiSurfacesResult,
   ZCodeWorkflowsDeleteResult,
+  ZCodeWorkflowsForRunResult,
   ZCodeWorkflowsGetResult,
   ZCodeWorkflowsListResult,
   ZCodeWorkflowsForRunResult,
   ZCodeWorkflowsSaveResult,
   ZCodeWorkflowsMoveResult,
   ZCodeWorkflowsRunsResult,
+  ZCodeWorkflowsSaveResult,
   ZCodeWorkflowsUpdateMetaResult,
   ZCodePluginsUninstallResult,
   ZCodePluginsRestoreBuiltinResult,
@@ -63,6 +74,8 @@ import type {
   ZCodePluginsSetEnabledResult,
   ZCodePluginsCancelOperationResult,
   ZCodePluginOperationProgressNotification,
+  ZCodeProviderRuntimeHeadersRequestParams,
+  ZCodeProviderRuntimeHeadersCancelled,
   ZCodeProviderTestModelConnectivityParams,
   ZCodeProviderTestModelConnectivityResult,
   ZCodeUserInputRequestParams,
@@ -151,6 +164,16 @@ import type {
   ZCodeAgentPluginViewParams,
   ZCodeAgentPluginReferenceCatalogParams,
   ZCodeAgentSkillReferenceCatalogParams,
+  ZCodeAgentReadMcpResourceParams,
+  ZCodeAgentReadMcpResourceForUiParams,
+  ZCodeAgentListMcpResourcesForUiParams,
+  ZCodeAgentAppToolCallForUiParams,
+  ZCodeAgentAppToolInstanceForUiParams,
+  ZCodeAgentRegisterAppToolsForUiParams,
+  ZCodeAgentResolveAppToolCallForUiParams,
+  ZCodeAgentMcpResourceSubscriptionForUiParams,
+  ZCodeAgentCallMcpToolForUiParams,
+  ZCodeAgentCancelMcpToolCallForUiParams,
   ZCodeAgentResolveSuggestedPluginReferenceParams,
   ZCodeAgentRemovePluginMarketplaceParams,
   ZCodeAgentRestoreBuiltinPluginParams,
@@ -211,24 +234,6 @@ export interface ZCodeAgentWorkspaceRuntimeIdentity {
 }
 
 export const ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE = "ZCODE_AGENT_RUNTIME_UNAVAILABLE";
-
-/**
- * start-plan 验证码挑战在本端无解（spec §4.4）。
- *
- * 语义：agent 请求运行时验证码头，但本会话没有任何能完成验证码求解的订阅者。
- * 用稳定码而非只靠文案：UI/agent 需要按码分支（可辨识），文案只负责给人看。
- * 与 ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE 同族放在 services 面——它描述的是
- * host 侧「本端能力缺席」，不是协议契约（协议契约在 shared）。
- *
- * 两种「无解」必须用不同的码区分，因为运维定位时它们是两回事：
- * - 无 UI：本端根本没有会话订阅者（无 pane 后台会话、纯 CLI）；
- * - UI 不支持：有订阅者，但没有任何一个声明自己具备渲染验证码的能力
- *   （典型是 Bot 链路——它能收会话事件，但无法渲染/求解验证码）。
- */
-export const ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE =
-  "ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE";
-export const ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING_CODE =
-  "ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING";
 
 export type ZCodeAgentRuntimePolicy = "start-if-needed" | "existing-only";
 
@@ -380,6 +385,18 @@ export interface ZCodeAgentTestModelConnectivityParams extends ZCodeAgentWorkspa
   signal?: AbortSignal;
 }
 
+// 合并时曾混用 Agent 完整鉴权响应；UI 只能回传请求校验，账号鉴权必须由 Host 合成。
+export type ProviderRuntimeHeadersUiResponse =
+  | { headersApplied: true; runtimeProviderHeaders: Record<string, string>; errorMessage?: string }
+  | { headersApplied: false; errorMessage?: string };
+
+export interface ZCodeAgentRespondProviderRuntimeHeadersParams extends ZCodeAgentSessionTarget {
+  requestId: string;
+  response: ProviderRuntimeHeadersUiResponse;
+  /** CE 验证码附件回传时携带的目标工作区引用；宿主按 sessionTarget 路由，可忽略。 */
+  workspace?: ZCodeWorkspaceRef;
+}
+
 export interface ZCodeAgentSessionRuntimePreferencesRequest extends ZCodeSessionRequestRuntimePreferencesParams {
   requestId: string;
 }
@@ -389,39 +406,6 @@ export interface ZCodeAgentRespondSessionRuntimePreferencesParams {
   resolution:
     | { status: "resolved"; preferences: ZCodeSessionRuntimePreferencesResult }
     | { status: "failed"; message: string };
-}
-
-/**
- * 渲染层对 `providerRuntimeHeaders.request` 的应答（对齐官方 respondProviderRuntimeHeaders）。
- *
- * 入参形状与 `ZCodeProviderRuntimeHeadersRequestParams` 同源：渲染层只需把 host 广播的
- * request 原样回传（requestId/sessionId/workspace 用于定位 pending），再加上 response。
- * `response.runtimeProviderHeaders` 里只有白名单内的阿里云验证码头会被 host 合并进
- * `requestAuth.headers`，渲染层不能借此注入任意请求头。
- */
-/**
- * 「本会话具备渲染验证码能力」的声明通道参数（spec §4.4 的第二道判据）。
- *
- * 形态是 dynamic event 而不是方法：订阅即声明、退订即撤销。
- *
- * 为什么必须是事件通道（而不是返回 IDisposable 的方法）：
- * RPC 的 toService 把普通方法名包成 async 并走 channel.call，返回值经 serialize() 的
- * JSON 路径，函数会被静默丢弃 ⇒ 客户端拿到 Promise（未 await 时）或纯对象，
- * cleanup 里 .dispose() 抛 "d.dispose is not a function"。
- * 事件通道的 disposable 由 channelClient 在客户端本地构造，不跨 RPC，因此可用。
- * 同一坑在 useWorkspaceServices.tsx 的注释里有前例：onAgentRuntimeRestarted 曾被误判成
- * RPC 方法并返回 Promise，释放订阅时触发 Promise.dispose 崩溃。
- *
- * 计数语义由 Emitter 的 first/last listener 承担：多个订阅者 = 多个声明者，
- * 只有最后一个退订才真正撤销能力。
- */
-export interface ZCodeAgentSessionCaptchaCapabilityParams extends ZCodeAgentSessionTarget {}
-
-export interface ZCodeAgentRespondProviderRuntimeHeadersParams {
-  requestId: string;
-  sessionId: string;
-  workspace: import("@zcode/shared").ZCodeWorkspaceRef;
-  response: ZCodeProviderRuntimeHeadersResponse;
 }
 
 export interface ZCodeAgentSessionSubscribeParams extends ZCodeAgentSessionTarget {
@@ -632,18 +616,12 @@ export type ZCodeAgentServiceEvent =
   | { type: "state.updated"; notification: ZCodeStateUpdatedNotification }
   | { type: "permission.request"; request: ZCodePermissionRequestParams }
   | { type: "userInput.request"; request: ZCodeUserInputRequestParams }
-  // start-plan 的模型请求需要渲染层求解阿里云验证码后回传运行时请求头。
-  // 与 permission/userInput 同族：host 是转发方，渲染层是唯一的求解方与应答方；
-  // 详见 docs/development/130-start-plan-captcha-spec.md §4.2/§4.3。
-  | {
-      type: "providerRuntimeHeaders.request";
-      request: ZCodeProviderRuntimeHeadersRequestParams;
-    }
   | {
       type: "userInput.response";
       requestId: string;
       response: ZCodeUserInputResponse;
     }
+  | { type: "providerRuntimeHeaders.request"; request: ZCodeProviderRuntimeHeadersRequestParams }
   | { type: "snapshot"; snapshot: ZCodeSessionStateSnapshot };
 
 export interface ZCodeAgentAppRuntimePreferences {
@@ -780,6 +758,64 @@ export interface IZCodeAgentService {
   getSkillReferenceCatalog(
     params: ZCodeAgentSkillReferenceCatalogParams,
   ): Promise<ZCodeSkillsReferenceCatalogResult>;
+  /** 插件 UI：读取插件 MCP 的 `ui://` 资源；走 session 所在 workspace agent 进程。 */
+  openMcpUiInstance(
+    params: import("../plugin-ui-bridge/contract.js").PluginUiPrepareSandboxParams & {
+      accountContext?: string;
+    },
+  ): Promise<import("@zcode/shared/mcp-apps").McpAppInstance>;
+  validateMcpUiInstance(
+    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
+  ): Promise<void>;
+  recycleMcpUiInstance(
+    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
+  ): Promise<boolean>;
+  closeMcpUiInstance(
+    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
+  ): Promise<void>;
+  readMcpResource(params: ZCodeAgentReadMcpResourceParams): Promise<ZCodeMcpReadResourceResult>;
+  /** 插件 UI：UI 发起的工具调用；复用既有权限审批，不产生 transcript row。 */
+  sampleMcpApp(
+    params: import("../plugin-ui-bridge/samplingContract.js").PluginUiSamplingParams,
+  ): Promise<import("@zcode/shared/mcp-apps").McpAppsSamplingResult>;
+  cancelMcpAppSampling(
+    params: import("../plugin-ui-bridge/samplingContract.js").PluginUiCancelSamplingParams,
+  ): Promise<{ cancelled: boolean }>;
+  callMcpToolForUi(params: ZCodeAgentCallMcpToolForUiParams): Promise<ZCodeMcpUiCallToolResult>;
+  /** 插件 UI 取消带 callId 的进行中 UI 工具调用；agent 侧 abort 到 MCP client。 */
+  cancelMcpToolCallForUi(
+    params: ZCodeAgentCancelMcpToolCallForUiParams,
+  ): Promise<ZCodeMcpUiCancelCallResult>;
+  /** 插件 UI 页面发起的 `resources/read`，agent 侧限同插件服务器、8 MiB、mimeType 白名单。 */
+  readMcpResourceForUi(
+    params: ZCodeAgentReadMcpResourceForUiParams,
+  ): Promise<ZCodeMcpUiReadResourceResult>;
+  /** 插件 UI 页面发起的 resources/list、resources/templates/list、subscribe、unsubscribe 代理。 */
+  listMcpResourcesForUi(
+    params: ZCodeAgentListMcpResourcesForUiParams,
+  ): Promise<ZCodeMcpUiListResourcesResult>;
+  listMcpResourceTemplatesForUi(
+    params: ZCodeAgentListMcpResourcesForUiParams,
+  ): Promise<ZCodeMcpUiListResourceTemplatesResult>;
+  subscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams): Promise<void>;
+  unsubscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams): Promise<void>;
+  /** App-Provided Tools：页面工具登记 / 注销与模型调用的认领 / 回传（信箱投递走 v4 live 增量）。 */
+  registerAppToolsForUi(
+    params: ZCodeAgentRegisterAppToolsForUiParams,
+  ): Promise<ZCodeMcpUiRegisterAppToolsResult>;
+  unregisterAppToolsForUi(
+    params: ZCodeAgentAppToolInstanceForUiParams,
+  ): Promise<ZCodeMcpUiUnregisterAppToolsResult>;
+  claimAppToolCallForUi(
+    params: ZCodeAgentAppToolCallForUiParams,
+  ): Promise<ZCodeMcpUiAppToolAcceptedResult>;
+  resolveAppToolCallForUi(
+    params: ZCodeAgentResolveAppToolCallForUiParams,
+  ): Promise<ZCodeMcpUiAppToolAcceptedResult>;
+  /** 插件 UI 工作区级面板入口（已启用插件清单 `ui.surfaces[]`）。 */
+  listPluginUiSurfaces(
+    params: ZCodeAgentWorkspaceTarget,
+  ): Promise<ZCodePluginsListUiSurfacesResult>;
   // 已保存工作流的 GUI 中枢：workspace 级、无会话，每次调用现扫 `<cwd>/.zcode/workflows/`。
   // 全局档传 `scope: "global"`：带 workspace 就用它当载体，不带则由 services 层自选本机载体运行时。
   listSavedWorkflows(params: ZCodeAgentListSavedWorkflowsParams): Promise<ZCodeWorkflowsListResult>;
@@ -799,6 +835,7 @@ export interface IZCodeAgentService {
 
   // Modified by ZCode: 增量自上游 aac47556——完成卡的「直接保存」（按 runId 从 journal 取
   // 这次 run 实际跑过的脚本落盘，不经模型回合；两者都必带 workspace，journal 在那里）。
+  // 上游规格出处：docs/dynamic-workflow/transcript-and-notifications.md。
   saveSavedWorkflowFromRun(
     params: ZCodeAgentSaveSavedWorkflowFromRunParams,
   ): Promise<ZCodeWorkflowsSaveResult>;
@@ -877,31 +914,41 @@ export interface IZCodeAgentService {
   setModel(params: ZCodeAgentSetModelParams): Promise<ZCodeSessionStateSnapshot>;
   setThoughtLevel(params: ZCodeAgentSetThoughtLevelParams): Promise<ZCodeSessionStateSnapshot>;
   setMode(params: ZCodeAgentSetModeParams): Promise<ZCodeSessionStateSnapshot>;
-  respondSessionRuntimePreferences(
-    params: ZCodeAgentRespondSessionRuntimePreferencesParams,
-  ): Promise<void>;
-  onDynamicSessionRuntimePreferencesRequest(): Event<ZCodeAgentSessionRuntimePreferencesRequest>;
-  /**
-   * start-plan 验证码挑战的渲染层应答入口（spec §4.3）。
-   *
-   * 与 respondSessionRuntimePreferences 同层：host 只在收到渲染层应答后把验证码头并入
-   * 账号鉴权材料再回传 Agent。重复应答同一 requestId 是幂等 no-op（不抛错给 UI）——
-   * 弹窗重放、手机远控与桌面端同时应答都属正常路径。
-   */
   respondProviderRuntimeHeaders(
     params: ZCodeAgentRespondProviderRuntimeHeadersParams,
   ): Promise<void>;
+  respondSessionRuntimePreferences(
+    params: ZCodeAgentRespondSessionRuntimePreferencesParams,
+  ): Promise<void>;
   /**
-   * 声明本会话具备渲染/求解验证码的能力（spec §4.4）。
-   *
-   * 订阅即声明、退订即撤销。host 只在 start-plan 转发前检查该声明，
-   * 缺失即快速失败——因为请求没有 host 侧超时，转发给一个不能求解的订阅者
-   * 只会让它悬挂到 CLI 侧 180s。
-   *
-   * 语义边界：声明只表达「我能求解」，不校验实际能力；host 不缓存任何验证码凭据。
-   * 事件载荷为 never：该通道不承载业务数据，订阅动作本身就是全部语义。
+   * v4 UI 的 Start Plan runtime-auth bridge 只需要本地 pending request 事件，
+   * 不能为此额外打开旧 `session/subscribe`，否则会把旧 replay/continuous 读路径
+   * 重新带回 v4 pane。
    */
-  onDynamicSessionCaptchaCapability(params: ZCodeAgentSessionCaptchaCapabilityParams): Event<never>;
+  onDynamicProviderRuntimeHeadersRequest(
+    params: ZCodeAgentSessionTarget,
+  ): Event<ZCodeProviderRuntimeHeadersRequestParams>;
+  /**
+   * Start Plan runtime headers 的 workspace 级订阅入口（生产应答方使用）。
+   * Bug 原因（2026-08-16 web 远控卡死）：session 级入口只随桌面 pane 挂载订阅，
+   * web 远控新建会话在桌面没有 pane、web 端无应答方，请求校验请求滞留 pending，
+   * 任务永久「工作中」。桌面窗口用本入口为每个打开的 workspace tab 维持常驻应答方；
+   * 订阅时先注册 live listener 再按 workspaceKey 前缀补投 pending，与 session 级同语义。
+   */
+  onDynamicWorkspaceProviderRuntimeHeadersRequest(
+    params: ZCodeAgentWorkspaceTarget,
+  ): Event<ZCodeProviderRuntimeHeadersRequestParams>;
+  /** 只投递本 workspace 的校验取消，不属于 conversation stream。 */
+  onDynamicWorkspaceProviderRuntimeHeadersCancelled(
+    params: ZCodeAgentWorkspaceTarget,
+  ): Event<ZCodeProviderRuntimeHeadersCancelled>;
+  onDynamicSessionRuntimePreferencesRequest(): Event<ZCodeAgentSessionRuntimePreferencesRequest>;
+  /**
+   * CE 验证码附件（provider runtime headers 面）：订阅「动态会话验证码能力」声明通道。
+   * 宿主侧当前未实现（诚实可选成员）：能力缺席 ⇒ UI 侧不订阅 ⇒ 验证码附件不激活，
+   * 而不是整链崩溃。返回可 dispose 的订阅句柄。
+   */
+  onDynamicSessionCaptchaCapability?(target: ZCodeAgentSessionCaptchaCapabilityParams): Event<void>;
   /**
    * CLI 进程级资源样本，带 services 打的 lane 标签（CLI 自己不知道 lane）。
    * 使用 dynamic event 避免 RPC 服务在无人订阅时缓冲周期事件；
@@ -1074,3 +1121,14 @@ export interface IZCodeAgentService {
 export const IZCodeAgentService = createServiceDescriptor<IZCodeAgentService>(
   ServiceChannels.ZCodeAgent,
 );
+// ---- CE 线增量回植（整版升级 2b·2）：bots/taskFailureMessage 依赖 ----
+export const ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING_CODE =
+  "ZCODE_PROVIDER_RUNTIME_HEADERS_CAPABILITY_MISSING";
+export const ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE_CODE =
+  "ZCODE_PROVIDER_RUNTIME_HEADERS_UNAVAILABLE";
+
+export interface ZCodeAgentSessionCaptchaCapabilityParams extends ZCodeAgentSessionTarget {}
+
+// ---- CE 线增量（provider runtime headers 验证码面·声明补齐）----
+// 宿主侧当前未实现该事件通道（诚实可选成员）：UI 侧以可选调用订阅，
+// 能力缺席 ⇒ 不订阅 ⇒ 验证码附件不激活，而不是整链崩溃。

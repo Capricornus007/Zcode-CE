@@ -1,13 +1,10 @@
 import { chmod, readFile, rm } from "node:fs/promises";
-import {
-  readThirdPartyNotices,
-  stageThirdPartyNotices,
-} from "../../../../../scripts/third-party-notices.mjs";
 import { basename, dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import sharedPackage from "../../../../../packages/shared/package.json" with { type: "json" };
 import { stageBuiltinProviderConfig } from "../../../../../scripts/builtin-provider-config.mjs";
+import { stageThirdPartyNotices } from "../../../../../scripts/third-party-notices.mjs";
 
 const cliRoot = resolve(import.meta.dirname, "..");
 const projectRoot = resolve(cliRoot, "../..");
@@ -141,6 +138,10 @@ export const resolveBuildAliases = ({
   rootDirectory = projectRoot,
 } = {}) => ({
   "@zcode/shared-types": resolve(cliDirectory, "../shared-types/dist/index.js"),
+  // CE-SYNC: 取上游的「由 packages/shared 公开 exports 派生 alias」。CE 手写清单中的
+  // `@zcode/shared/mcp-apps`（Modified by ZCode:F5，MCP Apps contract/instance/sampling 入口）
+  // 已由 exports 表的 "./mcp-apps" 自动派生，且派生把通用 "." 入口排到最后，
+  // 保持「子路径必须先于总入口」的 esbuild 前缀改写约束，CE 侧能力不倒退。
   // esbuild 会按前缀改写。曾多次漏加新子路径，导致入口文件被误当成目录；
   // 直接从包的公开 exports 派生，并将通用入口放在最后，避免两份清单漂移。
   ...Object.fromEntries(
@@ -167,7 +168,6 @@ export const buildCli = async ({
   const cliVersion = await version;
   const outfile = resolve(cliDirectory, "dist/zcode.cjs");
   const sourcemapFile = `${outfile}.map`;
-  const notices = await readThirdPartyNotices(resolve(rootDirectory, "../.."));
 
   await stageBuiltinProviderConfig({
     root: resolve(rootDirectory, "../.."),
@@ -177,10 +177,8 @@ export const buildCli = async ({
 
   await build({
     banner: {
-      // SEA 与普通 CLI 共用入口；声明必须在 Agent 初始化和原生资源解压前可独立读取。
-      js: `#!/usr/bin/env node\n"use strict";\nif (process.argv.length === 3 && process.argv[2] === "--licenses") { const sea = require("node:sea"); const nodeNotice = sea.isSea() ? "\\n\\n## Bundled Node.js runtime\\n\\n" + sea.getAsset("zcode-node-license", "utf8") : ""; process.stdout.write(${JSON.stringify(notices.toString("utf8"))} + nodeNotice, () => process.exit(0)); } else {`,
+      js: "#!/usr/bin/env node",
     },
-    footer: { js: "}" },
     bundle: true,
     define: {
       __CLI_VERSION__: JSON.stringify(cliVersion),
@@ -219,6 +217,7 @@ export const buildCli = async ({
   }
 
   await chmod(outfile, executableFileMode);
+  // zcode.cjs 内联了第三方代码；dist 旁的伴随声明供发行 CLI 与统一分发包（build-zcode）复制。
   await stageThirdPartyNotices(resolve(cliDirectory, "dist"), resolve(rootDirectory, "../.."));
 };
 

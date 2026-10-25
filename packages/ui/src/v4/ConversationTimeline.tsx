@@ -1,3 +1,5 @@
+import { useBotTopicPreparations } from "@/v4/BotTopicPreparation.js";
+import { withTopicPreparationMessages } from "@/v4/topicPreparationRenderUnits.js";
 /* oxlint-disable eslint(max-lines) -- ConversationTimeline 集中承载虚拟滚动、滚动锚定、loadOlder 与 find 高亮协调；拆散会让同一滚动状态跨文件传递。 */
 // Modified by ZCode: X9(滚动锚定): 精确提取上游 3.15.1 增量 —— flushSync 批量测高提交 + viewport 高度观测 + reconcileFollowingForContentAnchor + disposed 防护。
 import {
@@ -9,6 +11,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -35,18 +38,33 @@ import { Button } from "@/components/ui/button.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import { ConversationTurnGroup } from "@/v4/ConversationTurnGroup.js";
+import {
+  deriveLogicalUiInstances,
+  getPluginUiDisclosureVersion,
+  getPluginUiManualPin,
+  setPluginUiInstanceDerivation,
+  subscribePluginUiDisclosure,
+  type PluginUiRowPinResolver,
+} from "@/plugin-ui/index.js";
 import { ConversationPendingGuideList } from "@/v4/ConversationPendingGuideList.js";
 import type { AssistantFeedbackHandler } from "@/v4/ConversationRowView.js";
 import { ConversationTurnNavigator } from "@/v4/ConversationTurnNavigator.js";
 import { syncConversationShareSelectionPanelLayout } from "@/v4/conversationShareSelectionPanelLayout.js";
 import type { ConversationRowRenderContext } from "@/v4/conversationRowContext.js";
-import { splitConversationTimelineLiveTail } from "@/v4/conversationTimelineLiveTail.js";
+import {
+  isSameConversationLatestTurnSummary,
+  resolveConversationLatestTurnSummary,
+  splitConversationTimelineLiveTail,
+  type ConversationLatestTurnSummary,
+} from "@/v4/conversationTimelineLiveTail.js";
+import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
 import {
   getConversationContentWidthClassName,
   getConversationStatusPanelOffsetClassName,
 } from "@/v4/conversationLayout.js";
 import {
   buildConversationTurnRenderUnits,
+  resolveNextHighspeedExpiryMs,
   type ConversationTurnRenderUnit,
 } from "@/v4/conversationTurnRenderUnits.js";
 import {
@@ -249,8 +267,10 @@ function getUnitHeightCacheKey(unit: ConversationTurnRenderUnit | undefined): st
   return unit?.key;
 }
 
-interface ConversationTimelineProps {
+export interface ConversationTimelineProps {
   rows: readonly ConversationRow[];
+  /** 手机远控窄屏允许整条会话 flex 链按抽屉宽度收缩；桌面布局保持原样。 */
+  compactForRemoteControl?: boolean;
   /** CLI 权威 queue 中等待 model-step 注入的 guide；只改变 renderer 落位。 */
   pendingGuides?: readonly QueueItem[];
   /** runtime memory 状态，只交给当前 live turn，不进入历史虚拟列表。 */
@@ -360,6 +380,7 @@ interface ConversationTimelineProps {
  */
 function ConversationTimelineImpl({
   rows,
+  compactForRemoteControl = false,
   pendingGuides = EMPTY_PENDING_GUIDES,
   apiRetry = null,
   totalCount,
@@ -425,13 +446,37 @@ function ConversationTimelineImpl({
     return () => observer.disconnect();
   }, [hasHeaderSlot]);
   const [liveNowMs, setLiveNowMs] = useState(() => Date.now());
+  // 插件卡片展示模型——同资源替代 + 最近三回合自动展开 + 手动固定；推导结果发布给卡片自己读。
+  const pluginUiDerivation = useMemo(() => deriveLogicalUiInstances(rows), [rows]);
+  useEffect(() => {
+    setPluginUiInstanceDerivation(sessionKey, pluginUiDerivation);
+  }, [pluginUiDerivation, sessionKey]);
+  const pluginUiDisclosureVersion = useSyncExternalStore(
+    subscribePluginUiDisclosure,
+    getPluginUiDisclosureVersion,
+    getPluginUiDisclosureVersion,
+  );
+  const pluginUiPinResolver = useMemo<PluginUiRowPinResolver>(() => {
+    // 手动固定 / 收起变化（version 递增）时重建 resolver，折叠边界随之重算。
+    void pluginUiDisclosureVersion;
+    return (toolCallId) => ({
+      disposition: pluginUiDerivation.byToolCallId[toolCallId],
+      manualPinned: getPluginUiManualPin(sessionKey, toolCallId),
+    });
+  }, [pluginUiDerivation, sessionKey, pluginUiDisclosureVersion]);
+  const topicPreparations = useBotTopicPreparations();
   const renderUnits = useMemo(
     () =>
-      buildConversationTurnRenderUnits(rows, {
-        nowMs: liveNowMs,
-        sessionPhase,
-      }),
-    [liveNowMs, rows, sessionPhase],
+      withTopicPreparationMessages(
+        buildConversationTurnRenderUnits(rows, {
+          nowMs: liveNowMs,
+          sessionPhase,
+          pluginUiPinResolver,
+        }),
+        rows,
+        topicPreparations,
+      ),
+    [liveNowMs, pluginUiPinResolver, rows, sessionPhase, topicPreparations],
   );
   const { virtualizedUnits, liveUnit, liveUnitIndex } = useMemo(
     () => splitConversationTimelineLiveTail(renderUnits),
@@ -644,6 +689,18 @@ function ConversationTimelineImpl({
     return () => window.clearInterval(timer);
   }, [hasRunningUnit]);
 
+  useEffect(() => {
+    if (nextHighspeedExpiryMs === undefined) return;
+
+    // Bug 根因：会话完成后工作时钟会停止；若 Highspeed 卡稍后才到期，footer 不会自行出现。
+    // 单独订阅最近的卡片到期边界，避免为了等待倒计时持续刷新整个历史列表。
+    // spec §9.3：到期唤醒基于 renderer setTimeout，窗口隐藏/被遮挡时会被 Chromium 冻结停摆；
+    // helper 额外监听窗口恢复可见/获得焦点并即时追平 liveNowMs，footer 才能不依赖用户再发
+    // 消息就出现。与 SessionPane 的 highspeedAutoShareClock 窗口唤醒补偿分工：那条刷新分享
+    // 入口/查看按钮的完成态数据，这条刷新组尾 footer 的显隐时钟。
+    return armHighspeedFooterExpiryClock(nextHighspeedExpiryMs, () => setLiveNowMs(Date.now()));
+  }, [nextHighspeedExpiryMs]);
+
   useLayoutEffect(() => {
     const element = timelineRootRef.current;
     if (!element) return;
@@ -781,6 +838,7 @@ function ConversationTimelineImpl({
     return height;
   }, []);
 
+  const [, commitMeasuredLayout] = useState(0);
   const virtualizer = useVirtualizer({
     count: virtualizedUnits.length,
     getScrollElement,
@@ -1873,7 +1931,10 @@ function ConversationTimelineImpl({
   // raw projection row 与按 turn 合并后的 render unit 不是同一计量单位；
   // 分开暴露才能让恢复/分页验证不再把可见 unit 误当成持久 row。
   return (
-    <div ref={timelineRootRef} className="relative flex min-h-0 flex-1 flex-col">
+    <div
+      ref={timelineRootRef}
+      className={cn("relative flex min-h-0 flex-1 flex-col", compactForRemoteControl && "min-w-0")}
+    >
       {selectionActions ? (
         <ConversationSelectionTooltip
           rootRef={scrollRef}
@@ -1890,7 +1951,7 @@ function ConversationTimelineImpl({
         capture={captureScrollMemoryBeforeScopeMutation}
         commit={commitCapturedScrollMemory}
       />
-      {/* 分享选择流程无论面板展开还是收起，左 rail 都由分享面板或 reopen 按钮独占，
+      {/* Bugfix：分享选择流程无论面板展开还是收起，左 rail 都由分享面板或 reopen 按钮独占，
           必须隐藏对话轮导航，避免两个绝对定位控件互相覆盖。退出分享选择后自动恢复。 */}
       {hideTurnNavigator ? null : (
         <ConversationTurnNavigator
@@ -1936,7 +1997,11 @@ function ConversationTimelineImpl({
           // 分享选择面板展开时改为 overflow-hidden：scrollTop 与 scrollbar-gutter 都保持不变，
           // 但原生滚动条、滚轮和键盘翻页都不再能移动背景，勾选目标不会漂走。
           backgroundScrollLocked && "!overflow-y-hidden",
-          // Conversation turn map 覆盖 timeline 左侧 48px；表格增强滚动如果仍按
+          compactForRemoteControl && "min-w-0",
+          // 浮窗形态：滚动容器止于输入框上方 12px，消息底部再留 16px 空白。
+          floatingComposerDock &&
+            "mb-[calc(var(--v4-floating-composer-dock-height,0px)+12px)] pb-4",
+          // 修复原因：Conversation turn map 覆盖 timeline 左侧 48px；表格增强滚动如果仍按
           // 普通 16px 边距借位，会有 32px 落到 turn map 下方，必须把完整占用计入左边界。
           turnNavigatorQueryRowIds.size >= 2 &&
             "@min-[864px]/conversation:[--markdown-table-layout-left-inset:48px]",
@@ -1948,7 +2013,7 @@ function ConversationTimelineImpl({
             // 顶部留白按视口高度伸缩，输入框的位置不再受下方推荐列表高度影响；
             // 空间不足时顶部可收缩到底线，底部继续随内容自然排布。
             responsiveCenteredEmptyLayout
-              ? // 动态修改原生窗口下限会把内容换行反馈到窗口拖动，产生阻尼；
+              ? // Bugfix 根因：动态修改原生窗口下限会把内容换行反馈到窗口拖动，产生阻尼；
                 // 容器保留固有最小高度，由外层 timeline 统一承接受限高度下的溢出内容。
                 "flex min-h-full flex-col items-center px-4 before:block before:min-h-[52px] before:w-full before:shrink before:basis-[29dvh] before:content-[''] after:block after:min-h-4 after:w-full after:flex-1 after:content-['']"
               : centeredEmptyLayout
@@ -1975,6 +2040,7 @@ function ConversationTimelineImpl({
             <div
               ref={messageLayerRef}
               data-v4-timeline-message-layer="true"
+              data-sandbox-page-container="true"
               className="relative w-full flex-1 [mask-repeat:no-repeat] [-webkit-mask-repeat:no-repeat]"
             >
               {/*
@@ -2026,6 +2092,7 @@ function ConversationTimelineImpl({
                     >
                       <ConversationTurnGroup
                         unit={unit}
+                        nowMs={liveNowMs}
                         apiRetry={null}
                         context={rowContext}
                         onFork={onFork}
@@ -2055,6 +2122,7 @@ function ConversationTimelineImpl({
                 >
                   <ConversationTurnGroup
                     unit={liveUnit}
+                    nowMs={liveNowMs}
                     apiRetry={apiRetry}
                     context={rowContext}
                     onFork={onFork}

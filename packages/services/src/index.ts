@@ -46,6 +46,8 @@ export type {
   ConversationShareTurnPreflightResult,
   PublishTextConversationInput,
 } from "./conversation-share/conversationShare.js";
+// Conversation share 的具体实现依赖 Node 文件系统，只能从 @zcode/services/node 引入；
+// 根入口必须保持 browser-safe，避免 renderer 解析到 node:* 模块。
 // 遥测已移除（P1）：conversation-telemetry/conversationTelemetry.ts（UI 埋点 supervisor 的
 // 只读 workspace 服务桥）已删除，唯一消费者 ConversationTelemetryAttachment.tsx 同步删除。
 // 注意 ConversationTelemetryFact **协议类型本身保留** —— zcode-server-cli 的
@@ -98,6 +100,32 @@ export type {
 
 // ZCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
 export { IZCodeTaskService } from "./session/zcodeTaskService.js";
+
+// ---- CE 线增量导出（整版升级移植保留面）：工作区注册表（M1.3·侧栏枚举唯一真相源）----
+// Entry/ListResult 类型权威在 @zcode/shared 的 workspace-registry.ts，此处不重复导出。
+export {
+  IWorkspaceRegistryService,
+  createWorkspaceRegistryService,
+} from "./session/workspaceRegistry.js";
+export type { WorkspaceRegistryListParams } from "./session/workspaceRegistry.js";
+// ---- CE 线增量导出：手动领取（周末/体验套餐）claim 平面 + Bot 附件限额 ----
+// claim 平面：验证码求解器注入点 + 配置读取（设置页手动领取链路消费）。
+export {
+  createManualClaimCaptcha,
+  type ManualClaimCaptcha,
+  type ManualClaimCaptchaSolver,
+} from "./coding-plan-subscription/manualClaimCaptcha.js";
+export {
+  createManualClaimPlanClient,
+  MANUAL_CLAIM_PATH,
+  MANUAL_CLAIM_PREVIEW_PATH,
+  type ManualClaimPlanClient,
+  type ManualClaimPlanClientOptions,
+} from "./coding-plan-subscription/manualClaimPlanClient.js";
+export {
+  BOT_MAX_ATTACHMENTS_PER_MESSAGE,
+  BOT_MAX_ATTACHMENT_SIZE_BYTES,
+} from "./bots/botAttachmentLimits.js";
 export type {
   ZCodeArchivedTaskDeletionResult,
   ZCodeModelTrajectory,
@@ -163,6 +191,7 @@ export type {
   ZCodeAgentRuntimeLifecycleEvent,
   ZCodeAgentRuntimePolicy,
   ZCodeAgentReadSessionParams,
+  ZCodeAgentRespondProviderRuntimeHeadersParams,
   ZCodeAgentResumeSessionParams,
   ZCodeAgentRunAutomationNowResult,
   ZCodeAgentSavedWorkflowTarget,
@@ -218,6 +247,8 @@ export {
 } from "./memory/memory.js";
 export type { ProjectMemoryFileSummary, ProjectMemoryWorkspaceSummary } from "./memory/memory.js";
 
+// OutputStyle service — IOutputStyleService is both a type (interface) and value (descriptor).
+export { IOutputStyleService } from "./output-style/outputStyle.js";
 export type { SessionRealtimePort } from "./session/sessionRealtimePort.js";
 
 // FileWatcher service — IFileWatcherService is both a type (interface) and value (descriptor)
@@ -238,19 +269,6 @@ export {
   ICodingPlanSubscriptionService,
   type OffPeakClientConfig,
 } from "./coding-plan-subscription/codingPlanSubscription.js";
-// claim 平面（周末/体验套餐领取）的服务层入口：验证码求解器注入点 + 配置读取。
-export {
-  createManualClaimCaptcha,
-  type ManualClaimCaptcha,
-  type ManualClaimCaptchaSolver,
-} from "./coding-plan-subscription/manualClaimCaptcha.js";
-export {
-  createManualClaimPlanClient,
-  MANUAL_CLAIM_PATH,
-  MANUAL_CLAIM_PREVIEW_PATH,
-  type ManualClaimPlanClient,
-  type ManualClaimPlanClientOptions,
-} from "./coding-plan-subscription/manualClaimPlanClient.js";
 export {
   IClientScenesService,
   type ClientSceneConfig,
@@ -263,9 +281,6 @@ export { isValidCronExpr } from "./session/automationCronValidation.js";
 // 闲时任务管理服务（与 automation 服务面独立）；接口/描述符 browser-safe。
 export { IOffPeakTaskService } from "./session/offPeakTask.js";
 export type { OffPeakUpdateTaskParams } from "./session/offPeakTask.js";
-// 工作区注册表（M1.3）：可见工作区集合的唯一真相源，只读面。
-export { IWorkspaceRegistryService } from "./session/workspaceRegistry.js";
-export type { WorkspaceRegistryListParams } from "./session/workspaceRegistry.js";
 
 // Skills service — ISkillsService is both a type (interface) and value (descriptor)
 export { ISkillsService } from "./skills/skills.js";
@@ -353,8 +368,16 @@ export { readProjectCatalog, projectSelectionId } from "#src/project-catalog/ind
 export type { ProjectCatalogPort, ProjectCatalogSnapshot } from "#src/project-catalog/contract.js";
 
 // 插件 UI 桥：描述符、参数类型与工厂；App-Provided Tools 另有独立描述符。
+// CE-SYNC: 取联集——上游新增的桥/工厂导出（createPluginUi*、PluginUiBridgeError）一并保留；
+// IPluginUiSamplingService 与两个 sampling 参数类型改由下方 samplingContract.js 单独导出（CE 侧写法），
+// 避免同一符号从 index.js 与 samplingContract.js 重复导出。
 export {
+  createPluginUiBridgeService,
+  createPluginUiAppToolsService,
+  createPluginUiSamplingService,
+  PluginUiBridgeError,
   IPluginUiAppToolsService,
+  type PluginUiAppToolInstanceParams,
   type PluginUiAppToolCallParams,
   type PluginUiAppToolAcceptedResult,
   type PluginUiRegisterAppToolsParams,
@@ -383,25 +406,7 @@ export {
 } from "./plugin-ui-bridge/samplingContract.js";
 export { IClientConfigService } from "./client-config/clientConfig.js";
 
-// 入站请求体上限的耦合依据（packages/server 的 /bot/** 上限由这两个常量推导）：
-// 合法最大 payload = ceil(N × S / 3) × 4（base64 膨胀）+ JSON 外壳。
-// 导出是为了让 packages/server 的 botIngress.test.ts 能写耦合断言而不是把 4/5MiB
-// 抄一遍（抄一遍的话测试自己也会漂移）。见 BOT-INGRESS-SPEC §7.1.1。
-//
-// 必须从无依赖叶子模块导出，不能从 ./bots/botsService.js（task-111 修复）：
-// botsService → attachmentUrlGuard → undici（Node-only），而 undici 顶层就读
-// process.versions.node ⇒ 这两个常量一旦从 botsService 导出，本入口的导出闭包
-// 就被拉进 undici，浏览器产物里直接 ReferenceError: process is not defined，
-// Web 客户端白屏（真浏览器实测；同批还有 paths.ts 顶层的 homedir 崩溃）。
-// 这与 node.ts:544-545 的既有约定同源：依赖 node:* 的实现只经 @zcode/services/node
-// 暴露，防止 browser-safe 根入口把 Node-only 依赖带进 renderer。
-// 护栏：test/browserSafeBarrelClosure.test.ts 断言本入口闭包不含 undici/node:*/paths.ts。
-export {
-  BOT_MAX_ATTACHMENTS_PER_MESSAGE,
-  BOT_MAX_ATTACHMENT_SIZE_BYTES,
-} from "./bots/botAttachmentLimits.js";
 export { IHighspeedCardService } from "./highspeed/highspeedCard.js";
-export { IOutputStyleService } from "./output-style/outputStyle.js";
 export {
   HighspeedCardService,
   createHighspeedHttpTransport,

@@ -75,6 +75,34 @@ function resolvePersistedActiveSession(
   return sessions[activeIndex];
 }
 
+export function resolveStartupAgentWarmupTargets(
+  settings: Pick<ReturnType<typeof appSettingsSchema.parse>, "recentProjects">,
+  activeTarget: StartupWorkspaceWarmupTarget,
+): StartupWorkspaceWarmupTarget[] {
+  const candidates: StartupWorkspaceWarmupTarget[] = [
+    activeTarget,
+    ...(settings.recentProjects ?? []).map((workspacePath) => ({
+      workspacePath,
+    })),
+  ];
+  const seen = new Set<string>();
+  const targets: StartupWorkspaceWarmupTarget[] = [];
+
+  for (const candidate of candidates) {
+    const workspaceKey = candidate.workspaceIdentity?.trim() || candidate.workspacePath;
+    if (!workspaceKey || seen.has(workspaceKey)) {
+      continue;
+    }
+    seen.add(workspaceKey);
+    targets.push(candidate);
+    if (targets.length === STARTUP_AGENT_WARMUP_LIMIT) {
+      break;
+    }
+  }
+
+  return targets;
+}
+
 export function createOpenWorkspaceStartupBootstrap(workspacePath: string): StartupWindowBootstrap {
   return {
     initialWorkspacePath: workspacePath,
@@ -121,8 +149,12 @@ export async function resolveStartupWindowBootstrap({
     const activeSession =
       localActiveSessionIndex == null ? undefined : sessions[localActiveSessionIndex];
     if (activeSession?.kind === "local") {
-      // 项目/最近目录不再决定 Agent 生命周期，只预热上次活动执行目录。
-      const agentWarmupTargets = [{ workspacePath: activeSession.workspacePath }];
+      // 被动 sessions-index 全量恢复不能启动全部 workspace；Main 在唯一启动边界固定只选
+      // active workspace(STARTUP_AGENT_WARMUP_LIMIT),Host 走原 initializeWorkspace 路径;
+      // recentProjects 保持 dormant,预热失败也不扫描其它 workspace 补位。
+      const agentWarmupTargets = resolveStartupAgentWarmupTargets(settings, {
+        workspacePath: activeSession.workspacePath,
+      });
       return {
         ...(unavailableWorkspacePath ? { unavailableWorkspacePath } : {}),
         agentWarmupTargets,

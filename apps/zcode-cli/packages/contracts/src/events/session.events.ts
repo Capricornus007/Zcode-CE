@@ -6,52 +6,53 @@ import type { RuntimeInputPresentation } from "../interfaces/runtime-input-prese
 // ============================================================
 
 import type {
+  CompactBoundaryPayload,
+  CompactTimelinePayload,
+  MicrocompactBoundaryPayload,
+} from "../compact/index.js";
+import type { HookRunLifecyclePayload } from "../hooks/index.js";
+import type { HttpClientEgressInfo } from "../interfaces/http-client.port.js";
+import type { PermissionOptionsPolicy, PermissionUpdate } from "../interfaces/permission.port.js";
+import type {
+  MessageVisibility,
+  SessionTitleSource,
+  SyntheticUserMessageSource,
+} from "../interfaces/session-store.port.js";
+import type {
+  CollaborationMode,
+  HighspeedMessageMetadata,
+  RiskLevel,
+  TurnInputIntentMetadata,
+  TurnSteerCommandKind,
+  TurnSteerDeliveryMode,
+  TurnSteerRejectReason,
+  TurnSteerSource,
+} from "../interfaces/session.port.js";
+import type {
   EventId,
   InteractionRequestOrigin,
   MessageId,
   PartId,
   QueryId,
   SessionId,
-  TraceId,
   ToolCallId,
+  TraceId,
   TurnId,
 } from "../interfaces/shared.js";
-import type {
-  CollaborationMode,
-  RiskLevel,
-  TurnSteerCommandKind,
-  TurnSteerDeliveryMode,
-  TurnSteerRejectReason,
-  TurnSteerSource,
-  TurnInputIntentMetadata,
-} from "../interfaces/session.port.js";
 import type {
   ModelNetworkStatusEvent,
   ModelSelection,
   ModelUsage,
   ModelUsageSummary,
 } from "../model/index.js";
-import type { HttpClientEgressInfo } from "../interfaces/http-client.port.js";
 import { createModelUsageSummary } from "../model/index.js";
-import type { ModelApiErrorPhase, ModelFailureExceptionKind } from "../telemetry/index.js";
-import type {
-  CompactBoundaryPayload,
-  CompactTimelinePayload,
-  MicrocompactBoundaryPayload,
-} from "../compact/index.js";
-import type { HookRunLifecyclePayload } from "../hooks/index.js";
 import type { CheckpointCreatedPayload, RewindTriggeredPayload } from "../rewind/index.js";
-import type { GoalCompletionVerificationOutput, SessionGoal } from "../tools/target.js";
-import type { ToolSideEffectScope } from "../tools/contract.js";
-import type { ToolResultDisplayPayload } from "../tools/tool-result-metadata.js";
 import type { SkillTelemetryMetadata } from "../skills/index.js";
-import type {
-  MessageVisibility,
-  SessionTitleSource,
-  SyntheticUserMessageSource,
-} from "../interfaces/session-store.port.js";
+import type { ModelApiErrorPhase, ModelFailureExceptionKind } from "../telemetry/index.js";
+import type { ToolSideEffectScope } from "../tools/contract.js";
 import type { SavedWorkflowScope } from "../tools/saved-workflow.js";
-import type { PermissionOptionsPolicy, PermissionUpdate } from "../interfaces/permission.port.js";
+import type { GoalCompletionVerificationOutput, SessionGoal } from "../tools/target.js";
+import type { ToolResultDisplayPayload } from "../tools/tool-result-metadata.js";
 import type {
   StreamRecoveryAnchorPayload,
   StreamRecoveryAnchorSelectedPayload,
@@ -111,9 +112,13 @@ export const SessionEventType = {
   UserMessage: "user_message",
   AssistantMessage: "assistant_message",
   AssistantFeedbackUpdated: "assistant_feedback_updated",
+  HighspeedMetricsUpdated: "highspeed_metrics_updated",
+  // （2026-09-12）：原 ToolWidgetStateUpdated / SessionPluginUiStateUpdated 已删除，
+  // 插件 UI widgetState 回退 renderer 内存，不再经 CLI 事件流。
   SystemMessage: "system_message",
   ModelRequest: "model_request",
   ModelSelected: "model_selected",
+  TurnExecutionModelFallback: "turn_execution_model_fallback",
   ModelStreaming: "model_streaming",
   StreamingToolLedgerUpdated: "streaming_tool_ledger_updated",
   StreamRecoveryAnchorCreated: "stream_recovery_anchor_created",
@@ -365,13 +370,18 @@ export type TurnBackgroundAttribution =
 export type WorkflowLaunchDisplay = Extract<ToolResultDisplayPayload, { kind: "create_workflow" }>;
 
 /**
- * 设置轮的「改了什么」：只有改动过的设置在场，
- * 每项 from / to 缺一端即那一端是默认（模型 = 会话模型，上限 = 本机上限）。`ceiling` 是本机上限，
- * 供「13 → 4」这种读法。与 shared 的 `workflowSettingsAmendMetaSchema` 同形。
+ * 设置轮（docs/dynamic-workflow/launch.md「The settings turn」）的「改了什么」：只有改动过的设置在场，
+ * 每项 from / to 缺一端即那一端是默认（模型 = 会话模型，上限 = 默认并发）。`ceiling` 是默认并发 D
+ * （线上键名早于「默认并发」这个概念，为兼容旧端保留），供「默认 13 → 4」这种读法。与 shared 的 `workflowSettingsAmendMetaSchema` 同形。
  */
 export interface WorkflowSettingsAmendMeta {
-  /** 被这次调整替代（或接着跑）的那个 run。 */
-  predecessorRunId: string;
+  /**
+   * 被这次调整替代（或接着跑）的那个 run。**缺席即就地生效**
+   * （docs/dynamic-workflow/launch.md「The settings turn」）：只改并发上界、run 又还在飞时，
+   * 那次「配置」既不停这次 run 也不另起一次，于是没有前驱可指——`runId` 指的就是被调整的那一个。
+   * 与 shared 的 `workflowSettingsAmendMetaSchema` 同形（那边记着老桌面上的偏斜）。
+   */
+  predecessorRunId?: string;
   subagentModel?: { from?: string; to?: string };
   maxConcurrency?: { from?: number; to?: number };
   ceiling?: number;
@@ -661,6 +671,11 @@ export interface AssistantFeedbackUpdatedPayload {
   feedback: "like" | "dislike" | null;
 }
 
+export interface HighspeedMetricsUpdatedPayload {
+  entityId: string;
+  highspeed: HighspeedMessageMetadata;
+}
+
 export interface SystemMessagePayload {
   type: "init" | "compact_boundary" | "interrupted";
   content: string;
@@ -838,6 +853,12 @@ export interface ModelCompletePayload {
   stopReason: string;
   /** 当前模型请求组装出的完整 tool call 数量；旧事件可能缺失。 */
   toolCallCount?: number;
+  /**
+   * 本步首个非空 text/reasoning delta 的时间（epoch ms，CE 线增量）。
+   * 与 `event.timestamp` 一起构成 DSH 口径的解码时长：首 token → assistant 完成。
+   * 纯 tool-call 步没有首 token，缺省。
+   */
+  firstTokenAt?: number;
   usage: TokenUsage | ModelUsage;
 }
 
@@ -905,6 +926,10 @@ export interface ToolCallProgressPayload {
   toolCallId: ToolCallId;
   toolName?: string;
   elapsedMs?: number;
+  /** MCP `notifications/progress`（A8）：progress / total / message 原样转发。 */
+  progress?: number;
+  total?: number;
+  message?: string;
   pid?: number;
   stdoutBytes?: number;
   stderrBytes?: number;
@@ -1014,6 +1039,7 @@ export interface DynamicWorkflowRunProgressPayload {
 }
 
 export interface PermissionRequestedPayload {
+  approvalMode?: "user-once";
   requestId?: string;
   toolCallId: ToolCallId;
   toolName: string;
@@ -1029,21 +1055,6 @@ export interface PermissionRequestedPayload {
   display?: ToolResultDisplayPayload;
   fullAccessSupported?: boolean;
   optionsPolicy?: PermissionOptionsPolicy;
-}
-
-export interface PermissionResolvedPayload {
-  requestId?: string;
-  toolCallId: ToolCallId;
-  decision: PermissionDecision;
-  reason?: string;
-  modifiedInput?: unknown;
-}
-
-export interface PermissionDeniedPayload {
-  toolCallId: ToolCallId;
-  toolName: string;
-  reason: string;
-  inputSummary?: unknown;
 }
 
 // Modified by ZCode:F5 mcp-ui。插件 UI 资源/工具调用事件的载荷。
@@ -1074,6 +1085,21 @@ export interface PluginUiAppToolCallRequestedPayload {
   callId: string;
   toolName: string;
   arguments: Record<string, unknown>;
+}
+
+export interface PermissionResolvedPayload {
+  requestId?: string;
+  toolCallId: ToolCallId;
+  decision: PermissionDecision;
+  reason?: string;
+  modifiedInput?: unknown;
+}
+
+export interface PermissionDeniedPayload {
+  toolCallId: ToolCallId;
+  toolName: string;
+  reason: string;
+  inputSummary?: unknown;
 }
 
 export type UserInputAutoResolutionState =
@@ -1300,6 +1326,7 @@ export type SessionEventPayload =
   | SystemMessagePayload
   | ModelRequestPayload
   | ModelSelectedPayload
+  | TurnExecutionModelFallbackPayload
   | ModelStreamingPayload
   | StreamingToolLedgerPayload
   | StreamRecoveryAnchorPayload

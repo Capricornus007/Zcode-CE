@@ -1,8 +1,7 @@
 import type { ToolSearchExecutionContext, ToolSearchMode } from "@zcode/contracts";
-import type { RequestVerificationReason } from "@zcode/shared";
+import type { DangerousCommandPolicy, RequestVerificationReason } from "@zcode/shared";
 import type { GetAgentDefinitions, LoadAgentDefinitions } from "../subagent/definitions.js";
 import type { RuntimeInputPresentation, TurnExecutionModelFallbackReason } from "@zcode/contracts";
-import type { RuntimeInputPresentation } from "@zcode/contracts";
 /* eslint-disable max-lines -- Runtime 类型集中承载 core/runtime 对外结构，拆分需要单独迁移。 */
 import { PermissionService, ToolScheduler } from "./deps.js";
 import type {
@@ -18,14 +17,13 @@ import type {
   ModelRequestDependencies,
   ModelSelection,
   PluginReferenceCatalog,
-  ProviderRuntimeHeadersRequestReason,
   ResolvedUserInstructions,
   StableForkGoalBoundaryMetadata,
   StableForkTargetMetadata,
   WorkspaceHookBundleSnapshot,
   WorkspaceId,
 } from "@zcode/contracts";
-import type { DangerousCommandPolicy, ZCodeProviderAccountAccess } from "@zcode/shared";
+import type { ZCodeProviderAccountAccess } from "@zcode/shared";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
 import type { RuntimeMessageEntry } from "../agent/message-history.js";
 import type {
@@ -77,6 +75,7 @@ import type {
   ExecutionShellSelection,
   AutomationPort,
   OffPeakPort,
+  TopicResourcePort,
   FileSystemPort,
   HttpClientPort,
   ImageProcessorPort,
@@ -128,6 +127,8 @@ export interface AgentRuntimeConfig {
   remoteSessionId?: string;
   bashTimeoutPolicy?: BashTimeoutPolicy;
   presentationSurface?: PresentationSurface;
+  /** Execution Host's output root, independent of the working repository. */
+  genUiOutputRoot?: string;
   mode?: CollaborationMode;
   planEnabled?: boolean;
   modelStreaming?: "off" | "on";
@@ -137,6 +138,13 @@ export interface AgentRuntimeConfig {
   maxTurns?: number;
   permissionTimeoutMs?: number;
   compact?: AutoCompactPolicyConfig;
+  /** CE 线增量（experimental）：自适应思考档——工具续跑步自动降一档。缺省=关。 */
+  adaptiveReasoning?: { enabled?: boolean };
+  /** 工具策略：危险命令清单的禁用/自定义条目；缺省=严格默认。 */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
+  /** CE 线增量（experimental）：缓存保活器——会话空闲超阈值时发同前缀迷你请求刷新
+   * provider 侧 prompt cache，消除长空档后下一请求的预填充跳升。默认关。 */
+  cacheKeepAlive?: { enabled?: boolean; idleThresholdMs?: number };
   targetCompletionVerification?: { enabled?: boolean };
   midConversationSystem?: {
     mode?: "auto" | "force";
@@ -174,6 +182,12 @@ export interface AgentRuntimeConfig {
     /** 是否把 CUA broker 凭据注入共享 node_repl；不代表注册独立 CUA MCP。 */
     computerUse?: boolean;
     /**
+     * 工具声明面预算（吸收 pi tool_search 的 exposure 分级）：超过该数量的可见工具
+     * 会被降级为 deferred（不声明给模型），由 ToolSearch 按需发现激活。缺省 48，
+     * 环境变量 ZCODE_TOOL_DECLARATION_BUDGET 可覆盖；<2 视为未配置。
+     */
+    toolDeclarationBudget?: number;
+    /**
      * 官方 browser-use plugin 的 docs 资产目录。由 bootstrap 从 plugin metadata.rootPath 推导，
      * 不属于 plugin manifest schema。
      */
@@ -200,16 +214,6 @@ export interface AgentRuntimeConfig {
   embeddedSearchBackend?: EmbeddedSearchBackend;
   /** 根 Session runtime 创建时固定；false 只关闭 Bash 的 bfs/ugrep prelude。 */
   nativeSearchEnhancementsEnabled?: boolean;
-  /**
-   * 危险命令策略（工具与权限页）。**根 Session runtime 创建时固定**，与
-   * nativeSearchEnhancementsEnabled 同一条链路：Host 在 session create/resume 时下发，
-   * 已运行的会话不重新读取。
-   *
-   * 缺席即严格：core 侧 resolveDangerousCommandPolicy(undefined) 得到
-   * allowPersistentAuthorization=false + 默认清单全开。TUI / headless / workflow_child
-   * 不设置它，因此也落在严格态 —— 这正是产品默认（fail-safe）。
-   */
-  dangerousCommandPolicy?: DangerousCommandPolicy;
   memory?: MemoryRuntimeConfig;
   /** 历史恢复允许未绑定；只有完整选择才能创建本轮执行 Model。 */
   modelSelection?: ModelSelection;
@@ -221,16 +225,20 @@ export interface AgentRuntimeConfig {
   parentSessionId?: SessionId;
   taskType?: SessionTaskType;
   /**
-   * 动态工作流灰度门：Host 判定后经
-   * ZCode Protocol 下发，runtime 只消费。**缺席即开启**——TUI 与 workflow_child 都不写它，
-   * 它们必须保留完整工具面；只有受信 Host 创建的 protocol session 会显式写 false
-   * 把十个工作流工具关掉。
-   *
-   * headless `-p` 也会写它，但只在用户显式传 `--no-enable-workflow` 时写 false：
-   * 本仓库 headless 默认开启（与官方相反，官方 `-p` 默认关闭）。见
-   * apps/zcode-cli/packages/cli/src/workflow-flag.ts。
+   * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）：Host 判定后经
+   * ZCode Protocol 下发，runtime 只消费。**缺席即开启**（进程内嵌入方靠这个极性）；
+   * 独立 CLI 的 TUI 与 headless 按 --workflow-mode 显式传 true/false（缺省 disabled，DWG-04），
+   * workflow_child 继承父配置。
+   * false 会关闭十个工作流工具，不改变其他工具的注册策略。
    */
   dynamicWorkflowEnabled?: boolean;
+  /**
+   * 灰度 mode `onDemand`（docs/dynamic-workflow/launch.md「On demand: activation」）：十个工作流
+   * 工具推迟到会话首次 `/workflow`（或 GUI 对本会话 run 的 Resume / 配置 / 直接启动、冷恢复时记录里
+   * 已有工作流）才注册。**缺席即立刻注册**，与 dynamicWorkflowEnabled 同极性；只有协议服务端在
+   * Host 下发的 mode 为 onDemand 时写 true。激活状态归 runtime（dynamicWorkflowToolsActivated）。
+   */
+  dynamicWorkflowToolsOnDemand?: boolean;
 
   // Context Builder config
   systemPrompt?: string;
@@ -265,8 +273,8 @@ export interface AgentRuntimeConfig {
   workspaceIdentity?: WorkspaceId;
   envInfo?: EnvInfo; // Optional, will be auto-detected if not provided
   currentDate?: string; // YYYY-MM-DD, resolved by adapter when omitted
-  userInstructions?: UserInstructionsOptions; // AGENTS.md
-  projectContext?: ProjectContext; // auto-detected if not provided
+  userInstructions?: UserInstructionsOptions; // P1: AGENTS.md
+  projectContext?: ProjectContext; // P2: auto-detected if not provided
   skillMetadataBudget?: number;
 }
 
@@ -329,6 +337,10 @@ export interface MemoryRuntimeConfig {
 }
 
 export interface AgentRuntimeDeps {
+  /** 只读目录入口；必须同步读取内存，不在请求收集阶段进行 I/O。 */
+  getAgentDefinitions?: GetAgentDefinitions;
+  /** 新父上下文读取一次；子执行不得继承此加载器。 */
+  loadAgentDefinitions?: LoadAgentDefinitions;
   agentTelemetry?: AgentExecutionTelemetryPort;
   agentTelemetryCausation?: AgentTelemetryCausation;
   agentTelemetryCausationMode?: "child" | "linked_root";
@@ -392,6 +404,7 @@ export interface AgentRuntimeDeps {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
+  topicResourcePort?: TopicResourcePort;
   contextSourcePort?: ContextSourcePort;
   eventSink?: SessionEventSink;
   logger?: Logger;
@@ -421,12 +434,12 @@ export interface ProviderRuntimeHeadersPort {
   shouldRefreshBeforeModelRequest?(input: { providerId: string; modelId: string }): boolean;
   refreshBeforeModelRequest(input: {
     accountAccess?: ZCodeProviderAccountAccess;
+    expectedAccountScope?: string;
+    rejectedProjectTokenFingerprint?: string;
     abortSignal?: AbortSignal;
     modelId: string;
     providerId: string;
-    // 与 contracts 的 ProviderRuntimeHeadersRequestReason 同域：3007 验证码挑战触发的
-    // 单次重试以 "captcha-retry" 走到这里，渲染层据此重新求解验证码（spec §4.5）。
-    reason: ProviderRuntimeHeadersRequestReason;
+    reason: RequestVerificationReason;
     sessionId: SessionId;
     traceContext: TraceContext;
     turnId?: TurnId;
@@ -533,6 +546,8 @@ export type PromptAdmissionOptions = ExecuteTurnOptions & {
   expectedTurnId?: TurnId;
   /** busy 时的产品队列语义；附件或不可 steer 时由 Core 回退 queue。 */
   queueDelivery?: "guide" | "queue";
+  /** 强制进入 FIFO；用于携带只能在未来独立 turn 安装的临时运行模型。 */
+  requireQueue?: boolean;
   /** queue promotion 等内部调用要求 admission 必须 idle，否则直接拒绝。 */
   requireIdle?: boolean;
   // Modified by ZCode:X1。编辑重发的排队语义：不参考 busy 快照，无条件入队成未来独立 turn。

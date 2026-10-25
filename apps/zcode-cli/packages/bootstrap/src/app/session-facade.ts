@@ -1,27 +1,17 @@
 import { updateUiLocaleInFileConfig, type ConfigResult } from "@zcode/adapters/config";
-import type { AgentRuntime } from "@zcode/core";
-// Modified by ZCode:F5 mcp-ui 消费侧：App 工具登记与 MCP 条目构造。
 import {
-  createMcpAppProvidedToolEntry,
-  createMcpToolEntry,
-  toMcpToolName,
-} from "@zcode/core";
-import { randomUUID } from "node:crypto";
-import { resolveLocale } from "@zcode/i18n";
-import { normalizeModelSelection, type ModelSelection } from "@zcode/provider";
-import {
+  McpResourceSubscribeUnsupportedError,
+  resolveMcpToolVisibility,
   SESSION_ENTRY_MODEL_SELECTION,
   traceContextToLogContext,
   type CollaborationMode,
   type ExecutionPort,
   type GoalStatus,
+  type LocalSettingStorePort,
   type Logger,
   type LoggerFactory,
-  type LocalSettingStorePort,
   type McpPort,
   type McpServerConfig,
-  McpResourceSubscribeUnsupportedError,
-  resolveMcpToolVisibility,
   type MessageId,
   type ProjectId,
   type SessionId,
@@ -32,11 +22,17 @@ import {
   type UiLocale,
   type UiThemePreference,
 } from "@zcode/contracts";
+import {
+  createMcpAppProvidedToolEntry,
+  createMcpToolEntry,
+  toMcpToolName,
+  type AgentRuntime,
+} from "@zcode/core";
+import { resolveLocale } from "@zcode/i18n";
+import { normalizeModelSelection, type ModelSelection } from "@zcode/provider";
 import { listMcpServerStatuses } from "../mcp-config.js";
 import { loadSessionTranscriptFromStore } from "../session-transcript.js";
-import { createSubagentObservation } from "./subagent-observation.js";
 import { getLocaleConfigPath } from "./locale-selection.js";
-import { isClosableSessionStore } from "./session-store.js";
 import type { ProviderRegistryModelSource } from "./provider-registry-model-runtime.js";
 import {
   completeAuxiliaryRegistryModelSelection,
@@ -49,6 +45,8 @@ import {
   resolveRegistryThoughtLevel,
   type ResolvedRegistrySelection,
 } from "./provider-registry-selection.js";
+import { isClosableSessionStore } from "./session-store.js";
+import { createSubagentObservation } from "./subagent-observation.js";
 import type { PrepareUserExecutionBoundary, ZCodeApp } from "./types.js";
 import type { CliDefaultSelection } from "./cli-default-selection.js";
 
@@ -65,21 +63,9 @@ type SessionFacade = Pick<
   | "replaceMcpAppProvidedTools"
   | "connectMcpServer"
   | "disconnectMcpServer"
-  // Modified by ZCode:F5 mcp-ui 消费侧。
-  | "readMcpResource"
-  | "readMcpResourceForUi"
-  | "listMcpResourcesForUi"
-  | "listMcpResourceTemplatesForUi"
-  | "subscribeMcpResourceForUi"
-  | "unsubscribeMcpResourceForUi"
-  | "unsubscribeMcpResourcesForUi"
-  | "onMcpAppConnectionInvalidated"
-  | "getMcpAppConnectionSnapshot"
-  | "callMcpToolForUi"
-  | "getMcpToolVisibility"
-  | "replaceMcpAppProvidedTools"
-  | "sampleModel"
+  // Modified by ZCode:F5 mcp-ui 消费侧（上游 3.16.1 已带同一批成员，此处只保留一份、顺序照上游）。
   | "generateWorkspaceText"
+  | "sampleModel"
   | "testModelConnectivity"
   | "forkFromCheckpoint"
   | "getMode"
@@ -92,9 +78,17 @@ type SessionFacade = Pick<
   | "getTheme"
   | "listCheckpoints"
   | "listMcpServers"
+  | "getMcpToolVisibility"
   | "listModels"
   | "listThoughtLevels"
   | "loadSessionTranscript"
+  | "readMcpResource"
+  | "readMcpResourceForUi"
+  | "listMcpResourcesForUi"
+  | "listMcpResourceTemplatesForUi"
+  | "subscribeMcpResourceForUi"
+  | "unsubscribeMcpResourceForUi"
+  | "unsubscribeMcpResourcesForUi"
   | "readSubagents"
   | "readSubagentTranscript"
   | "readTodos"
@@ -156,7 +150,7 @@ interface CreateSessionFacadeDeps {
 export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacade {
   let closePromise: Promise<void> | undefined;
   let currentLocale = resolveLocale(deps.configResult.config.ui.locale);
-  // Modified by ZCode:F5 mcp-ui：本会话已登记的 App-Provided Tools 名单，replace 时整体替换。
+  // Modified by ZCode:F5 mcp-ui：App-Provided Tools：本会话当前登记在 ToolRegistry 里的模型侧名字（整体替换时先注销）。
   let appProvidedToolNames: string[] = [];
   const currentRegistrySelection = ():
     | { owned: false }
@@ -406,17 +400,7 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
         workingDirectory: deps.workingDirectory,
       });
     },
-    readBackgroundBashOutput: (workId, sessionId) =>
-      deps.runtime.readBackgroundBashOutput(workId, sessionId),
-    cancelBackgroundTask: async (taskId, options) =>
-      deps.runtime.cancelBackgroundTask(taskId, {
-        traceContext: options?.traceContext ?? deps.traceContext,
-      }),
-    disconnectMcpServer: async (name) => {
-      if (!deps.mcpPort) return undefined;
-      return deps.mcpPort.disconnectServer(name);
-    },
-    // Modified by ZCode:F5 mcp-ui 消费侧（与上游 session-facade 同一实现：全部走 deps.mcpPort / runtime）。
+    // Modified by ZCode:F5 mcp-ui 消费侧：下列 MCP App/Resources 入口与上游 session-facade 同一实现（全部走 deps.mcpPort / runtime）。
     readMcpResource: async (serverName, uri, options) => {
       if (!deps.mcpPort) {
         throw new Error("MCP is disabled");
@@ -515,7 +499,7 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
       const executor = deps.runtime.getToolExecutor();
       if (!executor.authorizeAppTool) throw new Error("MCP App host authorization is unavailable");
       const input = await executor.authorizeAppTool(
-        { id: randomUUID(), name: entry.metadata.name, input: args ?? {} },
+        { id: crypto.randomUUID(), name: entry.metadata.name, input: args ?? {} },
         entry,
         { signal: options?.signal, traceContext: deps.traceContext },
       );
@@ -565,11 +549,16 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
       );
       return descriptor ? resolveMcpToolVisibility(descriptor) : null;
     },
-    sampleModel: (input, options) =>
-      deps.runtime.sampleModel(input, {
-        abortSignal: options.abortSignal,
-        traceContext: options.traceContext ?? deps.traceContext,
+    readBackgroundBashOutput: (workId, sessionId) =>
+      deps.runtime.readBackgroundBashOutput(workId, sessionId),
+    cancelBackgroundTask: async (taskId, options) =>
+      deps.runtime.cancelBackgroundTask(taskId, {
+        traceContext: options?.traceContext ?? deps.traceContext,
       }),
+    disconnectMcpServer: async (name) => {
+      if (!deps.mcpPort) return undefined;
+      return deps.mcpPort.disconnectServer(name);
+    },
     listCheckpoints: async (options) => {
       await deps.prepareResume();
       return deps.runtime.listWorkspaceCheckpoints(options);
@@ -582,6 +571,11 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
         traceContext: options?.traceContext ?? deps.traceContext,
       });
     },
+    sampleModel: (input, options) =>
+      deps.runtime.sampleModel(input, {
+        ...options,
+        traceContext: options.traceContext ?? deps.traceContext,
+      }),
     generateWorkspaceText: async (input, options) => {
       // 辅助文本入口只规范化模型身份；具体的最低档位由 Core 的辅助请求调用点显式决定。
       const selection =
@@ -611,8 +605,16 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
     },
     setMode: async (mode: CollaborationMode) => {
       const previousMode = deps.runtime.getMode();
+      const session = await deps.sessionStore.getSession(deps.sessionId);
+      // 群模式属于任务授权；不能写入工作区默认模式，让其他群或私聊继承。
+      if (session?.permission?.scope === "session") {
+        await deps.sessionStore.updateSession({
+          id: deps.sessionId,
+          permission: { ...session.permission, mode },
+        });
+      }
       await deps.runtime.setExecutionState({ mode }, deps.traceContext);
-      if (deps.localSettingStore) {
+      if (deps.localSettingStore && session?.permission?.scope !== "session") {
         try {
           await deps.localSettingStore.saveProjectPermissionMode({
             mode: deps.runtime.getMode(),
@@ -766,7 +768,7 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
   };
 }
 
-async function closeSessionResources(input: SessionResourceCloseInput): Promise<void> {
+export async function closeSessionResources(input: SessionResourceCloseInput): Promise<void> {
   try {
     // 第一拍先关闭 runtime admission；后续 execution cancel 只能收口状态，不能再唤醒模型。
     input.beginShutdown();

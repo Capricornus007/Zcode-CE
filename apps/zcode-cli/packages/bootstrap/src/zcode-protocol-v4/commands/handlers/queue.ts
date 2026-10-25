@@ -14,7 +14,7 @@ import { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
 import { inputIntentMetadataFromQueueItem } from "../input-intent.js";
 import { startPromptTurn } from "../prompt-turn.js";
 import { requireRecord } from "../record-access.js";
-import type { V4CommandCoreHost, V4SessionRecordView } from "../types.js";
+import type { V4CommandCoreHost } from "../types.js";
 import {
   applyGoalCommand,
   parseGoalObjectiveFromCommandText,
@@ -24,21 +24,20 @@ import {
 import { preemptActiveTurnAndWait } from "./session-flow.js";
 import { V4CommandNoopError } from "../../v4-gateway.js";
 import { commandExecutionContextOf } from "../executor.js";
-// Modified by ZCode:X1。提升路径的高凭据读回与降级（与 edit/retry 重发共用同一 fallback resolver）。
-import { isHighspeedProviderId } from "@zcode/shared";
-import { createModelExecutionContext } from "../../../zcode-protocol/model-execution.js";
+// Modified by ZCode:X1。提升路径的高凭据读回与降级（与 edit/retry 重发共用同一 fallback resolver）：
+// CE 未移植上游的 commands/input-admission.ts，该 resolver 由 canonical-intent-replay 就地提供。
 import { resolveSessionFallbackModelSelection } from "./canonical-intent-replay.js";
 export { V4SessionIdleTimeoutError } from "./session-flow.js";
 
 /** sendQueuedNow 在投影里查不到该项原文（已被 drain/删除或 id 无效）→ 拒绝。 */
-class V4QueueItemTextUnavailableError extends Error {
+export class V4QueueItemTextUnavailableError extends Error {
   constructor(queueItemId: string) {
     super(`v4 sendQueuedNow queue item text unavailable: ${queueItemId}`);
     this.name = "V4QueueItemTextUnavailableError";
   }
 }
 
-class V4QueueItemReservedError extends Error {
+export class V4QueueItemReservedError extends Error {
   readonly reasonCode = "guard.queueItemReserved";
   constructor(queueItemId: string) {
     super(`v4 sendQueuedNow queue item already reserved: ${queueItemId}`);
@@ -46,7 +45,7 @@ class V4QueueItemReservedError extends Error {
   }
 }
 
-class V4QueuePromotionCommitError extends Error {
+export class V4QueuePromotionCommitError extends Error {
   readonly reasonCode = "fault.command.queuePromotionCommitFailed";
   constructor(queueItemId: string) {
     super(`v4 sendQueuedNow started but failed to remove queue item: ${queueItemId}`);
@@ -54,7 +53,7 @@ class V4QueuePromotionCommitError extends Error {
   }
 }
 
-class V4QueueItemNotEditableError extends Error {
+export class V4QueueItemNotEditableError extends Error {
   readonly reasonCode = "guard.queueItemNotEditable";
   constructor(queueItemId: string) {
     super(`v4 queue item is not editable: ${queueItemId}`);
@@ -80,6 +79,7 @@ async function deleteQueueItem(
 ): Promise<CommandResult | undefined> {
   const payload = envelope.payload as CommandPayloadMap["deleteQueueItem"];
   const record = requireRecord(host, envelope.sessionId);
+  const queueItem = host.getQueueItem?.(record.app.sessionId, payload.queueItemId) ?? null;
   // 未命中（并发 drain/重复删除的竞态）= noop，不算失败；留 warn 供观测。
   const removed = await record.app.removeQueueItem(payload.queueItemId);
   if (!removed) {
@@ -90,6 +90,9 @@ async function deleteQueueItem(
     // 未命中曾返回 undefined，gateway 会把并发 drain/重复删除误报为 accepted；
     // queue 撤回编辑因此可能把已消费的旧投影再次恢复到 composer。
     throw new V4CommandNoopError("queue.itemMissing");
+  }
+  if (queueItem) {
+    host.deleteQueuedTurnExecution?.(record.app.sessionId, queueItem.sourceCommandId);
   }
   return undefined;
 }
@@ -256,6 +259,10 @@ async function sendQueuedNow(
         queueItem.highspeed !== undefined &&
         payload.highspeedMeta.cardId === queueItem.highspeed.cardId &&
         payload.highspeedMeta.taskId === queueItem.highspeed.taskId;
+      // CE-SYNC: 取上游的提升边界判定。上游把「执行包 = Selection + 凭据」成对处理，并额外迁移
+      // 旧 QueueItem 里被持久化的临时 Highspeed Selection；CE 的 X1 局部修补（只替换
+      // payload.modelSelection、降级时再改一次 Selection）是上游形态的子系统，故弃 CE 版，
+      // CE 侧的观察用日志与下方注释保留。
       const ordinarySelection = isHighspeedProviderId(intent.modelSelection?.providerId)
         ? resolveSessionFallbackModelSelection(record)
         : intent.modelSelection;
@@ -284,6 +291,8 @@ async function sendQueuedNow(
         intent.modelSelection = stagedExecution.modelSelection;
       } else if (intent.highspeed) {
         if (intent.highspeed.expiresAt > Date.now()) {
+          // Modified by ZCode:X1（Bug 原因）：现场出现有效卡的队列项在手动提升时静默退回普通模型，
+          // 原日志只覆盖 provider 安装失败，无法区分「凭据暂存缺失」与「卡本身已过期」。
           host.logger?.warn?.("v4 queued Highspeed execution unavailable; using queued model", {
             cardId: intent.highspeed.cardId,
             queueItemId: queueItem.queueItemId,
@@ -291,6 +300,9 @@ async function sendQueuedNow(
             sessionId: record.app.sessionId,
           });
         }
+        // 退回必须同时改写 Selection：只删卡标记会让本轮带着加速 provider 却没有任何凭据
+        // （CE X1，spec §3 规则 13）。上游的等价做法是把 intent.modelSelection 统一迁到上方的
+        // ordinarySelection，那里已经做完，这里不再二次覆写。
         delete intent.highspeed;
         host.deleteQueuedTurnExecution?.(record.app.sessionId, queueItem.sourceCommandId);
       }

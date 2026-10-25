@@ -1,6 +1,8 @@
+import { recordArmsCustomEventForE2E } from "@zcode/ui";
 import { DesktopCommandIds, buildLocalMediaPreviewUrl, type IPlatformService } from "@zcode/shared";
 
 import { desktopBrowserPlatformBridge } from "./desktopBrowserPlatformBridge.js";
+// F5(上游 aac47556):插件 UI 沙箱平台端口,供 plugin-ui 层做能力探测。
 import { createDesktopPluginSandboxPlatform } from "./plugin-sandbox/desktopPluginSandboxPlatform.js";
 
 export function createDesktopPlatform(options: {
@@ -21,6 +23,12 @@ export function createDesktopPlatform(options: {
       window.zcode.materializeWorkflowArtifactFile(payload),
     onRemoteConnectionLog: (handler) => window.zcode.onRemoteConnectionLog(handler),
     onRemoteSessionClosed: (handler) => window.zcode.onRemoteSessionClosed(handler),
+    // ---- CE 重植（3.16.1 合并）：本地 Web 服务（远程控制）服务面五条。
+    getWebServiceStatus: () => window.zcode.getWebServiceStatus(),
+    startWebService: (options) => window.zcode.startWebService(options),
+    stopWebService: () => window.zcode.stopWebService(),
+    getWebServiceConnectionInfo: () => window.zcode.getWebServiceConnectionInfo(),
+    onWebServiceChanged: (handler) => window.zcode.onWebServiceChanged(handler),
     // Source 自动重连会替换 logical session；统一由 preload bridge 转发换代事件。
     onRemoteSessionReconnected: (handler) =>
       window.zcode.onRemoteSessionReconnected?.(handler) ?? (() => {}),
@@ -75,6 +83,21 @@ export function createDesktopPlatform(options: {
     onPaymentCallback: (callback) => window.zcode.onPaymentCallback(callback),
     onShareImport: (callback) => window.zcode.onShareImport?.(callback) ?? (() => {}),
     notifyRendererReady: () => window.zcode.notifyRendererReady(),
+    reportTelemetryEvent: (payload) => window.zcode.reportTelemetryEvent(payload),
+    reportArmsCustomEvent: (payload) => {
+      recordArmsCustomEventForE2E(payload);
+      return window.zcode.reportArmsCustomEvent(payload);
+    },
+    getRendererActionTraceConfig: window.zcode.getRendererActionTraceConfig
+      ? () => window.zcode.getRendererActionTraceConfig!()
+      : undefined,
+    onRendererActionTraceConfigChanged: window.zcode.onRendererActionTraceConfigChanged
+      ? (callback) => window.zcode.onRendererActionTraceConfigChanged!(callback)
+      : undefined,
+    reportLocalTtftBatch: (batch) => window.zcode.reportLocalTtftBatch(batch),
+    reportRendererActionTraceBatch: window.zcode.reportRendererActionTraceBatch
+      ? (batch) => window.zcode.reportRendererActionTraceBatch!(batch)
+      : undefined,
     reportRendererHeapSample: window.zcode.reportRendererHeapSample
       ? (sample) => window.zcode.reportRendererHeapSample!(sample)
       : undefined,

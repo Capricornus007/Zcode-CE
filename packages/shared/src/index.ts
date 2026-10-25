@@ -1,4 +1,5 @@
 // Modified by ZCode: 自上游 zai-org/ZCode aac47556 (Apache-2.0) 增量并入(F9/F10/F5):platform/channels 新类型与通道的导出 splice 点。
+// CE-SYNC: 上游 cloudContent.ts / networkCapture.ts 為雲端行銷與抓包件、CE 不帶，對應 export 整段刪除。
 export type {
   FileBinaryPreview,
   FileEntry,
@@ -40,6 +41,7 @@ export type {
 export type {
   DockerConnectOptions,
   RemoteTarget,
+  ServerConnectOptions,
   SSHConnectOptions,
   WSLConnectOptions,
 } from "./remoteTarget.js";
@@ -70,13 +72,8 @@ export {
   normalizeZCodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
-// 危险命令清单：工具与权限策略页与 core 的 Bash 授权判据共用的唯一真相源。
-export * from "./dangerousCommands.js";
 export * from "./validation.js";
 export * from "./api.js";
-// SessionCreateSource 是 session 建立入口的业务协议字段（store / app-shell / pending command 都读），
-// 不是遥测载荷；遥测上报链路（sessionCreateTelemetry.ts）已按 P1 剥离，此类型单独 re-home 保留。
-export type { SessionCreateSource } from "./sessionCreateSource.js";
 export * from "./zcode-protocol/index.js";
 export * from "./account-provider-state.js";
 // re-home：旧协议承重面的幸存文件（消费者继续走 barrel，零感知）
@@ -94,6 +91,7 @@ export * from "./conversation-share.js";
 export * from "./conversation-share-content.js";
 export * from "./conversation-preview-artifacts.js";
 export * from "./zcode-session-task-status.js";
+// CE-SYNC: 上游 zcode-session-content-profile.ts（index 摘要裁剪）CE 不帶，出口刪除。
 export * from "./zcode-tool-projection-memory.js";
 export * from "./zcode-slash-command-help.js";
 export * from "./zcodeEndpoint.js";
@@ -108,7 +106,6 @@ export * from "./dynamic-workflow-feature.js";
 export * from "./markdown-artifact-images.js";
 export * from "./serviceAuthority.js";
 export * from "./server-remote.js";
-export * from "./workspace-registry.js";
 export * from "./source-server/index.js";
 
 export interface ICredentialStore {
@@ -117,7 +114,6 @@ export interface ICredentialStore {
   delete(key: string): Promise<void>;
 }
 
-export * from "./test-ids.js";
 export * from "./test-ids-workflow.js";
 export * from "./channels.js";
 export * from "./storage.js";
@@ -128,7 +124,6 @@ export * from "./e2e-test-bridge.js";
 export * from "./remoteAppConfig.js";
 export * from "./helpAppConfig.js";
 export * from "./remoteAssetInstallMode.js";
-export * from "./remoteAssetCdn.js";
 export * from "./onboardingRecord.js";
 export * from "./remoteResourcePackages.js";
 export * from "./plan-identity.js";
@@ -139,11 +134,6 @@ export {
   DesktopCommandIds,
   buildLocalMediaPreviewUrl,
   createOpenInEditorRemoteTarget,
-  // 这三个窗口控件/缩放类型定义在 platform.ts，但开源版具名导出名单漏了它们，
-  // 导致 preload 与 client/globals.d.ts 从公开入口导入时报 TS2305。纯类型，无运行时影响。
-  type DesktopZoomState,
-  type WindowControlsOverlayMetrics,
-  type WindowControlsOverlayReadyPayload,
 } from "./platform.js";
 // 遥测已全部移除（P1）：以下模块与其全部导出已删除 ——
 //   telemetry.ts（埋点载荷/脱敏上下文）、telemetryRedaction.ts（上报文本脱敏）、
@@ -169,7 +159,6 @@ export type {
   BrowserViewScreenshotSurfacePreparePayload,
   BrowserViewScreenshotSurfaceReadyPayload,
   BrowserViewScreenshotSurfaceReleasePayload,
-  // desktop main 的 browserScreenshotSurfaceContracts 需要它；补进具名导出名单（纯类型）。
   BrowserViewViewportChangedPayload,
   ChromeBrowserDataImportError,
   ChromeBrowserDataImportOptions,
@@ -183,6 +172,7 @@ export type {
   SaveFileRequest,
   SaveFileResult,
   PrintPageToPdfResult,
+  DesktopCloseToTrayCapability,
   DesktopCommandId,
   CuaOsSupport,
   DesktopWindowChromeState,
@@ -194,13 +184,13 @@ export type {
   ApplicationIconRequest,
   BrowserGuestAttachRejectReason,
   BrowserGuestAttachResult,
-  DesktopCloseToTrayCapability,
   EmbeddedBrowserDataClearResult,
   EmbeddedBrowserOpenUrlRequest,
   EmbeddedBrowserPermissionDeviceOption,
   EmbeddedBrowserPermissionPromptEvent,
-  EmbeddedBrowserPermissionResolveRequest,
   EmbeddedBrowserPermissionResolution,
+  EmbeddedBrowserPermissionResolveRequest,
+  EmbeddedBrowserPermissionScreenOption,
   EmbeddedBrowserSitePermissionResetRequest,
   EmbeddedBrowserSitePermissionUpdateRequest,
   EmbeddedBrowserSitePermissionsSnapshot,
@@ -212,22 +202,12 @@ export type {
   RemoteSessionClosedEvent,
   RemoteSessionReconnectedEvent,
   RemoteServiceSession,
-  WebServiceConnectionInfoPayload,
-  WebServiceStatusErrorCode,
-  WebServiceStatusPayload,
-  WebServiceStatusStaleReason,
-  WebServiceStatusState,
-  RemoteControlConnection,
-  RemoteControlConnectionRole,
-  RemoteControlConnectionsPayload,
-  RemoteControlRevokeRequest,
-  RemoteControlRevokeResult,
-  RemoteControlRotateTokenResult,
   SSHConfigAliasOption,
   TaskNotificationPayload,
   UpdateCheckResultPayload,
   UpdateStatePayload,
   WSLDistro,
+  WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
 } from "./platform.js";
 export type {
@@ -255,7 +235,6 @@ export * from "./custom-model-value.js";
 export * from "./model-selection-types.js";
 export * from "./model-selection-key.js";
 export * from "./model-selection.js";
-export * from "./model-catalog.js";
 export * from "./legacy-model-provider-identity.js";
 export * from "./official-glm-model-id.js";
 export * from "./skills-types.js";
@@ -275,7 +254,7 @@ export * from "./process-names.js";
 export * from "./mcp.js";
 export * from "./runtime-tool-runtime.js";
 export * from "./git.js";
-export * from "./githubMirror.js";
+export * from "./bots.js";
 export * from "./assistant-message-parts.js";
 export * from "./zcodePersistedMessageMerge.js";
 export * from "./assistant-presentation.js";
@@ -284,29 +263,30 @@ export * from "./tool-identity.js";
 export * from "./streaming-tool-input-preview.js";
 export * from "./tool-plan-adapter.js";
 export * from "./permission-request-preview.js";
-export * from "./web-remote-control.js";
+// CE-SYNC: 上游 web-remote-control.ts / web-remote-control-rpc-transport.ts（雲中繼遠端控制
+// 協議與 RPC 傳輸）CE 不帶——CE 的遠控是自託管 web-service（?token），出口刪除；
+// 保留的是 CE 自有的 #src/web-remote-relay（純中繼契約/重試/心跳計時）。
 export * from "#src/web-remote-relay/index.js";
 
-export * from "./web-remote-control-rpc-transport.js";
 export * from "./settings-sync.js";
 export * from "./uuid.js";
 export * from "./usage-stats.js";
 export * from "./coding-plan-subscription.js";
-// 手动领取（周末/体验套餐）claim 平面协议类型：与购买链路分离，单独 barrel 导出。
-export * from "./manual-claim-plan.js";
 export * from "./forceUpdate.js";
 export * from "./intranetProbe.js";
 export * from "./intranetDefaults.js";
 export * from "./hooks.js";
+// CE-SYNC: 上游 memory.ts（Memory/MemoryConfig，AGENTS.md 式 agent memory 載入）與
+// output-style.ts（OutputStyle/OutputStyleConfig/OutputStyleGenerationStatus）CE 不帶，
+// 出口刪除；CE 保留的 Project Memory 介面在 packages/services/src/memory/，
+// 且 memoryDiagnostics.ts（CE 有）仍照常出口。
 export * from "./openrouter-attribution.js";
 export * from "./workspaceSessionRestore.js";
 export * from "./skill-scan-policy.js";
-// Bot Channel（IM 机器人）共享合约。搬运自官方 v3.14.3（MIT），见
-// docs/development/official-diff.md 与 third-party/copied-components.json。
-export * from "./bots.js";
 export * from "./browser-use/index.js";
 
 export * from "./coding-plan-reset.js";
+export * from "./highspeed.js";
 export {
   parseSubagentMarkdownSelection,
   formatSubagentMarkdownModel,
@@ -318,12 +298,21 @@ export * from "./execution-state.js";
 
 export { bashOutputDisplaySchema } from "./bash-output-display.js";
 
+export * from "./subagent-runtime-config.js";
+
+export * from "./subagent-profile.js";
+// CE-SYNC: 上游 subagent-profile-parser.ts（parseAgentProfileFromMarkdown）CE 不帶，
+// 同名實作在本倉走 @zcode/core（apps/zcode-cli/packages/core/src/subagent/profile.ts）。
+
 export * from "./localTtft.js";
 export * from "./pluginStoreOrder.js";
 export * from "./clientConfig.js";
 export * from "./pluginStoreOrdering.js";
+// CE-SYNC: 上游 marketingTouch.ts / rewardsEmbedded.ts / rewardsBridge.ts（行銷觸達與獎勵
+// 錢包橋接）為雲端商業件、CE 不帶，出口刪除。
 export * from "./session-debug.js";
-export * from "./highspeed.js";
+// CE-SYNC: ./highspeed.js 在兩側各出口一次（上游位置在 coding-plan-reset 之後，已在上方保留），
+// 此處去重。
 export * from "./attachment-source.js";
 export * from "./channel-mention.js";
 
@@ -333,25 +322,63 @@ export {
 } from "./request-security-edition/policy.js";
 export * from "./request-security-edition/verification-policy.js";
 export * from "./conversationSelection.js";
-export * from "./subagent-runtime-config.js";
-export * from "./subagent-profile.js";
 export { redactFeedbackText } from "./feedbackPrivacy.js";
+// CE-SYNC: 上游 api-key-usage-scene.ts / project-access-token.ts / project-access-token-client.ts
+// （雲端專案存取 token 與用量場景標記）CE 不帶，出口刪除；相關消費端由主代理統一收斂。
+// 以下模組的出口在上面段落已出現一次（CE 側位置），重複的一份予以去重：
+// subagent-runtime-config / subagent-profile / attachment-source / channel-mention /
+// conversationSelection / request-security-edition/{policy,verification-policy}。
 
 export * from "./conversation-share-tool-presentation.js";
 
-// 根桶补齐：以下 CE 側功能模块定义仍在，但 -X ours 合并后从根 barrel 丢失，
-// 导致 services / desktop 的公开类型解析失败。遥测类模块（telemetry /
-// remoteUsageTelemetry / rendererActionTrace / sessionCreateTelemetry /
-// telemetryRedaction）不在此列 —— CE 已剥离上报链路（P1）。
-export * from "./api-key-usage-scene.js";
-export * from "./cloudContent.js";
-export * from "./marketingTouch.js";
-export * from "./memory.js";
-export * from "./networkCapture.js";
-export * from "./output-style.js";
-export * from "./project-access-token-client.js";
-export * from "./project-access-token.js";
-export * from "./rewardsBridge.js";
-export * from "./rewardsEmbedded.js";
-export * from "./subagent-profile-parser.js";
-export * from "./zcode-session-content-profile.js";
+// ---- CE 重植（3.16.1 整版合并）：index 取上游版时被冲掉的 CE 模块出口 ----
+// 原则：CE 專屬模块補回根出口；與上游已有模块重名的符號用顯式名單（顯式出口優先於
+// export *，可消 TS2308 歧義），platform 不能整模块 export *（CE 只出口自托管遠控與
+// 桌面縮放需要的名單符號，其餘符號與上游同名會造成歧義）。
+// CE-SYNC-TODO: qimen-pan.ts / liuren-pan.ts（奇門／六壬圍欄契約）只在 ce-pr5 分支存在，
+// 本輪 9472d465 剪除提交把它們連同 renderer 元件與 spec 一起移除（CE main 7fc3bfe2 無此二檔），
+// 但規則檔把「qimen/liuren 圍欄」列為 CE 差異化功能、且 packages/ui i18n 仍殘留相關字串。
+// 為免 TS2307 暫先刪除這兩行出口；若要還原該功能，需一併從 ce-pr5 取回 shared 契約 +
+// packages/ui 的 QimenPanBlock/LiurenPanBlock + spec 檔，由主代理決定。
+// export * from "./qimen-pan.js";
+// export * from "./liuren-pan.js";
+export * from "./dangerousCommands.js";
+export * from "./test-ids.js";
+export * from "./githubMirror.js";
+export * from "./model-catalog.js";
+export * from "./workspace-registry.js";
+// remoteAssetCdn 是 CE 的 CDN 覆写模块（RemoteAssetsSetting/desktopRuntimeEnv 消费）。
+export * from "./remoteAssetCdn.js";
+// manual-claim：上游 3.16.1 在 coding-plan-subscription 里原生化了同名类型（无 endsAt/
+// ClaimOutcome/parseManualClaimPlanPreviews 等扩展），CE 扩展按显式名单出口压过 star 歧义。
+export type { ManualClaimPlanPreview } from "./manual-claim-plan.js";
+export {
+  MANUAL_CLAIM_CAPTCHA_CONFIG_UNAVAILABLE,
+  MANUAL_CLAIM_CAPTCHA_DISABLED,
+  MANUAL_CLAIM_CAPTCHA_SOLVER_UNAVAILABLE,
+  MANUAL_CLAIM_FAILURE_MESSAGE_KEYS,
+  classifyManualClaimCode,
+  parseManualClaimPlanPreviews,
+  pickManualClaimPlan,
+} from "./manual-claim-plan.js";
+export type {
+  ManualClaimCaptchaConfig,
+  ManualClaimCaptchaSolution,
+  ManualClaimPlanClaimOutcome,
+} from "./manual-claim-plan.js";
+// platform：CE 自托管 Web 服务/远程控制面 + 桌面缩放，按名单出口。
+export type {
+  DesktopZoomState,
+  RemoteControlConnection,
+  RemoteControlConnectionRole,
+  RemoteControlConnectionsPayload,
+  RemoteControlRevokeRequest,
+  RemoteControlRevokeResult,
+  RemoteControlRotateTokenResult,
+  WebServiceConnectionInfoPayload,
+  WebServiceStatusErrorCode,
+  WebServiceStatusPayload,
+  WebServiceStatusStaleReason,
+  WebServiceStatusState,
+  WindowControlsOverlayMetrics,
+} from "./platform.js";

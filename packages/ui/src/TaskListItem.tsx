@@ -375,10 +375,12 @@ export const MemoTaskItem = memo(function TaskListItem({
   // Bugfix: 手机远控标记和置顶状态共用左侧 leading 槽。
   // 已置顶任务如果继续常显 Pin，会和绝对定位的手机图标重叠；手机激活态默认让手机图标优先，hover 时再显示 Pin 操作。
   const showPinnedState = isPinned && leadingIndicator === "none" && !isMobileActive;
-  const shouldMountWorkspaceTaskActions = hoverActionsVisible || focusActionsVisible || isHoverNone;
-  // hover:none 只代表触屏端需要常驻 action，不代表应永久隐藏时间、状态和变更摘要。
-  // 元信息仅在真实 hover / focus 交互时让位，保持旧触屏布局的“元信息 + action”语义。
-  const shouldSuppressWorkspaceTaskMetadata = hoverActionsVisible || focusActionsVisible;
+  // 修复原因：手机会在 click 前合成 mouseenter/focus；此时切换内容会让首次点击只进入 hover。
+  // 远控入口固定操作区和元信息，避免触摸引发 DOM 切换；桌面仍沿用 hover/focus 展示。
+  const shouldSuppressWorkspaceTaskMetadata =
+    hoverEnabled && (hoverActionsVisible || focusActionsVisible);
+  const shouldMountWorkspaceTaskActions =
+    !hoverEnabled || shouldSuppressWorkspaceTaskMetadata || isHoverNone;
   const taskTimeLabel = formatTaskRelativeTime(task.updatedAt, intl);
   const taskChangeSummary = getTaskChangeSummary(task);
   const isRemoteTask = Boolean(task.workspaceIdentity?.trim());
@@ -451,7 +453,7 @@ export const MemoTaskItem = memo(function TaskListItem({
             }}
             onClick={handleArchive}
             data-testid={testId(TID_TASK_ARCHIVE, task.taskId)}
-            // 归档确认态是显式等待用户决策的状态，必须持续显示 destructive 按钮。
+            // Bugfix: 归档确认态是显式等待用户决策的状态，必须持续显示 destructive 按钮。
             className={cn("shrink-0 border-destructive/20 px-2", archiveActionVisibilityClassName)}
             aria-label={archiveLabel}
           >
@@ -477,37 +479,36 @@ export const MemoTaskItem = memo(function TaskListItem({
       )}
     </div>
   ) : null;
-  // 远端 task 的 session 未就绪时 resolver 会拒绝打开；渲染层同步隐藏入口，
-  // 避免展示一个点击后无反馈的按钮。本地 task 不依赖已打开 tab，仍可直接按路径打开。
-  const canOpenFileTree =
-    Boolean(onOpenFileTree) && (!task.workspaceIdentity?.trim() || Boolean(remoteSessionId));
+  // 原因：置顶任务常跨项目，查看文件必须保留独立入口；复用共享 action，避免点击选择任务。
   const fileTreeActionNode =
     onOpenFileTree &&
     !workspaceActionsDisabled &&
     !hasPendingInteraction &&
     (shouldMountWorkspaceTaskActions || isMobileActive) ? (
-      <span className="inline-flex shrink-0">
-        {/* Pinned 文件树按钮曾手写 hover 背景和 tooltip，导致与 Grouped task
-            的同一操作视觉不一致。直接复用共享 action，统一 bg-hover、尺寸和 pointer 行为。 */}
-        <TaskRowActionButton
-          label={intl.formatMessage({ id: "git.action.showTree" })}
-          onClick={handleOpenFileTree}
-          showTooltip
-        >
-          <ListTree className="size-3.5" />
-        </TaskRowActionButton>
-      </span>
+      <TaskRowActionButton
+        label={intl.formatMessage({ id: "git.action.showTree" })}
+        showTooltip
+        testId={`task-files-${task.taskId}`}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void runUserActionAsync({
+            input: { featureId: "workbench.file", action: "open_tree", trigger: "button" },
+            operation: async () => onOpenFileTree?.(),
+            completed: { resultSource: "local_commit" },
+            failureStage: "file_tree_open",
+          }).catch((cause) => {
+            logger.error("[task-list] 查看文件失败", cause);
+            toast(String(cause));
+          });
+        }}
+      >
+        <ListTree className="size-3.5" />
+      </TaskRowActionButton>
     ) : null;
   const taskActionGroupNode =
     fileTreeActionNode || archiveActionNode ? (
-      // 移动端触控命中：任务行的行内动作（文件树 / 归档）在粗指针下放到 44px。
-      // 这是 draft-task-row.tsx:73 那条注释所指的「其他任务行」——
-      // 草稿行嵌在整行可点区域内故意例外，任务行则是独立动作组，放大不会夺走整行点击。
-      // 只加 pointer:coarse 作用域内的类 ⇒ 桌面 1280 逐项不变；代价：任务行 28 → 44（密度换命中）。
-      <span
-        data-task-row-actions="true"
-        className="flex shrink-0 items-center gap-0.5 [@media(pointer:coarse)]:[&_button]:min-h-11 [@media(pointer:coarse)]:[&_button]:min-w-11"
-      >
+      <span data-task-row-actions="true" className="flex shrink-0 items-center gap-0.5">
         {fileTreeActionNode}
         {archiveActionNode}
       </span>
@@ -573,10 +574,10 @@ export const MemoTaskItem = memo(function TaskListItem({
           : hasWorkflowRunLines
             ? "items-start"
             : "items-center",
-        isActive ? "bg-selected" : "hover:bg-surface-hover",
+        isActive ? "bg-selected" : hoverEnabled && "hover:bg-surface-hover",
       )}
     >
-      {/* 之前任务列表依赖 divide-y 画分隔线，深色侧栏里每个 item 上下都会出现明显黑线，
+      {/* Bugfix: 之前任务列表依赖 divide-y 画分隔线，深色侧栏里每个 item 上下都会出现明显黑线，
               视觉上像被两条边框夹住。这里改成“列表留白 + item 自己带圆角态”，
               让 hover/active 的层级由卡片背景承担，不再依赖分隔线。 */}
 
@@ -603,9 +604,7 @@ export const MemoTaskItem = memo(function TaskListItem({
           ) : leadingIndicator === "unread" ? (
             <span data-unread-indicator="true" className="size-[7px] rounded-full bg-icon-blue" />
           ) : leadingIndicator === "loading" ? (
-            <LoaderIcon className="size-4 animate-spin text-foreground-subtle" />
-          ) : showTimelineIdleIndicator ? (
-            <span data-idle-indicator="true" className="h-1.5 w-1.5 rounded-full bg-border" />
+            <LoaderIcon className="size-4 text-foreground-subtle" />
           ) : null}
         </span>
         {shouldRenderPinAction ? (
@@ -650,8 +649,8 @@ export const MemoTaskItem = memo(function TaskListItem({
               className="text-ui-base text-foreground"
               title={taskTitleWithChanges}
             >
-              {/* workspace/timeline task 标题之前使用 truncate，会在长标题末尾显示省略号；
-                      grouped task 已改为右侧渐隐。这里统一 task 列表标题溢出策略，避免同一侧栏里出现两种截断语义。 */}
+              {/* Bugfix: task 标题之前使用 truncate，会在长标题末尾显示省略号；
+                      这里统一改为右侧渐隐，避免同一侧栏里出现两种截断语义。 */}
               {taskTitle}
             </TaskTitleOverflowText>
             {task.pendingInteraction ? (
@@ -742,10 +741,10 @@ export const MemoTaskItem = memo(function TaskListItem({
                       id: "taskList.mobileActive",
                     })}
                   >
-                    {/* mobileViewState 已经能告诉桌面端手机正在看的 task，
+                    {/* Bugfix: mobileViewState 已经能告诉桌面端手机正在看的 task，
                         但列表未消费这个状态，用户会误以为只有桌面端在操作。上一版把图标作为标题前的 flex 子项，
                         会把当前行标题往右挤，造成上下 task 标题不对齐；这里改成绝对定位到原有 leading 槽，
-                        标题文本仍从既有位置开始；同时 hover 时隐藏手机标记，把置顶按钮还给用户。 */}
+                        标题文本仍然从原来的位置开始；同时 hover 时隐藏手机标记，把原来的置顶按钮还给用户。 */}
                     <Smartphone className="size-3.5" />
                   </span>
                 </ControlHintTooltip>
@@ -756,7 +755,7 @@ export const MemoTaskItem = memo(function TaskListItem({
                 className="text-ui-base text-foreground"
                 title={taskTitleWithChanges}
               >
-                {/* 默认 workspace task item 和 timeline item 共享标题溢出规则；
+                {/* Bugfix: 默认 workspace task item 和 timeline item 共享标题溢出规则；
                         使用 mask 渐隐而不是省略号，和 grouped task row 保持一致。 */}
                 {taskTitle}
               </TaskTitleOverflowText>
@@ -879,9 +878,11 @@ export function TaskListItemContextMenuContent({
   const {
     taskSessionFile,
     taskNativeSessionLogFile,
+    providerConfigFile,
     fileManagerLabel,
     handleCopyText,
     handleOpenTaskPathInFileManager,
+    handleOpenProviderConfig,
   } = useTaskListItemContextActions({
     workspacePath,
     remoteSessionId,
@@ -892,6 +893,7 @@ export function TaskListItemContextMenuContent({
     // row 级菜单已收敛为列表级单例，只有菜单真正打开时才挂载此组件。
     // 因此路径探测和 provider 配置探测可以直接随打开态运行，避免每个 idle row 订阅和计算。
     loadTaskPaths: true,
+    loadProviderConfig: true,
   });
   const taskTitle =
     task.title ||
@@ -943,6 +945,7 @@ export function TaskListItemContextMenuContent({
       taskSessionFile={taskSessionFile}
       activeSessionId={task.taskId}
       taskNativeSessionLogFile={taskNativeSessionLogFile}
+      providerConfigFile={providerConfigFile}
       disableTaskActions={workspaceActionsDisabled}
       disabledReason={workspaceActionsDisabledReason}
       onTogglePinTask={() => {
@@ -988,6 +991,9 @@ export function TaskListItemContextMenuContent({
           workspaceKey: task.workspaceIdentity?.trim() || workspacePath,
           title: taskTitle,
         });
+      }}
+      onOpenProviderConfig={() => {
+        void handleOpenProviderConfig();
       }}
     />
   );

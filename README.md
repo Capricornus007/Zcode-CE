@@ -16,6 +16,7 @@ ZCode-CE 是 AI 编程工作台 **ZCode 的开源社区版**，提供桌面应�
 
 ## 关于本项目
 
+<<<<<<< P5
 ZCode-CE 基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0）构建，面向希望**完全掌控自己开发环境**的用户。**欢迎社区成员参与建设** —— 无论是功能开发、问题反馈还是文档改进。
 
 我们与官方发行版的差异目前集中在七个方面：
@@ -114,6 +115,12 @@ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:3030/   # 200
 | Web / ZCode 命令行版  | 终端与浏览器工作台；将 TUI、Web、后端和 Agent 组装为独立运行包                         | `pnpm dev:web`                                                |
 | Agent CLI             | 在终端中使用 `zcode`，也为 Desktop 和 Web 提供 Agent 运行时                            | `pnpm --filter @zcode/cli dev`                                |
 | 无头服务器 + Web 面板 | 无桌面环境也可用：`zcode --web` 起服务，浏览器（含手机）打开面板操作这台机器上的工作台 | `pnpm dev:web`（开发）；`pnpm build:zcode` 产出可独立部署的包 |
+=======
+- **2026-10-19**：更新至 ZCode v3.16.2 版本。
+- **2026-10-16**：更新至 ZCode v3.16.1 版本。
+- 2026-10-10：更新至 ZCode v3.15.1 版本。
+- 2026-9-23：更新至 ZCode v3.14.3 版本。
+>>>>>>> U3162
 
 ## 初始化
 

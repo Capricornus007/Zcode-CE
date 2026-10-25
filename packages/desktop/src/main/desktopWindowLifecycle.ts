@@ -4,6 +4,7 @@ import { release as readPlatformRelease } from "node:os";
 import { app, BrowserWindow, Menu, MessageChannelMain, nativeImage } from "electron";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { HostMessageTypes, InternalChannels, PlatformChannels, type Locale } from "@zcode/shared";
+import { scheduleArmsBrowserPerfLoadNudge } from "./armsBrowserPerfLoadNudge.js";
 import { createBrowserWindow } from "./desktopWindowChrome.js";
 import type { HostInitMessage, WindowBootstrapOptions } from "./desktopHostProcess.js";
 import type { StartupWorkspaceWarmupTarget } from "./startupWorkspace.js";
@@ -33,8 +34,6 @@ export function createWindow(options: {
   forceQuitRef: { current: boolean };
   handleBeforeClose?: (win: BrowserWindow, label: string) => boolean;
   windowHostProcessMap: Map<number, ElectronUtilityProcess>;
-  // zcodeBuiltinProviderConfigFilePath 由 main 装配处（index.ts）统一补上，
-  // 调用方只提供 Local Host 初始化消息的其余字段。
   spawnHostProcess: (
     win: BrowserWindow,
     label: string,
@@ -50,6 +49,7 @@ export function createWindow(options: {
   syncAutoUpdaterStateToWindow: (win: BrowserWindow) => void;
   syncReadyUpdateToWindow: (win: BrowserWindow) => void;
   syncPostUpdateReleaseNotesToWindow: (win: BrowserWindow) => void;
+  webRemoteControlManager: { disposeWindow(windowId: number): Promise<void> };
   disposeRemoteWorkspaceSessionsForWindow: (windowId: number, reason: string) => void;
   reattachRemoteWorkspaceSessionsForWindow: (win: BrowserWindow, reason: string) => void;
   bootstrap?: WindowBootstrapOptions;
@@ -127,13 +127,11 @@ export function createWindow(options: {
 
   const wcId = win.webContents.id;
   const browserWindowId = win.id;
-  // 主窗口注册表：renderer heap 样本的信任边界据此判定发送方是否为主窗口
-  // （见 processResourceRendererHeapSource.ingestRendererHeapSample）。
+  // 资源遥测据此把主窗口 renderer 归 renderer_main；辅助窗口与 DevTools 归 chromium_other。
   registerMainApplicationWindow(wcId);
   let domReadyGeneration = 0;
   let cancelRuntimeProcessEnvWait: (() => void) | null = null;
-  // 遥测移除（P1）：ARMS Browser 加载性能 nudge（scheduleArmsBrowserPerfLoadNudge）已随
-  // armsBrowserPerfLoadNudge.ts 一并删除；它原来在这里无条件执行，删模块必须同步删调用。
+  scheduleArmsBrowserPerfLoadNudge(win.webContents);
   win.webContents.on("dom-ready", async () => {
     cancelRuntimeProcessEnvWait?.();
     cancelRuntimeProcessEnvWait = null;
@@ -284,6 +282,7 @@ export function createWindow(options: {
       options.disposeHostProcess(child, `${label}:window-closed`);
       options.windowHostProcessMap.delete(wcId);
     }
+    void options.webRemoteControlManager.disposeWindow(browserWindowId);
     options.disposeRemoteWorkspaceSessionsForWindow(wcId, `${label}:window-closed`);
   });
 
@@ -435,8 +434,9 @@ export function handleDesktopWindowCloseRequest(options: {
   requestQuit: () => void;
   hideWindow?: () => void;
 }) {
-  // win32 不能短路丢弃 closeToTraySupported——它承载合并裁决(Windows = 托盘实例创建成功)。
-  // 托盘创建失败时隐藏窗口即失联,与 spec「关窗分支与设置页能力查询都读同一合并结果」一致。
+  // CR 修复:win32 不能短路丢弃 closeToTraySupported——它承载 resolveCloseToTraySupported
+  // 的合并裁决(Windows=托盘实例创建成功)。托盘创建失败时隐藏窗口即失联,与 spec
+  // "关窗分支与设置页能力查询都读同一合并结果"保持一致。
   const canHideToTray =
     (options.platform === "win32" || options.platform === "linux") &&
     options.closeToTraySupported === true;

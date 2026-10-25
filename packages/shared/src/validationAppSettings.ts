@@ -2,23 +2,25 @@
 import { z } from "zod";
 import { appToolSearchModeSchema } from "./app-runtime-preferences.js";
 import type { AppSettings } from "./protocol.js";
+import { resolveGithubMirrorPrefix } from "./githubMirror.js";
+import { normalizeRemoteAssetCdnBaseUrl } from "./remoteAssetCdn.js";
 import { REMOTE_ASSET_INSTALL_MODES } from "./remoteAssetInstallMode.js";
 import { isKnownRemoteResourcePackageId } from "./remoteResourcePackages.js";
 import { wslUserSchema } from "./wslUserValidation.js";
 import { ZCODE_ENABLED_AGENT_PROVIDERS } from "./zcode-agent-policy.js";
+import { DYNAMIC_WORKFLOW_MODES } from "./dynamic-workflow-feature.js";
 import { normalizeZCodeEndpointOrigin } from "./zcodeEndpoint.js";
-import {
-  DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
-  embeddedBrowserViewportPreferenceSchema,
-} from "./browser-use/command-metadata.js";
-import { providerFamilyConnectionSelectionSettingsSchema } from "./provider-family-connection-selection.js";
-import { resolveGithubMirrorPrefix } from "./githubMirror.js";
-import { normalizeRemoteAssetCdnBaseUrl } from "./remoteAssetCdn.js";
 import {
   MAX_CUSTOM_DANGEROUS_ENTRIES,
   MAX_DANGEROUS_PATTERN_LENGTH,
   normalizeDangerousPattern,
 } from "./dangerousCommands.js";
+
+import {
+  DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
+  embeddedBrowserViewportPreferenceSchema,
+} from "./browser-use/command-metadata.js";
+import { providerFamilyConnectionSelectionSettingsSchema } from "./provider-family-connection-selection.js";
 import {
   connectionProfileSchema,
   sourceServerRecordSchema,
@@ -47,8 +49,11 @@ export const appSettingsOccupationEnum = appSettingsOccupationSchema;
 const nonEmptyStringSchema = z.string().trim().min(1);
 
 export const localeSchema = z.enum(["zh-CN", "en-US"]);
-const localePreferenceSchema = z.enum(["system", "zh-CN", "en-US"]);
+export const localePreferenceSchema = z.enum(["system", "zh-CN", "en-US"]);
 const zcodeInteractionBehaviorSchema = z.enum(["queue", "guide"]);
+// launch.md「The user's choice」：读文件时未知取值（降级后读到新版本写的值）按「跟随」处理，
+// 不能让一个偏好字段把整份设置读坏。
+const dynamicWorkflowModeSettingSchema = z.enum(DYNAMIC_WORKFLOW_MODES).optional().catch(undefined);
 const electronReleaseChannelSchema = z.enum(["stable", "preview"]);
 const desktopZoomLevelSchema = z.number().int().min(-3).max(5);
 const desktopWindowSizeSchema = z.object({
@@ -68,6 +73,10 @@ export const integratedTerminalShellSelectionSchema = z.discriminatedUnion("mode
     path: nonEmptyStringSchema,
   }),
 ]);
+const enabledBuiltinAgentCliProvidersSchema = z
+  // 兼容旧 settings：历史列表可能残留三方 CLI provider，解析后统一归一为 ZCode Agent。
+  .array(z.enum(["claude", "opencode", "gemini", "codex", "glm"]))
+  .transform(() => [...ZCODE_ENABLED_AGENT_PROVIDERS]);
 const providerFamilyDomainSchema = z.enum(["zai", "bigmodel"]);
 
 /**
@@ -101,44 +110,6 @@ export const dangerousCommandPolicySchema = z
   .strict();
 
 export type DangerousCommandPolicyInput = z.infer<typeof dangerousCommandPolicySchema>;
-
-/**
- * GitHub 加速前缀：空串表示关闭；非空时必须能通过 githubMirror 的 https/无凭据/无查询串约束。
- *
- * 为什么在这里也校验一次：设置页的拒绝保存是第一道闸，但 setting.json 可被手工编辑、
- * 也可能被旧版本或同步链路写回，schema 是唯一拦得住"绕开 UI 写入明文前缀"的位置。
- */
-const githubMirrorPrefixSchema = z
-  .string()
-  .trim()
-  .refine(
-    (value) => value === "" || resolveGithubMirrorPrefix(value).prefix !== undefined,
-    "GitHub mirror prefix must be an https URL without credentials, query or fragment",
-  );
-
-/**
- * 自定义远程资产 CDN 基址（发布根）。
- *
- * 为什么在这里也校验一次：设置页的拒绝保存只是第一道闸，`setting.json` 可被手工编辑、
- * 也可能被旧版本/同步链路写回。schema 是唯一拦得住「绕开 UI 写入一个取不到资源的基址」的位置 ——
- * 而且**必须报错而不是静默丢弃**：静默丢弃会让用户以为设置生效，实际走默认 CDN。
- *
- * `.transform` 做归一化（去首尾空白与尾部斜杠、保留子路径）：读盘路径与 UI 保存路径共用同一份实现，
- * 于是手工改进去的 `https://host/assets/` 也会在读到时就归一，不会出现「设置页显示带斜杠、请求用不带」。
- */
-const remoteAssetCdnBaseUrlSchema = z.string().transform((value, ctx) => {
-  const normalized = normalizeRemoteAssetCdnBaseUrl(value);
-  if (normalized.kind === "invalid") {
-    // 错误码是稳定的机器可读原因（不解析文本做判断）；设置页把它映射成可操作文案。
-    ctx.addIssue({
-      code: "custom",
-      message: `Remote asset CDN base URL is invalid (${normalized.code})`,
-    });
-    return z.NEVER;
-  }
-  // `empty`（含只有空白）：按"未设置"落盘 —— 这就是 UI 上"留空 = 用默认"的语义。
-  return normalized.kind === "valid" ? normalized.value : "";
-});
 
 export const postUpdateReleaseNotesPayloadSchema = z.object({
   version: nonEmptyStringSchema,
@@ -183,6 +154,14 @@ const remoteWorkspaceTargetSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("docker"),
     container: nonEmptyStringSchema,
+  }),
+  z.object({
+    kind: z.literal("server"),
+    url: z.string().url(),
+    name: nonEmptyStringSchema.optional(),
+    workspacePath: z.string().optional(),
+    serverId: nonEmptyStringSchema.optional(),
+    tokenCredentialKey: nonEmptyStringSchema.optional(),
   }),
 ]);
 
@@ -385,22 +364,6 @@ const legacyRemoteWorkspaceHistoryEntrySchema = z.object({
   lastConnectionError: z.string().optional(),
 });
 
-function stripHistoricalRemoteResourcePackages(target: unknown): unknown {
-  if (!target || typeof target !== "object" || Array.isArray(target)) {
-    return target;
-  }
-
-  const rawTarget = target as Record<string, unknown>;
-  if (rawTarget.kind !== "ssh" || !("resourcePackages" in rawTarget)) {
-    return target;
-  }
-
-  const { resourcePackages: _resourcePackages, ...nextTarget } = rawTarget;
-  // SSH 部署固定使用完整 active 资源集；旧 setting.json 里的 resourcePackages 是历史裁剪，
-  // 在配置入口清掉，避免后续重连或 tab 恢复继续读取。
-  return nextTarget;
-}
-
 function migrateLegacyBuiltinAgentCliProviders(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return value;
@@ -417,6 +380,22 @@ function migrateLegacyBuiltinAgentCliProviders(value: unknown): unknown {
     ...raw,
     enabledBuiltinAgentCliProviders: [...ZCODE_ENABLED_AGENT_PROVIDERS],
   };
+}
+
+function stripHistoricalRemoteResourcePackages(target: unknown): unknown {
+  if (!target || typeof target !== "object" || Array.isArray(target)) {
+    return target;
+  }
+
+  const rawTarget = target as Record<string, unknown>;
+  if (rawTarget.kind !== "ssh" || !("resourcePackages" in rawTarget)) {
+    return target;
+  }
+
+  const { resourcePackages: _resourcePackages, ...nextTarget } = rawTarget;
+  // SSH 部署固定使用完整 active 资源集；旧 setting.json 里的 resourcePackages 是历史裁剪，
+  // 在配置入口清掉，避免后续重连或 tab 恢复继续读取。
+  return nextTarget;
 }
 
 function migrateLegacyWorkspaceSession(value: unknown): unknown {
@@ -574,14 +553,37 @@ const appSettingsObjectSchema = z.object({
   httpProxy: nonEmptyStringSchema.optional(),
   httpProxyNoProxy: nonEmptyStringSchema.optional(),
   httpProxyCaCertPath: nonEmptyStringSchema.optional(),
-  // 加速前缀默认关闭（空值 = 直连）。这里只校验形状：允许"合法前缀或空串"，
-  // 非空时必须通过 resolveGithubMirrorPrefix 的 https/无凭据/无查询串约束，
-  // 避免手改 setting.json 写入明文前缀后让插件下载落到 http 链路。
-  githubMirrorPrefix: githubMirrorPrefixSchema.optional(),
   embeddedBrowserAllowInsecureCertificates: z.boolean().default(false),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.default(
     DEFAULT_EMBEDDED_BROWSER_VIEWPORT_PREFERENCE,
   ),
+  // ---- CE 重植（3.16.1 合并）：GitHub 加速前缀与远程资产 CDN 基址 ----
+  // 加速前缀默认关闭（空值 = 直连）。只校验形状：非空必须通过 resolveGithubMirrorPrefix 的
+  // https/无凭据/无查询串约束，避免手改 setting.json 写入明文前缀后让插件下载落到 http 链路。
+  githubMirrorPrefix: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || resolveGithubMirrorPrefix(value).prefix !== undefined,
+      "GitHub mirror prefix must be an https URL without credentials, query or fragment",
+    )
+    .optional(),
+  // 自定义远程资产 CDN 基址（发布根）：schema 是唯一拦得住「绕开 UI 写入取不到资源的基址」
+  // 的位置；transform 归一化（去空白与尾斜杠、保留子路径），`empty` 按未设置落盘（留空 = 默认）。
+  remoteAssetCdnBaseUrl: z
+    .string()
+    .transform((value, ctx) => {
+      const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+      if (normalized.kind === "invalid") {
+        ctx.addIssue({
+          code: "custom",
+          message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+        });
+        return z.NEVER;
+      }
+      return normalized.kind === "valid" ? normalized.value : "";
+    })
+    .optional(),
   // 输入框电脑操作入口改为默认不展示，设置项保留、默认关闭。
   // default 只对缺省字段生效，显式存过 false 的用户仍保持展示。
   computerUseComposerEntryHidden: z.boolean().default(true),
@@ -591,6 +593,7 @@ const appSettingsObjectSchema = z.object({
   closeToTrayOnWindows: z.boolean().default(true),
   closeToTrayOnWindowsMigrationInitialized: z.boolean().default(true),
   // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10):Linux 首次启动归位默认关。
+  // default(false)：新装与存量用户首次启动都视为未归位，由 main 进程按平台决定是否迁移。
   closeToTrayLinuxMigrationInitialized: z.boolean().default(false),
   keepAwakeWhileRunning: z.boolean().default(false),
   desktopZoomLevel: desktopZoomLevelSchema.optional(),
@@ -605,6 +608,10 @@ const appSettingsObjectSchema = z.object({
   zcodeInteractionBehavior: zcodeInteractionBehaviorSchema.default("queue"),
   askUserQuestionAutoResolutionEnabled: z.boolean().default(true),
   modelIoFullRetentionEnabled: z.boolean().default(false),
+  dynamicWorkflowMode: dynamicWorkflowModeSettingSchema,
+  enabledBuiltinAgentCliProviders: enabledBuiltinAgentCliProvidersSchema.default([
+    ...ZCODE_ENABLED_AGENT_PROVIDERS,
+  ]),
   startPlanRecommendationDismissed: z.boolean().default(false),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.default({}),
   providerFamilyDomain: providerFamilyDomainSchema.optional(),
@@ -614,10 +621,8 @@ const appSettingsObjectSchema = z.object({
   // 缺省即严格：dangerousCommandPolicy 缺席时 resolveDangerousCommandPolicy 按
   // allowPersistentAuthorization=false + 默认项全开解释，所以这里**不设 default**，
   // 免得给每个老配置都写进一份看起来像"用户选过"的显式值。
+  // CE-SYNC: 機械合併時被上游版沖掉，按 CE main 7fc3bfe2 原位重植（危險命令政策設定）。
   dangerousCommandPolicy: dangerousCommandPolicySchema.optional(),
-  // 缺省 = 用默认 CDN，与 githubMirrorPrefix 同样**不设 default**：不给每个老配置写进一份
-  // 看起来像"用户选过"的显式值。空串等价未设置，由消费侧回落。
-  remoteAssetCdnBaseUrl: remoteAssetCdnBaseUrlSchema.optional(),
   toolSearchMode: appToolSearchModeSchema.default("off"),
   onboardingOccupation: appSettingsOccupationSchema.nullish(),
   proactiveSuggestionsEnabled: z.boolean().optional(),
@@ -683,9 +688,31 @@ export const appSettingsPatchSchema = z.object({
   httpProxy: nonEmptyStringSchema.optional(),
   httpProxyNoProxy: nonEmptyStringSchema.optional(),
   httpProxyCaCertPath: nonEmptyStringSchema.optional(),
-  githubMirrorPrefix: githubMirrorPrefixSchema.optional(),
   embeddedBrowserAllowInsecureCertificates: z.boolean().optional(),
   embeddedBrowserViewportPreference: embeddedBrowserViewportPreferenceSchema.optional(),
+  // CE（3.16.1 合并重植）：与主 schema 同形的两个 CE 字段的 Partial 形态。
+  githubMirrorPrefix: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || resolveGithubMirrorPrefix(value).prefix !== undefined,
+      "GitHub mirror prefix must be an https URL without credentials, query or fragment",
+    )
+    .optional(),
+  remoteAssetCdnBaseUrl: z
+    .string()
+    .transform((value, ctx) => {
+      const normalized = normalizeRemoteAssetCdnBaseUrl(value);
+      if (normalized.kind === "invalid") {
+        ctx.addIssue({
+          code: "custom",
+          message: `Remote asset CDN base URL is invalid (${normalized.code})`,
+        });
+        return z.NEVER;
+      }
+      return normalized.kind === "valid" ? normalized.value : "";
+    })
+    .optional(),
   computerUseComposerEntryHidden: z.boolean().optional(),
   taskAutoArchiveEnabled: z.boolean().optional(),
   taskAutoArchiveOlderThanDays: z.number().int().positive().max(365).optional(),
@@ -706,15 +733,17 @@ export const appSettingsPatchSchema = z.object({
   zcodeInteractionBehavior: zcodeInteractionBehaviorSchema.optional(),
   askUserQuestionAutoResolutionEnabled: z.boolean().optional(),
   modelIoFullRetentionEnabled: z.boolean().optional(),
+  // 空串是「删除选择、回到跟随」的哨兵：RPC 会吞掉 undefined，normalizeSettingsPatch 把它归一成删除。
+  dynamicWorkflowMode: z.union([z.enum(DYNAMIC_WORKFLOW_MODES), z.literal("")]).optional(),
+  enabledBuiltinAgentCliProviders: enabledBuiltinAgentCliProvidersSchema.optional(),
   startPlanRecommendationDismissed: z.boolean().optional(),
   providerFamilyConnectionSelections: providerFamilyConnectionSelectionSettingsSchema.optional(),
   providerFamilyDomain: z.union([providerFamilyDomainSchema, z.literal("")]).optional(),
   providerFamilyDomainUpdatedAt: z.number().int().nonnegative().optional(),
   providerFamilyDomainMigrated: z.boolean().optional(),
   nativeSearchEnhancementsEnabled: z.boolean().optional(),
+  // 设置页保存走 patch 校验；危险命令政策允许整條覆寫（CE-SYNC：同上，按 CE main 重植）。
   dangerousCommandPolicy: dangerousCommandPolicySchema.optional(),
-  // 设置页保存走 patch 校验；允许空串（= 清除自定义、回落默认）。
-  remoteAssetCdnBaseUrl: remoteAssetCdnBaseUrlSchema.optional(),
   toolSearchMode: appToolSearchModeSchema.optional(),
   onboardingOccupation: z
     .enum([

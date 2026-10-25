@@ -1,10 +1,10 @@
 // MCP Port - Model Context Protocol adapter boundary
 
+import type { McpServerFailureKind, OfficialMcpAuthPortFailureReason } from "@zcode/shared";
+// Modified by ZCode:F5 mcp-ui 消费侧类型（契约定义在 @zcode/shared/mcp-apps；上游 3.16.1 已带同一批 import）。
+import type { McpAppsToolVisibility, McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 import type { JsonSchema } from "../model/index.js";
 import type { TraceContext } from "../tracing/tracer.js";
-import type { McpServerFailureKind, OfficialMcpAuthPortFailureReason } from "@zcode/shared";
-// Modified by ZCode:F5 mcp-ui 消费侧类型（契约定义在 @zcode/shared/mcp-apps）。
-import type { McpAppsToolVisibility, McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 
 export type McpServerTransportType = "stdio" | "http" | "sse";
 export type McpProtocolVersion = "legacy" | "auto" | "2026-07-28";
@@ -241,7 +241,6 @@ export interface McpToolCallResult {
 }
 
 // Modified by ZCode:F5 mcp-ui 的 MCP 资源读取/订阅类型（插件 UI 的 `ui://` HTML）。
-
 export interface McpReadResourceRequest {
   serverName: string;
   uri: string;
@@ -360,7 +359,7 @@ export interface McpCallToolRequest {
   turnId?: string;
 }
 
-/** Modified by ZCode:F5。MCP `notifications/progress`：progress 单调递增，total 可缺省；adapter 原样转发，不做节流。 */
+/** Modified by ZCode:F5。MCP `notifications/progress`（A8）：progress 单调递增，total 可缺省；adapter 原样转发，不做节流。 */
 export interface McpToolCallProgress {
   progress: number;
   total?: number;
@@ -454,7 +453,7 @@ export interface McpElicitationPort {
 }
 
 export interface McpPort {
-  /** 可信配置派生的稳定来源与现有连接代际。断线时不签发新页面凭证。 */
+  /** Modified by ZCode:F5。可信配置派生的稳定来源与现有连接代际。断线时不签发新页面凭证。 */
   onAppConnectionInvalidated?(serverName: string, listener: () => void): () => void;
   appConnectionSnapshot?(serverName: string): { identity: string; generation: number } | null;
   /** 等待目标 server 已有连接任务；不重连、不等待其它 server，owner 失效后返回 null。 */
@@ -478,9 +477,6 @@ export interface McpPort {
    * 只有显式 ping 才能把这种"无声死亡"暴露出来。实现可选：未实现时调用方按存活处理。
    */
   pingServer?(name: string, options?: { timeoutMs?: number }): Promise<boolean>;
-  /** Modified by ZCode:F5。可信配置派生的稳定来源与现有连接代际。断线时不签发新页面凭证。 */
-  onAppConnectionInvalidated?(serverName: string, listener: () => void): () => void;
-  appConnectionSnapshot?(serverName: string): { identity: string; generation: number } | null;
 
   status(): Promise<Record<string, McpServerStatus>>;
   listTools(): Promise<McpToolDescriptor[]>;

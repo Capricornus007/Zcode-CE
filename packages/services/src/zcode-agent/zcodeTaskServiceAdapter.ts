@@ -1,3 +1,4 @@
+<<<<<<< P5up
 import { isAuxiliarySessionKind } from "@zcode/shared";
 import { createBotTopicAdmission } from "#src/zcode-agent/botTopicAdmission.js";
 import {
@@ -5,14 +6,28 @@ import {
   waitBotGroupExecutionEnd,
 } from "#src/zcode-agent/groupRuntimeSnapshot.js";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
+/* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
+import { createHash, randomUUID } from "node:crypto";
+import { createZCodeAgentConnectionScope } from "#src/zcode-agent/zcodeAgentConnectionScope.js";
+import { existsSync, readFileSync } from "node:fs";
+=======
+import { createBotTopicAdmission } from "./botTopicAdmission.js";
+import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
+import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
 import { createZCodeAgentConnectionScope } from "./zcodeAgentConnectionScope.js";
 /* Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 3 个支撑模块 + 连接 scope 导入。 */
 /* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
+>>>>>>> CEmain
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { Emitter, Event } from "@zcode/rpc";
+import {
+  Emitter,
+  Event,
+  emitNetworkTelemetryObservation,
+  type NetworkObservation,
+} from "@zcode/rpc";
 import {
   coalesceConsecutiveZCodeAssistants,
   createSessionTraceId,
@@ -56,6 +71,7 @@ import {
   type ZCodeBackgroundTurnAttribution,
   type ZCodeAutomationBotDeliveryTarget,
   type ZCodeCancelTaskCommandResult,
+  type ZCodeCodexConnectivityCheckResult,
   type ZCodeConfigOption,
   type ZCodeEnqueueTaskCommandResult,
   type ZCodeError,
@@ -75,6 +91,8 @@ import {
   type ZCodePlanStep,
   type ZCodeSlashCommand,
   type ZCodeStreamEvent,
+  type ZCodeSwitchAgentResult,
+  type ZCodeSyncTaskSessionBindingResult,
   type ZCodeTaskCreateResult,
   type ZCodeTaskMeta,
   type ZCodeTaskClientMode,
@@ -151,15 +169,14 @@ import {
   createHostCommandEnvelope,
   sendHostCasCommandV4,
 } from "./zcodeV4HostCommand.js";
-import { claudeNativeSessionImportRepo } from "#src/session/claude-native/claudeNativeSessionImportRepo.js";
-import { importClaudeNativeSessions } from "#src/session/claude-native/claudeNativeSessionImportService.js";
-import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
-import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
-import { buildImportedClaudeTaskId } from "#src/session/claude-native/buildImportedClaudeTaskFile.js";
 import {
   getLegacyDeletedTaskSessionSnapshotPath,
   getLegacyTaskSessionSnapshotPath,
 } from "#src/paths.js";
+import { claudeNativeSessionImportRepo } from "#src/session/claude-native/claudeNativeSessionImportRepo.js";
+import { importClaudeNativeSessions } from "#src/session/claude-native/claudeNativeSessionImportService.js";
+import { repairImportedClaudeSessionSnapshot } from "#src/session/claude-native/importedClaudeHistoryRepair.js";
+import { safeParseLegacyTaskSessionFile } from "#src/session/legacyTaskSessionFile.js";
 import {
   MODEL_CONFIG_ID,
   MODE_CONFIG_ID,
@@ -240,7 +257,11 @@ function resolveZCodeAgentCurrentLogFilePath(now = new Date()): string {
 export function createZCodeTaskServiceAdapter(
   options: CreateZCodeTaskServiceAdapterOptions,
 ): IZCodeTaskService {
+<<<<<<< P5up
+  // Bot 原来绕过连接 facade，导致真实附件 admission 缺少可信身份；复用既有 scope，
+=======
   // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 agent 连接 scope 与 admission，
+>>>>>>> CEmain
   // 同一 Bot 接入的附件、命令及对账共用连接，不改变桌面与手机各自的传输模式。
   const botConnectionScopes = new Map<string, ReturnType<typeof createZCodeAgentConnectionScope>>();
   function botAgent(workspace: ZCodeAgentWorkspaceTarget) {
@@ -265,7 +286,7 @@ export function createZCodeTaskServiceAdapter(
   const runtimeCommandDrains = new Map<string, Promise<void>>();
   const apiRetryByTaskKey = new Map<string, ZCodeApiRetryStatus | null>();
   const backgroundTaskControlsByTaskKey = new Map<string, ZCodeBackgroundTaskControlItem[]>();
-  const streamedTurnKeys = new Set<string>();
+  const streamedTurnText = new Map<string, { messageId?: string; text: string }>();
   const activePromptInputIds = new Map<string, InputId>();
   const toolProjectionMemoryByTaskKey = new Map<string, ZCodeToolProjectionMemory>();
   const liveToolProjectionsByTaskKey = new Map<string, Map<string, LiveToolProjection>>();
@@ -388,7 +409,6 @@ export function createZCodeTaskServiceAdapter(
       content: string;
       attachments?: ZCodePromptAttachment[];
       toolDenylist?: string[];
-      /** Bot 来源 turn 的稳定回推地址；经本函数原样转发，供本轮 CronCreate 读取。 */
       botDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
       clientId?: string;
       clientMode?: ZCodeTaskClientMode;
@@ -440,7 +460,6 @@ export function createZCodeTaskServiceAdapter(
           modelExecution: params.modelExecution,
           ...turnAttributionOf(params),
           toolDenylist: promptToolDenylist,
-          // Bot 回推地址必须与 toolDenylist 同一出口转发：丢掉它会让本轮定时任务无法回推（静默降级）。
           botDeliveryTarget: params.botDeliveryTarget,
           ...(params.clientMode ? { clientMode: params.clientMode } : {}),
         });
@@ -463,9 +482,8 @@ export function createZCodeTaskServiceAdapter(
               ...(params.modelSelection ? { modelSelection: params.modelSelection } : {}),
               ...(params.modelExecution ? { modelExecution: params.modelExecution } : {}),
               ...turnAttributionOf(params),
-              ...(promptToolDenylist ? { toolDisallowlist: promptToolDenylist } : {}),
-              // botDeliveryTarget 未声明时 v4 schema 会剥离；声明后必须在 payload 里真正带上。
               ...(params.botDeliveryTarget ? { botDeliveryTarget: params.botDeliveryTarget } : {}),
+              ...(promptToolDenylist ? { toolDisallowlist: promptToolDenylist } : {}),
             },
             sessionId: target.taskId,
             commandId: params.traceId,
@@ -1246,9 +1264,12 @@ export function createZCodeTaskServiceAdapter(
     | { kind: "session"; snapshot: ZCodeSessionStateSnapshot }
     | { kind: "legacy"; snapshot: ZCodeTaskSnapshot }
   > {
-    let snapshot: ZCodeSessionStateSnapshot;
     try {
-      snapshot = await resumeSnapshot(params);
+      const snapshot = await resumeSnapshot(params);
+      return {
+        kind: "session",
+        snapshot: await repairEmptyImportedClaudeSnapshot(params, snapshot),
+      };
     } catch (error) {
       if (!isSessionMissingError(error)) {
         throw error;
@@ -1303,10 +1324,6 @@ export function createZCodeTaskServiceAdapter(
       );
       return { kind: "legacy", snapshot: legacySnapshot };
     }
-    return {
-      kind: "session",
-      snapshot: await repairEmptyImportedClaudeSnapshot(params, snapshot),
-    };
   }
 
   function snapshotToMeta(snapshot: ZCodeSessionStateSnapshot): ZCodeTaskMeta {
@@ -1600,26 +1617,12 @@ export function createZCodeTaskServiceAdapter(
       return;
     }
 
-    // start-plan 验证码挑战的运行时请求头请求（spec §4.2/§4.3）。
-    //
-    // 必须在这里显式 early-return：本函数是 catch-all，末尾会无条件执行
-    // `mapSessionEvent(params, event.event, ...)`；本事件没有 `.event` 字段，
-    // 落到末尾会以 undefined 解引用抛错（新分支被兜底吃掉，与 126 报告里
-    // host 守卫写反属同一类「兜底/简化吞掉分支」的教训）。
-    //
-    // 语义上也刻意不投影：渲染层由 agentService 的
-    // `providerRuntimeHeaders.request` 事件驱动（见 zcodeAgent.ts 的
-    // ZCodeAgentServiceEvent），task-index/stream 这条 replayable 读路径不承载
-    // 一次性验证码凭据（spec §3：凭据不落盘、不入 store、不进日志）。
     if (event.type === "providerRuntimeHeaders.request") {
       return;
     }
 
     if (event.type === "session.event") {
-      // 遥测移除（P1）：这里原有 recordAgentModelNetworkTelemetry(event.event)，
-      // 把 model_request_completed / model_request_failed 折算成 NetworkObservation 后
-      // 经 @zcode/rpc 的 emitNetworkTelemetryObservation 上报。该出口已整体删除，
-      // 会话事件投影本身不依赖它。
+      recordAgentModelNetworkTelemetry(event.event);
       if (event.event.type === "turn.started") {
         const payload = asRecord(event.event.payload);
         const inputId = stringValue(payload.inputId);
@@ -1635,7 +1638,7 @@ export function createZCodeTaskServiceAdapter(
     const streamEvents = mapSessionEvent(
       params,
       event.event,
-      streamedTurnKeys,
+      streamedTurnText,
       activePromptInputId,
       getToolProjectionMemory(params),
       backgroundTaskControlsByTaskKey,
@@ -1720,6 +1723,7 @@ export function createZCodeTaskServiceAdapter(
     taskEmitters.clear();
     globalTaskEmitters.clear();
     runtimeCommandDrains.clear();
+    streamedTurnText.clear();
   }
 
   async function disposeZCodeAgentServiceAndWait(): Promise<void> {
@@ -1751,6 +1755,10 @@ export function createZCodeTaskServiceAdapter(
       // 关闭 workspace UI 只会释放 RPC 使用方，不会自动终止已预热的 Agent。
       // WSL Host 共享后 Host 会继续存活，因此必须按 workspaceKey 显式回收对应 runtime。
       await options.zcodeAgentService.disposeWorkspace(normalizeWorkspaceParams(params));
+    },
+
+    async checkCodexConnectivity(): Promise<ZCodeCodexConnectivityCheckResult> {
+      return { target: "zcode-agent", reachable: true };
     },
 
     async createTask(params): Promise<ZCodeTaskCreateResult> {
@@ -1857,7 +1865,10 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
+<<<<<<< P5up
+=======
     // Modified by ZCode: 增量自上游 aac47556——task service 的 7 个 Bot 群/话题方法。
+>>>>>>> CEmain
     async readBotTopicSummaries(params) {
       const target = taskTargets.get(params.taskId);
       if (target && taskKey(target) !== taskKey(params))
@@ -2099,12 +2110,11 @@ export function createZCodeTaskServiceAdapter(
         attachments: params.attachments,
         ...turnAttributionOf(params),
         toolDenylist: params.toolDenylist,
+        botDeliveryTarget: params.botDeliveryTarget,
         clientId: params.clientId,
         clientMode: params.clientMode,
         modelSelection: params.modelSelection,
         modelExecution: params.modelExecution,
-        // IZCodeTaskService.sendPrompt 已声明该字段（zcodeTaskService.ts）；此处不转发会在 adapter 断链。
-        botDeliveryTarget: params.botDeliveryTarget,
       });
     },
 
@@ -2250,7 +2260,10 @@ export function createZCodeTaskServiceAdapter(
         workspaceIdentity: target.workspaceIdentity,
         envelope: createHostCommandEnvelope({
           type: "stop",
-          payload: {},
+          // 话题停止必须保留已观察到的执行身份；日志 traceId 不能替代 CLI 执行身份。
+          payload: params.expectedForegroundExecutionId
+            ? { expectedForegroundExecutionId: params.expectedForegroundExecutionId }
+            : {},
           sessionId: params.taskId,
         }),
       });
@@ -2398,19 +2411,15 @@ export function createZCodeTaskServiceAdapter(
           sessionId: params.taskId,
         }),
       });
-      assertV4CommandAckOk("resolveInteraction", ack, `permission ${params.requestId}`);
-      // 修复原因（133-im-bot-approval-loop B3）：resolveInteraction 是「先到先得，晚到 noop」
-      // （packages/shared 的 command.ts）。noop 表示该 interaction 已被其它端（桌面 / 手机）
-      // 或自动裁决先行收口——本次提交并未生效。把 noop 与 accepted/duplicate 分开：
-      // 不抛错（noop 是多端并发应答的正常幂等语义，抛 failed 会误导客户端，见 133 §5.2），
-      // 但返回 false，让 Bot 侧回复「该权限已处理」而不是「已提交」——把别端的裁决说成
-      // 本次提交，会让用户误以为自己的选择生效了。
-      if (ack.status === "noop") {
-        logger.info(
-          undefined,
-          "resolveInteraction noop (already resolved elsewhere), permission submission not applied",
-          { requestId: params.requestId },
-        );
+      const permissionAck = assertV4CommandAckOk(
+        "resolveInteraction",
+        ack,
+        `permission ${params.requestId}`,
+      );
+      // 官方语义：noop = 晚到应答/已收口，幂等成功（resolveInteraction 先到先得）。
+      // Bot 调用方（reportNoopAckAsNotSubmitted）例外：它需要区分「已提交/已处理」
+      // 两种回复文案，noop 时回复「已处理」而不是谎报已提交。
+      if (permissionAck.status === "noop" && params.reportNoopAckAsNotSubmitted) {
         return false;
       }
       return true;
@@ -2442,18 +2451,15 @@ export function createZCodeTaskServiceAdapter(
           sessionId: params.taskId,
         }),
       });
-      assertV4CommandAckOk("resolveInteraction", ack, `elicitation ${params.requestId}`);
-      // 修复原因（133 B3，与 respondPermission 同一条判据）：noop 表示该问答已被其它端
-      // 或自动裁决先行收口，本次提交未生效。返回 false 让 Bot 侧回复「该问答已处理」；
-      // 同时跳过下面的 replayable 事件投递——那是「本次应答已生效、请各端清理弹窗」的语义，
-      // 在 noop 下投递会把未生效的应答广播给桌面 / 手机 observer。
-      if (ack.status === "noop") {
-        logger.info(
-          undefined,
-          "resolveInteraction noop (already resolved elsewhere), elicitation submission not applied",
-          { requestId: params.requestId },
-        );
-        return false;
+      const elicitationAck = assertV4CommandAckOk(
+        "resolveInteraction",
+        ack,
+        `elicitation ${params.requestId}`,
+      );
+      if (elicitationAck.status === "noop") {
+        // 官方语义：noop 幂等成功。Bot 调用方例外（见 respondPermission 同款注释），
+        // 且 noop 时本次应答未生效：不投递 replayable 应答事件（别端收口事件已在链上）。
+        return !params.reportNoopAckAsNotSubmitted;
       }
       if (params.clientMode === "web-remote-replayable") {
         // 语义保真（原 agentService.respondUserInput 的 web-remote-replayable 分支）：
@@ -2755,6 +2761,14 @@ export function createZCodeTaskServiceAdapter(
       return snapshot;
     },
 
+    async syncTaskSessionBinding(): Promise<ZCodeSyncTaskSessionBindingResult> {
+      unsupported("syncTaskSessionBinding");
+    },
+
+    async switchAgent(): Promise<ZCodeSwitchAgentResult> {
+      unsupported("switchAgent");
+    },
+
     async scanImportableClaudeSessions(params: {
       workspacePath?: string;
       workspaceIdentity?: string;
@@ -2933,6 +2947,14 @@ export function createZCodeTaskServiceAdapter(
       const snapshot = await resumeSnapshot(target);
       await syncTaskIndexSnapshot(snapshot);
       return settingsToConfigOptions(snapshot.settings);
+    },
+
+    async getWorkspaceProviderConfigFile(params) {
+      return {
+        provider: GLM_PROVIDER,
+        path: params.workspacePath,
+        exists: false,
+      };
     },
 
     async getTaskNativeSessionLogFile() {
@@ -3141,12 +3163,18 @@ export function createZCodeTaskServiceAdapter(
       rememberTaskTarget(target);
       return (listener) => {
         const localDisposable = getTaskEmitter(target).event(listener);
-        // 这里仍是 services/ 内旧 session/subscribe 词表的
-        // 最后消费点（replayable 的 stream 投影源）。写路径（send/stop/交互回执）
-        // 已收敛 v4 命令；读路径消费方是
-        // host 镜像 taskRealtimePort（词表同为 ZCodeStreamEvent），镜像换 v4 帧 = relay
-        // 协议与手机 store 整链重做。
-        // 过渡归宿 = replayable 读路径 v4 store，与 host/index.ts 镜像、
+        if (legacySnapshotTaskKeys.has(taskKey(target))) {
+          // Bugfix: legacy ACP task 没有 zcode-cli sqlite session，恢复后只能作为只读历史。
+          // 若继续向 ZCode Protocol 建 desktop-continuous/replayable 订阅，会反复触发
+          // Session is not active 并刷爆日志；本地 emitter 已足够承接 rename/archive 等元数据事件。
+          return localDisposable;
+        }
+        // M5 ③-2 复核（2026-07-06）：这里仍是 services/ 内旧 session/subscribe 词表的
+        // 最后消费点（replayable/bots 的 stream 投影源）。写路径（send/stop/交互回执）
+        // 本波已收敛 v4 命令；读路径消费方是 bots handleStreamEvent（10 种事件词表）与
+        // host 镜像 taskRealtimePort（词表同为 ZCodeStreamEvent），二者换 v4 帧 = relay
+        // 协议 + 手机 store + bots 投影整波重做（且 ui/store 本波由并行 agent 主修，避让）。
+        // 死期改判 = replayable 读路径 v4 store 波次（波次 3），与 host/index.ts 镜像、
         // mapStateUpdated/mapServiceEvent、agentService.onDynamicSessionEvent 同批摘除。
         const upstreamDisposable = options.zcodeAgentService.onDynamicSessionEvent({
           workspacePath: params.workspacePath,
@@ -3180,6 +3208,8 @@ export function createZCodeTaskServiceAdapter(
       // 必须在 agentService.disposeAll 前释放，否则 emitter dispose 时仍会回调到已失效的 syncer。
       // workspaceEmitters 已下沉到 syncer，由 syncer.disposeAll 统一回收。
       taskIndexSyncer.disposeAll();
+      for (const scope of botConnectionScopes.values()) void scope.dispose();
+      botConnectionScopes.clear();
       options.zcodeAgentService.disposeAll();
       disposeLocalTaskState();
     },
@@ -3192,6 +3222,8 @@ export function createZCodeTaskServiceAdapter(
       // app 退出必须先断开 task index syncer 的订阅，再等待 agent 进程树完成清理；
       // 否则 host 退出时会把 zcode-cli 的 SIGKILL 兜底 timer 一起带走。
       taskIndexSyncer.disposeAll();
+      await Promise.all([...botConnectionScopes.values()].map((scope) => scope.dispose()));
+      botConnectionScopes.clear();
       await disposeZCodeAgentServiceAndWait();
       disposeLocalTaskState();
     },
@@ -3315,11 +3347,17 @@ function toZCodeMode(mode: ZCodeTaskMode | undefined): ZCodeSessionMode | undefi
       // automation UI 保存的“自动编辑”使用 canonical edit。旧映射漏掉该值，
       // 调用方的 ?? build 会把权限模式静默降级成“变更前确认”。
       return "edit";
+    case "guarded":
+      return "guarded";
     case "yolo":
+    case "bypassPermissions":
+    case "dontAsk":
       return "yolo";
     case "auto":
       return "auto";
     case "build":
+    case "default":
+    case "acceptEdits":
     case "autoEdit":
       return "build";
     default:
@@ -3966,7 +4004,7 @@ function mapStateUpdated(
 function mapSessionEvent(
   params: TaskTarget,
   event: ZCodeSessionEvent,
-  streamedTurnKeys: Set<string>,
+  streamedTurnText: Map<string, { messageId?: string; text: string }>,
   activePromptInputId?: InputId,
   toolProjectionMemory?: ZCodeToolProjectionMemory,
   backgroundTaskControlsByTaskKey?: Map<string, ZCodeBackgroundTaskControlItem[]>,
@@ -3986,11 +4024,13 @@ function mapSessionEvent(
       `对齐 ZCode prompt inputId eventType=${event.type} protocolTrace=${protocolTraceId}`,
     );
   }
-  const turnKey = `${event.sessionId}:${event.turnId ?? eventInputId ?? traceId}`;
+  const turnKey = `${resolveWorkspaceKey(params)}:${event.sessionId}:${event.turnId ?? eventInputId ?? traceId}`;
 
   if (event.type === "turn.started") {
-    streamedTurnKeys.delete(turnKey);
+    streamedTurnText.delete(turnKey);
+    const inputOrigin = asRecord(payload.intent).inputOrigin;
     const runStartedEvent: ZCodeStreamEvent = {
+      ...(inputOrigin === "desktop" || inputOrigin === "mobile" ? { inputOrigin } : {}),
       type: "task_run_started",
       taskId: params.taskId,
       traceId,
@@ -4028,7 +4068,6 @@ function mapSessionEvent(
 
   const compactTimeline = mapCompactTimelinePayload(params.taskId, traceId, eventInputId, payload);
   if (compactTimeline) {
-    streamedTurnKeys.add(turnKey);
     return [compactTimeline];
   }
 
@@ -4039,7 +4078,6 @@ function mapSessionEvent(
     payload,
   );
   if (partTimeline) {
-    streamedTurnKeys.add(turnKey);
     return [partTimeline];
   }
 
@@ -4058,8 +4096,14 @@ function mapSessionEvent(
     payload,
   );
   if (modelStreaming) {
-    if (modelStreaming.type === "agent_message_chunk") {
-      streamedTurnKeys.add(turnKey);
+    if (modelStreaming.type === "agent_message_chunk" && !modelStreaming.parentToolUseId) {
+      const previous = streamedTurnText.get(turnKey);
+      const messageId = modelStreaming.messageId;
+      const sameMessage = !messageId || !previous?.messageId || messageId === previous.messageId;
+      streamedTurnText.set(turnKey, {
+        messageId: messageId ?? previous?.messageId,
+        text: (sameMessage ? (previous?.text ?? "") : "") + modelStreaming.content,
+      });
     }
     return apiRetryClearEvent ? [apiRetryClearEvent, modelStreaming] : [modelStreaming];
   }
@@ -4068,6 +4112,10 @@ function mapSessionEvent(
   }
 
   if (event.type === "tool.updated") {
+    // 工具调用前的前言不是最终回答；下一条模型消息需要独立核对已接收正文。
+    if (payload.kind === "scheduled" && !parentToolUseIdFromToolPayload(payload)) {
+      streamedTurnText.delete(turnKey);
+    }
     return mapToolUpdated(params.taskId, traceId, eventInputId, payload, toolProjectionMemory);
   }
 
@@ -4140,13 +4188,19 @@ function mapSessionEvent(
   if (event.type === "turn.completed") {
     const events: ZCodeStreamEvent[] = [];
     const response = stringValue(payload.response);
-    if (response && !streamedTurnKeys.has(turnKey)) {
+    // Bugfix: 只记录“本轮收到过文字”会让工具前言屏蔽最终回答兜底。
+    // 在终态之前补齐当前模型消息缺少的后缀；完整正文已到达时不重复投递。
+    const streamed = streamedTurnText.get(turnKey)?.text ?? "";
+    const missingResponse = response?.startsWith(streamed)
+      ? response.slice(streamed.length)
+      : response;
+    if (missingResponse) {
       events.push({
         type: "agent_message_chunk",
         taskId: params.taskId,
         traceId,
         ...(eventInputId ? { inputId: eventInputId } : {}),
-        content: response,
+        content: missingResponse,
       });
     }
     events.push({
@@ -4158,13 +4212,13 @@ function mapSessionEvent(
       usage: usageFromPayload(payload.usage),
     });
     toolProjectionMemory?.streamingToolInputById?.clear();
-    streamedTurnKeys.delete(turnKey);
+    streamedTurnText.delete(turnKey);
     return events;
   }
 
   if (event.type === "turn.failed") {
     toolProjectionMemory?.streamingToolInputById?.clear();
-    streamedTurnKeys.delete(turnKey);
+    streamedTurnText.delete(turnKey);
     const errorPayload = asRecord(payload.error);
     if (stringValue(payload.turnPhase) === "compact") {
       return [
@@ -4863,7 +4917,17 @@ function isSubagentDispatchToolName(toolName: string | undefined): boolean {
 function parentToolUseIdFromToolPayload(payload: Record<string, unknown>): string | null {
   // ZCode Protocol 发送的父级字段叫 parentToolCallId；
   // UI stream 模型统一消费 parentToolUseId，必须在服务投影层完成一次性归一。
-  return stringValue(payload.parentToolUseId) ?? stringValue(payload.parentToolCallId) ?? null;
+  return (
+    stringValue(payload.parentToolUseId) ??
+    stringValue(payload.parentToolCallId) ??
+    rawClaudeParentToolUseId(payload)
+  );
+}
+
+function rawClaudeParentToolUseId(raw: unknown): string | null {
+  const meta = asRecord(raw)._meta;
+  const claudeCode = asRecord(meta).claudeCode;
+  return stringValue(asRecord(claudeCode).parentToolUseId) ?? null;
 }
 
 function normalizeToolResultContent(
@@ -5449,6 +5513,104 @@ function apiRetryFromSessionInfoPayload(
     zcodeApiRetryFromStreamRecoveryPayload(payload) ??
     zcodeApiRetryFromModelNetworkStatusPayload(payload)
   );
+}
+
+function recordAgentModelNetworkTelemetry(event: ZCodeSessionEvent): void {
+  const observation = agentModelNetworkObservationFromEvent(event);
+  if (!observation) {
+    return;
+  }
+  try {
+    emitNetworkTelemetryObservation(observation);
+  } catch (error) {
+    // 修复原因：agent 模型网络遥测属于旁路指标，sink 异常不能影响主会话消息流。
+    logger.warn(undefined, "上报 agent 模型网络遥测失败", error);
+  }
+}
+
+function agentModelNetworkObservationFromEvent(
+  event: ZCodeSessionEvent,
+): NetworkObservation | null {
+  const payload = asRecord(event.payload);
+  const type = stringValue(payload.type);
+  if (type !== "model_request_completed" && type !== "model_request_failed") {
+    return null;
+  }
+  // 修复原因：retryable failed 只是同一次逻辑请求的中间 attempt，最终 completed/failed 会带总 attempt。
+  // 如果这里也计数，会把成功率、失败率和重试率同时放大。
+  if (type === "model_request_failed" && booleanValue(payload.retryable) === true) {
+    return null;
+  }
+
+  const durationMs = Math.max(0, Math.round(numberValue(payload.durationMs) ?? 0));
+  const statusCode = nonNegativeIntegerValue(payload.statusCode);
+  const ok = type === "model_request_completed";
+  return {
+    transport: "http",
+    interface: buildAgentModelNetworkInterface(payload),
+    durationMs,
+    ok,
+    ...(statusCode !== undefined ? { statusCode } : {}),
+    ...(ok ? {} : { errorKind: classifyAgentModelNetworkError(payload, statusCode) }),
+    attempt: positiveIntegerValue(payload.attempt) ?? 1,
+  };
+}
+
+function buildAgentModelNetworkInterface(payload: Record<string, unknown>): string {
+  const providerKind = safeNetworkDimension(stringValue(payload.providerKind)) ?? "unknown";
+  const transport = safeNetworkDimension(stringValue(payload.transport)) ?? "unknown";
+  const base = normalizeAgentModelBaseUrl(stringValue(payload.baseURL));
+  return `zcode_agent.model.${providerKind}.${transport}.${base}`;
+}
+
+function normalizeAgentModelBaseUrl(value: string | undefined): string {
+  if (!value) {
+    return "unknown";
+  }
+  try {
+    const parsed = new URL(value);
+    const pathname = parsed.pathname.replace(/\/+$/u, "") || "/";
+    const safePath = pathname.length > 80 ? `${pathname.slice(0, 80)}...` : pathname;
+    return `${parsed.host}${safePath}`;
+  } catch {
+    return safeNetworkDimension(value, 120) ?? "unknown";
+  }
+}
+
+function safeNetworkDimension(value: string | undefined, maxLength = 48): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const safe = trimmed.replace(/[?#[\]{}|\\^`"'<>\s]+/gu, "_");
+  return safe.length > maxLength ? `${safe.slice(0, maxLength)}...` : safe;
+}
+
+function classifyAgentModelNetworkError(
+  payload: Record<string, unknown>,
+  statusCode: number | undefined,
+): string {
+  const reason = stringValue(payload.reason);
+  switch (reason) {
+    case "timeout":
+    case "stream_idle_timeout":
+      return "timeout";
+    case "network_error":
+    case "stale_connection":
+      return "connection_reset";
+    case "proxy_error":
+      return "proxy_error";
+    case "tls_error":
+      return "tls_error";
+    default:
+      if (statusCode !== undefined && statusCode >= 500) {
+        return "server_error";
+      }
+      if (statusCode !== undefined && statusCode >= 400) {
+        return "client_error";
+      }
+      return "other";
+  }
 }
 
 type ContextUsageUpdate = Pick<

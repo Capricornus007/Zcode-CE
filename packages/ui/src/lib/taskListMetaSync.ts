@@ -12,12 +12,77 @@ import {
   useTaskQueryCacheStore,
   type TaskListMembershipState,
 } from "@/store/taskQueryCacheStore.js";
-import { buildTaskEntityKey } from "@/lib/taskQueryCache.js";
+import { buildTaskEntityKey, buildTaskWorkspaceKey } from "@/lib/taskQueryCache.js";
 
+// CE-SYNC: 上游 3.16.2 把本档瘦成只剩 ABSENT_MEMBERSHIP / sortTasksByUpdatedAt /
+// syncTaskMetaToTaskCaches / insertTaskIntoTaskCaches 四個符號，刪掉了成員關係推導與
+// patch/background 系列；CE main 的這些導出全部保留（遠控 shared-host、手機返回列表等
+// CE 場景依賴它）。同時機械合併把 CE 的 removeTaskFromTaskCaches 整段弄丟了，而全倉已無
+// 呼叫方（實測 grep：0 處），故連 removeTaskFromTaskQueryCaches 的 import 一起不撿回來。
 const ABSENT_MEMBERSHIP: TaskListMembershipState = {
   pinned: true,
   archived: true,
 };
+
+function inferTaskMembershipFromQueryCaches(params: {
+  workspacePath: string;
+  workspaceIdentity?: string;
+  taskId: string;
+}): TaskListMembershipState | null {
+  const entityKey = buildTaskEntityKey(params);
+  const workspaceKey = buildTaskWorkspaceKey(params.workspacePath, params.workspaceIdentity);
+  const { resultsByQueryKey } = useTaskQueryCacheStore.getState();
+  let foundActive = false;
+  let foundPinned = false;
+
+  for (const result of Object.values(resultsByQueryKey)) {
+    if (!result.taskKeys.includes(entityKey)) {
+      continue;
+    }
+    if (!result.descriptor.workspaceKeys.includes(workspaceKey)) {
+      continue;
+    }
+    if (result.descriptor.kind === "archived") {
+      return { pinned: false, archived: true };
+    }
+    if (result.descriptor.kind === "pinned") {
+      foundPinned = true;
+      continue;
+    }
+    if (
+      result.descriptor.kind === "workspace" ||
+      result.descriptor.kind === "timeline" ||
+      // Bugfix: active 是搜索/Command Center 使用的正式 active 列表。
+      // 漏掉它会把 active-only 可见 task 推断成 absent，置顶/归档事件会误增减 total。
+      result.descriptor.kind === "active"
+    ) {
+      foundActive = true;
+    }
+  }
+
+  if (foundPinned) {
+    return { pinned: true, archived: false };
+  }
+  if (foundActive) {
+    return { pinned: false, archived: false };
+  }
+
+  return null;
+}
+
+function membershipForWorkspaceEventReason(
+  reason: "task_archived" | "task_unarchived" | "task_pinned" | "task_unpinned",
+): TaskListMembershipState {
+  switch (reason) {
+    case "task_archived":
+      return { pinned: false, archived: true };
+    case "task_pinned":
+      return { pinned: true, archived: false };
+    case "task_unarchived":
+    case "task_unpinned":
+      return { pinned: false, archived: false };
+  }
+}
 
 function sortTasksByUpdatedAt(tasks: readonly ZCodeTaskMeta[]): ZCodeTaskMeta[] {
   return [...tasks].sort((left, right) => {
@@ -135,24 +200,6 @@ export function syncTaskMembershipEventToTaskCaches(params: {
     previousState: previousMembership,
     nextState: nextMembership,
   });
-}
-
-export function removeTaskFromTaskCaches(params: {
-  workspacePath: string;
-  workspaceIdentity?: string;
-  taskId: string;
-}): boolean {
-  const store = useZCodeSessionStore.getState();
-  const workspaceState = store.getWorkspaceState(params.workspacePath, params.workspaceIdentity);
-  if (workspaceState.taskListCache) {
-    store.setTaskListCache(
-      params.workspacePath,
-      workspaceState.taskListCache.filter((task) => task.taskId !== params.taskId),
-      params.workspaceIdentity,
-    );
-  }
-  store.removeTaskState(params.workspacePath, params.taskId, params.workspaceIdentity);
-  return removeTaskFromTaskQueryCaches(params);
 }
 
 export function patchTaskMetaInTaskCaches(params: {

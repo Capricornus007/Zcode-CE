@@ -11,11 +11,7 @@
 import type { CommandEnvelope, CommandPayloadMap } from "@zcode/shared/zcode-protocol-v4";
 import { isHighspeedProviderId } from "@zcode/shared";
 import type { mapAttachmentRefsToTurnAttachments } from "../attachment-refs.js";
-import { resolveSubmittedExecutionState } from "./session-flow.js";
-import {
-  resolveOrdinaryQueueModelSelection,
-  resolveSessionFallbackModelSelection,
-} from "../input-admission.js";
+import { resolveSubmittedExecutionState, V4InputAdmissionRejectedError } from "./session-flow.js";
 import { inputIntentMetadataFromCanonical } from "../input-intent.js";
 import { preflightPromptTurn, startPreflightedPromptTurn } from "../prompt-turn.js";
 import { createModelExecutionContext } from "../../../session-execution/index.js";
@@ -35,6 +31,39 @@ export function stableAttachmentRefs(editTarget: ConversationEditTarget) {
   return editTarget.intent.attachments?.flatMap((attachment) =>
     attachment.ref ? [{ ...attachment, ref: attachment.ref }] : [],
   );
+}
+
+/**
+ * Modified by ZCode:X1。上游 input-admission 的同名 resolver；CE 复用 session-flow 既有解析
+ * （见模块头偏离说明）。导出供 queue 提升路径共用：加速 Selection 失效时必须同时改写
+ * Selection（只删卡标记会让本轮带着加速 provider 却没有任何凭据）。
+ */
+export function resolveSessionFallbackModelSelection(
+  record: V4SessionRecordView,
+): NonNullable<CommandPayloadMap["editUserQuery"]["modelSelection"]> {
+  return resolveSubmittedExecutionState(record, {}).modelSelection;
+}
+
+/**
+ * CE-SYNC: 取上游 resolver 的语义（上游件在未移植的 input-admission.ts 内，这里就地实现）：
+ * 候选不是加速 Provider 就直接用它，否则退回会话常驻 Selection；两条都是加速 Provider 时
+ * 拒绝准入，避免把无法使用的加速 Provider 固定进 canonical intent。
+ */
+function resolveOrdinaryQueueModelSelection(
+  record: V4SessionRecordView,
+  candidate?: NonNullable<CommandPayloadMap["editUserQuery"]["modelSelection"]>,
+): NonNullable<CommandPayloadMap["editUserQuery"]["modelSelection"]> {
+  const selection =
+    candidate && !isHighspeedProviderId(candidate.providerId)
+      ? candidate
+      : resolveSessionFallbackModelSelection(record);
+  if (isHighspeedProviderId(selection.providerId)) {
+    throw new V4InputAdmissionRejectedError(
+      "fault.command.inputRejected",
+      "ordinary queue model selection is unavailable",
+    );
+  }
+  return selection;
 }
 
 function buildCanonicalIntent(
@@ -192,15 +221,4 @@ export async function startCanonicalIntent(
     }
     throw error;
   }
-}
-
-/**
- * Modified by ZCode:X1。上游 input-admission 的同名 resolver；CE 复用 session-flow 既有解析
- * （见模块头偏离说明）。导出供 queue 提升路径共用：加速 Selection 失效时必须同时改写
- * Selection（只删卡标记会让本轮带着加速 provider 却没有任何凭据）。
- */
-export function resolveSessionFallbackModelSelection(
-  record: V4SessionRecordView,
-): NonNullable<CommandPayloadMap["editUserQuery"]["modelSelection"]> {
-  return resolveSubmittedExecutionState(record, {}).modelSelection;
 }

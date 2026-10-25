@@ -1,53 +1,56 @@
-import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { ToolSearchExecutionContext } from "@zcode/contracts";
 import type {
   AgentExecutionTelemetryPort,
   AgentTelemetryActorKind,
+  AutomationPort,
   BackgroundResultOriginMeta,
+  BrowserControlPort,
   CollaborationMode,
   CoordinatorResponsePort,
   DynamicWorkflowRunPort,
   DynamicWorkflowSnippetPort,
-  ModelCatalogPort,
   EmbeddedSearchBackend,
   ExecutionPort,
-  BrowserControlPort,
   ExecutionShellSelection,
-  AutomationPort,
-  OffPeakPort,
   FileSystemPort,
   HttpClientPort,
   ImageProcessorPort,
-  PdfDocumentPort,
   Logger,
   Model,
+  ModelCatalogPort,
+  OffPeakPort,
+  TopicResourcePort,
+  PdfDocumentPort,
   PermissionBrokerPort,
   SessionEvent,
   SessionId,
   SessionModePort,
   SessionStorePort,
   SkillPort,
-  SubagentRunOptions,
   SubagentPort,
+  SubagentRunOptions,
   ToolArtifactStorePort,
   TraceContext,
   TurnId,
-  WorkflowPort,
   WorkflowEscalatePort,
+  WorkflowPort,
   WorkflowSubmitPort,
 } from "@zcode/contracts";
+import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { HookRunner } from "../../hooks/index.js";
 import type { PermissionService } from "../../permission/service.js";
 import type { RuntimeTaskRegistry } from "../../runtime-task/registry.js";
 import type { ToolRegistry } from "../registry.js";
 import type { ToolSchedule } from "../scheduler.js";
 import type {
+  BackgroundTaskControlPort,
   ExecutableToolCall,
   ReadFileStateMap,
   ToolBatchEvent,
-  BackgroundTaskControlPort,
   ToolExecutionResult,
   ToolRuntimeScope,
+  ToolSearchControlPort,
+  KbSearchControlPort,
 } from "../types.js";
 
 export interface BackgroundTaskNotificationCommand {
@@ -89,6 +92,8 @@ export interface ToolExecutorOptions {
   permissionTimeoutMs?: number;
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  toolSearchControlPort?: ToolSearchControlPort;
+  kbSearchControlPort?: KbSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;
@@ -110,6 +115,7 @@ export interface ToolExecutorOptions {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
+  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;
@@ -208,6 +214,8 @@ export interface ToolExecutorDeps {
   permissionTimeoutMs?: number;
   logger?: Logger;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  toolSearchControlPort?: ToolSearchControlPort;
+  kbSearchControlPort?: KbSearchControlPort;
   executionPort?: ExecutionPort;
   browserControlPort?: BrowserControlPort;
   browserDocumentationRoot?: string;
@@ -229,6 +237,7 @@ export interface ToolExecutorDeps {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
+  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;

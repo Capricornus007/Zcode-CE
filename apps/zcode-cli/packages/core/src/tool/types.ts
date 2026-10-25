@@ -1,4 +1,5 @@
 import type { ToolSearchExecutionContext, ModelCallWrapper } from "@zcode/contracts";
+import type { DangerousCommandPolicy } from "@zcode/shared";
 import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 // ============================================================
 // Tool Types - Core tool types for registry and executor
@@ -6,73 +7,71 @@ import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
 
 import type {
   CollaborationMode,
-  ExecutionShellSelection,
   AutomationPort,
-  OffPeakPort,
-  EmbeddedSearchBackend,
-  ExecutionPort,
   BrowserControlPort,
-  FileSystemPort,
-  HttpClientPort,
-  ImageProcessorPort,
-  PdfDocumentPort,
-  ModelMessageContent,
-  ModelContentProtection,
-  Model,
   CoordinatorResponsePort,
   DynamicWorkflowRunPort,
   DynamicWorkflowSnippetPort,
-  ModelCatalogPort,
-  RiskLevel,
-  SessionId,
-  SessionEvent,
-  SessionModePort,
-  SessionStorePort,
-  SkillPort,
-  SkillTelemetryMetadata,
-  SubagentRunOptions,
-  SubagentPort,
-  ToolArtifactStorePort,
-  TraceContext,
-  TraceId,
-  TurnId,
-  WorkflowPort,
-  WorkflowEscalatePort,
-  WorkflowSubmitPort,
-} from "@zcode/contracts";
-// Modified by ZCode:F5 mcp-ui 消费侧类型（契约定义在 @zcode/shared/mcp-apps）。
-import type { McpToolUiDescriptor } from "@zcode/shared/mcp-apps";
-import type {
+  EmbeddedSearchBackend,
+  ExecutionPort,
+  ExecutionShellSelection,
+  FileSystemPort,
+  HttpClientPort,
+  ImageProcessorPort,
   JsonSchema,
+  KbSearchInput,
+  KbSearchOutput,
+  Model,
+  ModelCatalogPort,
+  ModelContentProtection,
+  ModelMessageContent,
   ModelToolSideEffectScope,
+  OffPeakPort,
+  TopicResourcePort,
+  PdfDocumentPort,
   PermissionBrokerReasonSource,
   PermissionCapabilityGroup,
-  PermissionOptionsPolicy,
   PermissionRuleBehavior,
   PermissionRuleValue,
   PermissionUpdate,
   ProviderNativeToolSpec,
-  ToolExecutionMode,
+  RiskLevel,
+  SessionEvent,
+  SessionId,
+  SessionModePort,
+  SessionStorePort,
+  SkillPort,
+  SkillTelemetryMetadata,
+  SubagentPort,
+  SubagentRunOptions,
+  ToolArtifactStorePort,
   ToolCancellationPolicy,
   ToolContractDeclaration,
+  ToolExecutionMode,
+  ToolExecutionSpanWriter,
+  ToolExecutionTelemetry,
   ToolResultBudgetStrategy,
   ToolResultDisplayPayload,
   ToolTimeoutPolicy,
-  ToolExecutionSpanWriter,
-  ToolExecutionTelemetry,
+  TraceContext,
+  TraceId,
+  TurnId,
+  WorkflowEscalatePort,
+  WorkflowPort,
+  WorkflowSubmitPort,
 } from "@zcode/contracts";
-import type { DangerousCommandPolicy } from "@zcode/shared";
+import type { RuntimeTaskRegistry } from "../runtime-task/registry.js";
 import type {
   PersistedReadFileStateMetadata,
   PersistedReadFileStateTool,
 } from "./read-file-state-metadata.js";
-import type { RuntimeTaskRegistry } from "../runtime-task/registry.js";
 
 // -----------------------------------------------
 // Tool Metadata
 // -----------------------------------------------
 
 export interface ToolMetadata {
+  // CE 合并（3.16.1）：上游 ToolSearch 延迟发现契约字段（曝光分级据此判定）。
   shouldDefer?: boolean;
   alwaysLoad?: boolean;
   searchHint?: string;
@@ -142,13 +141,44 @@ export interface BackgroundTaskControlPort {
   ): Promise<BackgroundTaskControlStopResult>;
 }
 
+export interface ToolSearchMatch {
+  name: string;
+  description: string;
+  score: number;
+}
+
+export interface ToolSearchExecutionResult {
+  /** 匹配的延迟工具，按相关性降序；列出的工具全部已激活。 */
+  results: ToolSearchMatch[];
+  /** 本次新激活（恢复声明）的工具名。 */
+  activated: string[];
+}
+
+// CE-SYNC-TODO: 原註解指向 runtime/helpers/tool-deferral.ts，该 CE 预算制 deferral helper 依台帐
+// 裁决已停用（改走上游 3.16.2 的 ToolSearch/DeferredToolCall 形态），但工作树里
+// runtime/helpers/runtime-tools.ts 也没有装配 toolSearchControlPort，端口目前恒为 undefined
+// （tool-search handler 按「能力不可用」诚实失败）。装配点属别的档案，交给主代理决定。
+/** ToolSearch 工具的执行端口；由 runtime 装配。 */
+export interface ToolSearchControlPort {
+  search(query: string, limit?: number): Promise<ToolSearchExecutionResult>;
+}
+
+/**
+ * KbSearch 工具的执行端口（140 §P1-5）：runtime 持有 kb 语料索引与召回缓存，
+ * handler 只做参数解析与结果格式化，不直接触碰文件系统或 embedding 端点。
+ */
+export interface KbSearchControlPort {
+  search(request: KbSearchInput): Promise<KbSearchOutput>;
+}
+
 export interface ToolExecutionContext {
-  toolSearch?: ToolSearchExecutionContext;
   toolCallId: string;
   /**
    * 当前 Tool 的实时观测写入器。Handler 只能通过窄接口写事实，不能接触原始 OTel Span。
    */
   telemetry?: ToolExecutionSpanWriter;
+  /** CE 线增量：最近模型请求的上下文压力（0-1，占窗口比例）；供输出预算收缩。 */
+  contextPressure?: number;
   /** 当前工具调用是否属于 automation 派发轮；写工具 handler 用它做最终权限校验。 */
   automationTurn?: boolean;
   /** 当前工具调用是否属于闲时任务派发轮；OffPeakCreate handler 用它做最终拒绝。 */
@@ -159,6 +189,12 @@ export interface ToolExecutionContext {
   parentSpanId?: string;
   abortSignal: AbortSignal;
   backgroundTaskControlPort?: BackgroundTaskControlPort;
+  /** 上游 3.16.1 ToolSearch 执行上下文（native/local 模式与 announcement 持久化用）。 */
+  toolSearch?: ToolSearchExecutionContext;
+  /** 延迟工具发现端口（ToolSearch）；runtime 装配，缺席时 handler 诚实失败。 */
+  toolSearchControlPort?: ToolSearchControlPort;
+  /** 知识卡检索端口（KbSearch）；runtime 装配，缺席时 handler 诚实失败。 */
+  kbSearchControlPort?: KbSearchControlPort;
   emitEvent?: (event: SessionEvent) => Promise<void>;
   executionPort?: ExecutionPort;
   /** browser-use 控制端口；node_repl 的 agent.browsers.* 经此执行。缺省则 browser 不可用。 */
@@ -182,6 +218,7 @@ export interface ToolExecutionContext {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
+  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;
@@ -212,8 +249,8 @@ export interface ToolExecutionContext {
   turnId?: TurnId;
   /**
    * Modified by ZCode:F6 确认窗调参。用户在确认窗里调整过、且已应用到本次入参的字段
-   * （ToolEntry.applyInputAdjustments 的 `applied`）；handler 据它告诉模型
-   * 「实际跑的不是你传的那个值」，缺席即没有调整。
+   * （{@link ToolEntry.applyInputAdjustments} 的 `applied`）。handler 据它告诉模型
+   * 「实际跑的不是你传的那个值」；缺席即没有调整。
    */
   inputAdjustments?: Readonly<Record<string, unknown>>;
 }
@@ -280,7 +317,7 @@ export interface ToolInputResolutionContext {
   /**
    * 「这个会话此刻加载着某个技能吗」的探针（handlers/workflow-skill-gate.ts）。由 runtime 用
    * provider 可见历史回答（agent/loaded-skills.ts），所以 compaction 之后答案随历史一起变回
-   * 否。缺席 = 本会话没有 Skill 工具或调用方不参与，门不生效。
+   * 否。缺席 = 本会话没有 Skill 工具或调用方不参与（单元测试直接造的 context），门不生效。
    */
   hasLoadedSkill?: (skillName: string) => boolean;
 }
@@ -288,8 +325,8 @@ export interface ToolInputResolutionContext {
 export type ToolInputResolutionResult = { result: true; input: unknown } | ToolHandlerFailure;
 
 /**
- * Modified by ZCode:F6。ToolEntry.applyInputAdjustments 的结果：调整后的入参，与
- * 实际生效的那部分调整（键同入参字段名；与入参原值相同的改动不算）。applied 缺席即什么都没变。
+ * Modified by ZCode:F6。{@link ToolEntry.applyInputAdjustments} 的结果：调整后的入参，与
+ * **实际生效**的那部分调整（键同入参字段名；与入参原值相同的改动不算）。`applied` 缺席即什么都没变。
  */
 export type ToolInputAdjustmentResult =
   | { result: true; input: unknown; applied?: Readonly<Record<string, unknown>> }
@@ -305,6 +342,8 @@ export type ToolHandler<TInput = unknown, TOutput = unknown> = (
 // -----------------------------------------------
 
 export interface ToolEntry extends ToolContractDeclaration {
+  /** 宿主资源在审批之前固定归属；所有返回路径均释放，撤销信号进入现有取消链。 */
+  retainExecution?: (callId: string) => { signal: AbortSignal; release(): void };
   aliases?: readonly string[];
   /**
    * Host-issued atomicity policy for model content. Only an authority-verified
@@ -358,8 +397,9 @@ export interface ToolEntry extends ToolContractDeclaration {
     context: ToolInputResolutionContext,
   ) => Promise<ToolInputResolutionResult> | ToolInputResolutionResult;
   /**
-   * Modified by ZCode:F6。应用用户在确认窗里对入参做的调整。executor 在授权之后、handler 之前调用，
-   * adjustments 是 broker 结果的 inputAdjustments。返回的入参必须仍是 resolveInput 产出的
+   * Modified by ZCode:F6。应用用户在确认窗里对入参做的调整（docs/dynamic-workflow/launch.md
+   * 「Adjusting the settings in the window」）。executor 在授权之后、handler 之前调用，
+   * `adjustments` 是 broker 结果的 `inputAdjustments`。返回的入参必须仍是 `resolveInput` 产出的
    * 那种形状——handler 不为调整另开一条路；失败即工具失败，handler 不跑。同步：只读上下文里已有的
    * 端口，不做 I/O。不声明的工具忽略一切调整。
    */
@@ -412,18 +452,6 @@ export interface ToolPermissionRulePolicy {
     rules: readonly PermissionRuleValue[],
   ) => boolean;
   suggestedPermissionUpdates: PermissionUpdate[];
-  /**
-   * 工具在**运行时**收窄这次 ask 的选项集，覆盖 entry 上的静态
-   * `permission.askOptions.allowAlways`。
-   *
-   * 只能收窄：`no-always-allow` 会裁掉「始终允许」；`session-always-allow` 只在静态声明
-   * 也是 session 时才生效（见 approval-gate 的 resolveToolApproval）。工具不得用它
-   * **新增**持久授权 —— 那会让权限面随输入内容变宽，是安全审计反复点名的一类缺陷。
-   *
-   * 存在的理由：Bash 的「危险命令不得持久授权」取决于**这次命令的内容**，
-   * 静态声明（entry.permission）表达不了它。
-   */
-  optionsPolicy?: PermissionOptionsPolicy;
 }
 
 export interface ToolPersistedModelContentInput {
@@ -455,11 +483,7 @@ export interface ToolRuntimePermissionCapabilityContext {
   runtimeScope?: ToolRuntimeScope;
   workingDirectory?: string;
   workspaceRoot?: string;
-  /**
-   * 危险命令策略（工具与权限页）。**缺席即严格** —— 消费方必须用
-   * resolveDangerousCommandPolicy(context?.dangerousCommandPolicy) 解释，
-   * 不要用 `?? {}` 之外的自定义默认值，否则会把默认态从严格悄悄改成宽松。
-   */
+  /** CE 线增量：危险命令策略（工具与权限页）。缺席即严格，见 resolveRuntimePermissionContext。 */
   dangerousCommandPolicy?: DangerousCommandPolicy;
 }
 
@@ -534,6 +558,8 @@ export interface ToolBatchResult {
 // -----------------------------------------------
 
 export interface ExecutableToolCall {
+  /** CE 合并（3.16.1）：DeferredToolCall 包装标记——原始目标参数只保存一份，
+   * 执行/Hook 可修改的对象在执行入口独立克隆（见 executor/call-runner.ts）。 */
   modelCallWrapper?: ModelCallWrapper;
   id: string;
   name: string;

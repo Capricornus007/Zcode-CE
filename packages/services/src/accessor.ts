@@ -5,6 +5,9 @@ import type { IProjectService } from "#src/project/contract.js";
 import type { IGenUiService } from "./gen-ui/contract.js";
 import { IOffPeakTaskService } from "./session/offPeakTask.js";
 import type { IHighspeedCardService } from "./highspeed/highspeedCard.js";
+import type { IPluginUiBridgeService } from "./plugin-ui-bridge/contract.js";
+import type { IPluginUiSamplingService } from "./plugin-ui-bridge/samplingContract.js";
+import type { IPluginUiAppToolsService } from "./plugin-ui-bridge/appToolsContract.js";
 import type { IFileService } from "./file/file.js";
 import type { IMediaPreviewService } from "./media-preview/mediaPreview.js";
 import type { IGitService } from "./git/git.js";
@@ -18,6 +21,8 @@ import type { IZCodeTaskService } from "./session/zcodeTaskService.js";
 import type { IZCodeAgentService } from "./zcode-agent/zcodeAgent.js";
 import type { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
 import type { ICuaPermissionService } from "./cua-permission-broker/cuaPermissionService.js";
+import type { IBotsService } from "./bots/bots.js";
+import type { IWorkspaceRegistryService } from "./session/workspaceRegistry.js";
 import type { IFileWatcherService } from "./fileWatcher/fileWatcher.js";
 import type { IOAuthService } from "./oauth/oauth.js";
 import type {
@@ -47,8 +52,6 @@ import type { ISourceServerWorkspaceService } from "./source-server-workspace/so
 import type { ISourceServerManagementService } from "./source-server-management/sourceServerManagement.js";
 import type { IOnboardingRecordService } from "./onboarding/onboardingRecord.js";
 import type { IConversationShareService } from "./conversation-share/conversationShare.js";
-import type { IWorkspaceRegistryService } from "./session/workspaceRegistry.js";
-import type { IBotsService } from "./bots/bots.js";
 
 /** UI 层消费的统一服务接口 */
 export interface IServiceAccessor {
@@ -75,6 +78,7 @@ export interface IServiceAccessor {
   // CUA 是 opt-in 内测特性：local macOS host 提供，远端 等 host 没有。可选避免连锁必填。
   readonly cuaPermissionService?: ICuaPermissionService;
   readonly conversationShareService: IConversationShareService;
+  readonly botsService: IBotsService;
   readonly fileWatcherService: IFileWatcherService;
   readonly oauthService: IOAuthService;
   /** 当前 Environment 的 Provider 配置与设置视图。 */
@@ -91,29 +95,24 @@ export interface IServiceAccessor {
   readonly clientScenesService: IClientScenesService;
   /** 闲时任务管理（独立服务面）。 */
   readonly offPeakTaskService: IOffPeakTaskService;
-  /** Highspeed 加速卡服务（桌面侧能力；web home-only 环境按不支持处理）。 */
   readonly highspeedCardService: IHighspeedCardService;
   /**
-   * 工作区注册表（M1.3）：侧栏枚举的唯一真相源。
+   * 工作区注册表（M1.3·CE 线增量）：侧栏枚举的唯一真相源。
    * 旧 server wire / 测试 double 可不提供——缺省时客户端必须回落到「本客户端显式列出」，
    * 而不是把空列表当成事实（见 docs/development/workspace-registry.md §3.2）。
    */
   readonly workspaceRegistryService?: IWorkspaceRegistryService;
-  /**
-   * Bot 管理面（ce.5）：远控面板「IM 机器人」标签页与 BotsDialog 的数据源。
-   * 与上游一致为必填：createLocalServices 在所有 host（desktop / web server / stdio）
-   * 都注册 IBotsService，channel 由 exposeOnChannelServer 自动暴露。
-   */
-  readonly botsService: IBotsService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
   /** 插件 UI 桥；web 或旧 host 可不提供，UI 据此回退普通 MCP 卡片。 */
   // Modified by ZCode: 增量自上游 aac47556——UI 桥接入位（gen-ui + plugin-ui，web/旧 host 可不提供）。
   readonly genUiService?: IGenUiService;
-  readonly pluginUiBridgeService?: import("./plugin-ui-bridge/contract.js").IPluginUiBridgeService;
-  readonly pluginUiSamplingService?: import("./plugin-ui-bridge/samplingContract.js").IPluginUiSamplingService;
-  readonly pluginUiAppToolsService?: import("./plugin-ui-bridge/appToolsContract.js").IPluginUiAppToolsService;
+  readonly pluginUiBridgeService?: IPluginUiBridgeService;
+  /** 页面 sampling；只有桌面本地任务开放。 */
+  readonly pluginUiSamplingService?: IPluginUiSamplingService;
+  /** App-Provided Tools；只有桌面本地 agent 时存在。 */
+  readonly pluginUiAppToolsService?: IPluginUiAppToolsService;
   readonly pluginSyncService: IPluginSyncService;
   readonly pluginsService: IPluginsService;
   /** 设置页插件管理（UI 不再直触 zcodeAgentService 的 plugins/* 面） */

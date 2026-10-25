@@ -24,15 +24,14 @@
     "./workspaceFileSearch": "./src/workspaceFileSearch.ts",
     "./workspaceFileEntriesCodec": "./src/workspaceFileEntriesCodec.ts",
     "./zcode-protocol-v4": "./src/zcode-protocol-v4/index.ts",
+    "./mcp-apps": "./src/mcp-apps/index.ts",
     "./workspace-hook-discovery": "./src/workspace-hook-discovery.ts",
     "./workspace-hook-mutation": "./src/workspace-hook-mutation.ts",
     "./workspace-hook-review-monotonicity": "./src/workspace-hook-review-monotonicity.ts",
     "./workspace-hook-trust-store-file": "./src/workspace-hook-trust-store-file.ts",
     "./gen-ui": "./src/gen-ui/index.ts",
-    "./testing/fake-relay-v2": "./test/fixtures/fake-relay-v2.ts",
     "./request-security": "./src/request-security-edition/index.ts",
-    "./web-remote-relay": "./src/web-remote-relay/index.ts",
-    "./mcp-apps": "./src/mcp-apps/index.ts"
+    "./web-remote-relay": "./src/web-remote-relay/index.ts"
   },
   "scripts": {
     "lint": "oxlint",
@@ -46,6 +45,7 @@
     "@modelcontextprotocol/ext-apps": "2.0.0",
     "@types/ws": "8.18.1",
     "typescript": "^6.0.2",
+    "vitest": "^5.0.4",
     "ws": "8.20.0"
   }
 }

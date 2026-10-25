@@ -91,27 +91,16 @@ import {
   zcodeMcpUiResourceSubscriptionResultSchema,
   zcodePluginsListUiSurfacesResultSchema,
   zcodeWorkflowsDeleteResultSchema,
-<<<<<<< P5up
-  zcodeWorkflowsForRunResultSchema,
-=======
+  // CE-SYNC: 取联集去重——两侧都只要上游的 zcodeWorkflowsForRunResultSchema；CEmain 侧另外带来的
+  // open/close/sampling 与 mcpUiEmptyResultSchema 别名是 CE 线在用的 schema（本文件多处消费），
+  // 其余名字（readResource/callTool/cancelCall/listResources/appToolAccepted/register/unregister/
+  // listResourceTemplates/resourceSubscription/pluginsListUiSurfaces/workflowsSave）本 import 上方
+  // 与下方已各有一次，重复列出会变成 duplicate identifier，故此处只补缺的四个。
   zcodeMcpUiOpenInstanceResultSchema,
   zcodeMcpUiCloseInstanceResultSchema,
-  zcodeMcpReadResourceResultSchema,
   zcodeMcpUiSamplingResultSchema,
-  zcodeMcpUiCancelCallResultSchema,
-  zcodeMcpUiCallToolResultSchema,
-  zcodeMcpUiReadResourceResultSchema,
-  zcodeMcpUiListResourcesResultSchema,
-  zcodeMcpUiListResourceTemplatesResultSchema,
-  zcodeMcpUiResourceSubscriptionResultSchema,
-  zcodeMcpUiRegisterAppToolsResultSchema,
-  zcodeMcpUiUnregisterAppToolsResultSchema,
-  zcodeMcpUiAppToolAcceptedResultSchema,
-  zcodePluginsListUiSurfacesResultSchema,
   zcodeMcpUiResourceSubscriptionResultSchema as mcpUiEmptyResultSchema,
   zcodeWorkflowsForRunResultSchema,
-  zcodeWorkflowsSaveResultSchema,
->>>>>>> CEmain
   zcodeWorkflowsGetResultSchema,
   zcodeWorkflowsListResultSchema,
   zcodeWorkflowsMoveResultSchema,

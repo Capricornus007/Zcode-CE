@@ -7,6 +7,9 @@ import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
 import type { AppToolSearchMode } from "./app-runtime-preferences.js";
+// CE-SYNC: 機械合併把 CE 的危險命令政策欄位從 AppSettings 沖掉，按 CE main 7fc3bfe2 重植
+// （型別來源 dangerousCommands.ts 為 CE 保留檔，見 index.ts 的 CE 重植區塊）。
+import type { DangerousCommandPolicy } from "./dangerousCommands.js";
 
 // ── Domain types ──
 
@@ -360,6 +363,14 @@ export interface AppSettings {
   providerFamilyDomainMigrated?: boolean;
   /** 新建或冷恢复 Session 是否为 Bash 注入 bfs/ugrep 增强；默认启用。 */
   nativeSearchEnhancementsEnabled?: boolean;
+  /**
+   * 「工具与权限」页的危险命令策略。**缺省即严格**（fail-safe 收紧，ce.2 起的行为变更）：
+   * 危险命令只能逐次确认，且此前落盘的授权规则不再放行（评估时撤销，见 dangerousCommands.ts）。
+   *
+   * 生效时机：**新建会话**。策略经 session 运行时偏好链路下发（与 nativeSearchEnhancementsEnabled
+   * 同一条路径），已运行的会话不重新读取——设置页据此如实标注。
+   */
+  dangerousCommandPolicy?: DangerousCommandPolicy;
   /** 新建或冷恢复时读取；已有 Runtime 保持原策略。 */
   toolSearchMode?: AppToolSearchMode;
   /** 新建或冷恢复 Session 是否启用 Memory；默认关闭。 */

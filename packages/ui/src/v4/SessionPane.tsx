@@ -81,7 +81,6 @@ import { WORKSPACE_FILE_DRAG_MIME } from "@/lib/workspaceFileDrag.js";
 import { buildChatSessionScrollMemoryKey } from "@/lib/chatSessionScrollMemory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { useServices } from "@/hooks/useServices.js";
-import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { browserGlobalNoticeStore } from "@/global-notice/globalNoticeStore.js";
 import {
   HIGHSPEED_SEND_WAIT_BUDGET_MS,
@@ -696,7 +695,8 @@ export function SessionPane({
     fileChanges,
     fileRewindPreview,
   } = useV4Conversation();
-  const platform = useOptionalPlatform();
+  // CE-SYNC: 原本的 const platform = useOptionalPlatform() 只供 ARMS 開啟上報當 reporter，
+  // 上報鏈已移除，此局部變數不再有消費方，連同 useOptionalPlatform 的 import 一起清掉。
   const {
     conversationShareService,
     highspeedCardService,

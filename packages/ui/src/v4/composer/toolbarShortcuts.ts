@@ -137,10 +137,7 @@ export function resolveToolbarShortcutAction(
     if (candidate.disabled) {
       continue;
     }
-    if (
-      !candidate.option ||
-      getChatToolbarShortcutKey(candidate.option.category) !== candidate.expectedKey
-    ) {
+    if (!candidate.option || getChatToolbarShortcutKey(candidate.option.category) !== candidate.expectedKey) {
       continue;
     }
     for (const binding of effective[candidate.commandId] ?? []) {

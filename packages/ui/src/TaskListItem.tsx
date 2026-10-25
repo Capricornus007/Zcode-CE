@@ -27,7 +27,7 @@ import { getTaskListAttention, getTaskListRowActivity } from "@/v4/taskListRowAc
 import { TaskListItemContextMenu } from "@/TaskListItemContextMenu.js";
 import { TaskInteractionBadge } from "@/TaskInteractionBadge.js";
 import { useTaskListItemContextActions } from "@/useTaskListItemContextActions.js";
-import { useFeedbackEntryAction } from "@/feedback/useFeedbackEntryAction.js";
+import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import { useModelTrajectoryStore } from "@/store/modelTrajectoryStore.js";
 import { buildTaskFeedbackDescription } from "@/lib/taskFeedbackDraft.js";
 import { toast } from "@/components/ui/toast.js";
@@ -859,22 +859,7 @@ export function TaskListItemContextMenuContent({
   const workspaceActionsDisabledReason = workspaceActionsDisabled
     ? (disabledReason ?? intl.formatMessage({ id: "workspaceSidebar.unavailableLocalDirectory" }))
     : undefined;
-  // 收尾：「在分屏打开」仅桌面 shell（context 由 WorkspaceShellLayout 提供；
-  // 手机远控/无 Provider 环境默认 false → 菜单项整体不渲染）。
-  const splitPaneEntry = useV4SplitPaneEntry();
-  const splitPaneEntryEnabled = splitPaneEntry.enabled;
-  const splitPaneTarget = useMemo(
-    () => ({
-      workspacePath,
-      ...(task.workspaceIdentity?.trim() ? { workspaceIdentity: task.workspaceIdentity } : {}),
-      ...(remoteSessionId ? { remoteSessionId } : {}),
-      sessionId: task.taskId,
-    }),
-    [remoteSessionId, task.taskId, task.workspaceIdentity, workspacePath],
-  );
-  // 当前 focused session、已有 group 与 pane 上限统一由 shell owner 裁决；row 不再直接写 layout store。
-  const canOpenInSplitPane = splitPaneEntry.canOpenSession(splitPaneTarget);
-  const { runFeedbackEntry } = useFeedbackEntryAction();
+  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
   const {
     taskSessionFile,
     taskNativeSessionLogFile,
@@ -903,15 +888,18 @@ export function TaskListItemContextMenuContent({
 
   const handleOpenTaskFeedback = useCallback(async () => {
     // 任务右键菜单之前只能复制日志/路径，反馈时缺少任务上下文。
-    // 现在改走「反馈与诊断」的渠道配置，任务线索作为已脱敏的 description 进入预填正文，
-    // 附件由用户主动选择；渠道不可用时 hook 会引导到设置页。
-    const outcome = runFeedbackEntry({
+    // 这里复用反馈中心 draft，只预填脱敏后的任务线索，附件由用户主动选择。
+    openFeedbackSubmit({
       title: intl
         .formatMessage(
           { id: "feedback.submit.template.section.taskFeedbackTitle" },
           { title: taskTitle },
         )
         .slice(0, 80),
+      type: "bug",
+      module: "Agent任务执行失败",
+      severity: "P2-中",
+      includeLogs: true,
       description: buildTaskFeedbackDescription({
         taskTitle,
         taskId: task.taskId,
@@ -921,13 +909,12 @@ export function TaskListItemContextMenuContent({
         formatMessage: (id: string, values?: Record<string, string>) =>
           intl.formatMessage({ id }, values),
       }),
+      screenshots: [],
     });
-    if (outcome === "opened") {
-      toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
-    }
+    toast(intl.formatMessage({ id: "taskList.feedbackOpened" }));
   }, [
     intl,
-    runFeedbackEntry,
+    openFeedbackSubmit,
     task.taskId,
     taskNativeSessionLogFile.path,
     taskSessionFile.path,
@@ -960,16 +947,6 @@ export function TaskListItemContextMenuContent({
       onMarkTaskAsUnread={() => {
         onMarkTaskAsUnread(task.taskId);
       }}
-      onOpenInSplitPane={
-        splitPaneEntryEnabled
-          ? () => {
-              // 旧入口直接写 paneLayout，绕过 active group 与 shell navigation，
-              // draft split 后下一次普通点击会把 session 灌进 primary。统一交给 shell controller。
-              splitPaneEntry.openSession(splitPaneTarget);
-            }
-          : undefined
-      }
-      openInSplitPaneDisabled={workspaceActionsDisabled || !canOpenInSplitPane}
       onOpenTaskFeedback={() => {
         void handleOpenTaskFeedback();
       }}

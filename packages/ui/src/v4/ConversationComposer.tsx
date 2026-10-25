@@ -5,6 +5,7 @@ import { useOptionalRemoteWorkspaceController } from "@/remote/useRemoteWorkspac
 import { useOptionalTabStore } from "@/store/TabStoreProvider.js";
 import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
+import { formatConversationWorkDuration } from "@/v4/conversationWorkDuration.js";
 /**
  * v4 会话 composer（composer parity）。
  *
@@ -101,7 +102,6 @@ import { ChatPromptEditor } from "@/prompt-editor/ChatPromptEditor.js";
 import { usePromptEditorDragState } from "@/prompt-editor/usePromptEditorDragState.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { advanceComposerDraftRevision } from "@/v4/composer/composerDraftRevision.js";
-import { StreamSpeedPill } from "@/v4/composer/StreamSpeedPill.js";
 import type { AppSlashCommand } from "@/slashCommandHelpers.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
@@ -423,6 +423,13 @@ export interface ConversationComposerProps {
   contextHeader?: ReactNode;
   /** 居中草稿布局（旧 shouldUseCenteredDraftChatLayout）：收窄 max-w-2xl、去 sticky。 */
   centered?: boolean;
+  /** 输入框布局，见 ChatPromptEditor；inline 是 Side Pane 完整视图浮窗的单行形态。 */
+  layout?: "stacked" | "inline";
+  /**
+   * 单行布局下对话运行中的工作时长（与流式消息「工作中 N 秒」同值），
+   * 占位文字改为「工作中 {时长}」；undefined 时沿用原占位。
+   */
+  workingDurationMs?: number;
   /**
    * v4 bottom dock 阻塞交互 id。存在时 composer 只隐藏不卸载，保留草稿、附件与编辑器实例。
    */
@@ -551,6 +558,8 @@ function ConversationComposerImpl({
   telemetryDraftConfig,
   contextHeader,
   centered = false,
+  layout = "stacked",
+  workingDurationMs,
   blockingRequestId = null,
   disabled: disabledProp = false,
   onRetryInitialization,
@@ -1859,14 +1868,22 @@ function ConversationComposerImpl({
   }, [listenAddToChatEvents, updateText, workspaceIdentity, workspacePath]);
 
   // 动态 placeholder（旧 chatViewPlaceholder 语义）：无历史 → newTask；
-  // 有历史空闲 → followUpAsk；有历史处理中 → followUpQueue。
-  const normalPlaceholder = intl.formatMessage({
-    id: resolveChatPlaceholderKey({
-      hasHistoryMessages: (snapshot?.rows.totalCount ?? 0) > 0,
-      isTaskProcessing: canStop,
-      compactNewTask: compactMobilePlaceholder,
-    }),
-  });
+  // 有历史空闲 → followUpAsk；有历史处理中 → followUpQueue；
+  // 完整视图浮窗（单行）运行中 → 「工作中 {时长}」，与流式消息同值同格式。
+  const workingDurationLabel =
+    layout === "inline" && canStop
+      ? formatConversationWorkDuration(workingDurationMs, intl, locale)
+      : null;
+  const normalPlaceholder = workingDurationLabel
+    ? intl.formatMessage({ id: "chat.history.workingFor" }, { duration: workingDurationLabel })
+    : intl.formatMessage({
+        id: resolveChatPlaceholderKey({
+          hasHistoryMessages: (snapshot?.rows.totalCount ?? 0) > 0,
+          isTaskProcessing: canStop,
+          // 单行输入框放不下完整的新任务提示，沿用手机远控的短文案。
+          compactNewTask: compactMobilePlaceholder || layout === "inline",
+        }),
+      });
   const sendTooltipTitle = intl.formatMessage({
     id: mode === "enqueue" ? "chat.queue.enqueue" : "chat.send",
   });
@@ -2299,15 +2316,6 @@ function ConversationComposerImpl({
   // 避免每个 token 批次都重建 Tooltip/Select 子树。
   const composerUsage = snapshot?.usage ?? null;
   const composerPhase = snapshot?.control.phase ?? null;
-  // 速度药丸的数据面：流式文本字符数（assistantText + reasoning 行），
-  // 每个 delta 批次随 snapshot 更新。放在 memo 外——它必须逐批次重渲染。
-  const streamingChars = useMemo(() => {
-    let total = 0;
-    for (const row of snapshot?.rows.window ?? []) {
-      if (row.kind === "assistantText" || row.kind === "reasoning") total += row.text.length;
-    }
-    return total;
-  }, [snapshot]);
   const handleSelectModelTrace = useCallback(
     (
       nextProvider: string,
@@ -2671,20 +2679,8 @@ function ConversationComposerImpl({
           appSlashCommands={runtimeBlocked ? [] : appSlashCommands}
           enableMentionPanel
           leadingActions={leadingActionsNode}
-          submitControl={
-            // 重植说明：3.15.1 整版覆盖本文件时把速度药丸接线冲掉（组件/i18n/测试均幸存，
-            // 仅此处渲染丢失），按 main 版形态（44f5411f…b2fece1d）原样恢复。
-            <>
-              <StreamSpeedPill
-                usage={composerUsage}
-                streamingChars={streamingChars}
-                active={composerPhase === "running"}
-                title={intl.formatMessage({ id: "chat.toolbar.streamSpeed.title" })}
-                cacheLabel={intl.formatMessage({ id: "chat.toolbar.streamSpeed.cache" })}
-              />
-              {submitControlNode}
-            </>
-          }
+          submitControl={submitControlNode}
+          layout={layout}
           className="p-0"
           shellClassName={
             highspeedCard

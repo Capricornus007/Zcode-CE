@@ -34,16 +34,6 @@ import {
 } from "react";
 import { cn } from "@/components/lib/utils.js";
 import {
-  type HighspeedCardSnapshot,
-  type PlanIdentitySnapshot,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import {
-  type HighspeedCardSnapshot,
-  type PlanIdentitySnapshot,
-  type ZCodeProvider,
-} from "@zcode/shared";
-import {
   TID_CHAT_ATTACHMENT_BUTTON,
   TID_CHAT_ATTACHMENT_MENU_ITEM,
   TID_V4_COMPOSER,

@@ -57,7 +57,6 @@ import type {
   OpenInEditorOptions,
   RemoteTarget,
   TaskNotificationPayload,
-  TelemetryRendererContext,
   RendererHeapSample,
   PostUpdateReleaseNotesPayload,
   RemoteSessionClosedEvent,
@@ -715,10 +714,6 @@ contextBridge.exposeInMainWorld("zcode", {
   },
   /** 通知 main process renderer 已就绪 */
   notifyRendererReady: () => ipcRenderer.send(PlatformChannels.RendererReady),
-  /** 同步 renderer telemetry 上下文到 main process */
-  syncTelemetryContext: (context: TelemetryRendererContext) =>
-    ipcRenderer.send(PlatformChannels.SyncTelemetryContext, context),
-  /** 通过 main process 统一上报业务 telemetry 事件 */
   // 遥测移除（P1）：这里原有 syncTelemetryContext / reportTelemetryEvent /
   // reportArmsCustomEvent / getRendererActionTraceConfig / onRendererActionTraceConfigChanged /
   // reportLocalTtftBatch / reportRendererActionTraceBatch 七个上报与配置桥，

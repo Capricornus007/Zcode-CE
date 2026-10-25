@@ -184,6 +184,16 @@ export const TID_REMOTE_KIND_SSH = "remote-kind-ssh";
 export const TID_REMOTE_KIND_WSL = "remote-kind-wsl";
 /** 远程连接方式切换到 Docker */
 export const TID_REMOTE_KIND_DOCKER = "remote-kind-docker";
+/** 远程连接方式切换到 Server */
+export const TID_REMOTE_KIND_SERVER = "remote-kind-server";
+/** Server 远程服务 URL 输入框 */
+export const TID_SERVER_URL_INPUT = "server-url-input";
+/** Server 远程服务名称输入框 */
+export const TID_SERVER_NAME_INPUT = "server-name-input";
+/** Server 远程服务 token 输入框 */
+export const TID_SERVER_TOKEN_INPUT = "server-token-input";
+/** Server 远程默认工作区路径输入框 */
+export const TID_SERVER_WORKSPACE_PATH_INPUT = "server-workspace-path-input";
 /** SSH 主机地址输入框 */
 export const TID_SSH_HOST_INPUT = "ssh-host-input";
 /** SSH 端口号输入框 */
@@ -222,6 +232,14 @@ export const TID_SSH_CANCEL_BUTTON = "ssh-cancel-button";
 // Sidebar
 /** 侧边栏容器 */
 export const TID_SIDEBAR = "sidebar";
+/** 侧边栏工作区列表 */
+export const TID_WORKSPACE_LIST = "workspace-list";
+/** 侧边栏工作区条目（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_ITEM = "workspace-item";
+/** 侧边栏关闭工作区按钮（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_CLOSE = "workspace-close";
+/** 侧边栏打开工作区文件树按钮（动态后缀为 workspacePath） */
+export const TID_WORKSPACE_FILE_TREE_BUTTON = "workspace-file-tree-button";
 /** 项目视图里的对话二级分区 */
 export const TID_CONVERSATION_SECTION = "conversation-section";
 /** 项目视图里的项目二级分区 */

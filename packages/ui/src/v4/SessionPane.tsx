@@ -2,6 +2,14 @@
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
 import { useStartPlanRecommendation } from "@/hooks/useStartPlanRecommendation.js";
 import type { SessionCreateSource } from "@zcode/shared";
+// 3.16.2 合併時這些模組 import 被連帶刪除，呼叫端仍在——照 zai-org/main 版補回。
+import { useRemoteConversationAvailable } from "@/v4/RemoteConversationAvailability.js";
+import {
+  createRemoteWorkspaceDisconnectedError,
+  getRemoteConnectionFailureCode,
+} from "@/lib/remoteWorkspaceServiceError.js";
+import { buildConversationShareItems } from "@/v4/conversationShareItems.js";
+import { buildGenUiModelContext } from "@zcode/shared/gen-ui";
 /* oxlint-disable eslint(max-lines) -- SessionPane 是单 pane 竖切的命令编排收口（订阅/发送/停止/fork/edit/retry/queue/slash 全集），与旧 ChatView 同粒度；HEAD 已超限（693 行计数），拆散命令组会打散 dispatchCommand/snapshotRef 的闭包纪律。 */
 import { useOptionalProjectDirectory } from "@/project-sidebar/index.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
@@ -28,6 +36,7 @@ import type {
   ConversationShareAccessMode,
   GitChangeSourceId,
   GitRepositorySummary,
+  HighspeedCardSnapshot,
   ZCodeProvider,
   ZCodeTaskChangeSummary,
 } from "@zcode/shared";
@@ -124,7 +133,7 @@ import {
 } from "@/lib/codingPlanFunnelTelemetry.js";
 import { decodeCustomModelValue, encodeCustomModelValue } from "@/lib/zcodeCustomModelValue.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
-import { prepareComposerRecentReceipt } from "@/lib/composerRecent.js";
+import { captureComposerRecentSubmission, prepareComposerRecentReceipt } from "@/lib/composerRecent.js";
 import { useComposerClientNamespace } from "@/hooks/useServices.js";
 import {
   readPendingTaskDraft,
@@ -628,6 +637,11 @@ export function SessionPane({
   const [lease, setLease] = useState<SessionLease | null>(null);
   const state = useConversationProjection(lease);
   const snapshot = state.snapshot;
+  // 3.16.2 合併時被連帶刪掉的局部宣告（呼叫端 22 處仍引用），照上游 zai-org/main 版還原。
+  const runtimeReady =
+    sessionId === null ||
+    (snapshot?.sessionId === sessionId &&
+      (!snapshot.runtimeInitialization || snapshot.runtimeInitialization.status === "ready"));
   const shareDraft = useConversationShareSelectionStore((storeState) =>
     sessionId ? storeState.drafts[sessionId] : undefined,
   );
@@ -4847,8 +4861,6 @@ export function SessionPane({
       ) : null}
       <ConversationHeader
         title={snapshot?.meta.title ?? ""}
-        onSplitRight={onSplitRight}
-        onSplitDown={onSplitDown}
         onClosePane={onClosePane}
         workspaceBadge={workspaceBadge}
       />
@@ -4857,21 +4869,34 @@ export function SessionPane({
         ref={conversationLayoutContainerRef}
         className="@container/conversation relative flex min-h-0 flex-1 flex-col"
       >
-        <ConversationShareSelectionScrim
-          visible={shareSelectionPanelVisible}
-          interactive
-          onBackdropClick={dismissShareSelectionPanel}
-        />
+        {/* 3.16.2 合併後此渲染塊殘留 baseline 舊分享 API（Scrim/ReopenTab/selectedShareRowIds/
+            shareInSelectionStage），與上方已升級為 upstream 版（shareSelectionPanelVisible/
+            pendingShareRowIds/popover）的邏輯區錯位。依 zai-org/main 版改寫為 Popover+Panel。 */}
+        {sessionId && !compactForRemoteControl ? (
+          <ConversationSharePopover
+            key={sessionId}
+            sessionId={sessionId}
+            open={shareActive}
+            publishing={sharePublishing}
+            selecting={shareSelectionPanelVisible}
+            onClose={handleShareCancel}
+            onCancelSelection={dismissShareSelectionPanel}
+          >
+            {sharePopoverContent}
+          </ConversationSharePopover>
+        ) : null}
         <ConversationShareSelectionPanel
           visible={shareSelectionPanelVisible}
           items={shareItems}
-          selectedRowIds={selectedShareRowIds}
+          selectedRowIds={pendingShareRowIds}
+          selectedCount={pendingShareTurnCount}
+          preflight={sharePreflight}
+          onSelectAllChange={handleSelectAllShareRows}
           onToggle={handleShareSelectionToggle}
           onInspect={handleShareSelectionInspect}
+          onConfirm={handleConfirmShareSelection}
+          onCancel={dismissShareSelectionPanel}
         />
-        {shareActive && shareInSelectionStage && shareDraft?.view === "timeline" && sessionId ? (
-          <ConversationShareSelectionReopenTab onOpen={() => showShareSelectionPanel(sessionId)} />
-        ) : null}
         {!isDraft ? (
           <ConversationStatusPanel
             workspacePath={workspacePath}

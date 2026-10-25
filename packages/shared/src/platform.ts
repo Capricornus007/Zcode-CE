@@ -843,6 +843,14 @@ export interface IPlatformService {
   ): Promise<CreateTempTextAttachmentResult>;
 
   /**
+   * 把 dwf 产物某一版的字节写成宿主本机上的一份副本（只在路径为空时写），返回其路径。
+   * 仅 Desktop 实现：手机远控与普通 Web 端没有「用本机 App 打开文件」的能力，缺席即不出入口。
+   */
+  materializeWorkflowArtifactFile?(
+    payload: MaterializeWorkflowArtifactFileRequest,
+  ): Promise<MaterializeWorkflowArtifactFileResult>;
+
+  /**
    * 本地 Web 服务（远程控制）的四条查询/动作通道 + 一条订阅（契约 §5）。
    *
    * **全部可选**：只有桌面端主进程提供这套服务面（它才有"启动一个本机服务进程"的能力）；

@@ -74,6 +74,9 @@ export * from "./errors.js";
 export * from "./dangerousCommands.js";
 export * from "./validation.js";
 export * from "./api.js";
+// SessionCreateSource 是 session 建立入口的业务协议字段（store / app-shell / pending command 都读），
+// 不是遥测载荷；遥测上报链路（sessionCreateTelemetry.ts）已按 P1 剥离，此类型单独 re-home 保留。
+export type { SessionCreateSource } from "./sessionCreateSource.js";
 export * from "./zcode-protocol/index.js";
 export * from "./account-provider-state.js";
 // re-home：旧协议承重面的幸存文件（消费者继续走 barrel，零感知）
@@ -114,6 +117,7 @@ export interface ICredentialStore {
   delete(key: string): Promise<void>;
 }
 
+export * from "./test-ids.js";
 export * from "./test-ids-workflow.js";
 export * from "./channels.js";
 export * from "./storage.js";

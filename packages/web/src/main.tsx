@@ -238,7 +238,6 @@ window.addEventListener("beforeunload", () => {
 });
 
 interface WebRemoteControlPlatformProxy {
-  reportTelemetryEvent?: (event: RendererTelemetryEventPayload) => void;
   requestPlatformMethod<K extends WebRemoteControlPlatformMethod>(
     method: K,
     args?: WebRemoteControlPlatformMethodArgsMap[K],
@@ -1765,13 +1764,6 @@ async function bootstrapExternalRelayWebRemoteControl(
             platform={createWebPlatform({
               externalWebRemoteControlProxy: {
                 requestPlatformMethod,
-                reportTelemetryEvent: (event) => {
-                  const parsed = sessionCreateTelemetrySchema
-                    .or(mobilePluginDiscoveryTelemetrySchema)
-                    .safeParse(event);
-                  if (parsed.success)
-                    transport.sendPayload({ zcode_type: "telemetry-report", event: parsed.data });
-                },
               },
             })}
             // Bug 原因：手机复用 Desktop Host 中已持久化的 Assistant row，但 Root 默认关闭
@@ -1891,13 +1883,6 @@ async function bootstrapExternalRelayWebRemoteControl(
             platform={createWebPlatform({
               externalWebRemoteControlProxy: {
                 requestPlatformMethod,
-                reportTelemetryEvent: (event) => {
-                  const parsed = sessionCreateTelemetrySchema
-                    .or(mobilePluginDiscoveryTelemetrySchema)
-                    .safeParse(event);
-                  if (parsed.success)
-                    transport.sendPayload({ zcode_type: "telemetry-report", event: parsed.data });
-                },
               },
             })}
             initialWorkspaceAbsPath={workspaceKey}

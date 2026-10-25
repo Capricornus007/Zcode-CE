@@ -650,6 +650,20 @@ export function useRootWorkspaceActions({
     [startNewTaskFromActiveWorkspace],
   );
 
+  const handleCreateScratchWorkspace = useCallback(
+    async (name: string) => {
+      if (!allowOpenWorkspace) {
+        logger.info("[Root] 当前模式不支持从空态菜单创建工作区，已忽略请求");
+        return null;
+      }
+
+      const result = await services.fileService.createScratchWorkspace({ name });
+      await handleSelectProject(result.path);
+      return result.path;
+    },
+    [allowOpenWorkspace, handleSelectProject, services.fileService],
+  );
+
   const handleBackFromSettings = useCallback(() => {
     if (!activeWorkspacePath) {
       return;
@@ -688,6 +702,7 @@ export function useRootWorkspaceActions({
     handleCreateConversationTask,
     handleOpenWorkspace,
     handleOpenFolderFromWorkspaceMenu,
+    handleCreateScratchWorkspace,
     handleCreateTask,
     handleBackFromSettings,
   };

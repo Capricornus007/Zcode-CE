@@ -410,5 +410,3 @@ export const jsToolEntry: ToolEntry = {
   },
   trace: TRACE,
 };
-
-export const nodeReplToolEntries: ToolEntry[] = [jsToolEntry];

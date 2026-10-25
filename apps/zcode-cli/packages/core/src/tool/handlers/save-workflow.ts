@@ -52,7 +52,6 @@ import {
 } from "./saved-workflows/index.js";
 import { readWorkflowScriptFile } from "./workflow-path-source.js";
 import { analyzeScript } from "./workflow-script-analysis.js";
-import { requireDynamicWorkflowSkill } from "./workflow-skill-gate.js";
 
 const SAVE_WORKFLOW_TIMEOUT_MS = 15_000;
 const SAVE_WORKFLOW_MODEL_BYTES = 24_000;

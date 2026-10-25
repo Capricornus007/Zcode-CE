@@ -18,12 +18,12 @@ export interface RectExpr {
   height: string;
 }
 
-export interface LeafLayout {
+interface LeafLayout {
   paneId: string;
   rect: RectExpr;
 }
 
-export interface DividerLayout {
+interface DividerLayout {
   splitId: string;
   direction: SplitDirection;
   /** store 当前占比（拖拽起点 + 容器 CSS 变量初值）。 */
@@ -114,7 +114,7 @@ function collectNode(
   );
 }
 
-export interface WorkbenchLayout {
+interface WorkbenchLayout {
   leaves: LeafLayout[];
   dividers: DividerLayout[];
 }

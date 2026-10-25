@@ -35,7 +35,6 @@ import { DataBaseDirControl } from "@/settings/DataBaseDirControl.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { ProactiveSuggestionsSetting } from "@/settings/ProactiveSuggestionsSetting.js";
-import { DynamicWorkflowModeSetting } from "@/settings/DynamicWorkflowModeSetting.js";
 import { normalizeInterfaceMode, type InterfaceMode } from "@/lib/interfaceMode.js";
 import {
   createSettingsPageConfig,
@@ -152,8 +151,6 @@ export function GeneralSectionContent({
   defaultHomeDir,
   isDesktop,
   isWindowsDesktop,
-  isLinuxDesktop,
-  linuxCloseToTray,
   showIntegratedTerminalShell = false,
   setLocalePreference,
   setNotificationEnabled,
@@ -214,17 +211,6 @@ export function GeneralSectionContent({
   defaultHomeDir: string;
   isDesktop?: boolean;
   isWindowsDesktop?: boolean;
-  /** Linux 桌面端（isDesktop 且非 win/mac）；关闭驻留托盘设置在 Linux 上按能力自适应展示 */
-  isLinuxDesktop?: boolean;
-  /** Linux 关闭驻留托盘能力状态（spec：docs/desktop/linux-close-to-tray.md）；Windows 不传 */
-  linuxCloseToTray?: {
-    /** 能力探测中或确认不可用，开关锁定 */
-    disabled: boolean;
-    /** 确认不可用（描述文案切换为"未提供系统托盘"） */
-    unavailable: boolean;
-    /** GNOME 系桌面且无托盘（追加 AppIndicator 扩展安装提示） */
-    gnomeLikeHint: boolean;
-  };
   showIntegratedTerminalShell?: boolean;
   platform?: IPlatformService;
   setLocalePreference: (locale: LocalePreference) => void;
@@ -762,24 +748,15 @@ export function GeneralSectionContent({
             />
           }
         />
-        {isWindowsDesktop || isLinuxDesktop ? (
+        {isWindowsDesktop ? (
           <SettingsRow
             label={intl.formatMessage({ id: "settings.closeToTrayOnWindows" })}
-            description={
-              linuxCloseToTray?.unavailable
-                ? linuxCloseToTray.gnomeLikeHint
-                  ? `${intl.formatMessage({ id: "settings.closeToTrayUnavailable" })} ${intl.formatMessage({ id: "settings.closeToTrayGnomeHint" })}`
-                  : intl.formatMessage({ id: "settings.closeToTrayUnavailable" })
-                : intl.formatMessage({
-                    id: "settings.closeToTrayOnWindowsDescription",
-                  })
-            }
+            description={intl.formatMessage({
+              id: "settings.closeToTrayOnWindowsDescription",
+            })}
             control={
               <Switch
                 checked={closeToTrayOnWindows}
-                // Linux 上托盘能力未知（探测中）或确认不可用时都锁定，防止误开导致关窗失联
-                //（spec：docs/desktop/linux-close-to-tray.md）。
-                disabled={Boolean(linuxCloseToTray?.disabled)}
                 onCheckedChange={(checked) => {
                   void onCloseToTrayOnWindowsChange(checked);
                 }}
@@ -856,8 +833,6 @@ export function GeneralSectionContent({
             />
           }
         />
-        {/* docs/dynamic-workflow/launch.md「The user's choice」：服务端未提供时整行不渲染。 */}
-        {hasServices ? <DynamicWorkflowModeSetting /> : null}
         <SettingsRow
           label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
           description={intl.formatMessage({

@@ -293,7 +293,7 @@ const modelAnomalyGuardSchema = z.object({
 // 因此本副本按原样保留（本包 zod 构造），并保持与 shared 的校验语义等价；
 // 运行时校验语义仍以 shared 为准（discovery/trust 装配入口都走 shared schema——
 // 本 schema 只负责配置文件装载诊断）。若未来统一 zod 实例，应删除本副本改 re-export。
-export const hookProcessSchema = z
+const hookProcessSchema = z
   .object({
     type: z.literal("process"),
     command: z.string().min(1),
@@ -305,7 +305,7 @@ export const hookProcessSchema = z
 
   .passthrough();
 
-export const hookCommandSchema = z
+const hookCommandSchema = z
   .object({
     type: z.literal("command"),
     command: z.string().min(1),
@@ -318,14 +318,14 @@ export const hookCommandSchema = z
   })
   .passthrough();
 
-export const hookMatcherSchema = z
+const hookMatcherSchema = z
   .object({
     matcher: z.string().min(1).optional(),
     hooks: z.array(z.discriminatedUnion("type", [hookProcessSchema, hookCommandSchema])).min(1),
   })
   .strict();
 
-export const hooksSchema = z
+const hooksSchema = z
   .object({
     enabled: z.boolean().optional(),
     timeoutMs: positiveNumberSchema.optional(),
@@ -385,7 +385,7 @@ export interface ConfigDiagnostic {
   severity: ConfigDiagnosticSeverity;
 }
 
-export interface ParseConfigFileResult {
+interface ParseConfigFileResult {
   config: RuntimeConfigPatch;
   diagnostics: ConfigDiagnostic[];
 }
@@ -586,10 +586,6 @@ function formatMcpServerError(error: z.ZodError): string {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readPositiveNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined;
 }
 
 function parseSkillsRuntimeConfig(

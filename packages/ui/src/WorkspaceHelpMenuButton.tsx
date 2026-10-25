@@ -52,13 +52,13 @@ export function WorkspaceHelpMenuButton({
   const { url: vulnerabilityReportUrl, loading: vulnerabilityReportLoading } =
     useVulnerabilityReportUrl(open);
   const updateMenu = useDesktopUpdateMenu(isDesktop);
-  const openFeatureRequest = useFeedbackStore((state) => state.openFeatureRequest);
   const { runFeedbackEntry } = useFeedbackEntryAction();
+  const openFeatureRequest = useFeedbackStore((state) => state.openFeatureRequest);
   const helpMenuLabel = intl.formatMessage({ id: "workspaceHeader.help.menu" });
-  // 「问题上报」改走「反馈与诊断」的渠道配置；「产品需求」仍走独立的需求弹窗（无工单语义）。
   const helpMenuActions = createHelpMenuActionHandlers({
     platform,
     intl,
+    // 「问题上报」改走「反馈与诊断」的渠道配置；「产品需求」仍走独立的需求弹窗（无工单语义）。
     runFeedbackEntry,
   });
   const handleOpenCommunity = () => {

@@ -11,7 +11,7 @@ export interface ToolSummaryAction {
   testId?: string;
 }
 
-export function handleToolSummaryActionKeyDown(
+function handleToolSummaryActionKeyDown(
   event: Pick<KeyboardEvent<HTMLDivElement>, "key" | "preventDefault">,
   onActivate: () => void,
 ): boolean {

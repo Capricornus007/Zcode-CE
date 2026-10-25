@@ -1,9 +1,7 @@
 import { migrateApplicationStorage, createSettingService } from "@zcode/services/node";
 import { disposeServiceResourcesAndWait, getAppConfigDir } from "@zcode/services/node";
-import type { IChannel } from "@zcode/rpc";
 import {
   ZCODE_VERSION,
-  TOPIC_RESOURCE_RELAY_CHANNEL,
   SERVICE_AUTHORITY_MODE_ENV,
   formatLogPrefix,
   formatZodError,
@@ -60,7 +58,6 @@ async function main() {
   await ensureRemoteServerDeviceMid({ log });
 
   // Phase 3: Initialize services and start stdio RPC server
-  let topicResourceChannel: IChannel | undefined;
   const zcodeBuiltinProviderConfigFilePath = await materializeBundledZCodeBuiltinProviderConfig({
     environmentConfigRoot: getAppConfigDir(),
     content: readBundledZCodeBuiltinProviderConfig(),
@@ -69,24 +66,13 @@ async function main() {
   const { authorityModeParseResult, services } = createStdioServices({
     env: process.env,
     zcodeBuiltinProviderConfigFilePath,
-    topicResourceRelayChannel: () => {
-      if (!topicResourceChannel) throw new Error("Desktop topic resource channel is unavailable");
-      return topicResourceChannel;
-    },
   });
   if (authorityModeParseResult.invalidRawValue) {
     log(
       `${SERVICE_AUTHORITY_MODE_ENV}=${authorityModeParseResult.invalidRawValue} 非法，按默认本机 Environment 权威模式启动`,
     );
   }
-  const stdioServer = createStdioServer(
-    services,
-    authorityModeParseResult.mode === "desktop-attached-remote"
-      ? (client) => {
-          topicResourceChannel = client.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL);
-        }
-      : undefined,
-  );
+  const stdioServer = createStdioServer(services);
   registerStdioProcessLifecycle({
     stdin: process.stdin,
     signalSource: process,

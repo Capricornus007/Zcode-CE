@@ -76,7 +76,6 @@ interface HelperProcessResult {
 interface ReadAppBoundKeyOptions {
   appExecutablePath?: string;
   chromeExecutablePath: string;
-  // 与导出的 WindowsChromeAppBoundKeyReader 入参保持一致：helper --version 的 app/commit 校验允许调用方覆盖。
   expectedAppVersion?: string;
   expectedBuildCommit?: string;
   helperPath?: string;
@@ -92,10 +91,7 @@ interface ReadAppBoundKeyOptions {
   ) => Promise<HelperProcessResult>;
   userDataDir: string;
   trustedPowerShellPath?: string;
-  verifySignature?: (
-    helperPath: string,
-    appExecutablePath: string,
-  ) => Promise<boolean | string>;
+  verifySignature?: (helperPath: string, appExecutablePath: string) => Promise<boolean | string>;
 }
 
 function toSafeProcessError(error: unknown): { code?: string; name: string } {

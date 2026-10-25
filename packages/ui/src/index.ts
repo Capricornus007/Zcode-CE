@@ -109,7 +109,16 @@ export {
 } from "./lib/uiFontSize.js";
 // 上报已停用：RendererUserActionTelemetry 类与 setUserActionTelemetry 已删除，
 // 只保留业务侧使用的三个透传包装器（见 lib/userActionTelemetry.ts 的说明）。
-export { runUserAction, runUserActionAsync, startUserAction } from "./lib/userActionTelemetry.js";
+// ---- 官方面恢复（3.15.1 对齐）：Renderer 用户操作 Trace 全量导出（userActionTraceBootstrap 消费类与注入器）----
+export {
+  RendererUserActionTelemetry,
+  runUserAction,
+  runUserActionAsync,
+  setUserActionTelemetry,
+  startUserAction,
+} from "./lib/userActionTelemetry.js";
+// ---- 官方面恢复（3.15.1 对齐）：E2E ARMS 自定义事件落点，desktopPlatform 消费 ----
+export { recordArmsCustomEventForE2E } from "./lib/armsCustomEventObservability.js";
 export {
   CORE_USER_ACTION_FEATURES,
   SETTINGS_USER_ACTION_FEATURES,

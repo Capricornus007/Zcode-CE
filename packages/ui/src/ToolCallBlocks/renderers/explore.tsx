@@ -21,7 +21,7 @@ type IntlLike = {
   formatMessage: (descriptor: { id: string }, values?: Record<string, string>) => string;
 };
 
-export type ExploreChildSummary = {
+type ExploreChildSummary = {
   animationKey: string;
   primaryText: ReactNode;
   secondaryText?: ReactNode;

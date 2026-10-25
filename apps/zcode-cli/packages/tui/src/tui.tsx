@@ -53,10 +53,7 @@ export const runTui = async (options: TuiOptions): Promise<number> => {
 };
 
 /** Renderer lifecycle shared by the interactive entrypoint and native terminal tests. */
-export async function runTuiWithRenderer(
-  options: TuiOptions,
-  renderer: CliRenderer,
-): Promise<number> {
+async function runTuiWithRenderer(options: TuiOptions, renderer: CliRenderer): Promise<number> {
   let exitCode = 0;
   let startupError: unknown;
   let destroyed = false;

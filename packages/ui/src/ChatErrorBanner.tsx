@@ -30,12 +30,13 @@ import {
 } from "./components/ui/dialog.js";
 import { cn } from "./components/lib/utils.js";
 import { toast } from "./components/ui/toast.js";
-import { useFeedbackEntryAction } from "@/feedback/useFeedbackEntryAction.js";
+import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import { getProviderBusinessErrorMessageId } from "@/lib/providerBusinessError.js";
 import { buildErrorFeedbackDescription } from "@/lib/errorFeedbackDraft.js";
 import {
   isSuspiciousEmptyModelResultMessage,
   resolveOffPeakTicketExpiredBusinessCode,
+  resolveRequestVerificationBusinessCode,
 } from "@/lib/providerBusinessError.js";
 import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
 
@@ -65,7 +66,7 @@ const MODEL_CONFIG_MISSING_CODES = new Set([
 ]);
 
 function isModelConfigMissingError(error: Pick<ZCodeUiError, "code" | "message">): boolean {
-  // 桌面端发送前 registry 为空时，agent 会退回 CLI config 并抛 Model config is missing。
+  // Bugfix: 桌面端发送前 registry 为空时，agent 会退回 CLI config 并抛 Model config is missing。
   // 真实原因是“当前没有可用模型”，不能把 CLI 配置路径直接暴露给桌面用户。
   // 这里只按结构化 code 识别，避免 UNKNOWN/SEND_FAILED 等包装错误的可读 message
   // 碰巧包含同一段文本时被误判，并连带隐藏复制、反馈等诊断入口。
@@ -114,8 +115,29 @@ export function resolveChatErrorBannerDisplayMessage(
     });
   }
 
+  if (error.code === "CLAUDE_UNKNOWN_COMMAND") {
+    const parsed = parseClaudeUnknownCommandMessage(error.message);
+    if (!parsed) {
+      return error.message;
+    }
+
+    // Bugfix: 服务层为了兼容历史快照仍持久化中文兜底文案，UI 需要按稳定 code
+    // 重新本地化，否则英文界面会混入中文错误提示。
+    return parsed.args
+      ? intl.formatMessage(
+          { id: "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS" },
+          { command: parsed.command, args: parsed.args },
+        )
+      : intl.formatMessage(
+          { id: "zcode.error.CLAUDE_UNKNOWN_COMMAND" },
+          { command: parsed.command },
+        );
+  }
+
   const providerBusinessCode =
-    resolveOffPeakTicketExpiredBusinessCode(error.code, error.message) ?? error.code;
+    resolveRequestVerificationBusinessCode(error.code, error.message) ??
+    resolveOffPeakTicketExpiredBusinessCode(error.code, error.message) ??
+    error.code;
   const providerBusinessMessageId = getProviderBusinessErrorMessageId(providerBusinessCode);
   if (providerBusinessMessageId) {
     return intl.formatMessage({ id: providerBusinessMessageId });
@@ -165,7 +187,7 @@ export function ChatErrorBanner({
   modelConfigTarget?: ChatErrorBannerModelConfigTarget;
 }) {
   const { intl } = useZCodeIntl();
-  const { runFeedbackEntry } = useFeedbackEntryAction();
+  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const actionButtonClassName = "shrink-0";
   const iconButtonClassName = "shrink-0";
@@ -182,11 +204,18 @@ export function ChatErrorBanner({
   }
 
   const handleOpenFeedback = async () => {
-    // 改造前这里无条件打开官方工单弹窗（连官方域名，fork 用户点了等于没反应）。
-    // 现在改走「反馈与诊断」的渠道配置：errorSummary 让错误现场自动出现在预填正文里，
-    // 用户不必再从横幅手抄一遍报错。原始错误对象与堆栈不进上下文，只传可读 message 与模板正文。
-    const outcome = runFeedbackEntry({
-      errorSummary: localizedErrorMessage,
+    openFeedbackSubmit({
+      title: localizedErrorMessage.slice(0, 80),
+      type: "bug",
+      module: remoteConnectionFailure
+        ? remoteKind === "ssh"
+          ? "SSH连接失败"
+          : remoteKind === "wsl"
+            ? "WSL连接失败"
+            : "其它"
+        : "模型调用报错",
+      severity: "P2-中",
+      includeLogs: true,
       description: buildErrorFeedbackDescription({
         message: localizedErrorMessage,
         detail: error.detail,
@@ -194,12 +223,9 @@ export function ChatErrorBanner({
         formatMessage: (id: string, values?: Record<string, string>) =>
           intl.formatMessage({ id }, values),
       }),
+      screenshots: [],
     });
-    // 渠道关闭或地址非法时 hook 已改为引导到设置页并自带提示，这里不再补一句“已打开反馈”，
-    // 否则用户会同时看到“已打开”和“未配置”两条互相矛盾的提示。
-    if (outcome === "opened") {
-      toast(intl.formatMessage({ id: "chat.error.feedbackOpened" }));
-    }
+    toast(intl.formatMessage({ id: "chat.error.feedbackOpened" }));
   };
 
   const handleCopyError = async () => {
@@ -339,7 +365,7 @@ export function ChatErrorBanner({
           </Button>
         ) : null}
 
-        {/* 错误横幅本身就是异常态，不能再经过 Radix Tooltip 的 Popper/Slot 状态链。
+        {/* Bugfix: 错误横幅本身就是异常态，不能再经过 Radix Tooltip 的 Popper/Slot 状态链。
             这里改成普通 Button，避免无可用模型等错误触发横幅时发生 Maximum update depth 循环。 */}
         {!modelConfigMissing ? (
           <Button

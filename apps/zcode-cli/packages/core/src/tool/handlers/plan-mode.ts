@@ -33,7 +33,7 @@ const MAX_PLAN_MODE_MODEL_BYTES = 100_000;
 
 const EXIT_PLAN_MODE_DESCRIPTION = EXIT_PLAN_MODE_MODEL_INSTRUCTIONS[0];
 
-export const enterPlanModeHandler: ToolHandler = async (input, context) => {
+const enterPlanModeHandler: ToolHandler = async (input, context) => {
   EnterPlanModeInputSchema.parse(input);
   assertSessionModePort(context, ENTER_PLAN_MODE_TOOL_NAME);
 
@@ -57,7 +57,7 @@ export const enterPlanModeHandler: ToolHandler = async (input, context) => {
   } satisfies EnterPlanModeOutput;
 };
 
-export const exitPlanModeHandler: ToolHandler = async (input, context) => {
+const exitPlanModeHandler: ToolHandler = async (input, context) => {
   const parsed = ExitPlanModeInputSchema.parse(input) as ExitPlanModeInput;
   assertSessionModePort(context, EXIT_PLAN_MODE_TOOL_NAME);
 

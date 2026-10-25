@@ -39,6 +39,7 @@ import {
 } from "./agent.js";
 import { isSubagentDispatchToolName } from "../compat.js";
 import { skillToolEntry } from "./skill.js";
+import { kbSearchToolEntry } from "./kb-search.js";
 import { todoReadToolEntry, todoWriteToolEntry } from "./todo.js";
 import {
   cronCreateToolEntry,
@@ -67,6 +68,9 @@ import { createWorkflowToolEntry } from "./create-workflow.js";
 import { saveWorkflowToolEntry } from "./save-workflow.js";
 import { listSavedWorkflowsToolEntry } from "./list-saved-workflows.js";
 import { listModelsToolEntry } from "./list-models.js";
+// 重植（3.15.1 升级重建本文件时漏掉）：CE④ GetContextRemaining 模型工具
+// （吸收 codex，origin/main f41088b0）——只读、无 gate 的上下文余量仪表。
+import { getContextRemainingToolEntry } from "./get-context-remaining.js";
 import { evalWorkflowSnippetToolEntry } from "./eval-workflow-snippet.js";
 import { listWorkflowRunsToolEntry } from "./list-workflow-runs.js";
 import { getWorkflowRunToolEntry } from "./get-workflow-run.js";
@@ -115,6 +119,7 @@ export const builtInTools: ToolEntry[] = [
   agentToolEntry,
   taskToolEntry,
   skillToolEntry,
+  kbSearchToolEntry,
   jsToolEntry,
   createWorkflowToolEntry,
   amendWorkflowToolEntry,
@@ -140,10 +145,16 @@ export const builtInTools: ToolEntry[] = [
   fillWorkflowHoleToolEntry,
   // 定义清单（与上面两个 run 工具是两件事：那是历史，这是可跑的东西）。同为只读、无 gate。
   listSavedWorkflowsToolEntry,
+  // 重植：模型可见的上下文余量仪表（吸收 codex）：只读、无 gate。长会话里模型
+  // 自查 tokensLeft 后应增量交付/建议 compact，而不是静默截断工作。
+  getContextRemainingToolEntry,
   // 模型目录：同为只读、无 gate 的发现面，服务于 CreateWorkflow / AmendWorkflow 的
   // `subagent_model`。不进 WORKFLOW_CHILD_DISALLOWED_TOOLS
   // ——那条禁令的理由是 alwaysAsk 在 child 里无窗可弹，只读查询不适用。
   listModelsToolEntry,
+  // 延迟工具发现入口（吸收 pi tool_search）：声明面超预算时由 getTools 动态
+  // 追加到模型可见列表；正常预算内不出现在声明里，但必须注册——执行路径按名查 registry。
+  toolSearchToolEntry,
   // workflowToolEntry,
 ];
 
@@ -204,6 +215,8 @@ interface RegisterBuiltInToolsOptions {
   /** browser-use 说明和 agent.browsers 注入由官方 browser-use 插件 + 宿主 browser bridge 共同启用。 */
   includeBrowserUse?: boolean;
   embeddedSearchEnabled?: boolean;
+  /** 知识卡检索（KbSearch）：需要工作区文件系统与 `.zcode/kb-cards` 语料；缺席即不注册。 */
+  includeKbSearch?: boolean;
   allowedTools?: readonly string[];
   disallowedTools?: readonly string[];
   silentDuplicateWarnings?: boolean;
@@ -235,6 +248,9 @@ export function registerBuiltInTools(
       continue;
     }
     if (entry.metadata.name === "Skill" && options.includeSkill === false) {
+      continue;
+    }
+    if (entry.metadata.name === "KbSearch" && options.includeKbSearch === false) {
       continue;
     }
     if (entry.metadata.name === "SendMessage" && options.includeSendMessage !== true) {

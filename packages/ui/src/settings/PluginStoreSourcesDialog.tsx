@@ -1,6 +1,5 @@
 import { AlertTriangle, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import type { ZCodePluginMarketplaceSummary } from "@zcode/shared";
-import { CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
@@ -9,16 +8,13 @@ import {
   isPublicStoreMarketplaceId,
   sortMarketplaceSources,
 } from "@/settings/pluginStoreListing.js";
-import { DEFAULT_MARKETPLACE_ID } from "@/settings/recommendedPlugins.js";
 
 // 官方市场不可移除：移除后启动时会被重新补种，只会造成「删了又回来」的困惑。
 function isRemovableMarketplace(marketplace: ZCodePluginMarketplaceSummary): boolean {
-  if (isPublicStoreMarketplaceId(marketplace.id)) return false;
-  if (marketplace.id === DEFAULT_MARKETPLACE_ID) return false;
-  return true;
+  return !isPublicStoreMarketplaceId(marketplace.id);
 }
 
-export function PluginStoreSourceRefreshFailure({
+function PluginStoreSourceRefreshFailure({
   failure,
 }: {
   failure: NonNullable<ZCodePluginMarketplaceSummary["refreshFailure"]>;
@@ -58,9 +54,6 @@ export function PluginStoreSourcesDialog({
   activeOperations: ReadonlyArray<{ id: string }>;
 }) {
   const { intl, locale } = useZCodeIntl();
-  const claudeCodePlugins = intl.formatMessage({
-    id: "settings.plugins.marketplace.claudeCodePlugins",
-  });
   const sortedMarketplaces = sortMarketplaceSources(marketplaces, locale);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,11 +87,7 @@ export function PluginStoreSourcesDialog({
                   <div className="min-w-0 flex-1">
                     <div className="flex min-w-0 items-center gap-1.5">
                       <span className="truncate text-ui-base font-medium text-foreground">
-                        {resolveMarketplaceDisplayName(
-                          marketplace.id,
-                          [marketplace],
-                          claudeCodePlugins,
-                        )}
+                        {resolveMarketplaceDisplayName(marketplace.id, [marketplace])}
                       </span>
                     </div>
                     <div className="mt-0.5 truncate text-ui-base text-foreground-subtle">
@@ -113,9 +102,7 @@ export function PluginStoreSourcesDialog({
                           )}`
                         : ""}
                     </div>
-                    {marketplace.refreshFailure &&
-                    // claude-plugins-official 的刷新失败不提示（同 pluginManagementStore.updateMarketplace）。
-                    marketplace.id !== CLAUDE_OFFICIAL_PLUGIN_MARKETPLACE_ID ? (
+                    {marketplace.refreshFailure ? (
                       <PluginStoreSourceRefreshFailure failure={marketplace.refreshFailure} />
                     ) : null}
                   </div>

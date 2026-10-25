@@ -240,7 +240,7 @@ function buildTaskResultRows(params: {
   return rows;
 }
 
-export function CommandCenterScopeButton({
+function CommandCenterScopeButton({
   active,
   label,
   onClick,
@@ -295,7 +295,7 @@ function scopeToPrefix(scope: CommandCenterSearchScope): string {
  * 独立组件便于复用与单测；按 DESIGN.md 语义角色，列表项里的相对时间属于
  * secondary copy，使用 text-ui-sm（不用 text-ui-xs，避免偏小）。
  */
-export function CommandCenterConversationTimestamp({
+function CommandCenterConversationTimestamp({
   className,
   children,
 }: {
@@ -325,7 +325,7 @@ export function CommandCenterConversationTimestamp({
  * - 历史 chip 搜索词：text-ui-base（可读内容，与列表主体一致）
  * - chip 内 scope 前缀：text-ui-xs（badge 标记，比主体小一级形成层级）
  */
-export function CommandCenterSearchHistory({
+function CommandCenterSearchHistory({
   entries,
   expanded,
   onToggleExpanded,

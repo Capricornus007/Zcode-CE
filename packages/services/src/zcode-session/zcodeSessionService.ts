@@ -4,7 +4,6 @@ import type { ZCodeTaskIndexSyncer } from "#src/zcode-agent/zcodeTaskIndexSyncer
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import {
   createSessionTraceId,
-  resolveWorkspaceKey,
   type ZCodeSessionStateSnapshot,
   type ZCodeWorkspaceTaskListChanged,
 } from "@zcode/shared";
@@ -480,21 +479,7 @@ export function createZCodeSessionService({
       return withApiRetryRuntime(await agentService.setMode(params));
     },
 
-    respondProviderRuntimeHeaders(params) {
-      return agentService.respondProviderRuntimeHeaders({
-        requestId: params.requestId,
-        sessionId: params.sessionId,
-        workspace: {
-          workspacePath: params.workspacePath,
-          ...(params.workspaceIdentity ? { workspaceIdentity: params.workspaceIdentity } : {}),
-          ...(params.remoteSessionId ? { remoteSessionId: params.remoteSessionId } : {}),
-          workspaceKey: resolveWorkspaceKey(params),
-        },
-        response: params.response,
-      });
-    },
-
-    // M5 删波次 2：onDynamicSessionEvent（renderer 侧旧 session/subscribe 订阅面）已删。
+    // onDynamicSessionEvent（renderer 侧旧 session/subscribe 订阅面）已删。
     // v4 UI 的会话事件走 agentService 的 conversation 帧通道，本 service 不再向
     // agentService.onDynamicSessionEvent 建立任何订阅。
   };

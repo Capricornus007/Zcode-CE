@@ -29,8 +29,8 @@ const SHARE_LOGIN_PROVIDERS: readonly WebOAuthProviderId[] = [
   BIGMODEL_PROVIDER_ID,
 ];
 
-export type ConversationShareLandingLocale = "zh-CN" | "en-US";
-export type ConversationShareLandingState =
+type ConversationShareLandingLocale = "zh-CN" | "en-US";
+type ConversationShareLandingState =
   | { kind: "loading" }
   | { kind: "login_required" }
   | { kind: "ready"; preview: ConversationSharePreview }

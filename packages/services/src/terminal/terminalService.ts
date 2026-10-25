@@ -48,14 +48,14 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function parseWindowsBuildNumber(releaseText: string): number | undefined {
+function parseWindowsBuildNumber(releaseText: string): number | undefined {
   const buildText = releaseText.split(".")[2];
   if (!buildText) return undefined;
   const buildNumber = Number.parseInt(buildText, 10);
   return Number.isFinite(buildNumber) ? buildNumber : undefined;
 }
 
-export function resolveTerminalWindowsPtyInfo(
+function resolveTerminalWindowsPtyInfo(
   platform: NodeJS.Platform = process.platform,
   releaseText: string = release(),
 ): TerminalWindowsPtyInfo | undefined {
@@ -198,7 +198,7 @@ function resolveFallbackUtf8Locale(env: NodeJS.ProcessEnv): string {
   return process.platform === "darwin" ? "en_US.UTF-8" : "C.UTF-8";
 }
 
-export function resolveTerminalEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+function resolveTerminalEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const nextEnv = { ...env };
   const fallbackLocale = resolveFallbackUtf8Locale(env);
 
@@ -285,7 +285,7 @@ function spawnTerminalProcess(params: {
   }
 }
 
-export function resolveTerminalShell(): string {
+function resolveTerminalShell(): string {
   if (process.platform === "win32") {
     // Windows PowerShell 5.1 的 PSReadLine 在 ConPTY 下更容易把输入行空白重绘成 ANSI black 背景。
     // PowerShell 7+ 的终端兼容性更接近桌面端，优先使用已安装的 pwsh，找不到再回退到系统自带 shell。
@@ -310,8 +310,8 @@ export function resolveTerminalShell(): string {
   throw new Error("No usable shell found for terminal startup");
 }
 
-export function resolveTerminalCwd(cwd?: string): string {
-  // 修复原因：工作区目录可能已经被删除、移动，或者启动时传进来的是一个失效路径。
+function resolveTerminalCwd(cwd?: string): string {
+  // 工作区目录可能已经被删除、移动，或者启动时传进来的是一个失效路径。
   // 之前把这个 cwd 原样传给 node-pty，同样会在 spawn 阶段失败。
   // 这里优先使用传入目录，不可用时回退到 HOME / 系统 home / 根目录，保证终端还能拉起。
   const candidates = [cwd, process.env.HOME, homedir(), "/"];
@@ -407,11 +407,7 @@ export function createTerminalService(dependencies: {
   }
 
   const service: ITerminalService & { disposeAll(): void } = {
-    async create(params: {
-      cols: number;
-      rows: number;
-      cwd?: string;
-    }): Promise<{
+    async create(params: { cols: number; rows: number; cwd?: string }): Promise<{
       id: string;
       shell: string;
       fontFamily: string;
@@ -424,12 +420,10 @@ export function createTerminalService(dependencies: {
       const shell = resolveTerminalShell();
       const cwd = resolveTerminalCwd(params.cwd);
       const env = resolveTerminalEnv();
-      const terminalProfileSettings = await dependencies.settingService
-        .get()
-        .catch(() => ({
-          terminalFontFamily: undefined,
-          terminalInheritSystemProfile: true,
-        }));
+      const terminalProfileSettings = await dependencies.settingService.get().catch(() => ({
+        terminalFontFamily: undefined,
+        terminalInheritSystemProfile: true,
+      }));
       const fontProfile = resolveTerminalFontProfile({
         settings: terminalProfileSettings,
         env: process.env,
@@ -458,7 +452,9 @@ export function createTerminalService(dependencies: {
           env,
         });
       } catch (error) {
-        throw new Error(`Failed to start terminal with shell '${shell}' in '${cwd}': ${getErrorMessage(error)}`);
+        throw new Error(
+          `Failed to start terminal with shell '${shell}' in '${cwd}': ${getErrorMessage(error)}`,
+        );
       }
 
       p.onData((data) => terminalOutput.push(data));

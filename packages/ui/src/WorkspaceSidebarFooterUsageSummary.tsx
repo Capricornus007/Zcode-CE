@@ -412,7 +412,7 @@ export function useWorkspaceSidebarFooterUsageSummaryState({
   };
 }
 
-export type WorkspaceSidebarFooterUsageSummaryState = ReturnType<
+type WorkspaceSidebarFooterUsageSummaryState = ReturnType<
   typeof useWorkspaceSidebarFooterUsageSummaryState
 >;
 

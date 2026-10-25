@@ -19,7 +19,7 @@ const CHANGES_GROUP_ICON = <PencilIcon className="size-4 shrink-0 text-foregroun
 const FILE_CHIP_GAP_PX = 8;
 const FILE_CHIP_TRAILING_SPACE_PX = 24;
 
-export function resolveFileChipAvailableWidth({
+function resolveFileChipAvailableWidth({
   boundaryRight,
   listLeft,
   trailingWidth,
@@ -31,7 +31,7 @@ export function resolveFileChipAvailableWidth({
   return Math.max(0, boundaryRight - listLeft - trailingWidth);
 }
 
-export function resolveResponsiveFileChipCount({
+function resolveResponsiveFileChipCount({
   availableWidth,
   chipWidths,
   overflowWidth,

@@ -106,13 +106,13 @@ interface AgentGroups {
   user: AgentSummary[];
 }
 
-export function projectSettingsSubagents(result: AgentsListResult): AgentSummary[] {
-  // Bugfix：result.agents 是运行时调用投影，插件 agent 可能同时有规范名称与裸名称别名；
+function projectSettingsSubagents(result: AgentsListResult): AgentSummary[] {
+  // result.agents 是运行时调用投影，插件 agent 可能同时有规范名称与裸名称别名；
   // 设置页按已安装资源展示，插件部分必须改用一文件一条的 pluginAgents 投影。
   return [...result.agents.filter((agent) => agent.source !== "plugin"), ...result.pluginAgents];
 }
 
-export interface SubagentFormInitialState {
+interface SubagentFormInitialState {
   name: string;
   description: string;
   color: AgentColor;
@@ -216,9 +216,9 @@ function toSubagentModelSelection(
   };
 }
 
-export type SubagentThoughtOptionState = SubagentReasoningFieldState;
+type SubagentThoughtOptionState = SubagentReasoningFieldState;
 
-export function resolveSubagentThoughtOptionState(params: {
+function resolveSubagentThoughtOptionState(params: {
   model: string;
   modelAvailable: boolean;
   modelSelectionView?: ModelSelectionView | null;
@@ -254,7 +254,7 @@ export function resolveSubagentThoughtOptionState(params: {
   return { kind: "unsupported" };
 }
 
-export function isSubagentThoughtLevelAvailable(
+function isSubagentThoughtLevelAvailable(
   state: SubagentThoughtOptionState,
   thoughtLevel: string | undefined,
 ): boolean {
@@ -280,7 +280,7 @@ function resolvedSubagentThoughtLevel(state: SubagentThoughtOptionState): string
     : undefined;
 }
 
-export function isSubagentModelAvailable(
+function isSubagentModelAvailable(
   modelGroups: readonly ModelSelectGroup[],
   model: string | undefined,
   modelSelectionLoading = false,
@@ -295,7 +295,7 @@ export function isSubagentModelAvailable(
   return modelGroups.some((group) => group.items.some((item) => item.value === trimmedModel));
 }
 
-export function createSubagentFormInitialState(
+function createSubagentFormInitialState(
   initial?: Pick<
     AgentSummary,
     | "name"
@@ -390,9 +390,7 @@ function groupAgentsByScope(agents: readonly AgentSummary[]): AgentGroups {
 }
 
 /** 按完整插件 ID 分组，避免同名 marketplace 的子智能体互相合并。 */
-export function groupPluginAgentsById(
-  agents: readonly AgentSummary[],
-): Array<[string, AgentSummary[]]> {
+function groupPluginAgentsById(agents: readonly AgentSummary[]): Array<[string, AgentSummary[]]> {
   const groups = new Map<string, AgentSummary[]>();
   for (const agent of agents) {
     const key =

@@ -1,6 +1,6 @@
 import type { ConversationTurnRenderUnit } from "@/v4/conversationTurnRenderUnits.js";
 
-export interface ConversationTimelineLiveTailSplit {
+interface ConversationTimelineLiveTailSplit {
   virtualizedUnits: readonly ConversationTurnRenderUnit[];
   liveUnit: ConversationTurnRenderUnit | null;
   liveUnitIndex: number | null;

@@ -51,7 +51,7 @@ export function ZCodeStartupLogoBadge({
   );
 }
 
-export function ZCodeStartupLogo({
+function ZCodeStartupLogo({
   className,
   animated = true,
 }: {

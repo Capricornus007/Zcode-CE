@@ -31,11 +31,7 @@ import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
-import { useFeedbackEntryAction } from "@/feedback/useFeedbackEntryAction.js";
-import {
-  formatRemoteLinkRailTarget,
-  formatRemoteLinkRailDevice,
-} from "@/remote-connection/RemoteLinkRail.js";
+import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import {
   formatRemoteLinkRailTarget,
   formatRemoteLinkRailDevice,
@@ -291,7 +287,9 @@ export function RemoteConnectionConnectingStep({
   onContinueToDirectory?: () => void;
 }) {
   const { intl } = useZCodeIntl();
-  const { runFeedbackEntry } = useFeedbackEntryAction();
+  const credentialInputId = useId();
+  const platform = usePlatform();
+  const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);
   const logContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldFollowLatestLogRef = useRef(true);
   const latestLogId = logs.at(-1)?.id;
@@ -404,23 +402,18 @@ export function RemoteConnectionConnectingStep({
   const handleOpenFeedback = async () => {
     // 远程连接失败时用户看到的是连接日志现场。
     // 反馈入口只预填脱敏后的错误摘要，附件由用户主动选择。
-    // 改造后走「反馈与诊断」的渠道配置：errorSummary 单独作为「错误摘要」字段，
-    // 完整模板（含最近 30 行连接日志，已过 redactFeedbackText）作为问题描述。
-    runFeedbackEntry({
+    openFeedbackSubmit({
       title:
         errorMessage.slice(0, 80) ||
-        intl.formatMessage({
-          id:
-            kind === "ssh"
-              ? "feedback.module.sshConnectionFailed"
-              : kind === "wsl"
-                ? "feedback.module.wslConnectionFailed"
-                : "feedback.submit.template.section.remoteConnectFailed",
-        }),
-      ...(errorMessage ? { errorSummary: errorMessage } : {}),
+        intl.formatMessage({ id: "feedback.submit.template.section.remoteConnectFailed" }),
+      type: "bug",
+      module: kind === "ssh" ? "SSH连接失败" : kind === "wsl" ? "WSL连接失败" : "Agent任务执行失败",
+      severity: "P2-中",
+      includeLogs: false,
       description: buildRemoteConnectionFeedbackDescription(errorMessage, logs, (id, values) =>
         intl.formatMessage({ id }, values),
       ),
+      screenshots: [],
     });
   };
 

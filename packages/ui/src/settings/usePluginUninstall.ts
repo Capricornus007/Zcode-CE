@@ -13,7 +13,7 @@ interface UsePluginUninstallInput {
   onAfterUninstall: () => Promise<void>;
 }
 
-export interface PluginUninstallController {
+interface PluginUninstallController {
   pendingPlugin: ZCodePluginInfo | ZCodeInstalledPluginSummary | null;
   uninstalling: boolean;
   requestUninstall: (pluginId: string) => void;

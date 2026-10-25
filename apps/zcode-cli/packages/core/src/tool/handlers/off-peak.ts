@@ -118,7 +118,7 @@ function throwOffPeakCreateFailure(
   });
 }
 
-export const offPeakCreateHandler: ToolHandler = async (input, context) => {
+const offPeakCreateHandler: ToolHandler = async (input, context) => {
   assertNotOffPeakTurn(context, "OffPeakCreate");
   const parsed = OffPeakCreateInputSchema.parse(input) as OffPeakCreateInput;
   assertOffPeakPort(context, "OffPeakCreate");
@@ -139,7 +139,7 @@ export const offPeakCreateHandler: ToolHandler = async (input, context) => {
   } satisfies OffPeakCreateOutput;
 };
 
-export const offPeakListHandler: ToolHandler = async (input, context) => {
+const offPeakListHandler: ToolHandler = async (input, context) => {
   OffPeakListInputSchema.parse(input);
   assertOffPeakPort(context, "OffPeakList");
 

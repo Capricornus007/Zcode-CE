@@ -44,15 +44,15 @@ class WorkspaceHookPendingDismissStore {
   }
 }
 
-export const workspaceHookPendingDismissStore = new WorkspaceHookPendingDismissStore();
+const workspaceHookPendingDismissStore = new WorkspaceHookPendingDismissStore();
 
-export interface WorkspaceHookAdmissionInfo {
+interface WorkspaceHookAdmissionInfo {
   pendingCount: number;
   bundleDigest: string;
   workspaceIdentity?: string;
 }
 
-export interface WorkspaceHookPendingBannerProps {
+interface WorkspaceHookPendingBannerProps {
   sessionId: string;
   workspacePath: string;
   workspaceIdentity?: string;
@@ -110,14 +110,7 @@ export const WorkspaceHookPendingBanner = memo(function WorkspaceHookPendingBann
         });
       });
     }
-  }, [
-    admission,
-    commandBindings,
-    openSettingsTab,
-    sessionId,
-    workspaceIdentity,
-    workspacePath,
-  ]);
+  }, [admission, commandBindings, openSettingsTab, sessionId, workspaceIdentity, workspacePath]);
 
   const handleDismiss = useCallback(() => {
     if (admission) {

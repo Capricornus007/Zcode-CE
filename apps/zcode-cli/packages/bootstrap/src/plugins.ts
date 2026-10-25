@@ -1,5 +1,5 @@
 import { rm } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join, resolve, sep, win32 } from "node:path";
+import { dirname, isAbsolute, join, resolve, win32 } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
   addSuppressedBuiltinInFileConfig,
@@ -17,7 +17,6 @@ import {
   addMarketplace,
   comparePluginUpdate,
   describeMarketplacePlugin,
-  enrichCachedClaudeMarketplaceIcons,
   ensureDefaultPluginMarketplaces,
   discoverNodePluginsSync,
   ensureMarketplaceManifestAvailable,
@@ -195,11 +194,11 @@ export interface ZCodePluginUpdateData extends ZCodePluginInstallData {
   previousVersion: string;
 }
 
-export interface RestoreBuiltinPluginOptions extends ResolveZCodePluginsOptions {
+interface RestoreBuiltinPluginOptions extends ResolveZCodePluginsOptions {
   pluginId: string;
 }
 
-export interface ConfigureZCodePluginOptions extends ResolveZCodePluginsOptions {
+interface ConfigureZCodePluginOptions extends ResolveZCodePluginsOptions {
   clearOptionKeys?: string[];
   dryRun?: boolean;
   options: Record<string, unknown>;
@@ -207,18 +206,18 @@ export interface ConfigureZCodePluginOptions extends ResolveZCodePluginsOptions 
   scope?: "user" | "workspace";
 }
 
-export interface ResetZCodePluginConfigOptions extends ResolveZCodePluginsOptions {
+interface ResetZCodePluginConfigOptions extends ResolveZCodePluginsOptions {
   pluginId: string;
   scope?: "user" | "workspace";
 }
 
-export interface ValidateZCodePluginOptions extends ResolveZCodePluginsOptions {
+interface ValidateZCodePluginOptions extends ResolveZCodePluginsOptions {
   marketplace?: string;
   pluginName?: string;
   source?: string;
 }
 
-export interface DescribeZCodePluginOptions extends ResolveZCodePluginsOptions {
+interface DescribeZCodePluginOptions extends ResolveZCodePluginsOptions {
   marketplace: string;
   pluginName: string;
   withWriteLock?: <T>(write: () => Promise<T>) => Promise<T>;
@@ -404,16 +403,6 @@ export function getZCodePluginsOverview(
       ),
     ],
   };
-}
-
-export function enrichCachedClaudeMarketplaceIconsForOverview(
-  options: ResolveZCodePluginsOptions = {},
-): void {
-  const { pluginStorageRoot } = resolvePluginContext(options);
-  // 图标是可选展示增强：overview 不等待网络；仅写回阶段进入 storage lock。
-  void enrichCachedClaudeMarketplaceIcons(pluginStorageRoot, (write) =>
-    withPluginStorageLock(pluginStorageRoot, write),
-  );
 }
 
 export function listZCodePlugins(options: ListZCodePluginsOptions = {}): PluginLoadOutcome {
@@ -1334,20 +1323,7 @@ function normalizePluginConfigPathForComparison(
   return platform === "win32" ? resolvedPath.replaceAll("\\", "/").toLowerCase() : resolvedPath;
 }
 
-export function isWorkspacePluginConfigPath(
-  path: string,
-  platform: NodeJS.Platform = process.platform,
-): boolean {
-  if (platform === "win32") {
-    return (
-      win32.basename(path).toLowerCase() === "config.json" &&
-      win32.basename(win32.dirname(path)).toLowerCase() === ".zcode"
-    );
-  }
-  return basename(path) === "config.json" && basename(dirname(path)) === ".zcode";
-}
-
-export function resolveMarketplaceRefreshTargetIds(input: {
+function resolveMarketplaceRefreshTargetIds(input: {
   declaredIds: Iterable<string>;
   knownIds: Iterable<string>;
   marketplace?: string;

@@ -3,17 +3,17 @@ import { quotePosixPathArg } from "@zcode/server/remote/posixShell.js";
 import type { TraceId, ZCodePromptAttachment } from "@zcode/shared";
 import { randomUUID } from "node:crypto";
 
-export const REMOTE_PROMPT_ATTACHMENT_ROOT = "~/.zcode/tmp/prompt-attachments";
+const REMOTE_PROMPT_ATTACHMENT_ROOT = "~/.zcode/tmp/prompt-attachments";
 const REMOTE_PROMPT_ATTACHMENT_RELATIVE_ROOT = ".zcode/tmp/prompt-attachments";
 
-export interface RemotePromptAttachmentMaterializeInput {
+interface RemotePromptAttachmentMaterializeInput {
   taskId?: string;
   content: string;
   traceId: TraceId | string;
   attachments?: ZCodePromptAttachment[];
 }
 
-export interface RemotePromptAttachmentMaterializeResult {
+interface RemotePromptAttachmentMaterializeResult {
   content: string;
   attachments?: ZCodePromptAttachment[];
   uploadedCount: number;
@@ -127,7 +127,7 @@ export async function cleanupStaleRemotePromptAttachments(
   );
 }
 
-export function buildRemotePromptAttachmentPath(params: {
+function buildRemotePromptAttachmentPath(params: {
   filename: string;
   index: number;
   nonce?: string;

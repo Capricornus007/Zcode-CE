@@ -117,7 +117,7 @@ export function buildRuntimeUserEntriesFromTurn(
   );
 }
 
-export function formatBrowserAmbientUserInput(
+function formatBrowserAmbientUserInput(
   input: string,
   context?: { tabCount: number; currentUrl?: string },
 ): string {

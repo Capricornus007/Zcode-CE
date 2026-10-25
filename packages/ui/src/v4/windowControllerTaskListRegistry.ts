@@ -15,7 +15,7 @@ import {
 } from "@zcode/shared/zcode-protocol-v4";
 import { logger } from "@/logger.js";
 
-export interface WindowControllerTaskListRegistry {
+interface WindowControllerTaskListRegistry {
   subscribe(listener: () => void): () => void;
   getRevision(): number;
   getDirectoryRevision(): number;

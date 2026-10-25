@@ -46,7 +46,7 @@ const officeContentSeaPlugins = [
   requiresRuntime: false,
   requiredSeedPaths: ["agents/visual-judge.md", `skills/${skill}/SKILL.md`],
   rootPath: join("packages", `${name}-plugin`),
-  version: "0.1.7",
+  version: "0.1.8",
 }));
 
 // pdf 的 Node 载荷（pdfkit/fontkit 自包含 bundle）不在源码树（esbuild 现场产出），
@@ -69,7 +69,7 @@ const pdfSeaPlugin = {
     "scripts/pdf-fonts.mjs",
   ],
   rootPath: join("packages", "pdf-plugin"),
-  version: "0.1.7",
+  version: "0.1.8",
 };
 
 // Computer Use（对外插件名 computer-use，包目录 zcode-cua-plugin）：内容型条目 ——
@@ -79,7 +79,7 @@ const pdfSeaPlugin = {
 // stage 进 glm/packages/node-repl-host/node_modules，SEA 链没有等价步骤；SEA 用户启用
 // 电脑控制时会走到 node-repl-host 的既有降级（captureComputerUseRuntimeFromEnvironment
 // 返回 undefined + CUA_UNAVAILABLE_IN_SESSION_MESSAGE），是显式降级而非静默。
-// version 取 official-plugin-definitions.ts 的 definition.version（computer-use = 0.6.3），
+// version 取 official-plugin-definitions.ts 的 definition.version（computer-use = 0.6.4），
 // 与 plugin.json 的 manifest 版本（0.6.1）有意不同 —— 版本追踪口径见该定义处注释。
 const cuaSeaPlugin = {
   marketplace: "zcode-plugins-official",
@@ -94,7 +94,7 @@ const cuaSeaPlugin = {
     "skills/computer-use/SKILL.md",
   ],
   rootPath: join("packages", "zcode-cua-plugin"),
-  version: "0.6.3",
+  version: "0.6.4",
 };
 
 export const officialSeaPlugins = [
@@ -107,7 +107,7 @@ export const officialSeaPlugins = [
     requiresRuntime: true,
     requiredRuntimePaths: ["dist/mcp/server.js"],
     rootPath: join("packages", "node-repl-host"),
-    version: "0.6.0",
+    version: "0.6.1",
   },
   {
     marketplace: "zcode-plugins-official",

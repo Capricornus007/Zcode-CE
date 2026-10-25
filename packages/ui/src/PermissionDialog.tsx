@@ -929,9 +929,15 @@ export function PermissionDialog({
                   (preferOptionName && !knownNameLabel) || !descriptionMessageId
                     ? null
                     : intl.formatMessage({ id: descriptionMessageId });
+                // scope 码的内联规则（docs：权限选项的「这次批准会记住什么」）：
+                // - exact 单条规则**不内联** —— 命令原文已在工具摘要里，「仅此命令」由
+                //   description（scope=command 的文案）表达，重复展示规则原文只会增加误读面；
+                // - prefix 是真正的风险增量（同前缀族都放行），保留内联；
+                // - 官方 CUA 走专属文案（cua.allowForProject.description），不渲染通用 scope 码。
                 const ruleScopes =
-                  getPermissionOptionDisplayKind(option.kind) === "allowAlways"
-                    ? readPermissionRuleScopes(option)
+                  getPermissionOptionDisplayKind(option.kind) === "allowAlways" &&
+                  !officialCuaProjectPermission
+                    ? readPermissionRuleScopes(option).filter((scope) => scope.kind !== "exact")
                     : [];
 
                 return (

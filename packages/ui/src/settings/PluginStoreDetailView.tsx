@@ -81,7 +81,7 @@ const EXAMPLE_PROMPT_DOCUMENT_ICON_URLS: Record<ExamplePromptDocumentIcon, strin
   spreadsheets: spreadsheetsIconUrl,
 };
 
-export function resolveExamplePromptDocumentIcon(prompt: string): ExamplePromptDocumentIcon {
+function resolveExamplePromptDocumentIcon(prompt: string): ExamplePromptDocumentIcon {
   if (/\bpdf\b/iu.test(prompt)) {
     return "pdf";
   }
@@ -239,7 +239,7 @@ export function PluginStoreDetailView({
         orderedGroups.map((group) => <ComponentSection key={group.kind} group={group} />)
       )}
 
-      {/* 信息区：listing 优先，manifest（运行时/describe）回退；无值整行省略（ADR-0001）。 */}
+      {/* 信息区：listing 优先，manifest（运行时/describe）回退；无值整行省略。 */}
       <InfoSection item={item} describeMetadata={describeMetadata} />
 
       {isUiPluginItem(item) ? (

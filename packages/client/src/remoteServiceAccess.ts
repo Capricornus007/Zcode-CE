@@ -1,3 +1,4 @@
+import { IGenUiService } from "@zcode/services";
 import { ProxyChannel, type IChannelClient } from "@zcode/rpc";
 import {
   IFileService,
@@ -18,6 +19,7 @@ import {
   IRemoteProjectService,
   ICuaPermissionService,
   IConversationShareService,
+  IBotsService,
   IFileWatcherService,
   IOAuthService,
   IModelSelectionService,
@@ -25,29 +27,28 @@ import {
   IProviderProvisioningTargetService,
   ISourceServerWorkspaceService,
   ISourceServerManagementService,
-  IOutputStyleService,
-  IHighspeedCardService,
   IUsageStatsService,
   ICodingPlanSubscriptionService,
   IClientConfigService,
   IClientScenesService,
+  ICloudContentService,
+  IMarketingTouchService,
   IOffPeakTaskService,
-  IWorkspaceRegistryService,
+  IHighspeedCardService,
   ISkillsService,
   ISkillSyncService,
   IMcpSyncService,
-  IGenUiService,
-  IPluginUiBridgeService,
-  IPluginUiSamplingService,
   IPluginUiAppToolsService,
+  IPluginUiSamplingService,
+  IPluginUiBridgeService,
   IPluginSyncService,
   IPluginsService,
   IPluginManagementService,
-  IBotsService,
   ISubagentsService,
   ICommandsService,
   IHooksService,
   IMemoryService,
+  IOutputStyleService,
   ISettingsSyncService,
   IFeedbackService,
   IPromptAttachmentTransferService,
@@ -87,6 +88,7 @@ export class RemoteServiceAccess implements IServiceAccessor {
   // 经 RPC 一定能拿到（main host 始终注册此 descriptor；非 macOS / 未启用时方法返回 available:false）。
   readonly cuaPermissionService: ICuaPermissionService;
   readonly conversationShareService: IConversationShareService;
+  readonly botsService: IBotsService;
   readonly fileWatcherService: IFileWatcherService;
   readonly oauthService: IOAuthService;
   readonly providerSettingsService: IProviderSettingsService;
@@ -96,14 +98,14 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly sourceServerWorkspaceService: ISourceServerWorkspaceService;
   /** 仅 desktop base attachment 注册；其他 scope 必须按可选能力消费。 */
   readonly sourceServerManagementService?: ISourceServerManagementService;
-  readonly highspeedCardService: IHighspeedCardService;
-  readonly outputStyleService: IOutputStyleService;
   readonly usageStatsService: IUsageStatsService;
   readonly codingPlanSubscriptionService: ICodingPlanSubscriptionService;
   readonly clientConfigService: IClientConfigService;
   readonly clientScenesService: IClientScenesService;
+  readonly cloudContentService: ICloudContentService;
+  readonly marketingTouchService: IMarketingTouchService;
   readonly offPeakTaskService: IOffPeakTaskService;
-  readonly workspaceRegistryService: IWorkspaceRegistryService;
+  readonly highspeedCardService: IHighspeedCardService;
   readonly skillsService: ISkillsService;
   readonly skillSyncService: ISkillSyncService;
   readonly mcpSyncService: IMcpSyncService;
@@ -114,16 +116,11 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly pluginSyncService: IPluginSyncService;
   readonly pluginsService: IPluginsService;
   readonly pluginManagementService: IPluginManagementService;
-  /**
-   * Bot 管理面（ce.5）：「IM 机器人」标签页与 BotsDialog 的数据源。
-   * channel 由 exposeOnChannelServer 随已注册服务自动暴露（IBotsService 在 createLocalServices 注册），
-   * 旧 host 未注册该 channel 时调用会失败，由消费方按「能力缺失」处理。
-   */
-  readonly botsService: IBotsService;
   readonly subagentsService: ISubagentsService;
   readonly commandsService: ICommandsService;
   readonly hooksService: IHooksService;
   readonly memoryService: IMemoryService;
+  readonly outputStyleService: IOutputStyleService;
   readonly settingsSyncService: ISettingsSyncService;
   readonly feedbackService: IFeedbackService;
   readonly promptAttachmentTransferService: IPromptAttachmentTransferService;
@@ -205,6 +202,9 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.conversationShareService = ProxyChannel.toService<IConversationShareService>(
       channelClient.getChannel(IConversationShareService.channelName),
     );
+    this.botsService = ProxyChannel.toService<IBotsService>(
+      channelClient.getChannel(IBotsService.channelName),
+    );
     this.fileWatcherService = ProxyChannel.toService<IFileWatcherService>(
       channelClient.getChannel(IFileWatcherService.channelName),
     );
@@ -233,12 +233,6 @@ export class RemoteServiceAccess implements IServiceAccessor {
           channelClient.getChannel(ISourceServerManagementService.channelName),
         )
       : undefined;
-  this.highspeedCardService = ProxyChannel.toService<IHighspeedCardService>(
-      channelClient.getChannel(IHighspeedCardService.channelName),
-    );
-    this.outputStyleService = ProxyChannel.toService<IOutputStyleService>(
-      channelClient.getChannel(IOutputStyleService.channelName),
-    );
     this.usageStatsService = ProxyChannel.toService<IUsageStatsService>(
       channelClient.getChannel(IUsageStatsService.channelName),
     );
@@ -251,14 +245,17 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.clientScenesService = ProxyChannel.toService<IClientScenesService>(
       channelClient.getChannel(IClientScenesService.channelName),
     );
+    this.cloudContentService = ProxyChannel.toService<ICloudContentService>(
+      channelClient.getChannel(ICloudContentService.channelName),
+    );
+    this.marketingTouchService = ProxyChannel.toService<IMarketingTouchService>(
+      channelClient.getChannel(IMarketingTouchService.channelName),
+    );
     this.offPeakTaskService = ProxyChannel.toService<IOffPeakTaskService>(
       channelClient.getChannel(IOffPeakTaskService.channelName),
     );
-    // 工作区注册表（M1.3）：侧栏枚举来源。旧 host 未注册该 channel 时调用会失败，
-    // 由消费方（useWorkspaceRegistry）按「不可用」处理并回落到本客户端显式列出，
-    // 不得把失败当成「没有任何工作区」。
-    this.workspaceRegistryService = ProxyChannel.toService<IWorkspaceRegistryService>(
-      channelClient.getChannel(IWorkspaceRegistryService.channelName),
+    this.highspeedCardService = ProxyChannel.toService<IHighspeedCardService>(
+      channelClient.getChannel(IHighspeedCardService.channelName),
     );
     this.skillsService = ProxyChannel.toService<ISkillsService>(
       channelClient.getChannel(ISkillsService.channelName),
@@ -290,9 +287,6 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.pluginManagementService = ProxyChannel.toService<IPluginManagementService>(
       channelClient.getChannel(IPluginManagementService.channelName),
     );
-    this.botsService = ProxyChannel.toService<IBotsService>(
-      channelClient.getChannel(IBotsService.channelName),
-    );
     this.subagentsService = ProxyChannel.toService<ISubagentsService>(
       channelClient.getChannel(ISubagentsService.channelName),
     );
@@ -304,6 +298,9 @@ export class RemoteServiceAccess implements IServiceAccessor {
     );
     this.memoryService = ProxyChannel.toService<IMemoryService>(
       channelClient.getChannel(IMemoryService.channelName),
+    );
+    this.outputStyleService = ProxyChannel.toService<IOutputStyleService>(
+      channelClient.getChannel(IOutputStyleService.channelName),
     );
     this.settingsSyncService = ProxyChannel.toService<ISettingsSyncService>(
       channelClient.getChannel(ISettingsSyncService.channelName),

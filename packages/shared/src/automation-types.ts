@@ -1,6 +1,6 @@
 import type { ZCodeTaskMode } from "./zcode-task-types-core.js";
-import type { ZCodeAutomationBotDeliveryTarget } from "./bots.js";
 import type { ModelSelection } from "./model-selection.js";
+import type { ZCodeAutomationBotDeliveryTarget } from "./bots.js";
 
 // ---- 定时任务(Automation)领域类型 ----
 // automation / automation_runs 存 tasks-index.sqlite。

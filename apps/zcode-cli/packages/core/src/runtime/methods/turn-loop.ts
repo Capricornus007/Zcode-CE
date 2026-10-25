@@ -1,8 +1,6 @@
 import { getTurnTools } from "./turn-tool-visibility.js";
-import { refreshOffPeakTurnAfterTakeover } from "../off-peak/turn.js";
 import { appendRuntimeAgentListing } from "../helpers/agent-listing.js";
 import { beginLocalTurnPreparation } from "@zcode/contracts";
-import { buildToolSearchAnnouncement } from "../../tool/search/exposure.js";
 import {
   CompactPhase,
   CompactReason,
@@ -16,7 +14,6 @@ import {
   buildRuntimeOutputStyleReminderBody,
   buildTodoReminderBody,
   buildRuntimeProviderRequestMessages,
-  prepareRuntimeProviderRequest,
   createCompactRapidRefillError,
   throwIfTurnAborted,
   shouldBuildTodoReminder,
@@ -27,8 +24,6 @@ import {
 } from "../../agent/message-history.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { runModelBackedTurnStep } from "./turn-model-step.js";
-import { persistRuntimeReminderMessage } from "./runtime-reminder-persistence.js";
-import { buildProjectionAnchor } from "./projection-anchor.js";
 import {
   evaluateRapidRefill,
   MAX_CONSECUTIVE_RAPID_REFILLS,
@@ -38,6 +33,17 @@ import {
 } from "./turn-loop-state.js";
 import type { RegularTurnLoopState } from "./turn-loop-state.js";
 import { consumeSettledProjectMemoryRecall } from "../helpers/project-memory-recall.js";
+// 重植（3.15.1 升级冲掉 turn-loop 接线）：CE 记忆召回提醒——按本轮用户输入对
+// .zcode 记忆语料做 embedding+词法融合排序，注入 top-K 记忆锚点。官方 3.15.1 的
+// 语义召回分支（startProjectMemoryRecallPrefetch）当前被
+// project-memory-retrieval-branch.ts 关在 "default-index"（只改系统提示词文案），
+// 这条链是唯一在跑的动态记忆召回。
+import { buildMemoryRecallReminderBody } from "./memory-recall-reminder.js";
+import { buildKbRecallReminderBody } from "./kb-recall-reminder.js";
+import { buildFollowupDueReminderBody } from "./followup-due-reminder.js";
+import { buildCaliberGuardReminderBody } from "./caliber-guard-reminder.js";
+import { buildUserInstructionsUpdateBody } from "./user-instructions-update-reminder.js";
+import { buildTaskReanchorReminderBody, shouldReanchorAtStep } from "./task-reanchor-reminder.js";
 import { consumePendingProjectMemoryUpdate } from "../helpers/project-memory-dream.js";
 import { ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH } from "../../memory/project-memory-retrieval-branch.js";
 import {
@@ -50,9 +56,14 @@ export async function runRegularTurnLoop(
   this: AgentRuntimeInternal,
   state: RegularTurnLoopState,
 ): Promise<void> {
+  // 记忆召回 / kb 召回 / 用户指令热更新按"每次用户 turn 一次"门控（跨 while 迭代——
+  // 多步 turn 的后续模型步不重复注入）。
+  let memoryRecallAttempted = false;
+  let kbRecallAttempted = false;
+  let userInstructionsUpdateAttempted = false;
+  let kbRecallBodyForCaliber: string | null = null;
   while (true) {
     throwIfTurnAborted(state.turnAbortSignal);
-    refreshOffPeakTurnAfterTakeover(this, state);
     const outputTokenRecoveryActive = state.turnRequestState.outputTokenContinuationCount > 0;
     // guide 只允许由完整 tool result batch 设置这个一次性诊断；普通 queue 不在
     // model roundtrip 起点消费，避免把未来 turn 错并入当前 product turn。
@@ -103,7 +114,6 @@ export async function runRegularTurnLoop(
         rapidRefill,
         model: state.model,
         turnRequestState: state.turnRequestState,
-        getContinuationTools: () => getTurnTools(this, state),
       },
     );
     if (autoCompactOutcome === "rapid_refill_blocked") {
@@ -180,27 +190,127 @@ export async function runRegularTurnLoop(
         systemReminderAttachmentEntry("output_style", outputStyleReminderBody),
       ]);
     }
-    if (!outputTokenRecoveryActive) {
-      const announcement = buildToolSearchAnnouncement({
-        model: state.model,
-        mode: this.config.toolSearch?.mode,
-        tools,
-        registry: this.getToolRegistry(),
+    // ② 用户指令热更新：AGENTS.md 等中途修改逐 turn stat 检查，变更才注入
+    // 新版全文（前缀不动保缓存）。未变更零成本静默。
+    if (
+      !userInstructionsUpdateAttempted &&
+      this.fileSystemPort &&
+      this.contextSourceSnapshot?.userInstructions
+    ) {
+      userInstructionsUpdateAttempted = true;
+      const sourcePaths = [
+        ...(this.contextSourceSnapshot.userInstructions.sources ?? []).map((s) => s.filePath),
+        ...(this.contextSourceSnapshot.userInstructions.sources?.length
+          ? []
+          : [this.contextSourceSnapshot.userInstructions.filePath]),
+      ];
+      const instructionsUpdateBody = await buildUserInstructionsUpdateBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        sourcePaths,
+      });
+      if (instructionsUpdateBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("user_instructions_update", instructionsUpdateBody),
+        ]);
+        this.logger?.info("[user-instructions-update] 指令文件已变更，新版已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // 记忆召回提醒（重植）：按本轮用户输入对 memoryRoot 语料做 embedding×0.6+词法×0.4
+    // 融合排序，注入 top-K 记忆锚点（bench/memory-recall-probe 实测 hit@5 100%/33%）。
+    // 无 memoryRoot 或无命中静默跳过。
+    if (!memoryRecallAttempted && this.fileSystemPort && this.memoryRoot) {
+      memoryRecallAttempted = true;
+      const memoryRecallBody = await buildMemoryRecallReminderBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        memoryRoot: this.memoryRoot,
         entries: state.turnRequestState.entries,
       });
-      if (announcement) {
-        // 公告正文和增量事实必须先一起落盘；否则 fork/resume 会把已公告工具重新当成首次出现。
-        const messageId = await persistRuntimeReminderMessage.call(
-          this,
-          announcement,
-          state.turnTraceContext,
-          {
-            model: state.model,
-            anchor: buildProjectionAnchor(state.turnTraceContext, "synthetic"),
-          },
-        );
-        if (messageId) this.latestConversationMessageId = messageId;
-        commitTurnRequestEntries(this, state.turnRequestState, [announcement]);
+      if (memoryRecallBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("memory_recall", memoryRecallBody),
+        ]);
+        this.logger?.info("[memory-recall] 相关记忆清单已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // P1 知识卡召回：对 .zcode/kb-cards 语料同源排序，注入 top-K 源锚点——
+    // 长会话里技能规则被压缩/微压缩吃掉后，这是模型找回断卦铁律的主通道。
+    if (!kbRecallAttempted && this.fileSystemPort && this.workingDirectory) {
+      kbRecallAttempted = true;
+      const kbRecallBody = await buildKbRecallReminderBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        workingDirectory: this.workingDirectory,
+        entries: state.turnRequestState.entries,
+      });
+      if (kbRecallBody) {
+        kbRecallBodyForCaliber = kbRecallBody;
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("kb_recall", kbRecallBody),
+        ]);
+        this.logger?.info("[kb-recall] 知识锚点已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // P5 预测回填闭环：会话首 turn 注入已到期/临期的预测登记（builder 内部
+    // 按 runtime 一次性触发；未登记/无到期项静默跳过）。
+    if (this.workingDirectory && this.fileSystemPort) {
+      const followupBody = await buildFollowupDueReminderBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        workingDirectory: this.workingDirectory,
+      });
+      if (followupBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("followup_due", followupBody),
+        ]);
+        this.logger?.info("[followup-due] 到期预测登记已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // P2 口径裁决护栏：本轮输入/已召回内容命中已裁决口径注册表时注入
+    // 权威源指引（复合键 AND 匹配，防翻案）。未登记/无命中静默。
+    if (this.workingDirectory && this.fileSystemPort) {
+      const caliberBody = await buildCaliberGuardReminderBody({
+        runtime: this,
+        fileSystem: this.fileSystemPort,
+        workingDirectory: this.workingDirectory,
+        entries: state.turnRequestState.entries,
+        recalledText: kbRecallBodyForCaliber,
+      });
+      if (caliberBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("caliber_guard", caliberBody),
+        ]);
+        this.logger?.info("[caliber-guard] 已裁决口径护栏已注入本轮请求", {
+          ...traceContextToLogContext(state.turnTraceContext),
+        });
+      }
+    }
+    // 任务再锚定：每 15 个模型步在尾部重申最初任务（防长会话漂移）。
+    if (
+      !outputTokenRecoveryActive &&
+      shouldReanchorAtStep(state.modelStepCount) &&
+      state.turnRequestState.entries.some(
+        (entry) => "message" in entry && entry.metadata?.source === "real_user",
+      )
+    ) {
+      const reanchorBody = buildTaskReanchorReminderBody(state.turnRequestState.entries);
+      if (reanchorBody) {
+        commitTurnRequestEntries(this, state.turnRequestState, [
+          systemReminderAttachmentEntry("task_reanchor", reanchorBody),
+        ]);
+        this.logger?.info("[task-reanchor] 已在尾部重申最初任务", {
+          ...traceContextToLogContext(state.turnTraceContext),
+          modelStep: state.modelStepCount,
+        });
       }
     }
     // （2026-09-12）：原"回合开始注入 plugin_ui_state reminder"已删除，插件给模型的信息
@@ -212,32 +322,20 @@ export async function runRegularTurnLoop(
       ? undefined
       : consumePendingProjectMemoryUpdate(this);
     const requestEntries = memoryUpdate ? [...providerEntries, memoryUpdate] : providerEntries;
-    const prepared = prepareRuntimeProviderRequest(this, {
-      model: state.model,
-      tools,
-      registry: this.getToolRegistry(),
-      entries: requestEntries,
-      applyCacheControl: true,
-    });
-    this.logger?.debug("ToolSearch request exposure", {
-      event: "tool.search.exposure",
-      enabled: prepared.toolSearch.enabled,
-      mode: prepared.toolSearch.mode,
-      reason: prepared.reason,
-      catalogSize: prepared.toolSearch.catalog.length,
-      schemaCount: prepared.request.tools.length,
-    });
     // 修复原因：provider-visible user ordering projection 会改变最终 latest user 落点，
     // cache-control 必须在 projection 后统一设置，避免 raw synthetic entry 抢占缓存锚点。
-    const providerProjection = prepared.projection;
-    const { messages } = prepared.request;
-    const recordableEntries = filterOutputTokenContinuationEntries(prepared.entries);
+    const providerProjection = buildRuntimeProviderRequestMessages(this, {
+      entries: requestEntries,
+      applyCacheControl: true,
+      model: state.model,
+    });
+    const { messages } = providerProjection;
+    const recordableEntries = filterOutputTokenContinuationEntries(requestEntries);
     const recordableProjection =
-      recordableEntries === prepared.entries
+      recordableEntries === requestEntries
         ? providerProjection
         : buildRuntimeProviderRequestMessages(this, {
             entries: recordableEntries,
-            loadedToolCallIds: prepared.loadedToolCallIds,
             applyCacheControl: true,
             model: state.model,
           });
@@ -266,8 +364,7 @@ export async function runRegularTurnLoop(
       sourceEntries: providerProjection.sourceEntries,
       requestEntries,
       recordedMessages: recordableProjection.messages,
-      tools: prepared.request.tools,
-      toolSearch: prepared.toolSearch,
+      tools,
     });
 
     if (result === "break") {

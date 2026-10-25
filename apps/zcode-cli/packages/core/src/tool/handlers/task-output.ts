@@ -24,11 +24,7 @@ import type {
   ToolInputValidationResult,
   ToolPersistedModelContentInput,
 } from "../types.js";
-import {
-  formatCompactFileSize,
-  projectTask,
-  throwIfAborted,
-} from "./task-output-projection.js";
+import { formatCompactFileSize, projectTask, throwIfAborted } from "./task-output-projection.js";
 
 const TASK_OUTPUT_DEFAULT_LENGTH = 32_000;
 const TASK_OUTPUT_MAX_LENGTH = 160_000;
@@ -176,7 +172,7 @@ function getTaskOutputInputFailure(
   return undefined;
 }
 
-export function formatTaskOutputModelContent(output: unknown): string {
+function formatTaskOutputModelContent(output: unknown): string {
   const parsed = TaskOutputResultSchema.parse(output);
   const blocks = [`<retrieval_status>${parsed.retrieval_status}</retrieval_status>`];
   const task = parsed.task;
@@ -202,7 +198,7 @@ export function formatTaskOutputModelContent(output: unknown): string {
   return blocks.join("\n\n");
 }
 
-export function truncateTaskOutput(
+function truncateTaskOutput(
   output: string,
   outputPath: string,
   configuredValue = process.env.TASK_MAX_OUTPUT_LENGTH,
@@ -215,9 +211,7 @@ export function truncateTaskOutput(
   return prefix + output.slice(-tailLength);
 }
 
-export function resolveTaskOutputLength(
-  configuredValue = process.env.TASK_MAX_OUTPUT_LENGTH,
-): number {
+function resolveTaskOutputLength(configuredValue = process.env.TASK_MAX_OUTPUT_LENGTH): number {
   if (!configuredValue) return TASK_OUTPUT_DEFAULT_LENGTH;
   const parsed = Number.parseInt(configuredValue, 10);
   if (Number.isNaN(parsed) || parsed <= 0) return TASK_OUTPUT_DEFAULT_LENGTH;

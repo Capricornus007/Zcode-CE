@@ -30,7 +30,7 @@ import {
 const require = createRequire(import.meta.url);
 const WINDOWS_EXPLORER_PATH = pathWin32.join(process.env.WINDIR ?? "C:/Windows", "explorer.exe");
 
-export interface EditorDef {
+interface EditorDef {
   id: string;
   name: string;
   /** macOS .app bundle 路径 */

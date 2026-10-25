@@ -19,10 +19,10 @@ import { RemoteMcpSyncDialog } from "@/settings/RemoteMcpSyncDialog.js";
 import { RemotePluginSyncDialog } from "@/settings/RemotePluginSyncDialog.js";
 import { RemoteSkillSyncDialog } from "@/settings/RemoteSkillSyncDialog.js";
 
-export type RemoteSyncClientMode = "desktop-continuous" | "web-remote-replayable";
-export const REMOTE_SYNC_PREFLIGHT_TIMEOUT_MS = 15_000;
+type RemoteSyncClientMode = "desktop-continuous" | "web-remote-replayable";
+const REMOTE_SYNC_PREFLIGHT_TIMEOUT_MS = 15_000;
 
-export class RemoteSyncPreflightTimeoutError extends Error {
+class RemoteSyncPreflightTimeoutError extends Error {
   constructor(readonly timeoutMs: number) {
     super(`Remote sync preflight timed out after ${timeoutMs}ms`);
     this.name = "RemoteSyncPreflightTimeoutError";

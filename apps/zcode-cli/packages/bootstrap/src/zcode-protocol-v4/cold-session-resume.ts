@@ -21,7 +21,7 @@ export type ColdSessionResumeOutcome =
   | { status: "notFound" };
 
 /** 协调器需要的宿主能力窄面（与 V4GatewayHost 同形，避免循环 import）。 */
-export interface ColdSessionResumeHost {
+interface ColdSessionResumeHost {
   resumePersistedSession?(
     sessionId: string,
     resumeThoughtLevel?: string,
@@ -34,7 +34,7 @@ export interface ColdSessionResumeHost {
 }
 
 /** 订阅不可用会话的结构化错误（reasonCode 见文件头）。 */
-export class V4SubscribeSessionUnavailableError extends Error {
+class V4SubscribeSessionUnavailableError extends Error {
   constructor(
     readonly sessionId: string,
     readonly reasonCode: "fault.subscribe.sessionNotFound" | "fault.subscribe.resumeFailed",

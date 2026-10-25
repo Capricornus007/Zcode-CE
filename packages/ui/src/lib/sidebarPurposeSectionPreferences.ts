@@ -3,7 +3,7 @@ interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
-export interface SidebarPurposeSectionPreferences {
+interface SidebarPurposeSectionPreferences {
   projectsExpanded: boolean;
   conversationsExpanded: boolean;
   sectionOrder: SidebarPurposeSectionId[];
@@ -13,12 +13,11 @@ export interface SidebarPurposeSectionPreferences {
   >;
 }
 
-export const SIDEBAR_PURPOSE_SECTION_IDS = ["projects", "conversations"] as const;
+const SIDEBAR_PURPOSE_SECTION_IDS = ["projects", "conversations"] as const;
 
-export type SidebarPurposeSectionId = (typeof SIDEBAR_PURPOSE_SECTION_IDS)[number];
+type SidebarPurposeSectionId = (typeof SIDEBAR_PURPOSE_SECTION_IDS)[number];
 
-export const SIDEBAR_PURPOSE_SECTION_PREFERENCES_STORAGE_KEY =
-  "zcode-sidebar-purpose-section-preferences";
+const SIDEBAR_PURPOSE_SECTION_PREFERENCES_STORAGE_KEY = "zcode-sidebar-purpose-section-preferences";
 
 const DEFAULT_SIDEBAR_PURPOSE_SECTION_PREFERENCES: SidebarPurposeSectionPreferences = {
   projectsExpanded: true,

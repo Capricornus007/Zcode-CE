@@ -26,6 +26,7 @@ import {
 } from "./providerFacadeServices.js";
 import type { ProviderModelCatalogFetcher } from "./providerModelCatalogFetcher.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
+
 const log = createServiceLogger("provider-runtime");
 
 export interface ProviderRuntimeOptions extends ProviderConfigRuntimeOptions {

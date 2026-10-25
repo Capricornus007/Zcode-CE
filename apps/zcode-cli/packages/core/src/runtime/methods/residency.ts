@@ -25,7 +25,6 @@ export function hasResidencyBlockingWork(this: AgentRuntimeInternal): boolean {
     this.hasActiveOrQueuedTurnWork() ||
     this.hasRunningBackgroundTasks() ||
     this.residencyBlockingWorkCount > 0 ||
-    (this.memoryExtractionScheduler?.hasPendingWork() ?? false) ||
-    (this.memoryRecallPrefetch !== undefined && !this.memoryRecallPrefetch.settled)
+    (this.memoryExtractionScheduler?.hasPendingWork() ?? false)
   );
 }

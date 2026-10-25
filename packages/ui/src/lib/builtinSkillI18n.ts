@@ -43,8 +43,7 @@ const OFFICIAL_PLUGIN_PATH_MARKERS = [
 
 const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
   "android-dev": {
-    "zh-CN":
-      "通过 android-emulator MCP 工具构建、运行、检查并轻量自动化 Android 应用。",
+    "zh-CN": "通过 android-emulator MCP 工具构建、运行、检查并轻量自动化 Android 应用。",
     "en-US":
       "Build, run, inspect, and lightly automate Android apps through the android-emulator MCP tools.",
   },
@@ -55,8 +54,7 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
       "Use before any creative work, including creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design before implementation.",
   },
   "control-browser": {
-    "zh-CN":
-      "控制 ZCode 内置浏览器，用于打开、检查、点击、输入、截图或验证网页和本地开发页面。",
+    "zh-CN": "控制 ZCode 内置浏览器，用于打开、检查、点击、输入、截图或验证网页和本地开发页面。",
     "en-US":
       "Control ZCode's built-in browser to open, inspect, click, type, screenshot, or verify webpages and local development targets.",
   },
@@ -71,12 +69,6 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US":
       "Create, edit, and analyze DOCX documents with revisions, comments, formatting preservation, and text extraction. Use for new documents, edits, revision handling, comments, and professional Word document work.",
   },
-  "docx-viewer": {
-    "zh-CN":
-      "在 Word 文档侧栏与用户一起查看和讨论 .docx 文件。适用于打开、阅读、审阅或询问工作区中的 Word 文档，用户提到在查看器中选中或引用的内容，或需要检查刚生成的文档。",
-    "en-US":
-      "View and discuss Word (.docx) files with the user in the Documents side panel. Use to open, read, review, or ask about a workspace Word document, when the user refers to a selection or reference in the viewer, or to check a document you just produced.",
-  },
   "executing-plans": {
     "zh-CN": "已有书面实现计划，并要在带评审检查点的独立会话中执行时使用。",
     "en-US":
@@ -88,8 +80,7 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
       "Use when implementation is complete, tests pass, and you need to decide how to integrate the work through merge, PR, or cleanup.",
   },
   "ios-dev": {
-    "zh-CN":
-      "通过 ios-simulator MCP 工具构建、运行、检查并轻量自动化 iOS 模拟器应用。",
+    "zh-CN": "通过 ios-simulator MCP 工具构建、运行、检查并轻量自动化 iOS 模拟器应用。",
     "en-US":
       "Build, run, inspect, and lightly automate iOS Simulator apps through the ios-simulator MCP tools.",
   },
@@ -99,23 +90,11 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US":
       "Professional PDF toolkit for reports, creative visuals, academic LaTeX, and existing-PDF workflows. Supports reports, posters, papers, resumes, extraction, merge, split, forms, and conversion.",
   },
-  "pdf-viewer": {
-    "zh-CN":
-      "在 PDF 侧栏与用户一起查看和讨论 PDF 文件。适用于打开、阅读、审阅或询问工作区中的 PDF，用户提到在查看器中选中或引用的内容，或需要检查刚生成的 PDF。",
-    "en-US":
-      "View and discuss PDF files with the user in the PDF side panel. Use to open, read, review, or ask about a workspace PDF, when the user refers to a selection or reference in the viewer, or to check a PDF you just produced.",
-  },
   pptx: {
     "zh-CN":
       "检查并窄范围更新从 PPTX 预览区选择的元素。通过完整文件指纹和 OOXML 定位校验 shape 文本或表格单元格，冲突时停止而不猜测。",
     "en-US":
       "Inspect and narrowly update elements selected in PPTX Preview Pane. Verifies the whole-file fingerprint and OOXML locator for shape or table-cell text, and stops on conflicts instead of guessing.",
-  },
-  "pptx-viewer": {
-    "zh-CN":
-      "在演示文稿侧栏与用户一起查看和讨论 .pptx 演示文稿。适用于一起打开、审阅或询问工作区中的演示文稿，用户提到在查看器中选中或引用的幻灯片或元素，或需要检查刚生成的演示文稿。",
-    "en-US":
-      "View and discuss PowerPoint (.pptx) decks with the user in the Presentations side panel. Use to open, review, or ask about a workspace deck together, when the user refers to a slide or shape selected or referenced in the viewer, or to check a deck you just produced.",
   },
   "receiving-code-review": {
     "zh-CN":
@@ -130,8 +109,7 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
   },
   "plugin-creator": {
     "zh-CN": "创建、校验 ZCode 插件，并指导本地安装与更新。",
-    "en-US":
-      "Create and validate ZCode plugins, and guide local installation and updates.",
+    "en-US": "Create and validate ZCode plugins, and guide local installation and updates.",
   },
   "skill-creator": {
     "zh-CN":
@@ -151,8 +129,7 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
   },
   "test-driven-development": {
     "zh-CN": "实现任何功能或 bugfix 时，在编写实现代码前使用。",
-    "en-US":
-      "Use when implementing any feature or bugfix, before writing implementation code.",
+    "en-US": "Use when implementing any feature or bugfix, before writing implementation code.",
   },
   "using-git-worktrees": {
     "zh-CN":
@@ -188,18 +165,9 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US":
       "Use when creating new skills, editing existing skills, or verifying skills work before deployment.",
   },
-  "xlsx-viewer": {
-    "zh-CN":
-      "在电子表格侧栏与用户一起查看和讨论 .xlsx 工作簿。适用于一起打开、浏览或询问工作区中的工作簿，用户提到在查看器中选中或引用的单元格，或需要检查刚生成的工作簿。",
-    "en-US":
-      "View and discuss Excel (.xlsx) workbooks with the user in the Spreadsheets side panel. Use to open, browse, or ask about a workspace workbook together, when the user refers to cells selected or referenced in the viewer, or to check a workbook you just produced.",
-  },
 };
 
-export function resolveSkillSourceLabel(
-  scope: SkillScope,
-  locale?: Locale,
-): string {
+export function resolveSkillSourceLabel(scope: SkillScope, locale?: Locale): string {
   if (locale === "zh-CN") {
     if (scope === "workspace") return "工作区";
     if (scope === "plugin") return "插件";
@@ -229,7 +197,5 @@ function isOfficialBuiltinSkill(skill: SkillDisplayCandidate): boolean {
     return true;
   }
   const normalizedPath = skill.path.replaceAll("\\", "/");
-  return OFFICIAL_PLUGIN_PATH_MARKERS.some((marker) =>
-    normalizedPath.includes(marker),
-  );
+  return OFFICIAL_PLUGIN_PATH_MARKERS.some((marker) => normalizedPath.includes(marker));
 }

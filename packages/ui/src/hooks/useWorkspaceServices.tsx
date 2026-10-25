@@ -44,14 +44,14 @@ function createDisconnectedRemoteServices(): IServiceAccessor {
   }) as IServiceAccessor;
 }
 
-export function getDisconnectedRemoteServices(): IServiceAccessor {
+function getDisconnectedRemoteServices(): IServiceAccessor {
   if (!disconnectedRemoteServices) {
     disconnectedRemoteServices = createDisconnectedRemoteServices();
   }
   return disconnectedRemoteServices;
 }
 
-export function resolveWorkspaceServicesForTarget(params: {
+function resolveWorkspaceServicesForTarget(params: {
   currentContextServices: IServiceAccessor;
   resolvedRemoteSessionId: string | null;
   baseServices: IServiceAccessor | null;
@@ -73,7 +73,7 @@ export function resolveWorkspaceServicesForTarget(params: {
   return resolvedServices ?? params.currentContextServices;
 }
 
-export function resolveBaseWorkspaceServices(
+function resolveBaseWorkspaceServices(
   contextServices: IServiceAccessor,
   registeredBaseServices: IServiceAccessor | null,
 ): IServiceAccessor {
@@ -86,7 +86,7 @@ function hasRemoteWorkspaceMetadata(tab: WorkspaceServiceTargetTab | null | unde
   );
 }
 
-export function resolveWorkspaceServiceIsRemoteTarget(params: {
+function resolveWorkspaceServiceIsRemoteTarget(params: {
   workspacePath: string | null | undefined;
   workspaceIdentity?: string | null;
   preferredRemoteSessionId?: string | null;
@@ -147,7 +147,7 @@ export function useOptionalBaseWorkspaceServices(): IServiceAccessor | null {
   return registeredBaseServices ?? contextServices;
 }
 
-export interface WorkspaceServicesResolution {
+interface WorkspaceServicesResolution {
   services: IServiceAccessor;
   remoteSessionId: string | null;
   isRemoteTarget: boolean;

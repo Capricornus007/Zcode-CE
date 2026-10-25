@@ -49,8 +49,6 @@ export interface ConversationShareAllowedArtifact {
 }
 
 export interface ConversationShareTurnPreflightResult {
-  /** 已转换的公开行数；选择变化时可按轮重新聚合，不缓存整组选中项的容量错误。 */
-  rowBudget?: { count: number; limit: number };
   productTurnId: string;
   turnFingerprint?: string;
   blockingIssues: readonly ConversationShareFailureIssue[];
@@ -153,8 +151,8 @@ export interface ConversationShareFailureIssue {
     | "unknown";
 }
 
-export type ConversationShareFailureDiagnosticValue = string | number | boolean;
-export type ConversationShareFailureDiagnostics = Readonly<
+type ConversationShareFailureDiagnosticValue = string | number | boolean;
+type ConversationShareFailureDiagnostics = Readonly<
   Record<string, ConversationShareFailureDiagnosticValue>
 >;
 
@@ -193,7 +191,7 @@ function inferFailureReasonCode(message: string): ConversationShareFailureReason
   return "invalid_conversation";
 }
 
-export interface ConversationShareFailureDetails {
+interface ConversationShareFailureDetails {
   requestId?: string;
   status?: number;
   code?: number;

@@ -1,21 +1,21 @@
 import type { WindowHostAttachmentScope } from "@zcode/shared";
 import type { ZCodeAgentV4ClientMode } from "@zcode/services";
 
-export interface WindowHostAttachmentPort {
+interface WindowHostAttachmentPort {
   once(event: "close", listener: () => void): unknown;
 }
 
-export interface WindowHostAttachmentHandle {
+interface WindowHostAttachmentHandle {
   dispose(): void;
 }
 
-export interface WindowHostResolvedAttachmentScope<TServices, TCapabilities = never> {
+interface WindowHostResolvedAttachmentScope<TServices, TCapabilities = never> {
   services: TServices;
   generation: number;
   capabilities?: TCapabilities;
 }
 
-export interface WindowHostExposeAttachmentParams<TServices, TPort, TCapabilities = never> {
+interface WindowHostExposeAttachmentParams<TServices, TPort, TCapabilities = never> {
   requestId: string;
   attachmentId: string;
   clientMode: ZCodeAgentV4ClientMode;

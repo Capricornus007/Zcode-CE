@@ -42,7 +42,7 @@ import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 /** 目录水合单飞（per workspaceKey）：draft、已有 session 和严格模式双挂载共享一次 RPC。 */
 const workspaceCatalogHydrationFlights = new Map<string, Promise<void>>();
 
-export function applyDraftModelSelection(
+function applyDraftModelSelection(
   current: Partial<SessionConfigState>,
   model: ModelSelection,
 ): Partial<SessionConfigState> {
@@ -62,7 +62,7 @@ export function applyDraftModelSelection(
   return next;
 }
 
-export function shouldHydrateWorkspaceCatalog(params: {
+function shouldHydrateWorkspaceCatalog(params: {
   configOptions: readonly ZCodeConfigOption[];
   sessionId: string | null;
   slashCommands: readonly ZCodeSlashCommand[];
@@ -75,7 +75,7 @@ export function shouldHydrateWorkspaceCatalog(params: {
   return params.slashCommands.length === 0 || !hasModePresentation;
 }
 
-export interface DraftConfigControl {
+interface DraftConfigControl {
   modelSelectionRead: ModelSelectionRead;
   /** Renderer 下一次提交的配置；恢复采用当前权限，在线授权只同步对应字段。 */
   draftConfig: Partial<SessionConfigState>;

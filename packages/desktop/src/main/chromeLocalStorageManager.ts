@@ -331,7 +331,6 @@ async function navigateToStorageOrigin(transport: CdpTransport, origin: string):
   }
 }
 
-/** helper 进程 stdio[0] 是 "ignore"（不写 stdin），只用到 stdout/stderr；Node 对应类型是 ChildProcessByStdio<null, …>。 */
 type ChromeHelperProcess = ChildProcessByStdio<null, Readable, Readable>;
 
 async function waitForChromeDebuggerUrl(child: ChromeHelperProcess): Promise<string> {

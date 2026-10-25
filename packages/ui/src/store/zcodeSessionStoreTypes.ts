@@ -476,7 +476,7 @@ export const DEFAULT_WORKSPACE_INIT_STATE: WorkspaceInitState = {
   attempts: 0,
 };
 
-export const FALLBACK_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
+const FALLBACK_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
 
 export const DEFAULT_TASK_UI_STATE: TaskUiState = {
   permissionRequest: null,

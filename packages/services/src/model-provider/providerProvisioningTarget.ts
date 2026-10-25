@@ -12,7 +12,6 @@ import {
   isProviderProvisioningAccountCredentialKey,
   type ProviderProvisioningEnvelope,
   type ProviderProvisioningResult,
-  type ProviderProvisioningErrorCode,
 } from "@zcode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import type { ISettingService } from "../setting/setting.js";
@@ -69,11 +68,6 @@ export function createProviderProvisioningTarget(
         }
 
         validateCredentialEntries(envelope);
-        // schema v1 接受旧 Source 的账号 Key 字段，但新 Host 不再读取或应用它。
-        // 旧/手工 Key 留在原 Store，避免升级同步误删其它客户端共享的凭据。
-        const oauthCredentials = envelope.credentials.filter(
-          (entry) => entry.scope === "oauth-session",
-        );
         await options.providerRuntime.start();
         const before = await captureBeforeState(envelope, options);
         const personalUpdate = parsePersonalConfig(envelope);
@@ -89,7 +83,6 @@ export function createProviderProvisioningTarget(
           personalConfigExpected: personalUpdate,
         };
 
-        let errorCode: ProviderProvisioningErrorCode = "target-write-failed";
         try {
           // 先登记再写入：底层原子写即使在替换完成后才抛错，也必须进入回滚集合。
           applied.settings = true;
@@ -110,7 +103,7 @@ export function createProviderProvisioningTarget(
           );
 
           const incomingCredentials = new Map(
-            oauthCredentials.map((credential) => [credential.key, credential.value]),
+            envelope.credentials.map((credential) => [credential.key, credential.value]),
           );
           for (const key of before.credentials.keys()) {
             const value = incomingCredentials.get(key);
@@ -128,22 +121,26 @@ export function createProviderProvisioningTarget(
             return personalUpdate;
           });
 
-          errorCode = "target-refresh-failed";
           await options.accountProviderSource.refresh("provider-provisioning");
           const snapshot =
             await options.providerRuntime.registryService.refresh("provider-provisioning");
-          // 失效默认只是新会话偏好；把它当同步硬条件会让正常 SSH 被旧模型/档位阻断。
-          // 原样保留偏好，由 Host 现有推荐逻辑解析；真实写入/刷新失败仍按事务回滚。
+          if (
+            personalUpdate.defaultModelSelection &&
+            !options.providerRuntime.registryService.validateSelection(
+              personalUpdate.defaultModelSelection,
+            ).ok
+          ) {
+            throw new Error("同步后的远端 Registry 不支持本地默认模型");
+          }
 
           const result = {
             syncId: envelope.syncId,
             status: "applied" as const,
             personalProviderCount: personalUpdate.providers.keys().length,
-            credentialCount: oauthCredentials.length,
+            credentialCount: envelope.credentials.length,
             configRevision: snapshot.sourceRevisions.config,
             rolledBack: false,
           } satisfies ProviderProvisioningResult;
-          errorCode = "target-commit-failed";
           await writeStateFile(options.stateFilePath, appendStateRecord(previousState, result));
           return result;
         } catch (error) {
@@ -155,9 +152,8 @@ export function createProviderProvisioningTarget(
               syncId: envelope.syncId,
               status: "rollback_failed",
               personalProviderCount: before.personal.providers.keys().length,
-              credentialCount: oauthCredentials.length,
+              credentialCount: envelope.credentials.length,
               errorMessage: `${formatError(error)}；回滚失败：${formatError(rollbackError)}`,
-              errorCode,
               rolledBack: false,
             } satisfies ProviderProvisioningResult;
           }
@@ -165,9 +161,8 @@ export function createProviderProvisioningTarget(
             syncId: envelope.syncId,
             status: "failed",
             personalProviderCount: before.personal.providers.keys().length,
-            credentialCount: oauthCredentials.length,
+            credentialCount: envelope.credentials.length,
             errorMessage: formatError(error),
-            errorCode,
             rolledBack: true,
           } satisfies ProviderProvisioningResult;
         }
@@ -211,7 +206,7 @@ async function captureBeforeState(
     ...envelope.credentials.map((entry) => entry.key),
   ]);
   for (const key of credentialKeys) {
-    if (!OAUTH_CREDENTIAL_KEYS.has(key)) {
+    if (!OAUTH_CREDENTIAL_KEYS.has(key) && !isProviderProvisioningAccountCredentialKey(key)) {
       continue;
     }
     credentials.set(key, await options.credentialService.load(key));

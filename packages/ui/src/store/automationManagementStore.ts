@@ -53,7 +53,7 @@ export interface UpdateAutomationInput {
   scheduleEditedByUser?: boolean;
 }
 
-export interface AutomationManagementState {
+interface AutomationManagementState {
   workspacePath: string | null;
   workspaceIdentity: string | null;
   automations: ZCodeAutomation[];

@@ -21,7 +21,7 @@ type DispatchCommand = (
   targetSessionId: string | null,
 ) => Promise<CommandAck>;
 
-export interface DraftPrewarmController {
+interface DraftPrewarmController {
   /** 首条 admission 命令已发出、ACK 未收口；dispose 不得删除结果未知的会话。 */
   markPromotionPending(): void;
   /** 首发成功后标记（dispose 不再删除已提升的会话）。 */
@@ -36,7 +36,7 @@ export interface DraftPrewarmController {
 }
 
 /** 预热生命周期纯控制器：创建 → onReady 上抛 → dispose 决策清理。 */
-export function startDraftSessionPrewarm(params: {
+function startDraftSessionPrewarm(params: {
   workspaceKey: string;
   dispatchCommand: DispatchCommand;
   onReady: (sessionId: string) => void;
@@ -145,14 +145,14 @@ export function startDraftSessionPrewarm(params: {
   };
 }
 
-export interface DraftSessionPrewarm {
+interface DraftSessionPrewarm {
   /** 当前 workspace/transport generation 已就绪的预热 binding。 */
   binding: DraftPrewarmBinding | null;
   /** 首发等待本 owner 当前创建任务；失败或换代即拒绝，不在发送路径另建会话。 */
   waitForSession(): Promise<DraftPrewarmBinding>;
 }
 
-export interface DraftPrewarmBinding {
+interface DraftPrewarmBinding {
   workspaceKey: string;
   sessionId: string;
   /** 首条 admission 命令发出前同步占住生命周期；false 表示 binding 已不是当前 owner。 */

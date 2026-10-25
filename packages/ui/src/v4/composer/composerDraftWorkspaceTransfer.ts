@@ -107,7 +107,3 @@ export function consumeV4ComposerDraftWorkspaceTransferRequest(
   }
   return matches;
 }
-
-export function clearV4ComposerDraftWorkspaceTransferRequest(): void {
-  pendingRequest = null;
-}

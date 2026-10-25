@@ -83,7 +83,7 @@ function isSvgPath(path?: string): boolean {
   return path?.toLowerCase().endsWith(".svg") ?? false;
 }
 
-export function getPreviewPaneErrorTextClass(
+function getPreviewPaneErrorTextClass(
   error: string | null,
   fileMissingMessage: string,
 ): "text-destructive" | "text-foreground-subtlest" {

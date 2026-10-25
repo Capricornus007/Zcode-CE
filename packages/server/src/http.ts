@@ -1,17 +1,18 @@
 /* eslint-disable max-lines -- HTTP、WebSocket 与静态资源路由集中注册，保持同一鉴权顺序。 */
+import type { TopicResourcePeers } from "@zcode/services/node";
+import { ChannelClient } from "@zcode/rpc";
+import { TOPIC_RESOURCE_RELAY_CHANNEL } from "@zcode/shared";
 import { randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import type { Duplex } from "node:stream";
 import type { IncomingMessage } from "node:http";
 import { basename, extname, relative, resolve, sep } from "node:path";
-import * as nodePath from "node:path";
-import { hostname, userInfo } from "node:os";
+import { hostname } from "node:os";
 import { Hono, type Context } from "hono";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
 import type { WebSocket } from "ws";
 import {
-  ChannelClient,
   Emitter,
   VSBuffer,
   SocketProtocol,
@@ -27,31 +28,20 @@ import {
   IGitService,
   ISystemService,
   ITerminalService,
-  IBotsService,
   IProviderProvisioningTargetService,
   IWorkspaceRegistryService,
 } from "@zcode/services";
 import {
-  botProviders,
   formatLogPrefix,
   formatZodError,
   remoteTargetSchema,
-  serverRemoteInfoOutputSchema,
   SERVER_REMOTE_PROTOCOL_VERSION,
-  TOPIC_RESOURCE_RELAY_CHANNEL,
   ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_COMPATIBILITY_MANIFEST,
   ZCODE_VERSION,
-  type BotProvider,
   type ServerRemoteInfo,
   type ServerRemoteWorkspaceInfo,
 } from "@zcode/shared";
 import { connectRemote, createRemoteBackend, type RemoteConnection } from "./remote/index.js";
-import {
-  SourceServerWorkspaceIdentityChannelServer,
-  type SourceServerWorkspaceIdentityMapper,
-  type TopicResourcePeers,
-} from "@zcode/services/node";
 import { createHostCapabilityStore } from "./hostCapability.js";
 import { createBotIngressGate } from "./botIngress.js";
 import {
@@ -154,7 +144,6 @@ function setupChannelServer(
   services: ServiceCollection,
   clientMode: "desktop-continuous" | "web-remote-replayable",
   auditContext?: ConnectionAuditContext,
-  workspaceIdentityMapper?: SourceServerWorkspaceIdentityMapper,
   resourcePeers?: TopicResourcePeers,
 ) {
   const socket = wrapWebSocket(ws);
@@ -199,13 +188,11 @@ function setupChannelServer(
   const protocol = new SocketProtocol(socket);
   const rawServer = new ChannelServer(protocol, "server");
   // 用日志中间件包装，统一记录所有 RPC 调用
-  const loggedServer = new LoggingChannelServer(rawServer, log);
-  const server = workspaceIdentityMapper
-    ? new SourceServerWorkspaceIdentityChannelServer(loggedServer, workspaceIdentityMapper)
-    : loggedServer;
+  const server = new LoggingChannelServer(rawServer, log);
   const agentService = services.getOptional(IZCodeAgentService);
-  // desktop-continuous 由桌面 Host 反向代理 bot 群/话题资源：由 server 侧主动挂在
-  // MessagePort 通道上，Web 客户端拿不到该通道。
+  // 反向资源返回路由（官方）：desktop-continuous 客户端在握手协议上带一条反向 channel，
+  // Server 把它登记进 resourcePeers——业务查询（queryConversationCommandsV4 等）带上
+  // 可信 connection 标识时，返回路由按 workspaceIdentity+remoteSessionId 精确命中该客户端。
   const reverseClient =
     clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
   const peer = reverseClient
@@ -250,9 +237,9 @@ function setupChannelServer(
         ...(auditContext.tokenLabel ? { tokenLabel: auditContext.tokenLabel } : {}),
       });
     }
-    void connectionScope?.dispose();
     peer?.dispose();
     reverseClient?.dispose();
+    void connectionScope?.dispose();
     rawServer.dispose();
   });
 }
@@ -265,11 +252,9 @@ function generateId(): string {
 }
 
 export interface HttpServerOptions {
+  /** 反向资源返回路由（官方）：desktop-continuous 连接的资源 peer 登记面。 */
   topicResourcePeers?: TopicResourcePeers;
   serverId?: string;
-  virtualProjects?: boolean;
-  migrationFailedPathCount?: number;
-  workspaceIdentityMapper?: SourceServerWorkspaceIdentityMapper;
   name?: string;
   host?: string;
   authRequired?: boolean;
@@ -346,7 +331,7 @@ function readTrimmedEnv(name: string): string | undefined {
   return value ? value : undefined;
 }
 
-export function resolveHttpServerId(options: HttpServerOptions = {}): string {
+function resolveServerId(options: HttpServerOptions): string {
   return (
     options.serverId?.trim() || readTrimmedEnv("ZCODE_SERVER_ID") || hostname() || "zcode-server"
   );
@@ -410,8 +395,8 @@ async function createServerInfo(
   options: HttpServerOptions,
   services: ServiceCollection,
 ): Promise<ServerRemoteInfo> {
-  return serverRemoteInfoOutputSchema.parse({
-    serverId: resolveHttpServerId(options),
+  return {
+    serverId: resolveServerId(options),
     ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
       ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
       : {}),
@@ -419,16 +404,12 @@ async function createServerInfo(
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
     authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
     workspaces: await resolveServerWorkspaces(options, services),
-    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
-    migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
-    identity: { osUser: userInfo().username, hostname: hostname() },
     capabilities: {
       desktopContinuous: true,
       websocketRpc: true,
-      ...(options.virtualProjects ? { virtualProjects: true } : {}),
       processResourceTelemetry: true,
     },
-  });
+  };
 }
 
 const zcodeLiteTokenCookieName = "zcode_lite_token";
@@ -488,6 +469,16 @@ function isSecureRequest(c: Context): boolean {
   return forwardedProto?.split(",")[0]?.trim().toLowerCase() === "https";
 }
 
+/** HttpOnly + SameSite=Lax 保持不变；`Secure` 只在 https（含反代）请求上下发。 */
+function buildLiteTokenCookie(token: string, secure: boolean): string {
+  const attributes = ["Path=/", "HttpOnly", "SameSite=Lax"];
+  if (secure) {
+    attributes.push("Secure");
+  }
+  return `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; ${attributes.join("; ")}`;
+}
+
+/** 回环判定（含 ::ffff:127.x 映射形态）；未知/空地址按 false 处理，不据此告警。 */
 export function isNonLoopbackAddress(address: string | undefined): boolean {
   const value = address?.trim().toLowerCase();
   if (!value) return false;
@@ -560,15 +551,6 @@ function resolvePeerAddress(
     forwardedFor: c.req.header("x-forwarded-for"),
     trustedProxies,
   });
-}
-
-/** HttpOnly + SameSite=Lax 保持不变；`Secure` 只在 https（含反代）请求上下发。 */
-function buildLiteTokenCookie(token: string, secure: boolean): string {
-  const attributes = ["Path=/", "HttpOnly", "SameSite=Lax"];
-  if (secure) {
-    attributes.push("Secure");
-  }
-  return `${zcodeLiteTokenCookieName}=${encodeURIComponent(token)}; ${attributes.join("; ")}`;
 }
 
 /**
@@ -731,25 +713,9 @@ function isStaticFallbackAllowed(pathname: string): boolean {
   return !isTokenProtectedPath(pathname);
 }
 
-// 盘符路径（"Z:/x"、"Z:\x"、"Z:x"）在 Windows 的 path.resolve 下会被当作绝对/盘符相对
-// 路径解析到另一块盘（含 subst 虚拟盘与映射的网络盘），一律拒绝，不做静态资源解析。
-const DRIVE_QUALIFIED_PATH_PATTERN = /^[a-zA-Z]:/;
-
-export function isPathDriveQualified(pathname: string): boolean {
-  return DRIVE_QUALIFIED_PATH_PATTERN.test(pathname);
-}
-
-// pathApi 可注入便于跨平台测试。Windows 跨盘时 path.relative 返回的是绝对路径（如
-// "Z:\marker.txt"），不以 ".." 开头，曾因此被误判为「在静态根内」导致越盘读取；
-// relative 结果为绝对路径的一律视为越界，posix 语义不受影响。
-export function isInsideDirectory(
-  root: string,
-  candidate: string,
-  pathApi: Pick<typeof nodePath, "relative" | "isAbsolute" | "sep"> = nodePath,
-): boolean {
-  const diff = pathApi.relative(root, candidate);
-  if (pathApi.isAbsolute(diff)) return false;
-  return diff === "" || (!diff.startsWith("..") && !diff.includes(`..${pathApi.sep}`));
+function isInsideDirectory(root: string, candidate: string): boolean {
+  const diff = relative(root, candidate);
+  return diff === "" || (!diff.startsWith("..") && !diff.includes(`..${sep}`));
 }
 
 async function resolveStaticFile(
@@ -760,11 +726,6 @@ async function resolveStaticFile(
   const root = resolve(staticRoot);
   const normalizedPathname = pathname === "/" ? "/index.html" : pathname;
   const relativePath = decodeURIComponent(normalizedPathname).replace(/^\/+/, "");
-  // 盘符路径必须在 resolve 之前拦截（含 %3A 解码后的形式），否则 Windows 上会解析到
-  // 静态根所在盘之外的路径；直接 404，也不进入 SPA fallback。
-  if (isPathDriveQualified(relativePath)) {
-    return null;
-  }
   let candidate = resolve(root, relativePath);
   if (!isInsideDirectory(root, candidate)) {
     return null;
@@ -1403,13 +1364,7 @@ export function createHttpServer(
       const auditContext = buildConnectionAuditContext(c);
       return {
         onOpen(_event, ws) {
-          setupChannelServer(
-            ws.raw as WebSocket,
-            services,
-            "web-remote-replayable",
-            auditContext,
-            options.workspaceIdentityMapper,
-          );
+          setupChannelServer(ws.raw as WebSocket, services, "web-remote-replayable", auditContext);
         },
       };
     }),
@@ -1424,7 +1379,6 @@ export function createHttpServer(
           services,
           "desktop-continuous",
           auditContext,
-          options.workspaceIdentityMapper,
           options.topicResourcePeers,
         );
       },
@@ -1504,53 +1458,6 @@ export function createHttpServer(
       };
     }),
   );
-  // Bot Channel 的 HTTP 回调（webhook provider）：鉴权与业务失败状态由 bots service 决定。
-  const handleBotCallback = async (c: Context) => {
-    const provider = c.req.param("provider") as BotProvider;
-    if (!botProviders.includes(provider)) {
-      return c.json({ error: `Unsupported provider: ${provider}` }, 400);
-    }
-    if (provider !== "webhook") {
-      return c.json({ error: `Provider ${provider} does not support HTTP callbacks.` }, 400);
-    }
-    const botsService = services.getOptional(IBotsService);
-    if (!botsService) {
-      return c.json({ error: "Bots service is not available." }, 503);
-    }
-    const rawBodyText = await c.req.text().catch(() => "");
-    let rawBody: unknown = {};
-    if (rawBodyText) {
-      try {
-        rawBody = JSON.parse(rawBodyText) as unknown;
-      } catch {
-        rawBody = { payload: rawBodyText };
-      }
-    }
-    const webhookSecret = c.req.header("x-zcode-bot-secret");
-    const botId = c.req.param("botId");
-    const result = await botsService.handleProviderCallbackResponse(provider, {
-      ...(typeof rawBody === "object" && rawBody !== null ? rawBody : { payload: rawBody }),
-      rawBody: rawBodyText,
-      ...(botId ? { botId } : {}),
-      ...(webhookSecret ? { webhookSecret } : {}),
-    });
-    const responseBody = result.responseBody ?? { ok: result.ok, replies: result.replies };
-    if (result.status === 400) {
-      return c.json(responseBody, 400);
-    }
-    if (result.status === 401) {
-      return c.json(responseBody, 401);
-    }
-    if (result.status === 503) {
-      // Bugfix：Bot 业务失败必须把可重试状态透传给 HTTP provider；返回 200 会让
-      // webhook/网关误以为消息已消费，效果与提前提交 Telegram offset 相同。
-      return c.json(responseBody, 503);
-    }
-    return c.json(responseBody, 200);
-  };
-
-  app.post("/api/bots/:provider", handleBotCallback);
-  app.post("/api/bots/:provider/:botId", handleBotCallback);
 
   if (options.staticRoot?.trim()) {
     const staticRoot = options.staticRoot.trim();

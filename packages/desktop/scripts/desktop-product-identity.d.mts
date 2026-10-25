@@ -35,7 +35,10 @@ export function resolveWindowsAppUserModelId(
   env?: Record<string, string | undefined>,
   runtime?: { isPackaged: boolean },
 ): string;
+
+/** 对应 flavor 的 Linux 桌面条目文件名，必须与 electron-builder 按 linuxExecutableName 生成的一致。 */
 export function resolveLinuxDesktopFileNameForFlavor(flavor: DesktopProductFlavor): string;
+
 export const desktopProductIdentities: Readonly<{
   production: DesktopProductIdentity;
   preview: DesktopProductIdentity;

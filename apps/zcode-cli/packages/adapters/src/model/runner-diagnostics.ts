@@ -1,4 +1,3 @@
-import { summarizeRequestVerificationHeaders } from "@zcode/shared";
 import type { LanguageModelUsage } from "ai";
 import type { Logger, ModelUsage } from "@zcode/contracts";
 import { ModelErrorCode, ModelFailureReason as ModelFailureReasonValue } from "@zcode/contracts";
@@ -142,9 +141,7 @@ export function logGenerateTextDiagnostics(input: {
   }
 }
 
-export function summarizeFinishChunkForDiagnostics(
-  chunk: unknown,
-): Record<string, unknown> | undefined {
+function summarizeFinishChunkForDiagnostics(chunk: unknown): Record<string, unknown> | undefined {
   const record = asRecord(chunk);
   if (Object.keys(record).length === 0) {
     return undefined;
@@ -169,10 +166,7 @@ function summarizeOutboundModelHeaders(
     return { outboundHeaderKeys: [] };
   }
 
-  return {
-    outboundHeaderKeys: Object.keys(headers),
-    ...summarizeRequestVerificationHeaders(headers),
-  };
+  return { outboundHeaderKeys: Object.keys(headers) };
 }
 
 function summarizeFinishChunkBusinessScan(input: {

@@ -57,21 +57,8 @@ function resolveCanonicalWorkspaceId(
   if (!trimmed) {
     return undefined;
   }
-  // CE 修復（spec 131）保留：exact 命中殼 entry（無 workspaceIdentity）而同路徑存在唯一
-  // 帶 identity 的實體時，升級到實體，避免把請求落在殼上；其余走上游 3.16 的擴展匹配
-  // （identity 直等 / 無 identity 時 rootPaths 包含 / workspacePath 等值）。
   const exact = workspaces.find((workspace) => workspace.id === trimmed);
-  if (exact) {
-    if (!exact.workspaceIdentity) {
-      const identityCandidates = workspaces.filter(
-        (workspace) => workspace.workspacePath === trimmed && workspace.workspaceIdentity,
-      );
-      if (identityCandidates.length === 1) {
-        return identityCandidates[0]!.id;
-      }
-    }
-    return exact.id;
-  }
+  if (exact) return exact.id;
   const candidates = workspaces.filter(
     (workspace) =>
       workspace.workspaceIdentity === trimmed ||

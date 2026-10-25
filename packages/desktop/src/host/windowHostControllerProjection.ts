@@ -31,7 +31,7 @@ export type WindowHostControllerSourceScope =
       workspaceIdentity: string;
     };
 
-export interface WindowHostControllerTaskMembership {
+interface WindowHostControllerTaskMembership {
   meta: ZCodeTaskMeta;
   membership: {
     pinned: boolean;

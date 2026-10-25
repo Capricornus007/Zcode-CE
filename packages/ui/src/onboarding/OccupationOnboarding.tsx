@@ -1,10 +1,10 @@
+import { useOnboardingTelemetry } from "@/onboarding/useOnboardingTelemetry.js";
 import { OnboardingHeader } from "@/onboarding/OnboardingHeader.js";
 import { OccupationOnboardingVisual } from "@/onboarding/OccupationOnboardingVisual.js";
 import { occupations, type OccupationValue } from "@/onboarding/occupationOptions.js";
 import { OnboardingModeSelector } from "@/onboarding/OnboardingModeSelector.js";
 import { OnboardingOccupationGrid } from "@/onboarding/OnboardingOccupationGrid.js";
 import { useOnboardingTrigger } from "@/onboarding/useOnboardingTrigger.js";
-import { withOnboardingRpcTimeout } from "@/onboarding/withOnboardingRpcTimeout.js";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "@/hooks/useSettingService.js";
 import { useOnboardingRecordService } from "@/hooks/useOnboardingRecordService.js";
@@ -17,16 +17,20 @@ import { Checkbox } from "@/components/ui/checkbox.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
 import { logger } from "@/logger.js";
+import { withOnboardingRpcTimeout } from "./withOnboardingRpcTimeout.js";
 import { DesktopWindowControls } from "@/DesktopWindowControls.js";
 import type { OnboardingRecordEntry } from "@zcode/shared";
 
-/** 追加本地引导记录（userId 由 host 补全）；channel 缺失 / 无响应挂起时 5s 超时按写失败处理。 */
+/** 追加本地引导记录（userId 由 host 补全）；channel 缺失挂起时 5 秒超时按写失败处理。 */
 async function appendOnboardingRecord(
   service: NonNullable<ReturnType<typeof useOnboardingRecordService>>,
   deviceMid: string,
   entry: Parameters<typeof service.appendRecord>[1],
 ): Promise<void> {
-  await withOnboardingRpcTimeout(service.appendRecord(deviceMid, entry), "appendRecord");
+  await Promise.race([
+    service.appendRecord(deviceMid, entry),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("appendRecord timeout")), 5000)),
+  ]);
 }
 
 export function OccupationOnboarding({
@@ -70,32 +74,44 @@ export function OccupationOnboarding({
   const savingRef = useRef(false);
   const [error, setError] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const loadDeviceMid = useCallback(() => platform.getDeviceId(), [platform]);
   const [needsOnboarding, markOnboarded] = useOnboardingTrigger({
     onboardingRecord,
     userId,
-    hasStoredOccupation: Boolean(settings?.onboardingOccupation),
-        loadDeviceMid,
+    loadDeviceMid,
     update,
   });
   const onboardingVisible = requested || (needsOnboarding === true && !dismissed);
+  const captureEnd = useOnboardingTelemetry({
+    platform,
+    visible:
+      Boolean(settings) &&
+      onboardingVisible &&
+      (requested || needsOnboarding !== null || Boolean(settings?.onboardingOccupation)),
+    step,
+    occupation,
+    mode,
+    memory,
+    suggestions,
+    migration,
+  });
   const closeOnboarding = useCallback(() => {
     if (savingRef.current) return;
+    captureEnd("close", intl.formatMessage({ id: "occupationOnboarding.close" }))();
     setStep(0);
     setDismissed(true);
     setRequested(false);
-    // 关闭必须落盘：只改组件 state 时重启后引导会再次弹出（8225921 声称修过、实际未接通）。
-    // deviceMid 由 host 侧服务自己解析（记录文件的所有者），UI 不传也不生成身份。
-    // dismissOnboarding 同样走 RPC：channel 未注册时 promise 永不结算，
-    // 超时兜底在 5s 后强制按写失败处理（C47，纯超时兜底，不改交互语义）。
     if (onboardingRecord) {
+      // dismissOnboarding 同样走 RPC：channel 未注册时 promise 永不结算，
+      // 超时兜底在 5s 后强制按写失败处理（C47，纯超时兜底，不改交互语义）。
       void withOnboardingRpcTimeout(
-        onboardingRecord.dismissOnboarding(),
+        onboardingRecord.dismissOnboarding(platform.getDeviceId()),
         "dismissOnboarding",
       ).catch((cause: unknown) => {
         logger.warn("[occupation-onboarding] 写入关闭决策失败", { error: String(cause) });
       });
     }
-  }, [onboardingRecord, setRequested]);
+  }, [captureEnd, intl, onboardingRecord, platform, setRequested]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (
@@ -116,8 +132,7 @@ export function OccupationOnboarding({
         return;
       }
       if (event.key === "Escape" && onboardingVisible && !saving) {
-        // 直接退出引导（设置里主动打开的场景尤其需要）：不保存、不改记录，
-        // 本次会话不再显示，下次启动按记录重新触发。
+        // 直接退出不改偏好；首次引导会持久化 dismissed，避免下次启动重复展示。
         event.preventDefault();
         event.stopImmediatePropagation();
         closeOnboarding();
@@ -210,6 +225,7 @@ export function OccupationOnboarding({
   const save = async (skip = false) => {
     if (savingRef.current) return;
     savingRef.current = true;
+    const reportEnd = captureEnd(skip ? "skip" : "start", t(skip ? "skip" : "start"));
     setSaving(true);
     setError(false);
     try {
@@ -222,7 +238,8 @@ export function OccupationOnboarding({
         memoryEnabled: skip ? false : memory,
         proactiveSuggestionsEnabled: !skip && mode === "office" && suggestions,
       });
-      // 保存成功就是本次引导的终点；本地记录失败不应留下可再次触发的引导页面。
+      reportEnd();
+      // 保存成功就是本次引导的终点；本地记录失败不应留下可再次上报的引导页面。
       setStep(0);
       setDismissed(true);
       setRequested(false);

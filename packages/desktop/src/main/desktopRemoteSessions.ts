@@ -25,21 +25,11 @@ import {
   type HostPreparedProjectWorkspace,
   type HostProjectWorkspaceNavigationInput,
 } from "@zcode/shared";
-export interface RemoteConnectionStats {
-  activeSessionCount: number;
-  activeTargetCount: number;
-}
-
-export type RemoteGaugeTransition =
-  | "connected"
-  | "connection-closed"
-  | "disposed"
-  | "window-closed"
-  | "host-exit"
-  | "app-shutdown"
-  | "none";
-
-export type RemoteDisconnectReason = Exclude<RemoteGaugeTransition, "connected" | "none">;
+import type {
+  RemoteConnectionStats,
+  RemoteDisconnectReason,
+  RemoteGaugeTransition,
+} from "./desktopRemoteUsageArmsTelemetry.js";
 import type { RemoteAssetDirs } from "./desktopRuntimeEnv.js";
 import { ProviderProvisioningEnvironmentCoordinator } from "./providerProvisioningEnvironmentCoordinator.js";
 

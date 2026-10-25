@@ -41,7 +41,7 @@ interface DiscoveredShareArtifact extends MaterializedShareArtifact {
   row: ArtifactRow;
 }
 
-export interface ConversationShareArtifactSnapshot {
+interface ConversationShareArtifactSnapshot {
   rows: ConversationRow[];
   bytesBySourceRef: Map<string, Uint8Array>;
   additionalArtifacts: ConversationSharePublicArtifact[];
@@ -116,19 +116,15 @@ async function materializeRegisteredArtifacts(options: {
   workspacePath: string;
   maxArtifactBytes: number;
   artifacts: ConversationSharePublicArtifact[];
-  inlineBytesBySourceRef?: ReadonlyMap<string, Uint8Array>;
   artifactSource: ConversationShareArtifactSource;
 }): Promise<MaterializedShareArtifact[]> {
   const materialized: MaterializedShareArtifact[] = [];
   for (const artifact of options.artifacts) {
-    const inlineBytes = options.inlineBytesBySourceRef?.get(artifact.sourceRef);
-    const { bytes, canonicalPath } = inlineBytes
-      ? { bytes: inlineBytes, canonicalPath: artifact.sourceRef }
-      : await options.artifactSource.read({
-          workspacePath: options.workspacePath,
-          ref: artifact.sourceRef,
-          maxBytes: options.maxArtifactBytes,
-        });
+    const { bytes, canonicalPath } = await options.artifactSource.read({
+      workspacePath: options.workspacePath,
+      ref: artifact.sourceRef,
+      maxBytes: options.maxArtifactBytes,
+    });
     const sha256 = createHash("sha256").update(bytes).digest("hex");
     // Row 在工具完成时记录，用户可能在发布前修改同一路径；必须复验当前字节，
     // 否则 projection/manifest 描述的是旧文件而 multipart 上传的是新文件。
@@ -669,7 +665,6 @@ export async function buildConversationShareArtifactSnapshot(options: {
   input: PublishTextConversationInput;
   selectedRows: ConversationRow[];
   registeredArtifacts: ConversationSharePublicArtifact[];
-  inlineBytesBySourceRef?: ReadonlyMap<string, Uint8Array>;
   capabilities: ConversationShareCapabilities;
   revision: number;
   logEpoch: string;
@@ -692,7 +687,6 @@ export async function buildConversationShareArtifactSnapshot(options: {
     workspacePath: options.input.workspacePath,
     maxArtifactBytes: options.capabilities.max_artifact_bytes,
     artifacts: options.registeredArtifacts,
-    inlineBytesBySourceRef: options.inlineBytesBySourceRef,
     artifactSource: options.artifactSource,
   });
   const discovered = await discoverPreviewArtifacts({

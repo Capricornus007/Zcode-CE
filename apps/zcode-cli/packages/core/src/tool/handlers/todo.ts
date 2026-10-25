@@ -22,7 +22,7 @@ import type { ToolEntry, ToolHandler } from "../types.js";
 
 const MAX_TODO_MODEL_BYTES = 100_000;
 
-export const todoReadHandler: ToolHandler = async (input, context) => {
+const todoReadHandler: ToolHandler = async (input, context) => {
   TodoReadInputSchema.parse(input);
 
   if (!context.sessionStore) {
@@ -44,7 +44,7 @@ export const todoReadHandler: ToolHandler = async (input, context) => {
   } satisfies TodoReadOutput;
 };
 
-export const todoWriteHandler: ToolHandler = async (input, context) => {
+const todoWriteHandler: ToolHandler = async (input, context) => {
   const { todos } = TodoWriteInputSchema.parse(input) as TodoWriteInput;
 
   if (!context.sessionStore) {

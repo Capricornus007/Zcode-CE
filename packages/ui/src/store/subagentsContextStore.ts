@@ -9,7 +9,7 @@ import {
 import { logger } from "@/logger.js";
 import { getServiceAuthorityId } from "@/store/serviceAuthorityKey.js";
 
-export interface SubagentsContextSnapshot {
+interface SubagentsContextSnapshot {
   workspacePath: string;
   workspaceIdentity: string | null;
   provider: ZCodeProvider;

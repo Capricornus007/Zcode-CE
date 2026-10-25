@@ -22,7 +22,7 @@ export interface ServerLayout {
   readonly updateLockFile: string;
 }
 
-export function getDefaultServerDataRoot(): string {
+function getDefaultServerDataRoot(): string {
   const configured = process.env.ZCODE_DATA_BASE_DIR?.trim();
   return join(configured || homedir(), ".zcode", "server");
 }
@@ -108,7 +108,7 @@ export function isPathWithin(rootPath: string, candidatePath: string): boolean {
   return diff === "" || (!diff.startsWith("..") && !diff.split(sep).includes(".."));
 }
 
-export interface UninstallTargetValidation {
+interface UninstallTargetValidation {
   ok: boolean;
   reason?: "outside-server-root" | "home-directory" | "non-absolute";
   canonicalPath?: string;
@@ -132,18 +132,10 @@ export function validateUninstallTarget(
   return { ok: true, canonicalPath };
 }
 
-export async function canonicalExistingPath(pathValue: string): Promise<string> {
-  return await realpath(pathValue);
-}
-
-export function assertServerDataRoot(serverRoot: string): string {
+function assertServerDataRoot(serverRoot: string): string {
   const resolved = resolve(serverRoot);
   if (!isAbsolute(resolved) || resolved === dirname(resolved)) {
     throw new Error("Invalid server data root");
   }
   return resolved;
-}
-
-export function serverDataRootFromBase(baseDir: string): string {
-  return join(resolve(baseDir), ".zcode", "server");
 }

@@ -1,4 +1,7 @@
+import { mobilePluginDiscoveryTelemetrySchema } from "@zcode/shared";
 import {
+  sessionCreateTelemetrySchema,
+  type RendererTelemetryEventPayload,
   WEB_REMOTE_CONTROL_WORKSPACE_RECONNECT_TIMEOUT_MS,
   createWebRemoteControlConnectionRecoveryTimeoutFailure,
   resolveWebRemoteControlRelayWsUrl,
@@ -238,6 +241,7 @@ window.addEventListener("beforeunload", () => {
 });
 
 interface WebRemoteControlPlatformProxy {
+  reportTelemetryEvent?: (event: RendererTelemetryEventPayload) => void;
   requestPlatformMethod<K extends WebRemoteControlPlatformMethod>(
     method: K,
     args?: WebRemoteControlPlatformMethodArgsMap[K],
@@ -508,6 +512,16 @@ function createWebPlatform(options?: {
         status: "idle",
       }),
     disposeRemoteSession: () => Promise.resolve(),
+    // ---- CE 线增量：本地 Web 服务（远程控制）五条服务面通道。
+    // IPlatformService 上是必填成员，但该通道由桌面 preload 的 contextBridge 提供，
+    // 浏览器端没有对应宿主 —— 诚实空实现：getWebServiceStatus 报 stopped，其余动作
+    // 拒绝并说明需要桌面宿主（UI 的能力探测读取 status=stopped ⇒ 入口不渲染）。
+    getWebServiceStatus: () =>
+      Promise.resolve({ state: "stopped" as const, adopted: false, loopback: true }),
+    startWebService: () => Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
+    stopWebService: () => Promise.reject(new Error("Web 服务管理需要桌面宿主（desktop host）")),
+    getWebServiceConnectionInfo: () => Promise.resolve(null),
+    onWebServiceChanged: () => () => {},
     isDockerAvailable: () =>
       platformProxy
         ? platformProxy.requestPlatformMethod("isDockerAvailable")
@@ -572,6 +586,14 @@ function createWebPlatform(options?: {
     onPaymentCallback: () => () => {},
     onShareImport: () => () => {},
     notifyRendererReady: () => {},
+    reportTelemetryEvent: async (event) => {
+      // 手机只开放 session_create 和插件发现事件；管理结果仍由 Desktop Host 唯一上报。
+      const parsed = sessionCreateTelemetrySchema
+        .or(mobilePluginDiscoveryTelemetrySchema)
+        .safeParse(event);
+      if (parsed.success) platformProxy?.reportTelemetryEvent?.(parsed.data);
+    },
+    reportArmsCustomEvent: () => Promise.resolve(),
     showTaskNotification: (payload) => {
       if (document.hasFocus()) {
         return;
@@ -1764,6 +1786,13 @@ async function bootstrapExternalRelayWebRemoteControl(
             platform={createWebPlatform({
               externalWebRemoteControlProxy: {
                 requestPlatformMethod,
+                reportTelemetryEvent: (event) => {
+                  const parsed = sessionCreateTelemetrySchema
+                    .or(mobilePluginDiscoveryTelemetrySchema)
+                    .safeParse(event);
+                  if (parsed.success)
+                    transport.sendPayload({ zcode_type: "telemetry-report", event: parsed.data });
+                },
               },
             })}
             // Bug 原因：手机复用 Desktop Host 中已持久化的 Assistant row，但 Root 默认关闭
@@ -1883,6 +1912,13 @@ async function bootstrapExternalRelayWebRemoteControl(
             platform={createWebPlatform({
               externalWebRemoteControlProxy: {
                 requestPlatformMethod,
+                reportTelemetryEvent: (event) => {
+                  const parsed = sessionCreateTelemetrySchema
+                    .or(mobilePluginDiscoveryTelemetrySchema)
+                    .safeParse(event);
+                  if (parsed.success)
+                    transport.sendPayload({ zcode_type: "telemetry-report", event: parsed.data });
+                },
               },
             })}
             initialWorkspaceAbsPath={workspaceKey}

@@ -91,6 +91,8 @@ export interface AgentRuntimeInternal
   messageHistory: MessageHistory;
   readFileState: ReadFileStateMap;
   cachedTools: ModelToolContract[] | null;
+  /** ToolSearch 激活的延迟工具名（见 runtime/helpers/tool-deferral.ts）。 */
+  readonly activatedDeferredToolNames: Set<string>;
   /** 工作流工具面是否已注册（launch.md「On demand: activation」）；非 onDemand 会话出生即 true。 */
   dynamicWorkflowToolsActivated: boolean;
   dynamicWorkflowActivationSource?: DynamicWorkflowActivationSource;
@@ -133,11 +135,19 @@ export interface AgentRuntimeInternal
   workflowBlockedReminder?: WorkflowBlockedReminderClock;
   branchGeneration: number;
   artifactStore?: ToolArtifactStorePort;
+  /** CE 线增量：最近一次模型请求的上下文压力（0-1，input/窗口）；供工具执行层收缩预算。 */
+  lastContextPressure?: number;
+  /** CE 线增量：缓存保活定时器句柄（cache-keep-alive 方法持有）。 */
+  cacheKeepAliveTimer?: ReturnType<typeof setTimeout>;
+  /** CE 线增量⑧：本会话累计 compact 次数（≥2 时摘要附降准警告）。 */
+  sessionCompactCount?: number;
   executionPort?: ExecutionPort;
   fileSystemPort?: FileSystemPort;
   imageProcessorPort?: ImageProcessorPort;
   pdfDocumentPort?: PdfDocumentPort;
   skillLoadOutcome?: SkillLoadOutcome;
+  /** CE 线增量：缓存保活请求入口（cache-keep-alive 方法实现并绑定）。 */
+  sendCacheKeepAliveRequest(): Promise<void>;
   workingDirectory: string;
   workspaceRoot: string;
   sessionStore?: SessionStorePort;

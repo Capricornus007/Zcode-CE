@@ -211,10 +211,7 @@ function getStorage(): Storage | null {
   }
 }
 
-export function getV4ComposerDraftStorageKey(
-  workspacePath: string,
-  workspaceIdentity?: string,
-): string {
+function getV4ComposerDraftStorageKey(workspacePath: string, workspaceIdentity?: string): string {
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
   return `${STORAGE_KEY_PREFIX}${encodeURIComponent(workspaceKey)}`;
 }

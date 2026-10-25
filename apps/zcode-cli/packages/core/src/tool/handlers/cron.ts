@@ -96,7 +96,7 @@ function toModelAutomation(automation: CronAutomation): CronAutomation {
   };
 }
 
-export const cronCreateHandler: ToolHandler = async (input, context) => {
+const cronCreateHandler: ToolHandler = async (input, context) => {
   assertNotAutomationTurn(context, "CronCreate");
   const parsed = CronCreateInputSchema.parse(input) as CronCreateInput;
   assertAutomationPort(context, "CronCreate");
@@ -113,7 +113,7 @@ export const cronCreateHandler: ToolHandler = async (input, context) => {
   } satisfies CronCreateOutput;
 };
 
-export const cronListHandler: ToolHandler = async (input, context) => {
+const cronListHandler: ToolHandler = async (input, context) => {
   CronListInputSchema.parse(input);
   assertAutomationPort(context, "CronList");
 
@@ -123,7 +123,7 @@ export const cronListHandler: ToolHandler = async (input, context) => {
   } satisfies CronListOutput;
 };
 
-export const cronUpdateHandler: ToolHandler = async (input, context) => {
+const cronUpdateHandler: ToolHandler = async (input, context) => {
   assertNotAutomationTurn(context, "CronUpdate");
   const parsed = CronUpdateInputSchema.parse(input) as CronUpdateInput;
   assertAutomationPort(context, "CronUpdate");
@@ -135,7 +135,7 @@ export const cronUpdateHandler: ToolHandler = async (input, context) => {
   } satisfies CronUpdateOutput;
 };
 
-export const cronDeleteHandler: ToolHandler = async (input, context) => {
+const cronDeleteHandler: ToolHandler = async (input, context) => {
   assertNotAutomationTurn(context, "CronDelete");
   const parsed = CronDeleteInputSchema.parse(input) as CronDeleteInput;
   assertAutomationPort(context, "CronDelete");

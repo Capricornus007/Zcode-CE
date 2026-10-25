@@ -1,7 +1,3 @@
-import { BotChannelMessageContent } from "@/v4/ChannelMentionContent.js";
-import { parsePromptConversationSelections } from "@/lib/conversationSelectionReference.js";
-import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSelectionReferenceChip.js";
-import { BotGroupSourceLabel } from "@/v4/BotGroupSourceLabel.js";
 import {
   closestCenter,
   DndContext,
@@ -32,7 +28,7 @@ import { cn } from "@/components/lib/utils.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
 
-export interface ConversationQueuePanelProps {
+interface ConversationQueuePanelProps {
   queue: QueueState;
   /** 删除队列项（deleteQueueItem command）。 */
   onDeleteItem?: (queueItemId: string) => void;
@@ -50,12 +46,12 @@ export interface ConversationQueuePanelProps {
 
 type QueueItem = QueueState["items"][number];
 
-export interface V4QueueReorderAnchor {
+interface V4QueueReorderAnchor {
   beforeQueueItemId: string | null;
   queueItemId: string;
 }
 
-export function resolveV4QueueReorderAnchor(
+function resolveV4QueueReorderAnchor(
   items: readonly QueueItem[],
   activeQueueItemId: string,
   overQueueItemId: string,
@@ -137,18 +133,6 @@ const QueueRow = memo(function QueueRow({
   const dispatchLocked = item.dispatch.state !== "queued";
   const rowLocked = dispatchLocked || editPending;
   const isCompact = item.kind === "compact";
-  const parsedInput = {
-    ...parsePromptConversationSelections(item.text),
-    ...(item.conversationQuotes ? { references: item.conversationQuotes } : {}),
-  };
-  const attachmentNames = item.attachments.map((attachment) =>
-    attachment.sourceKind === "topic-history"
-      ? intl.formatMessage(
-          { id: "chat.attachments.topicHistory" },
-          { count: attachment.messageCount ?? 0 },
-        )
-      : attachment.fileName,
-  );
   const {
     attributes,
     isDragging,
@@ -218,28 +202,9 @@ const QueueRow = memo(function QueueRow({
           "flex min-w-0 flex-1 items-center gap-2 truncate text-ui-base text-foreground",
           isCompact ? "font-mono" : null,
         )}
-        title={parsedInput.visibleContent}
+        title={item.text}
       >
-        <span className="flex min-w-0 flex-col">
-          <BotGroupSourceLabel source={item.botGroupSource} />
-          <span className="truncate">
-            <BotChannelMessageContent
-              source={isCompact ? undefined : item.botGroupSource}
-              text={isCompact ? "/compact" : parsedInput.visibleContent}
-            />
-          </span>
-          {parsedInput.references.length ? (
-            <ConversationSelectionReferenceChip references={parsedInput.references} />
-          ) : null}
-          {item.attachments.length > 0 ? (
-            <span
-              className="truncate text-ui-sm text-foreground-subtle"
-              title={attachmentNames.join(", ")}
-            >
-              {attachmentNames.join(", ")}
-            </span>
-          ) : null}
-        </span>
+        <span className="truncate">{isCompact ? "/compact" : item.text}</span>
       </span>
       {onSendNow ? (
         <Button

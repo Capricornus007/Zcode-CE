@@ -1424,9 +1424,8 @@ same call, so never `TaskStop` it first and never rewrite it from scratch with
   `max_concurrency`, against a run that is still going, retunes that run in place instead of
   starting a new one: same run, nothing stopped, nothing re-run.
 - `subagent_model`: omit to keep the predecessor's choice, pass `null` to put the subagents
-  back on the session model, pass a model id to change it (only when the user asks; never
-  a model under another provider the user did not name — ask them first if you think one
-  would help). `ListModels` lists the ids.
+  back on the session model, pass a model id to change it (only when the user asks).
+  `ListModels` lists the ids.
 
 Changing only a setting on a running run still stops it; what it had in flight runs again in
 the new run, except that a named subagent whose unfinished ask you did not change picks that
@@ -1447,9 +1446,7 @@ names and call again with `path` — nothing was stopped and nothing was started
 **Confirmation.** A run this session started (through `CreateWorkflow`, a previous
 `AmendWorkflow` or the workflows hub) is amended without a confirmation window, even while
 it is running. A run the user stopped, or a run another session started, asks the user
-first, and so does an amendment that would put subagents on a provider neither the session
-nor the run used (a model you name under another provider, in `subagent_model` or in the
-script): that choice is the user's, and the window is where they make it. The result names the run that was superseded (if one was stopped) and the new run's
+first. The result names the run that was superseded (if one was stopped) and the new run's
 id. The superseded run sends no notification of its own; the new run notifies when it
 settles. Do not wait for it or poll it with `TaskOutput`.
 

@@ -38,6 +38,7 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
   "selection_side_chat",
   "queued_system_notification",
   "shell_environment_change",
+  "skill_digest",
 ] as const;
 
 export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
@@ -45,6 +46,14 @@ export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
   "hook_context",
   "memory_update",
   "relevant_memory",
+  // 重植（3.15.1 升级冲掉注册）：CE 记忆召回提醒（memory-recall-reminder.ts 的
+  // 融合排序注入），与官方 relevant_memory（语义召回分支，当前关在 default-index）不同源。
+  "memory_recall",
+  "user_instructions_update",
+  "followup_due",
+  "kb_recall",
+  "caliber_guard",
+  "task_reanchor",
   "runtime_mode",
   "plan_mode_exit",
   "output_style",
@@ -110,6 +119,8 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
   hook_context: descriptor("current_turn", "per_current_turn", true, "sr.hook_context"),
   memory_update: descriptor("current_turn", "per_current_turn", true, "sr.memory_update"),
   relevant_memory: descriptor("current_turn", "per_current_turn", true, "sr.relevant_memory"),
+  // 记忆召回提醒（重植）：按本轮用户输入对记忆清单做相关性排序后注入 top-K 摘要。
+  memory_recall: descriptor("current_turn", "per_current_turn", true, "sr.memory_recall"),
   runtime_mode: descriptor("current_turn", "per_current_turn", true, "sr.runtime_mode"),
   plan_mode_exit: descriptor("current_turn", "runtime_local", true, "sr.plan_mode_exit"),
   output_style: descriptor("current_turn", "per_current_turn", true, "sr.output_style"),
@@ -124,6 +135,22 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
   // model-only synthetic notice 固化，后续只追加、不改写；冷恢复按原文重建以保持缓存前缀。
   plugin_reference: descriptor("current_turn", "per_current_turn", true, "sr.plugin_reference"),
   todo_reminder: descriptor("current_turn", "per_current_turn", true, "sr.todo_reminder"),
+  // 任务再锚定：长会话每 N 个模型步在尾部重申最初任务（防漂移）。
+  task_reanchor: descriptor("current_turn", "runtime_local", true, "sr.task_reanchor"),
+  // 用户指令热更新：AGENTS.md 等会话中途被修改时以 per-request 注入新版
+  // （前缀不动保缓存，吸收 codex agents_md_manager）。
+  user_instructions_update: descriptor(
+    "current_turn",
+    "per_current_turn",
+    true,
+    "sr.user_instructions_update",
+  ),
+  // 预测回填闭环：会话首 turn 注入已到期/临期的预测登记（P5）。
+  followup_due: descriptor("current_turn", "runtime_local", true, "sr.followup_due"),
+  // 知识卡召回：按本轮问题对技能知识卡 manifest 做全量融合召回注入锚点（P1）。
+  kb_recall: descriptor("current_turn", "per_current_turn", true, "sr.kb_recall"),
+  // 口径裁决护栏：本轮输入命中已裁决口径注册表时注入权威源指引（P2）。
+  caliber_guard: descriptor("current_turn", "per_current_turn", true, "sr.caliber_guard"),
   task_status: descriptor("mid_turn_event", "mid_turn_event", true, "sr.task_status"),
   // 只用于 Read 等 tool result 内容内联 warning，不作为 synthetic user notice 持久化。
   tool_result_warning: descriptor("tool_result", "tool_result", true, "sr.tool_result_warning"),
@@ -133,6 +160,8 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     true,
     "sr.resume_referenced_session_context",
   ),
+  // 压缩边界重注入的技能 digest（标题 + 硬约束 + 命令），不是技能正文第二副本。
+  skill_digest: descriptor("history_continuity", "resume_history", true, "sr.skill_digest"),
   plan_file_reference: descriptor(
     "history_continuity",
     "resume_history",

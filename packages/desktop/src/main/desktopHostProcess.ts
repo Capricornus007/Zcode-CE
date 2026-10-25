@@ -1,14 +1,6 @@
+import { ingestToolExecResource } from "./desktopResourceTelemetry.js";
+import { ingestMcpResourceSamples } from "./processResourceMcpTelemetrySource.js";
 /* eslint-disable max-lines -- host process 统一处理 main↔host 生命周期、日志、ZCode Agent，拆分前先保持跨进程消息收口。 */
-import { bindDatabaseStartupRelay } from "./databaseStartupRelay.js";
-import { randomUUID } from "node:crypto";
-import { join } from "node:path";
-import {
-  app,
-  BrowserWindow,
-  MessageChannelMain,
-  utilityProcess as electronUtilityProcess,
-} from "electron";
-import type { MessagePortMain, UtilityProcess as ElectronUtilityProcess } from "electron";
 import {
   type HostAgentProcessErrorResponse,
   type HostAgentProcessExceptionResponse,
@@ -16,38 +8,60 @@ import {
   type HostAgentProcessReadyResponse,
   type HostAgentProcessSpawnedResponse,
   type HostCuaOperationStateResponse,
+  type HostMcpTelemetryResponse,
+  type HostSessionCreateTelemetryResponse,
+  type HostPluginTelemetryResponse,
   type RemoteTarget,
   type TaskRealtimeHostDeliveryKind,
+  type WorkspacePurpose,
   formatZCodeHostProcessName,
   HostMessageTypes,
-  HostResponseTypes,
   hostResponseMessageSchema,
+  HostResponseTypes,
   InternalChannels,
   LAUNCH_MARKS_QUERY_KEY,
   RUNTIME_ZCODE_DEBUG,
   serializeLaunchMarks,
-  type WorkspacePurpose,
   ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV,
 } from "@zcode/shared";
-import { getMainLaunchPartialMarks } from "./desktopLaunchMarks.js";
+import type {
+  PluginSandboxHandle,
+  PluginSandboxRegisterRequestPayload,
+  PluginSandboxRegisterResultPayload,
+} from "@zcode/shared/mcp-apps";
+import type { UtilityProcess as ElectronUtilityProcess, MessagePortMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  utilityProcess as electronUtilityProcess,
+  MessageChannelMain,
+} from "electron";
+import { randomUUID } from "node:crypto";
+import { join } from "node:path";
 import { BroadcastHub } from "./broadcastHub.js";
+import { bindDatabaseStartupRelay } from "./databaseStartupRelay.js";
+import { getMainLaunchPartialMarks } from "./desktopLaunchMarks.js";
+import { ingestHostNetworkObservations } from "./desktopNetworkTelemetry.js";
+import {
+  buildHostProcessEnv,
+  hostModulePath,
+  resolveBundledGlmBinaryPath,
+} from "./desktopRuntimeEnv.js";
+import { ingestHostNetworkCapture } from "./resourceManagerNetwork.js";
+import { buildHostE2ECoverageEnv } from "./e2eCoverage.js";
+import { createFeedbackLogArchiveFromExportLogs } from "./exportLogs.js";
 import { createHostLogRelay } from "./hostLogRelay.js";
-import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
+import { ingestCliResourceSample } from "./processResourceCliSource.js";
+import { ingestHostSelfResourceSample } from "./processResourceSelfHeapSource.js";
+import { resolveHostResourceUsageResult } from "./resourceManagerHostSampling.js";
 import {
   registerHostAgentProcess,
   registerHostProcess,
   unregisterHostAgentProcess,
   unregisterHostProcess,
 } from "./resourceManagerWindow.js";
-import { resolveHostResourceUsageResult } from "./resourceManagerHostSampling.js";
-import {
-  buildHostProcessEnv,
-  hostModulePath,
-  resolveBundledGlmBinaryPath,
-} from "./desktopRuntimeEnv.js";
-import { createFeedbackLogArchiveFromExportLogs } from "./exportLogs.js";
-import { buildHostE2ECoverageEnv } from "./e2eCoverage.js";
 import type { RemoteAssetDirs } from "./desktopRuntimeEnv.js";
+import type { TaskRealtimeBus } from "./taskRealtimeBus.js";
 
 export interface WindowBootstrapOptions {
   restoreSession?: boolean;
@@ -80,7 +94,7 @@ export interface HostInitMessage {
   runtimeProcessEnvPatch?: Record<string, string>;
 }
 
-interface SpawnHostProcessOptions {
+export interface SpawnHostProcessOptions {
   internalChannel?: typeof InternalChannels.ServicePort | typeof InternalChannels.ScopedServicePort;
   internalPayload?: unknown;
   registerBroadcast?: boolean;
@@ -172,7 +186,9 @@ export function spawnHostProcess(
     onAgentProcessException?: (event: HostAgentProcessExceptionResponse) => void;
     onAgentProcessReady?: (event: HostAgentProcessReadyResponse) => void;
     onAgentProcessSpawned?: (event: HostAgentProcessSpawnedResponse) => void;
-    // CE：遥测已移除（P1）——上游 onMcpTelemetry / onPluginTelemetry / onSessionCreateTelemetry 回调随上报链路移除。
+    onMcpTelemetry?: (event: HostMcpTelemetryResponse) => void;
+    onPluginTelemetry?: (event: HostPluginTelemetryResponse) => void;
+    onSessionCreateTelemetry?: (event: HostSessionCreateTelemetryResponse) => void;
     onCuaOperationStateChanged?: (
       source: ElectronUtilityProcess,
       event: HostCuaOperationStateResponse,
@@ -219,6 +235,10 @@ export function spawnHostProcess(
     }) => Promise<{ ok: boolean; [k: string]: unknown }>;
     /** Host 已完成附件授权后，由 Main 将本地视频 realpath 加入精确协议授权集合。 */
     authorizeLocalMediaPreviewPath?: (path: string) => Promise<string>;
+    /** Host 校验完插件 UI HTML 后交给 Main 沙箱注册表登记，返回句柄。 */
+    registerPluginSandbox?: (
+      input: PluginSandboxRegisterRequestPayload,
+    ) => PluginSandboxHandle | Promise<PluginSandboxHandle>;
   },
   options?: SpawnHostProcessOptions,
 ): ElectronUtilityProcess {
@@ -292,15 +312,61 @@ export function spawnHostProcess(
       return;
     }
 
-    // 遥测移除（P1）：这里原有 7 个 host → main 的遥测分发分支（NetworkTelemetryBatch /
-    // AgentResourceSample / HostResourceSample / ToolExecResource / McpResourceSamples /
-    // McpTelemetry / SessionCreateTelemetry）。它们的共同出口都是 ARMS 资源与自定义事件上报，
-    // 已随 desktopNetworkTelemetry / desktopResourceTelemetry / desktopMcpTelemetry 等模块删除。
-    // HostResponseTypes 里的对应枚举仍保留（Host 侧协议未动），main 不再消费。
+    if (result.data.type === HostResponseTypes.NetworkTelemetryBatch) {
+      ingestHostNetworkObservations(result.data.observations);
+      return;
+    }
+    if (result.data.type === HostResponseTypes.NetworkCaptureBatch) {
+      ingestHostNetworkCapture(result.data.batch, child.pid ?? 0);
+      return;
+    }
+    // CLI 自采的 60 秒样本：按 services 打的 lane 归入 cli_chat / cli_aux 角色。
+    if (result.data.type === HostResponseTypes.AgentResourceSample) {
+      ingestCliResourceSample(
+        result.data.sample,
+        result.data.runtimeSurface,
+        result.data.environmentKey,
+      );
+      return;
+    }
 
-    // 资源管理器窗口的进程行采样结果：本地 UI 能力，与遥测无关，保留。
+    // Host 自采的 60 秒样本：main 只取 heap 作 host 角色事件的 heap 维度。
+    if (result.data.type === HostResponseTypes.HostResourceSample) {
+      ingestHostSelfResourceSample(result.data.sample);
+      return;
+    }
+
     if (result.data.type === HostResponseTypes.ResourceUsageSnapshotResult) {
       resolveHostResourceUsageResult(label, result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.ToolExecResource) {
+      ingestToolExecResource(result.data.sample, result.data.runtimeSurface);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.McpResourceSamples) {
+      ingestMcpResourceSamples(
+        result.data.samples,
+        result.data.runtimeSurface,
+        result.data.environmentKey,
+      );
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.McpTelemetry) {
+      dependencies.onMcpTelemetry?.(result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.PluginTelemetry) {
+      dependencies.onPluginTelemetry?.(result.data);
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.SessionCreateTelemetry) {
+      dependencies.onSessionCreateTelemetry?.(result.data);
       return;
     }
 
@@ -333,6 +399,32 @@ export function spawnHostProcess(
             error: error instanceof Error ? error.message : String(error),
           });
         });
+      return;
+    }
+
+    if (result.data.type === HostResponseTypes.PluginSandboxRegisterRequest) {
+      const request = result.data;
+      const register = dependencies.registerPluginSandbox;
+      const reply = (payload: PluginSandboxRegisterResultPayload) =>
+        child.postMessage({ type: HostMessageTypes.PluginSandboxRegisterResult, ...payload });
+      if (!register || win.isDestroyed() || request.ownerWebContentsId !== win.webContents.id) {
+        reply({
+          requestId: request.requestId,
+          ok: false,
+          error: "Plugin UI sandbox is unavailable.",
+        });
+        return;
+      }
+      void Promise.resolve()
+        .then(() => register(request))
+        .then((handle) => reply({ requestId: request.requestId, ok: true, ...handle }))
+        .catch((error: unknown) =>
+          reply({
+            requestId: request.requestId,
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
       return;
     }
 

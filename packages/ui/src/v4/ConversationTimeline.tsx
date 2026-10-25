@@ -1,7 +1,6 @@
 import { useBotTopicPreparations } from "@/v4/BotTopicPreparation.js";
 import { withTopicPreparationMessages } from "@/v4/topicPreparationRenderUnits.js";
 /* oxlint-disable eslint(max-lines) -- ConversationTimeline 集中承载虚拟滚动、滚动锚定、loadOlder 与 find 高亮协调；拆散会让同一滚动状态跨文件传递。 */
-// Modified by ZCode: X9(滚动锚定): 精确提取上游 3.15.1 增量 —— flushSync 批量测高提交 + viewport 高度观测 + reconcileFollowingForContentAnchor + disposed 防护。
 import {
   Component,
   memo,
@@ -18,7 +17,6 @@ import {
   type TouchEvent as ReactTouchEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
-// X9: 批量测高后需同步提交 React, 消除 resize 时的跨帧追赶(自上游 3.15.1, Apache-2.0)。
 import { flushSync } from "react-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDownIcon } from "lucide-react";
@@ -540,7 +538,6 @@ function ConversationTimelineImpl({
   const stableContentWidthRef = useRef<number | null>(null);
   const contentWidthResizeActiveRef = useRef(false);
   const contentWidthResizeSettleTimerRef = useRef<number | null>(null);
-  // X9: 批量同步测高提交期标记; 期间视为内容宽度变化中, 其他内容 effect 不得按中间高度吸底。
   const committingMeasuredLayoutRef = useRef(false);
   const messageLayerMaskObserverRef = useRef<ResizeObserver | null>(null);
   const isContentWidthChanging = useCallback(() => {
@@ -902,8 +899,6 @@ function ConversationTimelineImpl({
     followingRef.current = following;
     setBackToBottomVisible(shouldShowBackToBottom(following, unitsRef.current.length));
   }, []);
-  // X9: 测高批量提交的 revision——同步 flushSync 后仍需明确重渲染冲刷旧任务。
-  const [, commitMeasuredLayout] = useState(0);
 
   const clearUserScrollIntent = useCallback(() => {
     userScrollIntentRef.current = { intent: "none", observedAt: 0 };
@@ -1101,15 +1096,13 @@ function ConversationTimelineImpl({
     sync();
     if (typeof ResizeObserver !== "undefined") {
       const observer = new ResizeObserver(sync);
-      // X9: 暴露给内容列 RO, 批量测高时一起暂停, 避免 undelivered notifications。
       messageLayerMaskObserverRef.current = observer;
       observer.observe(scrollElement);
       observer.observe(messageLayer);
       return () => {
         observer.disconnect();
-        if (messageLayerMaskObserverRef.current === observer) {
+        if (messageLayerMaskObserverRef.current === observer)
           messageLayerMaskObserverRef.current = null;
-        }
       };
     }
 
@@ -1219,11 +1212,9 @@ function ConversationTimelineImpl({
       const nextWidth = contentColumn.clientWidth;
       const element = scrollRef.current;
       if (!element) return;
-      // X9: 视口高度变化(窗口 resize)与内容宽度变化走同一路径。
       const viewportHeightChanged = observedViewportHeight !== element.clientHeight;
       observedViewportHeight = element.clientHeight;
       if (nextWidth === stableContentWidthRef.current && !viewportHeightChanged) return;
-
       markLayoutScrollGuard();
       commitFollowing(
         reconcileFollowingForContentAnchor({
@@ -1242,18 +1233,17 @@ function ConversationTimelineImpl({
           window.clearTimeout(contentWidthResizeSettleTimerRef.current);
           contentWidthResizeSettleTimerRef.current = null;
         }
-        // X9: 本批次统一提交布局与吸底, 其间其他内容 effect 不得按中间高度吸底。
+        // 本批次统一提交布局与吸底，其间其他内容 effect 不得按中间高度吸底。
         observer.unobserve(contentColumn);
         const messageLayer = messageLayerRef.current;
         const maskObserver = messageLayerMaskObserverRef.current;
-        // X9: 同步占位高度也会改变父消息层的高度; 其蒙层观察器需要一起暂停,
-        // 否则在更深层的 RO 通知中改变父层, 会产生 undelivered notifications。
+        // 同步占位高度也会改变父消息层的高度；其蒙层观察器需要一起暂停，
+        // 否则在更深层的 RO 通知中改变父层，会产生 undelivered notifications。
         if (messageLayer) maskObserver?.unobserve(messageLayer);
         committingMeasuredLayoutRef.current = true;
         try {
-          // X9: virtualizer 的 ResizeObserver 默认异步提交 React; 先吸底会使用旧占位高度,
-          // 下一帧测高提交后再跳一次(即「窗口大小变化时滚动跳动」)。仅在 observer 内
-          // 批量测高并同步提交, 避免跨帧追赶。
+          // virtualizer 的 ResizeObserver 默认异步提交 React；先吸底会使用旧占位高度，
+          // 下一帧测高提交后再跳一次。仅在 observer 内批量测高并同步提交，避免跨帧追赶。
           const measurements = Array.from(
             contentColumn.querySelectorAll(":scope > [data-index]"),
             (node) => ({
@@ -1263,13 +1253,13 @@ function ConversationTimelineImpl({
           );
           flushSync(() => {
             for (const item of measurements) virtualizer.resizeItem(item.index, item.height);
-            // 缓存可能已经更新且没有差量, 仍需明确提交, 不能依赖空回调冲刷旧任务。
+            // 缓存可能已经更新且没有差量，仍需明确提交，不能依赖空回调冲刷旧任务。
             commitMeasuredLayout((revision) => revision + 1);
           });
         } finally {
           committingMeasuredLayoutRef.current = false;
-          // 暂停的是本批次会写入高度的观察目标, 不推迟测高或吸底。下一帧继续
-          // 观察内容列宽度, 以覆盖视口停止后仍在进行的 CSS 宽度过渡。
+          // 暂停的是本批次会写入高度的观察目标，不推迟测高或吸底。下一帧继续
+          // 观察内容列宽度，以覆盖视口停止后仍在进行的 CSS 宽度过渡。
           if (observeContentFrame !== null) window.cancelAnimationFrame(observeContentFrame);
           if (!disposed) {
             observeContentFrame = window.requestAnimationFrame(() => {
@@ -1279,19 +1269,17 @@ function ConversationTimelineImpl({
                 messageLayer &&
                 messageLayerRef.current === messageLayer &&
                 messageLayerMaskObserverRef.current === maskObserver
-              ) {
+              )
                 maskObserver?.observe(messageLayer);
-              }
             });
           }
         }
         if (disposed) return;
         stableContentWidthRef.current = contentColumn.clientWidth;
         contentWidthResizeActiveRef.current = false;
-        // 同步提交可能触发其他布局处理; 用户上滚或定位始终优先。
-        if (followingRef.current && getActiveUserScrollIntent() !== "awayFromBottom") {
+        // 同步提交可能触发其他布局处理；用户上滚或定位始终优先。
+        if (followingRef.current && getActiveUserScrollIntent() !== "awayFromBottom")
           scrollToBottom();
-        }
         return;
       }
       if (nextWidth === stableContentWidthRef.current) return;
@@ -1312,7 +1300,6 @@ function ConversationTimelineImpl({
       }, CONTENT_WIDTH_RESIZE_SETTLE_MS);
     });
     observer.observe(contentColumn);
-    // X9: 视口纳入观察, 窗口 resize 进入同一处理路径。
     if (scrollRef.current) observer.observe(scrollRef.current);
 
     return () => {

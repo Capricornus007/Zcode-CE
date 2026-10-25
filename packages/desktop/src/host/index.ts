@@ -4068,9 +4068,8 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
                   },
                 ]
               : [];
-        // Main 已把启动预热限制为 active workspace 1 个(STARTUP_AGENT_WARMUP_LIMIT);
-        // Host 必须显式消费这份固定名单，不能让后续 task-list observer 再隐式扩大，
-        // 也不能因单个失败扫描补位。
+        // Main 已把启动预热限制为 active workspace 1 个；Host 必须显式消费这份固定名单，
+        // 不能让后续 task-list observer 再隐式扩大，也不能因失败扫描补位。
         agentWarmupTargets.forEach((target, index) => {
           warmUpZCodeAgent(
             services,

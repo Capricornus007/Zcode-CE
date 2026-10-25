@@ -1,17 +1,12 @@
-import { createBotTopicAdmission } from "./botTopicAdmission.js";
-import { readBotGroupRuntimeSnapshot, waitBotGroupExecutionEnd } from "./groupRuntimeSnapshot.js";
-import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
-import { createZCodeAgentConnectionScope } from "./zcodeAgentConnectionScope.js";
-/* Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 3 个支撑模块 + 连接 scope 导入。 */
-/* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
-import { createHash, randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
 import { isAuxiliarySessionKind } from "@zcode/shared";
 import { createBotTopicAdmission } from "#src/zcode-agent/botTopicAdmission.js";
 import {
   readBotGroupRuntimeSnapshot,
   waitBotGroupExecutionEnd,
 } from "#src/zcode-agent/groupRuntimeSnapshot.js";
+import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
+/* oxlint-disable eslint(max-lines) -- 迁移期需要在一个门面里集中维护旧 task projection 到 ZCode session 的协议适配。 */
+import { createHash, randomUUID } from "node:crypto";
 import { createZCodeAgentConnectionScope } from "#src/zcode-agent/zcodeAgentConnectionScope.js";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -251,7 +246,7 @@ function resolveZCodeAgentCurrentLogFilePath(now = new Date()): string {
 export function createZCodeTaskServiceAdapter(
   options: CreateZCodeTaskServiceAdapterOptions,
 ): IZCodeTaskService {
-  // Modified by ZCode: 增量自上游 aac47556——Bot 群/话题通道的 agent 连接 scope 与 admission，
+  // Bot 原来绕过连接 facade，导致真实附件 admission 缺少可信身份；复用既有 scope，
   // 同一 Bot 接入的附件、命令及对账共用连接，不改变桌面与手机各自的传输模式。
   const botConnectionScopes = new Map<string, ReturnType<typeof createZCodeAgentConnectionScope>>();
   function botAgent(workspace: ZCodeAgentWorkspaceTarget) {
@@ -1855,7 +1850,6 @@ export function createZCodeTaskServiceAdapter(
       };
     },
 
-    // Modified by ZCode: 增量自上游 aac47556——task service 的 7 个 Bot 群/话题方法。
     async readBotTopicSummaries(params) {
       const target = taskTargets.get(params.taskId);
       if (target && taskKey(target) !== taskKey(params))

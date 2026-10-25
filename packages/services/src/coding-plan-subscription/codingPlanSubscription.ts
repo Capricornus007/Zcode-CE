@@ -44,12 +44,13 @@ import type {
   StartPlanPreviewConfig,
   ZCodeModelContextBudgetStrategy,
   ForceUpdateConfig,
+  ManualClaimPlanPreviewSnapshot,
   ManualClaimPlanClaimRequest,
+  ManualClaimPlanClaimResult,
   DynamicWorkflowClientConfig,
-  ManualClaimCaptchaConfig,
-  ManualClaimPlanClaimOutcome,
-  ManualClaimPlanPreview,
 } from "@zcode/shared";
+// ---- CE 线增量：claim 验证码配置面（ManualClaimCaptchaDialog / 沙箱验证码附件共用）----
+import type { ManualClaimCaptchaConfig } from "@zcode/shared";
 import type { ModelSelectionView } from "@zcode/provider";
 import { ServiceChannels } from "@zcode/shared";
 import { createServiceDescriptor } from "../descriptors.js";
@@ -66,6 +67,12 @@ export interface ICodingPlanSubscriptionService {
   getStaticProducts(): Promise<CodingPlanStaticProductsConfig>;
   getStaticTeamProducts(): Promise<CodingPlanStaticTeamProductsConfig>;
   getStartPlanPreview(): Promise<StartPlanPreviewConfig | null>;
+  getManualClaimPlanPreviews(): Promise<ManualClaimPlanPreviewSnapshot>;
+  claimManualPlan(request: ManualClaimPlanClaimRequest): Promise<ManualClaimPlanClaimResult>;
+  /** CE 线增量：阿里云验证码配置；无配置或本端未接入时返回 null，供 UI 决定是否渲染验证码入口。 */
+  getManualClaimCaptchaConfig(options?: {
+    forceRefresh?: boolean;
+  }): Promise<ManualClaimCaptchaConfig | null>;
   /** 闲时任务灰度配置（D31）：forceRefresh 供入口打开时补拉（绕过 1h 快照缓存）。 */
   getOffPeakClientConfig(options?: { forceRefresh?: boolean }): Promise<OffPeakClientConfig>;
   /**
@@ -123,29 +130,6 @@ export interface ICodingPlanSubscriptionService {
   checkEnterpriseOrderStatus(
     request: EnterpriseCodingPlanOrderStatusRequest,
   ): Promise<EnterpriseCodingPlanOrderStatusResponse>;
-
-  /**
-   * claim 平面（周末 / 体验套餐手动领取）。
-   *
-   * 与购买链路（batchPreview/preview/createSign/...）相互独立：claim 走
-   * `/api/v1/zcode-plan/billing/{preview,claim}`，且**必须携带 UUID 格式
-   * `X-Device-Mid`**（活动网关硬门槛，缺头回 biz 3001）。
-   *
-   * 未登录时 preview 仍可用（返回可领取列表），claim 返回
-   * `failureKind: "login_required"`。
-   */
-  getManualClaimPlanPreviews(): Promise<ManualClaimPlanPreview[]>;
-  /**
-   * 领取指定套餐。
-   *
-   * `request.captcha` 缺省时退回服务层验证码求解器；CE 当前未接入求解器，
-   * 此时返回 `failureKind: "captcha_unavailable"` 而不是抛异常。
-   */
-  claimManualPlan(request: ManualClaimPlanClaimRequest): Promise<ManualClaimPlanClaimOutcome>;
-  /** 阿里云验证码配置；无配置或本端未接入时返回 null，供 UI 决定是否渲染验证码入口。 */
-  getManualClaimCaptchaConfig(options?: {
-    forceRefresh?: boolean;
-  }): Promise<ManualClaimCaptchaConfig | null>;
 }
 
 export const ICodingPlanSubscriptionService =

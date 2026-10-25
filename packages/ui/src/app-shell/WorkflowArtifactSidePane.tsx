@@ -1,4 +1,3 @@
-// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { TID_WORKFLOW_ARTIFACT_PANE } from "@zcode/shared";
 import type { WorkflowRunArtifactSummary } from "@zcode/shared/zcode-protocol-v4";
@@ -36,7 +35,7 @@ import { useConversationProjection } from "@/v4/useConversationProjection.js";
 import { useV4Conversation, V4PaneConversationProvider } from "@/v4/V4ConversationContext.js";
 
 /**
- * 稳定引用的空摘要列表：`artifacts` 键在零产物时缺席，坍缩成一个每帧新造的 `[]`
+ * 稳定引用的空摘要列表：`artifacts` 键在零产物时**缺席**，坍缩成一个每帧新造的 `[]`
  * 会让合并 hook 的依赖每帧都变，于是每帧重查一次 journal。
  */
 const EMPTY_SUMMARIES: readonly WorkflowRunArtifactSummary[] = [];
@@ -55,7 +54,7 @@ const WorkflowArtifactContent = memo(function WorkflowArtifactContent({
   const [lease, setLease] = useState<SessionLease | null>(null);
   const theme = useZCodeStoreWithDefault((state) => state.theme, "system");
 
-  // 订阅父会话的投影（照 PlanDetail / WorkflowRun 详情页）：产物的新鲜元数据是父会话
+  // 订阅**父会话**的投影（照 PlanDetail / WorkflowRun 详情页）：产物的新鲜元数据是父会话
   // 投影的一部分，不是这个面板的本地缓存。
   useEffect(() => {
     const nextLease = layer.acquire(tab.parentSessionId);
@@ -147,13 +146,20 @@ function WorkflowArtifactView({
   const { intl } = useZCodeIntl();
   const preset = isArtifactPresetKind(artifact.kind);
 
-  // 版本步进器的落点。tab 上的 `version` 只是打开时的初始值（chip 从不带版本号，
-  // 缺席即最新版）；之后由用户翻。产物换了（同一个 tab 不会，但组件可能被复用）或最新版
-  // 抬升时重置回最新版——正在看历史版本时新版落地，跳走会很突兀，所以只在 id 变化时重置。
-  const [selectedVersion, setSelectedVersion] = useState<number | undefined>(tab.version);
-  useEffect(() => {
-    setSelectedVersion(tab.version);
-  }, [artifact.id, tab.version]);
+  // 版本步进器的落点。tab 上的 `version` 只是**打开时**的初始值（chip 从不带版本号，
+  // 缺席即最新版）；之后由用户翻。产物换了（同一个 tab 不会，但组件可能被复用）或
+  // tab 初始版本变化时重置回初始值——正在看历史版本时新版落地，跳走会很突兀，
+  // 所以只在 id 变化时重置。
+  //
+  // 用「选择项自带来源标签」的派生写法，而不是 useEffect 重置：passive effect 在挂载后
+  // 异步执行，慢机器/全量并发下会晚于用户点击的 setState，把刚选的版本覆盖回初始值
+  // （实测：步进器点上一版后仍显示最新版）。标签不匹配时直接派生初始值，无时序窗口。
+  const selectionKey = `${artifact.id}\u0000${tab.version ?? ""}`;
+  const [selection, setSelection] = useState<{ key: string; version?: number }>({
+    key: selectionKey,
+    version: tab.version,
+  });
+  const selectedVersion = selection.key === selectionKey ? selection.version : tab.version;
 
   const availableVersions = useMemo(() => {
     if (artifact.versions !== undefined && artifact.versions.length > 0) {
@@ -255,7 +261,7 @@ function WorkflowArtifactView({
           <span className="text-ui-sm text-foreground-subtle">{kindLabel}</span>
           <ArtifactVersionStepper
             availableVersions={availableVersions}
-            onSelect={setSelectedVersion}
+            onSelect={(nextVersion) => setSelection({ key: selectionKey, version: nextVersion })}
             version={version}
             versionIndex={versionIndex}
           />
@@ -333,7 +339,7 @@ function WorkflowArtifactView({
 /**
  * 版本步进器 `‹ v2 / 3 ›`。只有一版时整块缺席——一个永远两端禁用的步进器只是噪声。
  *
- * 按已知版本的数组翻而不是按数字加减：journal 读不到时数组里只有最新版一个数，
+ * 按**已知版本的数组**翻而不是按数字加减：journal 读不到时数组里只有最新版一个数，
  * 那时步进器自然消失，而不是给出一批取不到字节的版本号。
  */
 function ArtifactVersionStepper({
@@ -408,8 +414,8 @@ function ArtifactVersionStepper({
  * ⚠ 术语：这里的 artifact 是脚本经 `artifact.*` 交付给用户的产出，不是引擎内部那个
  * 「脚本顶层返回值」的同名词。
  *
- * 数据分三条：元数据走 `useWorkflowRunArtifacts`（活投影 + journal 合并），
- * 字节走 `useWorkflowRunArtifactBytes`（分块拼 Blob），看板条目走
+ * 数据分三条：**元数据**走 `useWorkflowRunArtifacts`（活投影 + journal 合并），
+ * **字节**走 `useWorkflowRunArtifactBytes`（分块拼 Blob），**看板条目**走
  * `useWorkflowRunArtifactData`（`itemCount` 抬升即增量续拉）。三条互不相干，
  * 所以一个看板永远不会去读字节，一份 pdf 也永远不会去翻 journal 的 report 行。
  */

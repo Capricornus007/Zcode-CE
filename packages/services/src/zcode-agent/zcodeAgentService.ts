@@ -29,7 +29,6 @@ import {
   sessionDebugSnapshotSchema,
   type LocalTtftFacts,
 } from "@zcode/shared";
-import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
 /* oxlint-disable eslint(max-lines) -- ZCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
 import { ensureIndependentPlanSupport } from "./independentPlanSupport.js";
 import { createHash, randomUUID } from "node:crypto";
@@ -91,15 +90,6 @@ import {
   zcodeMcpUiResourceSubscriptionResultSchema,
   zcodePluginsListUiSurfacesResultSchema,
   zcodeWorkflowsDeleteResultSchema,
-  // CE-SYNC: 取联集去重——两侧都只要上游的 zcodeWorkflowsForRunResultSchema；CEmain 侧另外带来的
-  // open/close/sampling 与 mcpUiEmptyResultSchema 别名是 CE 线在用的 schema（本文件多处消费），
-  // 其余名字（readResource/callTool/cancelCall/listResources/appToolAccepted/register/unregister/
-  // listResourceTemplates/resourceSubscription/pluginsListUiSurfaces/workflowsSave）本 import 上方
-  // 与下方已各有一次，重复列出会变成 duplicate identifier，故此处只补缺的四个。
-  zcodeMcpUiOpenInstanceResultSchema,
-  zcodeMcpUiCloseInstanceResultSchema,
-  zcodeMcpUiSamplingResultSchema,
-  zcodeMcpUiResourceSubscriptionResultSchema as mcpUiEmptyResultSchema,
   zcodeWorkflowsForRunResultSchema,
   zcodeWorkflowsGetResultSchema,
   zcodeWorkflowsListResultSchema,
@@ -259,16 +249,6 @@ import type {
   ZCodeAgentGetSavedWorkflowParams,
   ZCodeAgentListSavedWorkflowRunsParams,
   ZCodeAgentListSavedWorkflowsParams,
-  ZCodeAgentReadMcpResourceParams,
-  ZCodeAgentReadMcpResourceForUiParams,
-  ZCodeAgentCallMcpToolForUiParams,
-  ZCodeAgentCancelMcpToolCallForUiParams,
-  ZCodeAgentListMcpResourcesForUiParams,
-  ZCodeAgentMcpResourceSubscriptionForUiParams,
-  ZCodeAgentRegisterAppToolsForUiParams,
-  ZCodeAgentAppToolInstanceForUiParams,
-  ZCodeAgentAppToolCallForUiParams,
-  ZCodeAgentResolveAppToolCallForUiParams,
   ZCodeAgentMoveSavedWorkflowParams,
   ZCodeAgentSaveSavedWorkflowFromRunParams,
   ZCodeAgentSavedWorkflowTarget,

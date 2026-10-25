@@ -24,7 +24,7 @@ export interface AccountRequestAuthInput {
   accountAccess: ZCodeProviderAccountAccess | ZCodeAccountAccess;
   expectedAccountScope?: string;
   rejectedProjectTokenFingerprint?: string;
-  reason: RequestVerificationReason | "off-peak" | "usage" | "captcha-retry";
+  reason: RequestVerificationReason | "off-peak" | "usage";
 }
 
 export interface AccountAccessIdentityInput {

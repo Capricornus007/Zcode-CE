@@ -385,7 +385,7 @@ async function readListLevelResourceMeta(
 
 /**
  * 选中实际使用的 HTML 项：遍历 contents，取第一个 mimeType 在 HTML 白名单内的项
- * （同 uri 的优先）；从该项的 `_meta` 读资源级 csp / prefersBorder / 尺寸提示。
+ * （同 uri 的优先）；从**该项**的 `_meta` 读资源级 csp / prefersBorder / 尺寸提示。
  * blob、超限一律拒绝，不降级、不截断；没有任何 HTML 项时按第一项的 mimeType 报错。
  */
 export function pickHtmlResource(

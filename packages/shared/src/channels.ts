@@ -1,3 +1,4 @@
+import type { WebRemoteControlAuthStateChange } from "./web-remote-control.js";
 /* eslint-disable max-lines -- 通信频道和请求响应映射必须集中定义，避免跨进程 channel 字符串散落。 */
 import type {
   ResourceUsageSnapshot,
@@ -8,10 +9,27 @@ import type {
   SaveCliMcpToUserDirectoryRequest,
 } from "./index.js";
 import type { OAuthStateRegistration } from "./oauth.js";
+import type {
+  WebRemoteControlContext,
+  WebRemoteControlReconnectWorkspaceRequest,
+  WebRemoteControlReconnectWorkspaceResult,
+  WebRemoteControlStartOperationResult,
+  WebRemoteControlStatus,
+  WebRemoteControlWorkspaceTarget,
+} from "./web-remote-control.js";
 import type { AppSettings, Locale } from "./protocol.js";
 import type { StorageCleanRequest, StorageCleanResult, StorageUsageSnapshot } from "./storage.js";
-// CE-SYNC: 上游 web-remote-control.ts / telemetry.ts / rendererActionTrace.ts 三個模組 CE 不帶
-// （雲端中繼＋遙測上報已移除），其型別 import 與對應 channel／mapping 條目一併刪除。
+import type {
+  ArmsCustomEventPayload,
+  ConfigureFinalArmsCustomEventE2ERequest,
+  FinalArmsCustomEventE2EEntry,
+  RendererTelemetryEventPayload,
+  TelemetryRendererContext,
+} from "./telemetry.js";
+import type {
+  RendererActionTraceBatchV1,
+  RendererActionTraceConfigV1,
+} from "./rendererActionTrace.js";
 import type { RendererHeapSample } from "./validation.js";
 import type {
   CancelPendingRemoteConnectionRequest,
@@ -30,7 +48,6 @@ import type {
   DesktopCommandId,
   DesktopTitleBarTheme,
   DockerContainerInfo,
-  DesktopCloseToTrayCapability,
   EmbeddedBrowserOpenUrlRequest,
   EmbeddedBrowserPermissionPromptEvent,
   EmbeddedBrowserPermissionResolveRequest,
@@ -122,10 +139,6 @@ export const ServiceChannels = {
   SourceServerManagement: "source-server-management",
   /** 本地 usage 统计服务 */
   UsageStats: "usage-stats",
-  // Modified by ZCode: 增量自上游 aac47556——plugin-ui 桥服务通道（F4/F5）。
-  PluginUiBridge: "plugin-ui-bridge",
-  PluginUiSampling: "plugin-ui-sampling",
-  PluginUiAppTools: "plugin-ui-app-tools",
   /** Coding Plan 订阅购买服务 */
   CodingPlanSubscription: "coding-plan-subscription",
   ClientConfig: "client-config",
@@ -185,11 +198,9 @@ export type ServiceChannelName = (typeof ServiceChannels)[keyof typeof ServiceCh
 
 /** Electron IPC 频道名。仅在 preload ↔ main 之间使用。 */
 export const PlatformChannels = {
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5):插件 UI 沙箱 renderer ↔ main 通道。
   /** renderer → main：释放插件 UI 沙箱（关闭 ports、撤 protocol handler、清 partition） */
   PluginSandboxDispose: "zcode:plugin-sandbox-dispose",
   PluginSandboxCopyImage: "zcode:plugin-sandbox-copy-image",
-  /** renderer → main：回報沙箱本次 init 是否有執行中的操作（sandboxId, initId, active） */
   PluginSandboxExecutionActive: "zcode:plugin-sandbox-execution-active",
   /** renderer → main：一次性消费插件 UI 沙箱 guest 的用户手势 token */
   PluginSandboxConsumeUserGesture: "zcode:plugin-sandbox-consume-user-gesture",
@@ -227,8 +238,16 @@ export const PlatformChannels = {
   CancelPendingRemoteConnection: "zcode:cancel-pending-remote-connection",
   /** Renderer → Main：绑定远程 logical session 的 canonical workspace context */
   BindRemoteWorkspaceSessionContext: "zcode:bind-remote-workspace-session-context",
-  // CE-SYNC: 上游 WebRemoteControl 五條通道（Start/Stop/GetStatus/AuthStateChanged/StatusChanged）
-  // 依賴雲端中繼模組 web-remote-control.ts，CE 不帶；CE 的遠控是自托管 Web 服務（下方 webService:* 組）。
+  /** 为当前 workspace 开启 Web 远程控制 */
+  StartWebRemoteControl: "zcode:start-web-remote-control",
+  /** 关闭当前窗口的 Web 远程控制 */
+  StopWebRemoteControl: "zcode:stop-web-remote-control",
+  /** 查询当前窗口的 Web 远程控制状态 */
+  GetWebRemoteControlStatus: "zcode:get-web-remote-control-status",
+  /** Renderer → Main：OAuth 会话变化通知，不携带凭据 */
+  WebRemoteControlAuthStateChanged: "zcode:web-remote-control-auth-state-changed",
+  /** Main → Renderer：当前窗口 Web 远程控制状态变化 */
+  WebRemoteControlStatusChanged: "zcode:web-remote-control-status-changed",
   /** 释放当前窗口里的远程 session */
   DisposeRemoteSession: "zcode:dispose-remote-session",
   /** Renderer → Main：检查本机 Docker daemon 是否可用 */
@@ -265,8 +284,10 @@ export const PlatformChannels = {
   Log: "zcode:log",
   /** Renderer → Main：同步当前窗口所有 tab 的 workspace 路径 */
   SyncWindowTabs: "zcode:sync-window-tabs",
-  // CE-SYNC: SyncWebRemoteControlWorkspaces / WebRemoteControlReconnectWorkspace 兩條上游中繼
-  // workspace 切換通道隨 web-remote-control.ts 一併刪除（CE 無雲端中繼）。
+  /** Renderer → Main：同步当前窗口可供 Web 远程控制切换的 workspace */
+  SyncWebRemoteControlWorkspaces: "zcode:sync-web-remote-control-workspaces",
+  /** Main → Renderer：手机端请求重连当前窗口里的远程 workspace */
+  WebRemoteControlReconnectWorkspace: "zcode:web-remote-control-reconnect-workspace",
   /** Renderer → Main：同步当前窗口的未读 task 数 */
   SyncWindowUnreadCount: "zcode:sync-window-unread-count",
   /** Renderer → Main：当前窗口 active task，只更新 Main 的临时焦点映射。 */
@@ -283,9 +304,9 @@ export const PlatformChannels = {
   CloseActiveContextRequest: "zcode:close-active-context-request",
   /** Main → Renderer：内置 webview 请求打开新的浏览器 tab */
   OpenBrowserUrl: "zcode:open-browser-url",
-  /** Main → Renderer：内置浏览器网页权限/屏幕共享源/设备选择弹窗请求（F9，AAC47556） */
+  /** Main → Renderer：内置浏览器网页权限/屏幕共享源/设备选择弹窗请求 */
   EmbeddedBrowserPermissionPrompt: "zcode:embedded-browser-permission-prompt",
-  /** Renderer → Main：用户对内置浏览器权限弹窗的决策回传（F9） */
+  /** Renderer → Main：用户对内置浏览器权限弹窗的决策回传 */
   EmbeddedBrowserPermissionResolve: "zcode:embedded-browser-permission-resolve",
   /** Main → Renderer：agent 首次 browser 命令建好受控 view，通知 renderer 自动开 browser-use tab */
   BrowserViewReady: "zcode:browser-view-ready",
@@ -330,8 +351,8 @@ export const PlatformChannels = {
   /** 获取资源管理器快照（CPU / 内存，按基础服务、内置插件、社区插件归类） */
   GetResourceUsageSnapshot: "zcode:get-resource-usage-snapshot",
   SetResourceUsageSamplingActive: "zcode:set-resource-usage-sampling-active",
-  // CE-SYNC: GetNetworkCaptureSnapshot / ClearNetworkCapture（網路抓包面板）所屬上游
-  // networkCapture.ts CE 不帶，連同網路抓包通道一併刪除；資源管理器保留 CPU/記憶體與存儲掃描。
+  GetNetworkCaptureSnapshot: "zcode:get-network-capture-snapshot",
+  ClearNetworkCapture: "zcode:clear-network-capture",
   /** 打开资源管理器窗口（其他窗口触发） */
   OpenResourceManager: "zcode:open-resource-manager",
   /** 资源管理器「存储」tab：开始扫描本机 .zcode 占用（main 持有 StorageService，Worker 线程遍历） */
@@ -350,8 +371,6 @@ export const PlatformChannels = {
   OpenExternal: "zcode:open-external",
   /** Renderer → Main：查询当前语言下是否存在可用的用户社群入口 */
   CanOpenCommunity: "zcode:can-open-community",
-  /** Renderer → Main:查询「关闭驻留托盘」能力(Linux 置灰判断;F10,aac47556) */
-  GetCloseToTrayCapability: "zcode:get-close-to-tray-capability",
   /** Renderer → Main：在系统文件管理器中打开路径 */
   OpenInFileManager: "zcode:open-in-file-manager",
   /** Renderer → Main：使用系统默认应用打开本地文件 */
@@ -386,13 +405,27 @@ export const PlatformChannels = {
   OAuthCallbackHandled: "zcode:oauth-callback-handled",
   /** Renderer → Main：renderer 已就绪，可接收缓存的 deep link */
   RendererReady: "zcode:renderer-ready",
-  // 遥测已全部移除（P1）：SyncTelemetryContext / ReportTelemetryEvent / ReportArmsCustomEvent /
-  // GetRendererActionTraceConfig / RendererActionTraceConfigChanged / ReportRendererActionTraceBatch /
-  // ReportLocalTtftBatch / ReadFinalArmsCustomEventsE2E / ClearFinalArmsCustomEventsE2E /
-  // ConfigureFinalArmsCustomEventsE2E 十个 channel 均已删除。
-  // 保留 ReportRendererHeapSample（本地内存诊断，非上报）。
+  /** Renderer → Main：同步当前 renderer 的 telemetry 上下文 */
+  SyncTelemetryContext: "zcode:sync-telemetry-context",
+  /** Renderer → Main：通过统一 telemetry 层上报业务事件 */
+  ReportTelemetryEvent: "zcode:report-telemetry-event",
+  /** Renderer → Main：上报 ARMS 自定义事件 */
+  ReportArmsCustomEvent: "zcode:report-arms-custom-event",
+  /** Renderer → Main：读取 Renderer 用户操作 Trace 灰度配置。 */
+  GetRendererActionTraceConfig: "zcode:get-renderer-action-trace-config",
+  /** Main → Renderer：Renderer 用户操作 Trace 灰度配置变化。 */
+  RendererActionTraceConfigChanged: "zcode:renderer-action-trace-config-changed",
+  /** Renderer → Main：发送已结束的 ui_action batch。 */
+  ReportRendererActionTraceBatch: "zcode:report-renderer-action-trace-batch",
   /** Renderer → Main：主窗口 renderer 每 60 秒的 heap 读数，单向 send，不需要回执。 */
   ReportRendererHeapSample: "zcode:report-renderer-heap-sample",
+  ReportLocalTtftBatch: "zcode:report-local-ttft-batch",
+  /** E2E preload → Main：读取 sendCustom 最终参数的内存 ring。 */
+  ReadFinalArmsCustomEventsE2E: "zcode:e2e:read-final-arms-custom-events",
+  /** E2E preload → Main：清空 sendCustom 最终参数的内存 ring。 */
+  ClearFinalArmsCustomEventsE2E: "zcode:e2e:clear-final-arms-custom-events",
+  /** E2E preload → Main：配置只针对目标 event name 的真实网络抑制。 */
+  ConfigureFinalArmsCustomEventsE2E: "zcode:e2e:configure-final-arms-custom-events",
   /** Renderer → Main：触发任务完成/失败的系统通知 */
   ShowTaskNotification: "zcode:show-task-notification",
   /** Main → Preload：通知 renderer 播放任务通知提示音 */
@@ -428,13 +461,13 @@ export const PlatformChannels = {
   ImportChromeBrowserData: "zcode:import-chrome-browser-data",
   /** Renderer → Main：清理内置浏览器缓存或全部站点数据。 */
   ClearEmbeddedBrowserData: "zcode:clear-embedded-browser-data",
-  /** Renderer → Main：读取内置浏览器站点权限记录（设置页「网站权限」，F9） */
+  /** Renderer → Main：读取内置浏览器站点权限记录（设置页「网站权限」） */
   GetEmbeddedBrowserSitePermissions: "zcode:get-embedded-browser-site-permissions",
-  /** Renderer → Main：修改/删除单条站点权限（state="ask" 表示删除，F9） */
+  /** Renderer → Main：修改/删除单条站点权限（state="ask" 表示删除） */
   SetEmbeddedBrowserSitePermission: "zcode:set-embedded-browser-site-permission",
-  /** Renderer → Main：清空全部站点权限记录（F9） */
+  /** Renderer → Main：清空全部站点权限记录 */
   ClearEmbeddedBrowserSitePermissions: "zcode:clear-embedded-browser-site-permissions",
-  /** Renderer → Main：重置单个站点的全部权限记录（站点权限设置标签页「重置」，F9） */
+  /** Renderer → Main：重置单个站点的全部权限记录（站点权限设置标签页「重置」） */
   ResetEmbeddedBrowserSitePermission: "zcode:reset-embedded-browser-site-permission",
   /** Main → Renderer：通知有新版本已下载完毕，可以重启安装 */
   UpdateReady: "zcode:update-ready",
@@ -572,7 +605,6 @@ export const InternalChannels = {
   SourceSettingsServicePort: "zcode:source-settings-service-port",
   /** preload → renderer：主进程已确认系统通知展示，renderer 可播放提示音 */
   TaskNotificationSound: "zcode:task-notification-sound",
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
   /** main → 宿主 renderer：插件 UI 沙箱的 MessagePort 组（port2[]），payload { sandboxId, initId, names } */
   PluginSandboxPorts: "zcode:plugin-sandbox-ports",
 } as const;
@@ -621,14 +653,6 @@ export const HostMessageTypes = {
   TaskOwnerCommandDeliver: "task-owner-command-deliver",
   /** main → host：deliver owner command result to requester */
   TaskOwnerCommandResult: "task-owner-command-result",
-  // CE-SYNC: Bot 遠端 workspace 橋的三條 main→host 應答通道（機械合併被沖掉，按 CE main 重植；
-  // 消費方 packages/services/src/bots/botRemoteWorkspaceBridge.ts）。
-  /** main → host：Bot 远端 workspace 重连结果 */
-  BotRemoteWorkspaceReconnectResult: "bot-remote-workspace-reconnect-result",
-  /** main → host：Bot 远端 workspace 连接状态查询结果 */
-  BotRemoteWorkspaceConnectionStatusResult: "bot-remote-workspace-connection-status-result",
-  /** main → host：Bot 远端 workspace runtime RPC 端口 */
-  BotRemoteWorkspaceRuntimePort: "bot-remote-workspace-runtime-port",
   /** main → host：把 session message 投递到该 host 管理的目标 session */
   SessionMessageDeliver: "session-message-deliver",
   /** main → host：把 session message 投递结果回写到源 session */
@@ -643,20 +667,16 @@ export const HostMessageTypes = {
   BrowserExecuteResult: "browser-execute-result",
   /** main → host：本地视频 canonical path 授权结果 */
   LocalMediaPreviewPathAuthorizeResult: "local-media-preview-path-authorize-result",
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
   /** main → host：插件 UI 沙箱登记结果（PluginSandboxRegisterResultPayload） */
   PluginSandboxRegisterResult: "plugin-sandbox-register-result",
   /** Main → Host：全局前台 ZCode 窗口派生的 producer focus fact。 */
   CuaPipFocusChanged: "cua-pip-focus-changed",
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F5)。
-  /** host → main：登记已校验的插件 UI HTML 与 CSP，换取 sandbox 句柄（PluginSandboxRegisterRequestPayload） */
-  PluginSandboxRegisterRequest: "plugin-sandbox-register-request",
   /** main → host：要求 Host 现读本地 Source，并同步指定 Remote Environment。 */
   ProviderProvisioningExecute: "provider-provisioning-execute",
   /** main → host：资源管理器请求 Host 采样其后代进程（Agent / MCP / 终端）的 CPU 与内存 */
   ResourceUsageSnapshotRequest: "resource-usage-snapshot-request",
   ResourceUsageSnapshotCancel: "resource-usage-snapshot-cancel",
-  // CE-SYNC: main→host 的 network-capture 指令通道屬上游 networkCapture.ts（CE 不帶），刪除。
+  NetworkCapture: "network-capture",
   /** main → host：Main 的实时界面语言变化（Host 用于 ZCode endpoint 的 X-Client-Language） */
   ApplicationLocaleChanged: "application-locale-changed",
 } as const;
@@ -695,14 +715,16 @@ export const HostResponseTypes = {
   AgentResourceSample: "agent-resource-sample",
   /** host → main：Host 进程自身每 60 秒自采的 CPU / RSS / heap（资源遥测 host 角色的 heap 来源） */
   HostResourceSample: "host-resource-sample",
-  // 遥测已全部移除（P1）：McpTelemetry / SessionCreateTelemetry / PluginTelemetry 已删除。
-  // 保留 McpResourceSamples / ToolExecResource —— 它们服务资源管理器窗口与 Bash 生命周期，
-  // 不是上报通道（消费方是 desktopHostProcess 的本地聚合）。
+  /** host → main：CLI 内 MCP 进程生命周期与内存遥测 */
+  McpTelemetry: "mcp-telemetry",
   McpResourceSamples: "mcp-resource-samples",
   ToolExecResource: "tool-exec-resource",
+  /** 自动化 Host 首次输入 accepted 后报告新建 Session。 */
+  SessionCreateTelemetry: "session-create-telemetry",
+  PluginTelemetry: "plugin-telemetry",
   /** host → main：资源管理器采样结果（按 requestId 关联） */
   ResourceUsageSnapshotResult: "resource-usage-snapshot-result",
-  // CE-SYNC: host→main 的 network-capture-batch 上報通道隨上游 networkCapture.ts 一併刪除。
+  NetworkCaptureBatch: "network-capture-batch",
   /** host 内当前正在执行 prompt 的 agent session 数量变化 */
   AgentRunningTaskCountChanged: "agent-running-task-count-changed",
   /** host 内指定 workspace 当前仍未 terminal 的 task 数量变化 */
@@ -731,13 +753,6 @@ export const HostResponseTypes = {
   TaskOwnerCommandRequest: "task-owner-command-request",
   /** host → main：owner 返回 task command result */
   TaskOwnerCommandResult: "task-owner-command-result",
-  // CE-SYNC: Bot 遠端 workspace 橋的三條 host→main 請求通道（同上，按 CE main 重植）。
-  /** host → main：Bot 请求创建远端 workspace session */
-  BotRemoteWorkspaceReconnectRequest: "bot-remote-workspace-reconnect-request",
-  /** host → main：Bot 查询当前窗口是否已有远端 workspace session */
-  BotRemoteWorkspaceConnectionStatusRequest: "bot-remote-workspace-connection-status-request",
-  /** host → main：Bot 请求远端 workspace runtime RPC 端口 */
-  BotRemoteWorkspaceRuntimePortRequest: "bot-remote-workspace-runtime-port-request",
   /** host → main：Agent 请求向另一个 session 发送消息 */
   SessionMessageSendRequested: "session-message-send-requested",
   /** host → main：声明一个 ZCode Agent session 当前归属该 host */
@@ -856,6 +871,26 @@ export interface PlatformChannelMap {
     request: BindRemoteWorkspaceSessionContextRequest;
     response: import("./platform.js").BindRemoteWorkspaceSessionContextIpcResult;
   };
+  [PlatformChannels.StartWebRemoteControl]: {
+    request: WebRemoteControlContext;
+    response: WebRemoteControlStartOperationResult;
+  };
+  [PlatformChannels.StopWebRemoteControl]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.WebRemoteControlAuthStateChanged]: {
+    request: WebRemoteControlAuthStateChange;
+    response: void;
+  };
+  [PlatformChannels.GetWebRemoteControlStatus]: {
+    request: void;
+    response: WebRemoteControlStatus;
+  };
+  [PlatformChannels.WebRemoteControlStatusChanged]: {
+    request: WebRemoteControlStatus;
+    response: void;
+  };
   [PlatformChannels.DisposeRemoteSession]: {
     request: string;
     response: void;
@@ -891,6 +926,14 @@ export interface PlatformChannelMap {
   [PlatformChannels.Log]: {
     request: { level: "info" | "warn" | "error"; args: unknown[] };
     response: void;
+  };
+  [PlatformChannels.SyncWebRemoteControlWorkspaces]: {
+    request: WebRemoteControlWorkspaceTarget[];
+    response: void;
+  };
+  [PlatformChannels.WebRemoteControlReconnectWorkspace]: {
+    request: WebRemoteControlReconnectWorkspaceRequest;
+    response: WebRemoteControlReconnectWorkspaceResult;
   };
   [PlatformChannels.SyncWindowUnreadCount]: {
     request: number;
@@ -936,7 +979,6 @@ export interface PlatformChannelMap {
     request: EmbeddedBrowserOpenUrlRequest;
     response: void;
   };
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F9)。
   [PlatformChannels.EmbeddedBrowserPermissionPrompt]: {
     request: EmbeddedBrowserPermissionPromptEvent;
     response: void;
@@ -1016,11 +1058,6 @@ export interface PlatformChannelMap {
     request: Locale;
     response: boolean;
   };
-  // Modified by ZCode: 自上游 aac47556 (Apache-2.0) 增量并入(F10)。
-  [PlatformChannels.GetCloseToTrayCapability]: {
-    request: void;
-    response: DesktopCloseToTrayCapability;
-  };
   [PlatformChannels.OpenInFileManager]: {
     request: string;
     response: { success: boolean; error?: string };
@@ -1074,13 +1111,45 @@ export interface PlatformChannelMap {
     request: void;
     response: void;
   };
-  // 遥测已全部移除（P1）：SyncTelemetryContext / ReportTelemetryEvent / ReportArmsCustomEvent /
-  // GetRendererActionTraceConfig / RendererActionTraceConfigChanged / ReportRendererActionTraceBatch /
-  // ReadFinalArmsCustomEventsE2E / ClearFinalArmsCustomEventsE2E / ConfigureFinalArmsCustomEventsE2E
-  // 的請求應答映射一併刪除（CE 不帶 telemetry.ts 與 rendererActionTrace.ts）。
+  [PlatformChannels.SyncTelemetryContext]: {
+    request: TelemetryRendererContext;
+    response: void;
+  };
+  [PlatformChannels.ReportTelemetryEvent]: {
+    request: RendererTelemetryEventPayload;
+    response: void;
+  };
+  [PlatformChannels.ReportArmsCustomEvent]: {
+    request: ArmsCustomEventPayload;
+    response: void;
+  };
+  [PlatformChannels.GetRendererActionTraceConfig]: {
+    request: void;
+    response: RendererActionTraceConfigV1;
+  };
+  [PlatformChannels.RendererActionTraceConfigChanged]: {
+    request: RendererActionTraceConfigV1;
+    response: void;
+  };
+  [PlatformChannels.ReportRendererActionTraceBatch]: {
+    request: RendererActionTraceBatchV1;
+    response: void;
+  };
   // 单向 send（不是 invoke）：60 秒一条的旁路遥测样本，renderer 不等 main 回执。
   [PlatformChannels.ReportRendererHeapSample]: {
     request: RendererHeapSample;
+    response: void;
+  };
+  [PlatformChannels.ReadFinalArmsCustomEventsE2E]: {
+    request: void;
+    response: FinalArmsCustomEventE2EEntry[];
+  };
+  [PlatformChannels.ClearFinalArmsCustomEventsE2E]: {
+    request: void;
+    response: void;
+  };
+  [PlatformChannels.ConfigureFinalArmsCustomEventsE2E]: {
+    request: ConfigureFinalArmsCustomEventE2ERequest;
     response: void;
   };
   [PlatformChannels.ShowTaskNotification]: {

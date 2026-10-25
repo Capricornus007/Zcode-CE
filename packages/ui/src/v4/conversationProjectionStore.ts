@@ -5,7 +5,6 @@
 //   2. delta 帧仅在区间衔接（frame.fromSeq === snapshot.seq）时 apply，断档不猜、不缓存补偿；
 //   3. base 与状态同生共死——断档时状态未被污染，携当前水位重订阅，由服务端裁决 resume/snapshot。
 // 除 optimistic overlay（pending 命令展示）外，本 store 不产生任何 conversation 事实。
-// Modified by ZCode: F4: 采用上游 onLiveDeltas 增量链(liveDeltaListeners + onLiveDeltas + applyFrame 发射点), 供 pluginUiResourceDeltaFeed 消费 live 增量; 未引入上游 row pool(conversationRowSharing, 独立优化)。
 import {
   applyConversationDeltas,
   isDeterministicContentFault,
@@ -24,11 +23,6 @@ import {
 import { logger } from "@/logger.js";
 import type { ConversationTurnNavigatorHydrationResult } from "@/v4/conversationTurnNavigatorHelpers.js";
 import type { ConversationTransport } from "@/v4/transport.js";
-// CE-SYNC-TODO: `@/v4/conversationRowSharing.js`（上游 3.15.1 起的 row pool）在 9472d465 的
-// 「剪除 CE main 沒有的上游檔」這一輪被一起裁掉，CE main 也确实有意未引入（见上方 F4 说明）。
-// 但本档的 shareRows/shareWindow/shareDeltaRows 与构造参数、以及 packages/ui/src/v4/sessionDataLayer.ts:7
-// 都还在引用它——要么把该档自 ce-pr5/upstream 還原（一檔），要么整條 row pool 拆掉（兩檔）。
-// 此處先保留上游接線不動，交主代理統一裁決。
 import { ConversationRowPool } from "@/v4/conversationRowSharing.js";
 import { uiMemoryDiagnosticsRegistry } from "@/lib/memoryDiagnostics.js";
 
@@ -409,10 +403,6 @@ export class ConversationProjectionStore {
     this.modelTransitionListeners.add(listener);
     return () => this.modelTransitionListeners.delete(listener);
   }
-  onLiveDeltas(listener: (deltas: readonly ConversationDelta[]) => void): () => void {
-    this.liveDeltaListeners.add(listener);
-    return () => this.liveDeltaListeners.delete(listener);
-  }
 
   private setState(patch: Partial<ConversationStoreState>): void {
     this.state = { ...this.state, ...patch };
@@ -753,9 +743,6 @@ export class ConversationProjectionStore {
       return;
     }
     const applied = applyConversationDeltas(current, frame.payload.deltas);
-    // CE-SYNC: delta 發射點採上游 3.16.2（本方法末尾、setState 之後），CE main 在 apply 後立即發射的
-    // 寫法一併保留會造成 pluginUiResourceDeltaFeed 每幀兩次通知，故棄用早期發射點；
-    // row pool（shareDeltaRows）屬上游 3.15.1 起的內存優化，CE main 有意未引入，本輪隨上游保留。
     // seq 是快照对齐水位（R-03），delta 帧应用完推进到帧右端点。
     const next = this.shareDeltaRows({ ...applied, seq: frame.toSeq }, frame.payload.deltas);
     logSubagentProjectionTransition(this.topic, current, next, "deltas");

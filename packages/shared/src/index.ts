@@ -382,3 +382,13 @@ export type {
   WebServiceStatusState,
   WindowControlsOverlayMetrics,
 } from "./platform.js";
+
+// CE-SYNC: 合併後補回 barrel 轉出（遥測型別與自托管 Web 遠控的傳輸面）
+export * from "./telemetry.js";
+export * from "./web-remote-control.js";
+export * from "./rendererActionTrace.js";
+export * from "./web-remote-control-rpc-transport.js";
+
+// CE-SYNC: 合併後補齊 barrel 轉出（對齊上游 3.16.2）
+export * from "./networkCapture.js";
+export * from "./sessionCreateTelemetry.js";

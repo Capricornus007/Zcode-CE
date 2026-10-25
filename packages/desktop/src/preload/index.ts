@@ -6,8 +6,14 @@ import {
 } from "@zcode/shared";
 /* eslint-disable max-lines -- preload bridge 集中暴露桌面平台 IPC，拆散会让 contextBridge 权限边界更难审计。 */
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
-// 遥测移除（P1，CE 对齐）：ARMS RUM 桥接（installArmsRumBridgeIpcForward /
-// scheduleArmsEventBridgePatch）不安装——renderer 侧遥测 send 没有出口。
+import {
+  installArmsRumBridgeIpcForward,
+  scheduleArmsEventBridgePatch,
+} from "../shared/armsRumBridgeForward.js";
+
+// ARMS frame preload 闭包内的 send 不会随后序 ipcRenderer.send 补丁生效，须同步包装 Bridge.send
+installArmsRumBridgeIpcForward(ipcRenderer);
+scheduleArmsEventBridgePatch();
 
 /** 从 command-line 参数中解析 --device-id= */
 function parseDeviceIdFromArgs(): string {
@@ -42,7 +48,6 @@ import type {
   BrowserViewportSize,
   DesktopZoomState,
   DesktopWindowChromeState,
-  DesktopCloseToTrayCapability,
   DesktopCommandId,
   DesktopTitleBarTheme,
   EmbeddedBrowserOpenUrlRequest,
@@ -712,9 +717,6 @@ contextBridge.exposeInMainWorld("zcode", {
   /** 查询当前语言下是否存在可用的用户社群入口 */
   canOpenCommunity: (locale: Locale): Promise<boolean> =>
     ipcRenderer.invoke(PlatformChannels.CanOpenCommunity, locale),
-  /** F10(aac47556):查询「关闭驻留托盘」能力(Linux 设置页置灰判断) */
-  getCloseToTrayCapability: (): Promise<DesktopCloseToTrayCapability> =>
-    ipcRenderer.invoke(PlatformChannels.GetCloseToTrayCapability),
   /** 在系统文件管理器中打开指定路径 */
   openInFileManager: (path: string) => ipcRenderer.invoke(PlatformChannels.OpenInFileManager, path),
   /** 使用系统默认应用打开本地文件 */
@@ -1072,7 +1074,3 @@ window.addEventListener("message", (event) => {
   const parsed = databaseStartupControlSchema.safeParse(event.data.control);
   if (parsed.success) ipcRenderer.send(InternalChannels.DatabaseStartupControl, parsed.data);
 });
-
-// F5(上游 aac47556):插件 UI 沙箱宿主桥——独立命名空间 window.zcodePluginSandbox 与端口转发。
-import { installPluginSandboxHostBridge } from "./pluginSandbox/hostBridge.js";
-installPluginSandboxHostBridge();

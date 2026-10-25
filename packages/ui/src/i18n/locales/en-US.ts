@@ -1,5 +1,4 @@
 import { requestSecurityMessagesEnUS } from "@/request-security-edition/messages.js";
-// Modified by ZCode: X8/F11/hole/F2_*: 新增 i18n 键(quota-reset/account-menu/workflow hole/highspeed 等),其余与上游键合并。
 /** English translations */
 const enUS: Record<string, string> = {
   "preview.image.copy": "Copy image",
@@ -1024,9 +1023,311 @@ const enUS: Record<string, string> = {
   "confirmDialog.taskArchiveTitle": "Archive this task?",
   "confirmDialog.taskArchiveDescription":
     "Task “{taskTitle}” will move to the archive list and can still be restored later.",
-  "confirmDialog.projectRemoveTitle": "Remove this project?",
-  "confirmDialog.projectRemoveDescription":
-    "Project “{projectName}” will be removed from the sidebar, but files on disk will remain untouched.",
+  "bots.title": "Bots",
+  "bots.description": "Connect external chats and webhooks to ZCode bots.",
+  "bots.listTitle": "Bots",
+  "bots.addBot": "New bot",
+  "bots.addBinding": "Add binding",
+  "bots.setup.chooseBot": "Choose bot",
+  "bots.setup.createBot": "Create bot",
+  "bots.setup.createAndTest": "Test and continue",
+  "bots.setup.bindBot": "Bind bot",
+  "bots.setup.setBot": "Set bot",
+  "bots.setup.next": "Next",
+  "bots.setup.finish": "Finish",
+  "bots.setup.bindDescription":
+    "Create a bind code, then send the bind command in the bot private chat.",
+  "bots.setup.bindCodeCreating": "Creating bind code...",
+  "bots.setup.bindExpiresIn": "Bind code expires in {time}",
+  "bots.setup.bindRegenerating": "Bind code expired. Creating a new one...",
+  "bots.setup.refreshBindCode": "Refresh code",
+  "bots.setup.bound": "{count} user(s) bound. Continue to configure this bot.",
+  "bots.setup.bindAdvanceIn": "Continuing in {seconds}s.",
+  "bots.setup.allowedWorkspaces": "Allowed workspaces",
+  "bots.setup.allowedAll": "Allow all workspaces (*)",
+  "bots.setup.allowedSelected": "Allow selected workspaces only",
+  "bots.setup.allowedAllShort": "All",
+  "bots.setup.allowedSelectedShort": "Selected",
+  "bots.setup.allowedAllDescription": "This bot can use every configured workspace.",
+  "bots.setupDescription.chooseBot": "Choose the third-party chat bot to connect.",
+  "bots.setupDescription.createBot":
+    "Enter bot or webhook credentials. The next step tests connectivity first.",
+  "bots.setupDescription.bindBot":
+    "Create a bind code and bind the account in the bot private chat.",
+  "bots.setupDescription.setBot":
+    "Set the default context, allowed workspaces, and third-party reply detail.",
+  "bots.setup.guide.createTitle": "Preparation guide",
+  "bots.setup.guide.bindTitle": "Binding guide",
+  "bots.setup.guide.createNote":
+    "Prepare the third-party side first, then come back and click Test and continue.",
+  "bots.setup.callbackUrlTitle": "Callback URL",
+  "bots.setup.callbackUrlDescription.webhook":
+    "Your external system should send inbound message callbacks to this address. Asynchronous outbound replies still use the Webhook URL entered on the left.",
+  "bots.setup.callbackUrlDescription.webhookBind":
+    "Webhook binding uses the same endpoint: send a private callback request here with text = /bind <code>.",
+  "bots.setup.guide.telegram.create.1": "Open @BotFather in Telegram and create a new bot.",
+  "bots.setup.guide.telegram.create.2":
+    "Copy the HTTP API token returned by BotFather and paste it into this form.",
+  "bots.setup.guide.telegram.create.3":
+    "It helps to open the bot's private chat now because the bind command must be sent there.",
+  "bots.setup.guide.telegram.bind.1":
+    "Return to Telegram and open the private chat with the bot you created.",
+  "bots.setup.guide.telegram.bind.2":
+    "If the chat has never started, press Start or send any message first, then send {command}.",
+  "bots.setup.guide.telegram.bind.3": "Come back here after Telegram confirms the bind succeeded.",
+  "bots.setup.guide.weixin.create.1":
+    "Start Weixin QR login, scan the QR code with Weixin, then confirm on your phone.",
+  "bots.setup.guide.weixin.create.2":
+    "ZCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
+  "bots.setup.guide.weixin.create.3":
+    "ZCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
+  "bots.setup.guide.weixin.bind.1": "Open the Weixin direct chat you want to bind.",
+  "bots.setup.guide.weixin.bind.2": "Send {command}.",
+  "bots.setup.guide.weixin.bind.3":
+    "Come back here after the bind succeeds to finish the workspace and CLI defaults.",
+  "bots.setup.guide.feishu.create.1":
+    "Create a self-built app in the Feishu/Lark developer console and enable bot capability.",
+  "bots.setup.guide.feishu.create.2":
+    "Copy the App ID and App Secret, then enable persistent connection events for `im.message.receive_v1` and card actions.",
+  "bots.setup.guide.feishu.create.3":
+    "Choose the matching Feishu or Lark domain here, then paste the credentials into the form.",
+  "bots.setup.guide.feishu.bind.1":
+    "Install the app into your tenant and open a direct chat with the bot.",
+  "bots.setup.guide.feishu.bind.2": "Send {command} in that direct chat.",
+  "bots.setup.guide.feishu.bind.3":
+    "Return here after the bind succeeds to finish the workspace and CLI defaults.",
+  "bots.setup.guide.webhook.create.1":
+    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZCode.",
+  "bots.setup.guide.webhook.create.2":
+    "Set a shared secret first; add an outbound webhook URL as well if you want asynchronous replies pushed back.",
+  "bots.setup.guide.webhook.create.3":
+    "Keep one stable userId per external user so binding and future context resolve to the same person.",
+  "bots.setup.guide.webhook.bind.1":
+    "POST a private-message callback to ZCode's `/api/bots/webhook` endpoint.",
+  "bots.setup.guide.webhook.bind.2":
+    'The payload should at least include this botId, a stable userId, `chatType: "private"`, and set text to {command}.',
+  "bots.setup.guide.webhook.bind.3":
+    "If the bot uses a secret, also send `x-zcode-bot-secret`; then return here after the bind succeeds.",
+  "bots.setup.footer.choose": "Choose a supported bot to continue.",
+  "bots.setup.footer.create": "Connectivity must pass before binding.",
+  "bots.setup.testSuccess": "Connectivity test passed",
+  "bots.setup.testFailed": "Connectivity test failed",
+  "bots.setup.footer.bind":
+    "The bind code initially allows all workspaces; the final scope is saved next.",
+  "bots.setup.footer.set": "Finish enables the bot and returns it to the added list.",
+  "bots.setup.discardTitle": "Discard this bot?",
+  "bots.setup.discardDescription":
+    "This setup flow is not finished. The temporary bot will be deleted.",
+  "bots.setup.discardConfirm": "Discard setup",
+  "bots.refresh": "Refresh bots",
+  "bots.namePlaceholder": "Bot name",
+  "bots.credentialPlaceholder": "Link bot",
+  "bots.weixinBotTokenPlaceholder": "Saved after QR login; you can also paste bot_token manually",
+  "bots.webhookSecretPlaceholder": "Webhook secret",
+  "bots.webhookUrlPlaceholder": "Outbound webhook URL",
+  "bots.feishuAppIdPlaceholder": "Feishu App ID",
+  "bots.feishuAppSecretPlaceholder": "Feishu App Secret",
+  "bots.callbackSecretPlaceholder": "Callback secret",
+  "bots.feishuRegistrationTitle": "Scan to create app",
+  "bots.feishuRegistrationDescription": "Scan to create an app and save credentials.",
+  "bots.feishuRegistrationButton": "Scan",
+  "bots.feishuRegistrationQrAlt": "Feishu app registration QR code",
+  "bots.feishuRegistrationScanHint": "Scan with Feishu/Lark and confirm app creation.",
+  "bots.feishuRegistrationScanHint.feishu": "Scan with Feishu and confirm app creation.",
+  "bots.feishuRegistrationScanHint.lark": "Scan with Lark and confirm app creation.",
+  "bots.feishuRegistrationStarted": "Feishu registration started",
+  "bots.feishuRegistrationSuccess": "Feishu app credentials filled",
+  "bots.feishuRegistrationFailed": "Failed to start Feishu registration: {error}",
+  "bots.feishuRegistrationExpired": "The QR code expired. Start again.",
+  "bots.feishuRegistration.access_denied": "Registration was denied.",
+  "bots.feishuRegistration.expired": "The QR code expired. Start again.",
+  "bots.feishuRegistration.error": "Registration failed.",
+  "bots.enabledToggle": "Enable {name}",
+  "bots.replyGranularity": "Bot reply granularity",
+  "bots.replyGranularity.description": "Message detail level.",
+  "bots.replyGranularity.assistantChanges": "Standard reply",
+  "bots.replyGranularity.assistantChanges.description":
+    "Send assistant text and file changes, without tool-call progress.",
+  "bots.replyGranularity.assistantToolcallsChanges": "Full reply",
+  "bots.replyGranularity.assistantToolcallsChanges.description":
+    "Send assistant text, tool-call progress, and file changes.",
+  "bots.replyGranularity.summaryChanges": "Summary reply",
+  "bots.replyGranularity.summaryChanges.description":
+    "Send only the final result and change summary for quieter notifications.",
+  "bots.replyGranularity.streamingCard": "Streaming card",
+  "bots.replyGranularity.streamingCard.description":
+    "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
+  "bots.add": "Add",
+  "bots.channel.telegram": "Telegram",
+  "bots.channel.weixin": "Weixin",
+  "bots.channel.feishu": "Feishu",
+  "bots.channel.lark": "Lark",
+  "bots.channel.dingding": "DingTalk",
+  "bots.channel.discord": "Discord",
+  "bots.channel.wecom": "WeCom",
+  "bots.channel.webhook": "Webhook",
+  "bots.newBot.title": "New bot",
+  "bots.newBot.chooseChannel": "Choose channel",
+  "bots.newBot.description":
+    "Choose where this bot will receive messages. After selecting a channel, configure credentials, binding, allowed workspaces, and defaults.",
+  "bots.newBot.selectProviderHint": "Choose a channel on the right to create a bot.",
+  "bots.newBot.fallbackName": "New bot",
+  "bots.newBot.comingSoon": "Coming soon",
+  "bots.newBot.providerDescription.telegram": "Create a bot, then bind by message.",
+  "bots.newBot.providerDescription.weixin": "Scan to log in; first message activates.",
+  "bots.newBot.providerDescription.feishu": "Scan to create an app, then bind by message.",
+  "bots.newBot.providerDescription.lark": "Scan to create an app, then bind by message.",
+  "bots.newBot.providerDescription.dingding": "DingTalk bot integration is planned.",
+  "bots.newBot.providerDescription.webhook":
+    "Receive callbacks from your own system and optionally push replies back.",
+  "bots.newBot.providerDescription.discord": "Discord bot integration is planned.",
+  "bots.newBot.providerDescription.wecom": "WeCom bot integration is planned.",
+  "bots.empty": "No bots configured.",
+  "bots.name": "Bot name",
+  "bots.provider": "Channel",
+  "bots.enabled": "Enabled",
+  "bots.enabled.description": "Turn this bot on or off and clear its runtime state.",
+  "bots.credential": "Credential",
+  "bots.webhookSecret": "Webhook secret",
+  "bots.webhookUrl": "Webhook URL",
+  "bots.providerSettings": "Channel settings",
+  "bots.providerSettings.telegram": "Save the BotFather token.",
+  "bots.providerSettings.weixin":
+    "Credentials are saved after scan; the first Weixin message activates the chat.",
+  "bots.providerSettings.feishu": "Scan to get app credentials.",
+  "bots.providerSettings.lark": "Scan to get app credentials.",
+  "bots.providerSettings.webhook":
+    "Webhook uses a callback secret for inbound requests and an optional outbound URL for replies.",
+  "bots.providerSettings.discord": "Discord support is not available yet.",
+  "bots.providerSettings.wecom": "WeCom support is not available yet.",
+  "bots.telegramBotToken": "Link bot",
+  "bots.weixinRegistrationTitle": "Weixin QR login",
+  "bots.weixinRegistrationDescription":
+    "Scan to log in, then send any message in Weixin to activate the chat.",
+  "bots.weixinRegistrationButton": "Scan",
+  "bots.weixinRegistrationQrAlt": "Weixin login QR code",
+  "bots.weixinRegistrationScanHint": "Scan with Weixin and confirm login.",
+  "bots.weixinRegistrationStarted": "Weixin QR login started",
+  "bots.weixinRegistrationSuccess": "Weixin bot linked. Send any message in Weixin to activate it.",
+  "bots.weixinActivationHint":
+    "Send any message to the bot in Weixin; the first message will receive a welcome and command guide.",
+  "bots.weixinRegistrationFailed": "Failed to start Weixin QR login: {error}",
+  "bots.weixinRegistration.pending": "Waiting for scan",
+  "bots.weixinRegistration.scanned": "Scanned, waiting for confirmation",
+  "bots.weixinRegistration.success": "Login succeeded",
+  "bots.weixinRegistration.expired": "The QR code expired. Start again.",
+  "bots.weixinRegistration.error": "Login failed.",
+  "bots.weixinBotToken": "Weixin bot_token",
+  "bots.feishuAppSecret": "Feishu App Secret",
+  "bots.callbackSecret": "Callback secret",
+  "bots.webhookOutboundUrl": "Outbound Webhook URL",
+  "bots.webhookAuthHeaderName": "Auth header name",
+  "bots.feishuAppId": "Feishu App ID",
+  "bots.saveSecrets": "Save secrets",
+  "bots.saveSecret": "Save",
+  "bots.removeSecret": "Remove secret",
+  "bots.removeSecretFailed": "Failed to remove secret: {error}",
+  "bots.botToken": "Link bot",
+  "bots.botTokenDescription.telegram": "Save the BotFather token.",
+  "bots.botTokenDescription.feishu": "Scan to get app credentials.",
+  "bots.botTokenDescription.lark": "Scan to get app credentials.",
+  "bots.botTokenDescription.weixin": "Credentials are saved after scan.",
+  "bots.botTokenDescription.webhook": "Used to connect this webhook bot.",
+  "bots.telegramBotFatherQrAlt": "Telegram BotFather QR code",
+  "bots.telegramBotFatherScanHint": "Scan to open BotFather, create a bot, and paste the token.",
+  "bots.openBotFather": "Open BotFather",
+  "bots.connected": "Connected",
+  "bots.notConnected": "Not connected",
+  "bots.runtime.telegramLongPollingRunning": "Telegram long polling is running.",
+  "bots.runtime.telegramLongPollingStarting": "Telegram long polling is starting.",
+  "bots.runtime.telegramLongPollingStopped": "Telegram long polling is stopped.",
+  "bots.runtime.telegramLongPollingHandledElsewhere":
+    "Telegram long polling is handled by another ZCode window.",
+  "bots.runtime.telegramTokenMissing": "Telegram bot credential is missing.",
+  "bots.runtime.telegramPollingFailedRetrying": "Telegram polling failed; retrying.",
+  "bots.runtime.feishuWebSocketStarting": "Feishu WebSocket is starting.",
+  "bots.runtime.feishuWebSocketConnecting": "Feishu WebSocket is connecting.",
+  "bots.runtime.feishuWebSocketRunning": "Feishu WebSocket is running.",
+  "bots.runtime.feishuWebSocketStopped": "Feishu WebSocket is stopped.",
+  "bots.runtime.connectionFailed": "Bot connection failed",
+  "bots.runtime.feishuConnectionFailed": "Feishu connection failed",
+  "bots.runtime.larkConnectionFailed": "Lark connection failed",
+  "bots.runtime.cannotConnectFeishu": "Unable to connect to Feishu",
+  "bots.runtime.cannotConnectLark": "Unable to connect to Lark",
+  "bots.runtime.feishuConnectionInterrupted": "Feishu connection interrupted",
+  "bots.runtime.larkConnectionInterrupted": "Lark connection interrupted",
+  "bots.runtime.boundConnectionInterrupted": "Disconnected",
+  "bots.runtime.boundConnectionInterruptedDescription":
+    "The bot is bound, but its persistent connection is interrupted.",
+  "bots.runtime.credentialsSavedConnectionFailedDescription":
+    "App credentials are saved, but the persistent connection failed.",
+  "bots.runtime.connectionBlocksBinding":
+    "The bot cannot receive messages, so binding is temporarily unavailable.",
+  "bots.runtime.feishuConnectionRecoverySuggestion":
+    "The long-connection limit may have been reached, or Feishu may be busy. Try again later; if the problem persists, bind a new bot.",
+  "bots.runtime.larkConnectionRecoverySuggestion":
+    "The long-connection limit may have been reached, or Lark may be busy. Try again later; if the problem persists, bind a new bot.",
+  "bots.runtime.errorCode": "Error code",
+  "bots.runtime.errorDetail": "Details",
+  "bots.runtime.unknownError": "Unknown connection error",
+  "bots.runtime.weixinLongPollingRunning": "Weixin long polling is running.",
+  "bots.runtime.weixinLongPollingStarting": "Weixin long polling is starting.",
+  "bots.runtime.weixinLongPollingStopped": "Weixin long polling is stopped.",
+  "bots.runtime.botDisabled": "Bot is disabled.",
+  "bots.scanQrCode": "Scan QR code",
+  "bots.authorizationQr": "Authorization QR",
+  "bots.bindCommand": "Bind command",
+  "bots.binding": "Binding",
+  "bots.allowedCommands": "Allowed commands",
+  "bots.unbound": "Not bound",
+  "bots.generateBindCode": "Generate bind code",
+  "bots.resetState": "Reset state",
+  "bots.allowedWorkspaces": "Project access",
+  "bots.allowedWorkspaces.all": "All",
+  "bots.allowedWorkspaces.mode.all": "All projects",
+  "bots.allowedWorkspaces.mode.selected": "Selected projects",
+  "bots.allowedWorkspaces.allDescription": "This bot can use any configured project.",
+  "bots.allowedWorkspaces.selectedDescription": "This bot can use {count} selected projects.",
+  "bots.botMeta": "{users} bound users · workspace {workspace}",
+  "bots.botSummary": "{users} users · {workspaces} workspaces · {workspace}",
+  "bots.userCount": "{count} users",
+  "bots.editDescription": "Review runtime state, default context, reply detail, and bound users.",
+  "bots.edit.basicSettings": "Basic settings",
+  "bots.edit.binding": "Bound users",
+  "bots.edit.emptyUsers":
+    "No users bound yet. Create a bind code, then send the bind command in the bot private chat.",
+  "bots.edit.userWorkspaces": "{count} workspace(s) allowed",
+  "bots.test": "Test",
+  "bots.bind": "Bind",
+  "bots.unbind": "Unbind",
+  "bots.delete": "Delete bot",
+  "bots.delete.description": "Remove this bot.",
+  "bots.deleteConfirmTitle": 'Delete bot "{name}"?',
+  "bots.deleteConfirmDescription":
+    "This removes the bot configuration, credentials, and binding state. This cannot be undone.",
+  "bots.bindCode": "Binding code",
+  "bots.bindHint": "Send {command} in a private bot chat.",
+  "bots.bindCodeExpires": "Bind code expires in {time}",
+  "bots.bindCodeExpired": "Bind code expired. Generate a new code.",
+  "bots.bindSuccess": "Bound successfully",
+  "bots.copyBindCommand": "Copy bind command",
+  "bots.bindCommandGuide":
+    "Copy the bind command below, then send it to the bot in a private chat.",
+  "bots.bindCommandStep.copy": "Copy the bind command",
+  "bots.bindCommandStep.openChat": "Open the private chat with the bot",
+  "bots.bindCommandStep.send": "Paste and send it to bind the current workspace",
+  "bots.bindCommandCopied":
+    "Bind command copied. Open the private bot chat, then paste and send it.",
+  "bots.bindCommandCopyFailed": "Failed to copy bind command: {error}",
+  "bots.loadFailed": "Failed to load bots: {error}",
+  "bots.saveSuccess": "Bot saved",
+  "bots.saveFailed": "Failed to save bot: {error}",
+  "bots.testFailed": "Bot test failed: {error}",
+  "bots.bindCodeCreated": "Binding code created",
+  "bots.bindCodeFailed": "Failed to create binding code: {error}",
+  "bots.unbindSuccess": "Bot unbound",
+  "bots.unbindFailed": "Failed to unbind bot: {error}",
+  "bots.deleteFailed": "Failed to delete bot: {error}",
 
   // Welcome / Login
   "welcome.title": "Welcome to ZCode",
@@ -1086,16 +1387,63 @@ const enUS: Record<string, string> = {
     "The app will restart after disconnecting. You will need to connect your account again.",
   "logout.confirm.ok": "Disconnect and restart",
   "logout.confirm.cancel": "Cancel",
-  "sidebar.profile.notLoggedIn": "Connect",
-  // F11: account menu header — user ID display and copy feedback (from upstream 3.15.1, Apache-2.0).
   "sidebar.profile.accountId": "ID: {id}",
   "sidebar.profile.copyUserId": "Click to copy user ID",
   "sidebar.profile.userIdCopied": "User ID copied",
   "sidebar.profile.userIdCopyFailed": "Copy failed. Please try again",
+  "sidebar.profile.notLoggedIn": "Connect",
   "app.selectFile": "Select a file to get started",
   "app.workspace": "Workspace",
   "browser.title": "Browser",
   "browser.addressPlaceholder": "Enter a URL and press Enter",
+  "browser.permission.promptAriaLabel": "Site permission request",
+  "browser.permission.wantsToUse": "wants to use",
+  "browser.permission.siteInfo": "View site information",
+  "browser.permission.settings": "Site permissions",
+  "browser.permission.close": "Close",
+  "browser.permission.saved":
+    "Permissions updated. Reload the page to apply changes to active resources.",
+  "browser.permission.readError": "Could not load permissions.",
+  "browser.permission.saveError": "Could not save permission changes.",
+  "browser.permission.resetError": "Could not complete the permission reset.",
+  "browser.permission.retry": "Retry",
+  "browser.permission.unsupported": "Site permissions are available in the desktop browser.",
+  "browser.permission.reset": "Reset site permissions",
+  "browser.permission.resetDone": "Permissions reset. Reload the page to request access again.",
+  "browser.permission.allowOnce": "Allow once",
+  "browser.permission.allowAlways": "Allow on this site",
+  "browser.permission.blockAlways": "Block",
+  "browser.permission.cancel": "Cancel",
+  "browser.permission.share": "Share",
+  "browser.permission.media": "camera and microphone",
+  "browser.permission.mediaVideo": "camera",
+  "browser.permission.mediaAudio": "microphone",
+  "browser.permission.mediaBoth": "camera and microphone",
+  "browser.permission.clipboardRead": "clipboard reading",
+  "browser.permission.geolocation": "location",
+  "browser.permission.notifications": "notifications",
+  "browser.permission.midi": "MIDI devices",
+  "browser.permission.idleDetection": "idle detection",
+  "browser.permission.speakerSelection": "audio output selection",
+  "browser.permission.windowManagement": "window management",
+  "browser.permission.storageAccess": "storage access",
+  "browser.permission.keyboardLock": "keyboard lock",
+  "browser.permission.fileSystem": "file access",
+  "browser.permission.deviceHid": "HID devices",
+  "browser.permission.deviceUsb": "USB devices",
+  "browser.permission.deviceSerial": "serial devices",
+  "browser.permission.deviceBluetooth": "Bluetooth devices",
+  "browser.permission.unknownCapability": "an unknown capability",
+  "browser.permission.screenShareTitle": "{origin} wants to share your screen",
+  "browser.permission.screenShareDescription":
+    "Choose the screen or window to share. This choice applies only to this session.",
+  "browser.permission.deviceTitle": "{origin} wants to connect a device",
+  "browser.permission.connect": "Connect",
+  "browser.permission.screenGroup.screen": "Entire Screen",
+  "browser.permission.screenGroup.window": "Window",
+  "browser.permission.stateAllow": "Allow",
+  "browser.permission.stateDeny": "Block",
+  "browser.permission.stateAsk": "Ask",
   "browser.back": "Back",
   "browser.forward": "Forward",
   "browser.reload": "Refresh",
@@ -1144,10 +1492,22 @@ const enUS: Record<string, string> = {
   "sidePane.expand": "Expand side pane",
   "sidePane.collapse": "Collapse side pane",
   "sidePane.togglePanel": "Toggle panel",
+  "sidePane.fullView.enter": "Enter full view",
+  "sidePane.fullView.exit": "Exit full view",
+  "sidePane.fullView.openAnswer": "Show messages",
+  "sidePane.fullView.minimize": "Minimize editor",
+  "sidePane.fullView.restore": "Restore editor",
+  "sidePane.fullView.openConversation": "Open in full view",
+  "sidePane.fullView.handle": "Drag to move · Click for options",
+  "sidePane.fullView.expandMessages": "Expand messages",
+  "sidePane.fullView.collapseMessages": "Collapse messages",
+  "sidePane.fullView.statusRunning": "Running",
+  "sidePane.fullView.statusIdle": "Idle",
   "sidePane.maximize": "Expand panel",
   "sidePane.restoreSize": "Restore panel width",
   "sidePane.addTab": "Add tab",
-  "sidePane.openTab": "Open tab",
+  "sidePane.newTab": "New tab",
+  "sidePane.openTab": "New tab",
   "sidePane.subagent": "Subagent",
   "sidePane.subagentDirectory": "Subagents",
   "sidePane.selectionChat": "Side conversation",
@@ -1171,6 +1531,7 @@ const enUS: Record<string, string> = {
   "subagentDirectory.status.lost": "Lost",
   "chat.statusPanel.endedAgents": "Ended",
   "chat.statusPanel.endedWorkflows": "Ended workflows",
+  "chat.statusPanel.workflowsLive": "{count} running",
   "workflowDirectory.title": "Workflow runs",
   "workflowDirectory.running": "Running",
   "workflowDirectory.runningEmpty": "No workflows are running",
@@ -1193,7 +1554,13 @@ const enUS: Record<string, string> = {
   "chat.selections.limit.count": "You can attach at most 8 conversation selections.",
   "chat.selections.limit.total":
     "Conversation selections can contain at most 16,000 characters in total.",
-  "sidePane.openTabDescription": "Choose a tab to open in the side pane.",
+  "sidePane.launcher.selection-side-conversation": "Continue a conversation in the side pane.",
+  "sidePane.launcher.review": "Review code changes and diffs.",
+  "sidePane.launcher.terminal": "Run commands and view output.",
+  "sidePane.launcher.browser": "Browse websites and preview apps.",
+  "sidePane.launcher.developer-tools": "Inspect and debug the app.",
+  "sidePane.launcher.viewAllPlugins": "View all plugins",
+  "sidePane.launcher.empty": "No recommended app plugins yet",
   "sidePane.openFile": "Open file",
   "sidePane.openFileDescription": "Open a file from the current workspace in the side panel.",
   "sidePane.openFilePlaceholder": "Search files in the current workspace...",
@@ -1202,6 +1569,42 @@ const enUS: Record<string, string> = {
   "sidePane.openFile.category": "Files",
   "sidePane.openFile.emptyQuery": "Type to search files",
   "sidePane.review": "Review",
+  "pluginUi.loading": "Loading plugin UI...",
+  "pluginUi.loadFailed": "Plugin UI failed to load.",
+  "pluginUi.retry": "Reload",
+  "pluginUi.pin": "Keep expanded",
+  "pluginUi.unpin": "Stop keeping expanded",
+  "pluginUi.openInSidePane": "Open in side pane",
+  "pluginUi.openedInSidePane": "Opened in side pane",
+  "genUi.copyImage": "Copy image",
+  "genUi.title": "Interactive view",
+  "genUi.desktopOnly": "Open this interactive view in the desktop app",
+  "genUi.offline": "Workspace is offline. Reconnect and retry",
+  "genUi.failed": "Unable to load interactive view",
+  "genUi.loading": "Loading…",
+  "genUi.retry": "Retry",
+  "genUi.tweak": "Adjust design",
+  "genUi.expand": "Expand",
+  "genUi.collapse": "Collapse",
+  "genUi.expanded": "Showing in expanded view",
+  "genUi.confirm": "Interactive view wants to send a message",
+  "genUi.cancel": "Cancel",
+  "genUi.send": "Send",
+  "genUi.incomplete": "This response did not finish. The interactive view was not loaded.",
+  "genUi.waiting": "Interactive view will appear when generation completes",
+  "genUi.invalid": "Invalid interactive view reference",
+  "genUi.reset": "Reset",
+  "genUi.original": "Preview original",
+  "genUi.submit": "Submit design changes",
+  "genUi.from": "From interactive view {name}",
+  "pluginUi.fromPlugin": "From plugin {name}",
+  "pluginUi.followUp.title": "A plugin wants to send a message as you",
+  "pluginUi.followUp.description": "From plugin {name}. You can edit it before sending.",
+  "pluginUi.followUp.send": "Send",
+  "pluginUi.followUp.cancel": "Cancel",
+  "pluginUi.modelContext.label": "Plugin context",
+  "pluginUi.modelContext.remove": "Remove plugin context",
+  "sidePane.pluginUi": "Plugin",
   "whiteboard.title": "Whiteboard",
   "whiteboard.defaultName": "Whiteboard",
   "whiteboard.nameLabel": "Whiteboard name",
@@ -1534,6 +1937,11 @@ const enUS: Record<string, string> = {
   "gitGraph.refreshFailed": "Git Graph refresh failed: {error}",
   "gitGraph.loadMore": "Load more commits",
   "gitGraph.loadMore.loading": "Loading more...",
+  "fileManager.resizeNavigation": "Resize file navigation",
+  "fileManager.title": "Files",
+  "fileManager.showNavigation": "Show file navigation",
+  "fileManager.hideNavigation": "Hide file navigation",
+  "fileManager.empty": "Select a file from the navigation",
   "codeViewer.title": "Code viewer",
   "codeViewer.close": "Close code viewer",
   "codeViewer.loadingFile": "Loading file...",
@@ -1602,16 +2010,6 @@ const enUS: Record<string, string> = {
   "codeBlock.mermaid.ariaLabel": "Mermaid diagram",
   "codeBlock.wrapLines": "Wrap lines",
   "codeBlock.copyCode": "Copy code",
-  "codeBlock.sendToTerminal": "Send to terminal (won't run until you press Enter there)",
-  "codeBlock.sendToTerminalElevated":
-    "Send to terminal (needs administrator privileges; won't run until you press Enter there)",
-  "codeBlock.sendToTerminalDelivered":
-    "Sent to the terminal. Review it there and press Enter to run.",
-  "codeBlock.sendToTerminalNeedsBracketedPaste":
-    "This multi-line command can't be pasted safely in one go here. Send it line by line or copy it manually.",
-  "codeBlock.sendToTerminalUnavailable":
-    "No integrated terminal is available. Open a terminal first.",
-  "codeBlock.sendToTerminalOpenFailed": "Could not open a terminal. Please try again.",
   "codeBlock.mermaid.empty": "Mermaid source is empty.",
   "codeBlock.mermaid.error": "Mermaid diagram render failed",
   "codeBlock.mermaid.openPreview": "Open preview",
@@ -1677,14 +2075,23 @@ const enUS: Record<string, string> = {
   "fileActions.copyAbsolutePath": "Copy absolute path",
   "fileActions.copyRelativePath": "Copy relative path",
   "appHeader.copyTaskPath": "Copy task path",
+  "appHeader.copyClaudeJsonlPath": "Copy JSONL path",
   "appHeader.copySessionId": "Copy session ID",
   "appHeader.reloadSession": "Reload session",
   "appHeader.reloadSessionSuccess": "Session reloaded",
   "appHeader.reloadSessionFailed": "Could not reload session",
   "appHeader.workspaceSessionActionLoading": "Applying session changes...",
   "appHeader.copyLogPath": "Copy log path",
+  "appHeader.goToProviderConfig": "Go to config",
+  "appHeader.goToProviderConfigPrefix": "Go to",
+  "appHeader.goToProviderConfigSuffix": "config",
+  "appHeader.openProviderConfigWithEditorPrefix": "Use",
+  "appHeader.openProviderConfigWithEditorMiddle": "to open",
+  "appHeader.openProviderConfigWithEditorSuffix": "config file",
+  "appHeader.openProviderConfigInEditorFailed": "Could not open provider config in {editor}",
   "workspaceHeader.help.menu": "Help",
   "workspaceHeader.help.issueReport": "Report an issue",
+  "workspaceHeader.help.reportVulnerability": "Report a vulnerability",
   "workspaceHeader.help.productRequest": "Request a feature",
   "workspaceHeader.help.productRequestDraft": "I would like to suggest: ",
   "workspaceHeader.help.community": "User community",
@@ -1713,13 +2120,17 @@ const enUS: Record<string, string> = {
   "titleBar.menu.help.clearAllData": "Clear all data",
 
   // Directory browser
-  "directoryBrowser.title": "Browse folder",
+  "directoryBrowser.errorUnavailable":
+    "Cannot open this folder. Check that it exists and you have access, or choose another folder.",
+  "remote.directory.willOpen": "Will open {path}",
+  "directoryBrowser.title": "Choose directory",
   "directoryBrowser.pathPlaceholder": "Enter path",
-  "directoryBrowser.go": "Go",
+  "directoryBrowser.go": "Jump",
   "directoryBrowser.showHidden": "Show hidden directories",
   "directoryBrowser.hideHidden": "Hide hidden directories",
   "directoryBrowser.noSubdirs": "No subdirectories",
-  "directoryBrowser.selectDir": "Select this directory",
+  "directoryBrowser.selectDir": "Open workspace here",
+  "directoryBrowser.opening": "Opening…",
   "directoryBrowser.errorSystem": "Failed to get system info",
   "directoryBrowser.errorReadDir": "Failed to read directory: {error}",
 
@@ -1753,8 +2164,6 @@ const enUS: Record<string, string> = {
   "update.toast.downloading": "Downloading new version v{version}",
   "update.toast.alreadyDownloading": "Downloading new version ({progress}%)",
   "update.toast.ready": "v{version} downloaded, restart to install",
-  "update.toast.unsupportedPlatform":
-    "Auto-update isn't available on macOS: download the unsigned installer from GitHub Releases (allow Gatekeeper on first launch).",
   "update.toast.devSkipped": "Updates are disabled in dev builds",
   "update.toast.error": "Update check failed: {error}",
   "forceUpdate.title": "Update ZCode to continue",
@@ -1792,17 +2201,16 @@ const enUS: Record<string, string> = {
 
   // Workspace
   "workspace.openWorkspace": "Open workspace",
-  "workspace.addNewWorkspace": "Add new workspace",
-  "workspace.startFromScratch": "Start from scratch",
   "workspace.openFolder": "Open folder",
   "workspace.openPluginsSettings": "Plugin Marketplace",
   "workspace.backToWorkspace": "Back to workspace",
-  "workspace.noActiveForNewTask": "There is no available workspace yet. Open a workspace first.",
   "workspace.wslUncPrompt.title": "Open this through WSL remote connection?",
   "workspace.wslUncPrompt.description":
     "You selected a WSL path:\n{path}\n\nWe recommend opening it through WSL connection, though you can still continue with the path.",
   "workspace.wslUncPrompt.openWsl": "Open WSL connection",
   "workspace.wslUncPrompt.continuePath": "Continue with path",
+  "taskList.codexConnectivityUnavailable":
+    "Warmup could not reach {host}. Starting a conversation may fail until the network is available.",
   "workspaceSidebar.workspaces": "Tasks",
   "workspaceSidebar.archivedTasks": "Archived",
   "workspaceSidebar.taskViewOptions": "Filter and sort",
@@ -1813,222 +2221,78 @@ const enUS: Record<string, string> = {
   "workspaceSidebar.projectsSection": "Projects",
   "workspaceSidebar.newConversation": "New task",
   "workspaceSidebar.reorderSection": "Move {section} section",
-  "workspaceSidebar.addProject": "Add project",
-  "workspaceSidebar.noConversations": "No tasks yet",
-  "workspaceSidebar.noProjects": "No open projects",
-  "workspaceSidebar.viewByWorkspace": "By project",
-  "workspaceSidebar.organizeChronologicalList": "Timeline",
   "workspaceSidebar.sortBy": "Sort by",
   "workspaceSidebar.sortByCreated": "Created",
   "workspaceSidebar.sortByUpdated": "Updated",
-  "workspaceSidebar.expandAllGroups": "Expand all",
-  "workspaceSidebar.collapseAllGroups": "Collapse all",
-  "workspaceSidebar.searchTasks": "Search tasks",
-  "workspaceSidebar.searchTasksPlaceholder": "Search tasks...",
-  "workspaceSidebar.searchArchivedTasksPlaceholder": "Search archived tasks...",
-  "workspaceSidebar.closeTaskSearch": "Close task search",
-  "workspaceSidebar.remove": "Remove",
-  "workspaceSidebar.removeRunningWorkspace.title": "Remove a running project?",
-  "workspaceSidebar.removeRunningWorkspace.description":
-    "This project still has a running chat or Agent. Removing it will stop and release the related runtime state, but task history will not be deleted.",
-  "workspaceSidebar.removeRunningWorkspace.confirm": "Remove and stop",
-  "workspaceSidebar.windowsReservedNameRisk":
-    "Project removed, but {count} Windows reserved-name file(s) were detected and may affect later folder deletion or renaming: {path}",
   "workspaceSidebar.reconnect": "Reconnect",
+  "workspaceSidebar.sourceTaskUnavailable": "This device is not ready. Reconnect it first.",
+  "workspaceSidebar.connectIdentifyTitle": "Connect this device",
+  "workspaceSidebar.connectionOffline": "Offline",
+  "workspaceSidebar.openRemoteProject": "Open remote project",
+  "workspaceSidebar.remoteProject": "Remote project",
+  "workspaceSidebar.connectionDetails": "View connection details for {device}",
+  "workspaceSidebar.openProjectHint": "Click the project name to open it",
+  "workspaceSidebar.reconnectProjectHint":
+    "Click the project name to reconnect and open this directory",
+  "workspaceSidebar.projectPath": "Directory",
+  "workspaceSidebar.projectDevice": "Device",
+  "workspaceSidebar.projectLine": "Connection",
+  "settings.source.pending": "Not connected",
+  "settings.source.pendingDescription": "Device details update automatically after connecting",
   "workspaceSidebar.connecting": "Connecting",
-  "workspaceRuntime.starting.title": "Starting workspace…",
-  "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
-  "workspaceRuntime.failed.reasonUnavailable":
-    "No specific reason was reported. Retry once; check logs if it keeps failing.",
-  "workspaceRuntime.failed.retry": "Retry",
-  "workspaceRuntime.notStarted.title":
-    "Not started (opening starts it; other workspaces are unaffected)",
-  "workspaceRuntime.notStarted.persistedSessions":
-    "{count} sessions on record, last active {activity} ago",
-  "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
-  "workspaceRuntime.notStarted.open": "Open and start",
-  "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",
-  "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
-  "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
-  "workspaceSidebar.registry.retry": "Reload",
+  "workspaceSidebar.recoveringAutomatic": "Recovering connection automatically",
+  "workspaceSidebar.recoveringAutomaticShort": "Recovering {attempt}/{limit}",
+  "workspaceSidebar.manageDevice": "Manage in settings",
+  "workspaceSidebar.newRemoteConnection": "New remote connection…",
+  "workspaceSidebar.recoveringAutomaticAttempt":
+    "Recovering connection automatically ({attempt}/{limit})",
+  "workspaceSidebar.reconnectingManual": "Reconnecting manually",
   "workspaceSidebar.notConnected": "Not connected",
-  "workspaceSidebar.empty": "No workspaces yet. Open a workspace to get started.",
+  "remote.error.sourceServerInstallRequired":
+    "The remote device is not installed. Confirm installation to continue.",
+  "remote.error.sourceServerIdentityChangePending":
+    "The connection target identity has changed. Confirm whether to use it as a new device.",
+  "remote.error.credentialsRequired":
+    "No usable SSH password or private-key credential is available. Return to settings to add one.",
+  "remote.error.sourceServerUpgradeRequired":
+    "remote device is incompatible with this ZCode Desktop version and must be upgraded.",
+  "remote.error.sourceServerRunningTasks":
+    "remote device still has running tasks. Wait for them to finish or confirm a forced update.",
+  "remote.error.workspaceTaskIdentityConflict":
+    "This remote directory contains task identity conflicts that cannot be merged automatically.",
+  "remote.error.workspaceConfigConflict":
+    "This remote directory contains configuration conflicts that cannot be merged automatically.",
+  "remote.error.bindCanceled": "The remote workspace attachment was canceled.",
+  "remote.error.bindSessionMissing":
+    "The remote workspace session is no longer available. Reconnect and try again.",
+  "remote.error.workspaceDirectoryUnavailable":
+    "The remote project directory is missing, is not a folder, or cannot be accessed. Check the directory and permissions, then try again.",
+  "remote.error.recoveryBudgetExhausted":
+    "Automatic recovery stopped after {attempt}/{limit} attempts. Reconnect manually to try again.",
+  "remote.error.workspaceMigrationPlanDiverged":
+    "A new workspace identity appeared while migration was paused. Review the migration report before retrying.",
+  "remote.error.workspaceSessionGenerationChanged":
+    "The session database changed while migration was paused. Restore the recorded generation before retrying.",
+  "remote.error.hostUnreachable": "Unable to connect to host",
+  "remote.error.connectionTimeout": "Connection timed out",
+  "remote.error.hostNotFound": "Host not found",
+  "remote.error.hostKeyChanged": "Host identity has changed",
+  "remote.error.downloadFailed": "Download failed",
+  "remote.error.uploadFailed": "Upload failed",
+  "remote.error.preflightFailed": "Remote environment check failed",
+  "remote.error.installFailed": "Remote installation failed",
+  "remote.error.spaceInsufficient": "Not enough space on remote device",
+  "remote.error.permissionDenied": "Remote write permission denied",
+  "remote.error.connectionCanceled": "Connection canceled",
+  "remote.error.unknown": "Connection failed",
+  "settings.source.recentLog": "View recent logs",
+  "remote.error.retryableHint": "You can try again later.",
+  "remote.error.connectionClosed": "The remote connection was closed",
   "workspaceSidebar.unavailableLocalDirectory":
     "The workspace directory does not exist or cannot be accessed. You can only view history for now. Restore the directory and restart ZCode to continue.",
-  "workspaceSidebar.showSidebar": "Toggle sidebar",
-  "workspaceSidebar.hideSidebar": "Toggle sidebar",
   "workspaceSidebar.toggleSidebar": "Toggle sidebar",
-  // Remote control (ce.3 · slice 1 entry / slice 3 panel). Copy follows spec §3.6.1: short phrases.
-  // Wording red line: this opens a browser-reachable workbench on this machine; it is NOT
-  // "control the desktop app / take over the desktop session" — remote SSH/Docker targets the
-  // desktop already has are not shared with the browser, so the UI must not promise them.
-  "remotePanel.entry.title": "Remote control",
-  "remotePanel.entry.status.off": "Off",
-  "remotePanel.entry.status.running": "Running",
-  // Restored in ce.4: once the connection plane landed, waiting finally has a producer —
-  // "service is running AND zero connected devices" (GET …/connections returns an empty array).
-  // Same meaning as upstream webRemoteControl.statusDetail.idle; wording is our own.
-  "remotePanel.entry.status.waiting": "Waiting for connection",
-  "remotePanel.title": "Remote control",
-  "remotePanel.subtitle": "Scan or open the link to use the workbench on this machine",
-  // Tabs (task-93): two different remote paths, side by side rather than merged.
-  // Naming red line: never call our path "self-hosted" in the UI — that is an implementation
-  // detail, not a user capability. The umbrella name stays "Remote control"; the two paths are
-  // "Web control" (a browser drives the workbench on this machine) and "Chat bot" (you talk to a
-  // bot inside a chat app). Keep clear of the sidebar's existing "Remote connection"
-  // (`remote.trigger`, i.e. connect out) — that one points the opposite way.
-  // "Chat bot" is chosen because it is literally the official English wording
-  // (`webRemoteControl.description` says "through chat bots") and shares no words with
-  // "Remote connection". The description names WeChat / Feishu / Telegram to disambiguate.
-  "remotePanel.tab.web": "Web control",
-  "remotePanel.tab.imBot": "Chat bot",
-  "remotePanel.imBot.description":
-    "Talk to a bot in WeChat, Feishu or Telegram and let it drive this workspace.",
-  "remotePanel.imBot.badge.disabled": "Not enabled",
-  "remotePanel.imBot.badge.enabling": "Enabling",
-  "remotePanel.imBot.badge.enabled": "Enabled",
-  "remotePanel.imBot.action.enable": "Enable",
-  // fix.2: the "server-side capability is not wired in yet" notice was removed together with its
-  // only producer — a missing channel now hides the whole tab (canRenderRemoteControlImBotTab in
-  // remoteControlPanelModel.ts), so the key would be unreachable. Keeping it would suggest a path
-  // that no longer exists.
-  "remotePanel.imBot.state.enabling": "Enabling…",
-  "remotePanel.imBot.state.requested":
-    "Enable requested, waiting for the server side; the bot sends and receives nothing until then.",
-  "remotePanel.imBot.state.enabled":
-    "Enabled: message the bot in your chat app to drive this workspace.",
-  "remotePanel.imBot.reminder.title": "Before you enable",
-  "remotePanel.imBot.reminder.account":
-    "An external account is required: the bot identity and credentials for WeChat, Feishu and Telegram are issued by those platforms, not by ZCode.",
-  "remotePanel.imBot.reminder.thirdParty":
-    "Messages and files go through the third-party platform's servers: what you send the bot and what it replies are not confined to this machine.",
-  "remotePanel.imBot.reminder.platformRecords":
-    "Those platform-side records are outside this machine's control; deleting local data does not delete them.",
-  // When it takes effect (spec §10 P4: a newly added channel needs a restart; acceptable, but
-  // must not be silent). Not phrased as "the config has not taken effect" — the user needs to
-  // know what to do now.
-  "remotePanel.imBot.restartNotice":
-    "After you add or enable a channel, inbound callbacks only work once the service is restarted; deleting a channel takes effect immediately.",
-  "remotePanel.imBot.confirm.title": "Enable the chat bot?",
-  "remotePanel.imBot.confirm.body":
-    "Once enabled, the bot sends messages and files to a third-party chat platform. Confirm these three points before continuing:",
-  "remotePanel.imBot.confirm.continue": "Enable anyway",
-  "remotePanel.badge.stopped": "Off",
-  "remotePanel.badge.stale": "Stopped",
-  "remotePanel.badge.starting": "Starting",
-  "remotePanel.badge.running": "Running",
-  "remotePanel.badge.stopping": "Stopping",
-  "remotePanel.badge.untrusted": "Not adopted",
-  "remotePanel.badge.failed": "Failed to start",
-  "remotePanel.advice.stopped":
-    "Turn it on and other devices can reach this machine's workbench in a browser.",
-  "remotePanel.advice.stale": "The previous service is gone. You can turn it on again.",
-  "remotePanel.advice.stale.pidDead":
-    "The previous service process exited. You can turn it on again.",
-  "remotePanel.advice.stale.portClosed": "The previous service is gone. You can turn it on again.",
-  "remotePanel.advice.stale.probeTimeout":
-    "Something is on that port but not responding. Turn it on again, or check the port first.",
-  "remotePanel.advice.starting": "Starting…",
-  "remotePanel.advice.stopping": "Stopping…",
-  "remotePanel.advice.running": "Open the link in a browser to use this machine's workbench.",
-  "remotePanel.advice.running.adopted":
-    "A workbench is already running on this machine; showing it here.",
-  "remotePanel.advice.untrusted":
-    "Another service owns that port, so it was not adopted. Try another port.",
-  "remotePanel.advice.failed": "Failed to start. Retry, or check the logs.",
-  "remotePanel.advice.failed.portTaken": "That port is already in use. Try another port.",
-  "remotePanel.advice.failed.spawnFailed":
-    "The service process could not start. Check the logs and retry.",
-  "remotePanel.advice.failed.probeTimeout":
-    "The service was not ready in time. Retry, or check the logs.",
-  "remotePanel.advice.failed.tokenUnreadable":
-    "The token file could not be read. Check its permissions and retry.",
-  // Wording fix after this batch's server hardening: do NOT offer "this machine only" as the
-  // no-token fallback — with trusted-proxy/registered-host signals present, loopback binding is
-  // refused too (packages/server/src/exposureGate.ts), so that would promise a way out that
-  // does not exist.
-  "remotePanel.advice.failed.nonLoopbackWithoutToken":
-    "Without a usable token it cannot listen beyond this machine. Restore the token file, or find out why it is empty.",
-  "remotePanel.action.none": "Unavailable",
-  "remotePanel.action.start": "Turn on",
-  "remotePanel.action.stop": "Stop",
-  "remotePanel.action.retry": "Retry",
-  "remotePanel.action.retryOtherPort": "Retry on another port",
-  "remotePanel.action.copyLink": "Copy link",
-  "remotePanel.action.copied": "Copied",
-  "remotePanel.action.copyFailed": "Copy failed",
-  // ce.4 connection plane: the token-rotation entry appears on the DESKTOP panel only
-  // (spec §6.5 decision ④). The UI gates it on "does the host provide the action" —
-  // absent means NOT rendered (not rendered as a disabled button).
-  "remotePanel.action.rotateToken": "Rotate token",
-  "remotePanel.action.rotatingToken": "Rotating…",
-  // Listen scope (spec §3.3): defaults to the local network, with a one-click switch back to loopback.
-  "remotePanel.listen.label": "Listen on",
-  "remotePanel.listen.loopback": "This machine only",
-  "remotePanel.listen.lan": "Local network",
-  "remotePanel.listen.portAuto": "Pick a free port",
-  "remotePanel.listen.customPort": "Custom port",
-  "remotePanel.listen.portLabel": "Port",
-  "remotePanel.listen.portPlaceholder": "Empty = pick a free port",
-  "remotePanel.listen.portInvalid":
-    "The port must be an integer from 1 to 65535; leave it empty to pick a free port.",
-  // Connected devices (spec §3.3 / §6.4). Empty and unreadable are two different facts:
-  // an empty array means nobody is connected; unreadable (null) means unknown, so we claim nothing.
-  "remotePanel.devices.title": "Connected devices",
-  "remotePanel.devices.empty": "No devices yet",
-  "remotePanel.devices.unknown": "Connected devices are not readable right now.",
-  "remotePanel.devices.revokeOne": "Disconnect",
-  "remotePanel.devices.revokeAll": "Disconnect all",
-  "remotePanel.devices.column.address": "Address",
-  "remotePanel.devices.column.role": "Role",
-  "remotePanel.devices.column.connectedAt": "Connected at",
-  "remotePanel.devices.column.userAgent": "Client",
-  "remotePanel.devices.role.terminalClient": "Browser",
-  "remotePanel.devices.role.trustedHost": "Trusted host",
-  "remotePanel.connection.title": "How to connect",
-  "remotePanel.connection.audience": "Phones and computers",
-  "remotePanel.connection.linkPending": "Preparing the link…",
-  "remotePanel.qr.alt": "Remote control QR code",
-  "remotePanel.qr.fallback": "Can't scan? Use the link",
-  "remotePanel.safety.title": "Safety",
-  "remotePanel.safety.lanExposure":
-    "Listening on the local network: anyone on the same network can try to connect. The token is the only barrier.",
-  "remotePanel.safety.tokenIsTheOnlyBarrier":
-    "The token is agent-level access: it can run commands and read or write files on this machine.",
-  "remotePanel.safety.linkIsCredential":
-    "The link and QR code are credentials themselves. Do not share them publicly or send screenshots.",
-  "remotePanel.safety.plainHttp":
-    "Plain http is for trusted local networks only; put TLS or a tunnel in front for anything wider.",
-  "remotePanel.confirm.startLan.title": "Listen on the local network?",
-  "remotePanel.confirm.startLan.body":
-    "Once on, anyone on the same network can try to connect to the workbench on this machine.\nThe token is the only barrier: whoever has it can run commands and read or write files on this machine.",
-  "remotePanel.confirm.startLan.continue": "Continue",
-  // Second confirmation for ce.4 write actions (spec §6.3).
-  "remotePanel.confirm.stop.title": "Stop the service?",
-  "remotePanel.confirm.stop.body":
-    "Every connected device will be disconnected and must scan or open the link again.",
-  "remotePanel.confirm.rotateToken.title": "Rotate the token?",
-  "remotePanel.confirm.rotateToken.body":
-    "Old links and QR codes stop working immediately, and everyone must reconnect.",
-  "remotePanel.confirm.revokeOne.title": "Disconnect this device?",
-  "remotePanel.confirm.revokeOne.body":
-    "That device is disconnected and must scan or open the link again.",
-  "remotePanel.confirm.revokeAll.title": "Disconnect all devices?",
-  "remotePanel.confirm.revokeAll.body":
-    "Every connected device will be disconnected and must scan or open the link again.",
-  // Always-on danger notice (spec §3.5; cannot be dismissed).
-  "remotePanel.danger.credentials": "Links and QR codes are credentials — do not share them.",
-  "remotePanel.danger.sharedToken":
-    "The token is a shared secret; rotating it reconnects everyone.",
-  "remotePanel.danger.noTls":
-    "Plain http is for trusted local networks only; use a TLS reverse proxy or tunnel across networks.",
   "workspaceSidebar.resizeSidebar": "Resize sidebar",
-  "workspaceSidebar.toggleArchivedTasks": "Archived",
   "workspaceSidebar.showFileTree": "Show files",
-  "workspaceSidebar.sshConnectionTitle": "SSH connection",
-  "workspaceSidebar.sshConnectionAlias": "Alias",
-  "workspaceSidebar.sshConnectionHost": "Host",
-  "workspaceSidebar.sshConnectionPath": "Path",
   "workspaceFileTree.title": "Workspace",
   "workspaceFileTree.backToTasks": "Back to tasks",
   "workspaceFileTree.refresh": "Refresh file tree",
@@ -2058,6 +2322,7 @@ const enUS: Record<string, string> = {
   "ssh.auth.password": "Password",
   "ssh.auth.privateKey": "Private key",
   "ssh.assetInstallMode": "Resource download method",
+  "ssh.advancedOptions": "Advanced options",
   "ssh.assetInstallMode.local-download-upload": "Download locally, then upload",
   "ssh.assetInstallMode.remote-download": "Download on remote server",
   "ssh.assetInstallModeDescription":
@@ -2075,59 +2340,461 @@ const enUS: Record<string, string> = {
   "ssh.configAliasEmpty": "No SSH config aliases available on this machine.",
   "ssh.configAliasLoadFailed":
     "Failed to load SSH config aliases. You can still enter connection info manually.",
-  "ssh.configAliasDescription": "Select an alias to prefill host, port, username, and private key.",
+  "ssh.configAliasDescription":
+    "Prefilled host, port, username, and private key from ~/.ssh/config; editing any field detaches the alias.",
   "ssh.connect": "Connect",
   "ssh.cancel": "Cancel",
   "ssh.connecting": "Connecting...",
   "ssh.success": "Connected. Opened in a new window.",
-  "ssh.validation.required": "Host and username are required",
+  "ssh.validation.hostRequired": "Enter a host",
+  "ssh.validation.usernameRequired": "Enter a username",
+  "ssh.importFromConfig": "Import from SSH config",
+  "ssh.importEmpty": "No SSH config hosts found",
+  "ssh.configAliasLinked": "Linked to Host {alias}",
+  "ssh.configAliasUnlink": "Unlink",
+  "ssh.configAliasLinkedHint": "Editing any field unlinks it",
+  "ssh.pasteRecognized": "Recognized {target}",
   "ssh.validation.passwordRequired": "Password is required",
   "ssh.validation.privateKeyRequired": "Private key path is required",
   "common.back": "Back",
   "common.next": "Next",
+  "remote.selection.step": "Select device",
+  "remote.selection.connect": "Connect",
+  "remote.selection.search": "Search devices, Hosts or containers",
+  "remote.selection.saved": "Saved devices",
+  "remote.selection.aliases": "Hosts from SSH config",
+  "remote.selection.wsl": "WSL distributions",
+  "remote.selection.docker": "Running containers",
+  "remote.selection.empty": "No matching devices. Create a connection below.",
+  "remote.selection.new.ssh": "New SSH connection",
+  "remote.selection.new.wsl": "Enter WSL manually",
+  "remote.selection.new.docker": "Enter Docker manually",
+  "remote.selection.new.server": "Development Server",
+  "remote.selection.keyboard":
+    "Tab / ↑↓ to select · Enter to connect · Click a recent directory to open",
+  "remote.selection.back": "Back to list",
+  "remote.background.ready": "Connection complete",
+  "remote.background.continue": "Continue",
+  "remote.background.review": "View or resolve",
+  "remote.background.cancel": "Cancel connection",
+  "remote.minimized.device": "Continue choosing a device",
+  "remote.minimized.kind": "Continue choosing a device",
+  "remote.minimized.settings": "Continue setting up the connection",
+  "remote.minimized.directory": "Choose a directory on {device}",
+  "remote.minimized.resume": "Click to resume the connection wizard",
+  "remote.minimized.connecting": "Connecting to {device}…",
+  "remote.minimized.failed": "Connection to {device} failed",
+  "remote.minimized.waiting": "Waiting for confirmation or information",
+  "ssh.validation.port": "Port must be an integer from 1 to 65535",
+  "ssh.showPassword": "Show password",
+  "ssh.hidePassword": "Hide password",
+  "docker.inputMode.select": "Select a running container",
+  "docker.inputMode.manual": "Enter a container manually",
   "remote.trigger": "Remote connection",
   "remote.wizard": "Remote connect",
   "remoteConnection.feedback": "Feedback",
-  "remote.step.kind": "Choose method",
-  "remote.step.settings": "Fill settings",
-  "remote.step.connecting": "Connecting",
   "remote.step.directory": "Choose directory",
-  "remote.kindStepTitle": "Choose method",
-  "remote.kindStepDescription":
-    "Choose how you want to access this workspace, then continue with the matching connection settings.",
-  "remote.settingsStepTitle": "Connection settings",
-  "remote.settingsStepDescription":
-    "Enter the details needed for your {method} connection so we can prepare the remote session.",
+  "remote.deviceStepTitle": "Connect remotely",
+  "remote.deviceStepDescription": "Choose a saved connection, or add a new one.",
+  "remote.deviceChat": "Chat on this device",
+  "remote.deviceConnectChat": "Connect and chat",
+  "remote.deviceReconnect": "Connect",
+  "remote.deviceReinstall": "Reinstall and connect",
+  "remote.deviceIdentify": "Connect",
+  "remote.directServer": "Direct server",
+  "remote.manage": "Manage",
+  "remote.settingsStepTitle": "New connection",
   "remote.history.empty": "No matching saved connections",
-  "remote.connectingStepTitle": "Connecting",
-  "remote.connectingStepDescription":
-    "We are establishing the {method} connection. You can follow the live setup progress here.",
-  "remote.title": "Connect remote environment",
-  "remote.description":
-    "Connect to a remote workspace over SSH, Server, WSL, or Docker, then choose a directory in the current window.",
-  "remote.step.connect": "Connect",
-  "remote.step.selectDirectory": "Choose directory",
-  "remote.selectDirectoryTitle": "Choose remote directory",
-  "remote.selectDirectoryDescription":
-    "Choose which directory to open in this window after the remote connection is ready.",
-  "remote.backToConnection": "Back to connection settings",
+  "remote.connectingStepTitle": "Establish link",
+  "remote.connectingStepDescription": "Connecting through {method}…",
+  "remote.connectingSubtitleConnected": "Connected to {device} · ready to choose a directory",
+  "remote.connectingSubtitleUpdating": "Updating the remote server",
+  "remote.phaseSub.uploading": "Uploading the archive",
+  "remote.phaseSub.extracting": "Extracting server files",
+  "remote.phaseSub.verifyingArchive": "Verifying the archive",
+  "remote.phaseSub.verifyingFiles": "Verifying server files",
+  "remote.phaseSub.restarting": "Restarting the remote server",
+  "remote.connectingSubtitleFailed":
+    "Connection failed · retry, or adjust the configuration and try again",
+  "remote.phase.channel": "Connect to device",
+  "remote.phase.identify": "Identify device",
+  "remote.phase.deploy": "Install ZCode Server",
+  "remote.phase.handshake": "Start and check compatibility",
+  "remote.progress.step": "Step {current}/{total}",
+  "remote.progress.elapsedSeconds": "{seconds}s elapsed",
+  "remote.progress.elapsedMinutesSeconds": "{minutes}m {seconds}s elapsed",
+  "remote.progress.copyError": "Copy error details",
+  "remote.progress.copied": "Copied",
+  "remote.link.local": "This device",
+  "remote.link.localVersion": "ZCode v{version}",
+  "remote.link.deviceHint": "Device details appear after connecting",
+  "remote.link.devicePending": "Remote device",
+  "remote.recognizedDevice": "Connected to device {device}",
+  "remote.recognizedDeviceBody":
+    "This connection ({profile}) is ready; task and workspace history stays unchanged.",
+  "remote.connectedBanner": "Connected {device} · {profile} · {version}",
+  "remote.connectedSummary": "Connection ready: {device}",
+  "remote.remoteRecord": "Remote record",
+  "remote.quickOpenWithHistory": "Quick open — recent and known remote workspaces",
+  "remote.syncAll": "Sync all",
+  "remote.syncSkills": "Sync skills to this device",
+  "remote.syncMcp": "Sync MCP config",
+  "remote.syncPlugins": "Sync plugins",
+  "remote.collapseContinues": "Connection continues in the background when collapsed",
+  "remote.goToDirectory": "Go to choose directory",
+  "remote.openWorkspaceHere": "Open workspace here",
+  "remote.useRemoteDownload": "Download directly on the device",
+  "remote.errorRetry": "Retry",
+  "remote.renameDevice": "Device name",
+  "remote.renameDeviceHint":
+    "Give it a memorable name on first connect; change it anytime in Settings · Remote devices",
+  "remote.quickOpen": "Quick open",
+  "remote.connectionLogLines": "{count} line(s)",
+  "remote.errorPanel.uploadFailedTitle": "Asset upload failed",
+  "remote.errorPanel.uploadFailedHint":
+    'If the target server has internet access, "Download on remote server" is usually faster.',
+  "remote.phaseSub.channelEstablished.ssh": "Connected to the SSH host",
+  "remote.phaseSub.channelEstablished.wsl": "Connected to the distribution",
+  "remote.phaseSub.channelEstablished.docker": "Connected to the container",
+  "remote.phaseSub.channelEstablished": "Connected to device",
+  "remote.phaseSub.identifyExisting": "Connected to device {device}",
+  "remote.phaseSub.identifyNew": "New device · ZCode Server not installed",
+  "remote.phaseSub.deploySkipped": "Remote already on v{version} · deployment skipped",
+  "remote.phaseSub.deployWaitingConfirm": "Waiting for install confirmation…",
+  "remote.phaseSub.deployUploading": "Uploading {file} · {sent} / {total}",
+  "remote.phaseSub.installed": "Installed; starting the connection",
+  "remote.phaseSub.uploadFailed": "Installation failed: {reason}",
+  "remote.phaseSub.handshakeDone": "systemd --user · port {port}",
+  "remote.phaseSub.readyOnline": "Device online; workspace history ready",
+  "remote.sourceServerInstallCancelled": "Installation cancelled. You can retry when ready.",
+  "webRemoteControl.trigger": "Mobile remote control",
+  "webRemoteControl.triggerStatus.idle": "Remote control is off",
+  "webRemoteControl.triggerStatus.starting": "Remote control is starting",
+  "webRemoteControl.triggerStatus.waiting": "Waiting for phone",
+  "webRemoteControl.triggerStatus.connecting": "Connecting phone",
+  "webRemoteControl.triggerStatus.connected": "Phone connected",
+  "webRemoteControl.triggerStatus.error": "Remote control failed",
+  "webRemoteControl.authRequired.title": "Sign in required",
+  "webRemoteControl.authRequired.description":
+    "Sign in to control this computer from your phone. Use the same account on both devices.",
+  "webRemoteControl.authRequired.login": "Sign in",
+  "webRemoteControl.title": "Mobile remote control",
+  "webRemoteControl.description":
+    "Scan the QR code or open the link on your phone to control this workspace.",
+  "webRemoteControl.statusLabel": "Session status",
+  "webRemoteControl.status.idle": "Idle",
+  "webRemoteControl.status.starting": "Starting",
+  "webRemoteControl.status.running": "Waiting for phone",
+  "webRemoteControl.status.connecting": "Connecting phone",
+  "webRemoteControl.status.active": "Phone connected",
+  "webRemoteControl.status.error": "Connection failed",
+  "webRemoteControl.themeMenu.trigger": "Choose theme",
+  "webRemoteControl.statusDetail.idle": "Ready to connect.",
+  "webRemoteControl.statusDetail.starting": "Starting remote control...",
+  "webRemoteControl.statusDetail.running": "Scan the QR code or open the link on your phone.",
+  "webRemoteControl.statusDetail.connecting": "Phone is connecting...",
+  "webRemoteControl.statusDetail.active": "Your phone can control this workspace.",
+  "webRemoteControl.statusDetail.error": "Could not start mobile remote control.",
+  "webRemoteControl.generating": "Preparing QR code...",
+  "webRemoteControl.qrAlt": "Web remote control QR code",
+  "webRemoteControl.mobileQr.title": "Scan from phone",
+  "webRemoteControl.mobileQr.description": "Use your phone camera to open this workspace remotely.",
+  "webRemoteControl.statusTag.phone": "Phone",
+  "webRemoteControl.statusTag.ready": "Ready",
+  "webRemoteControl.botChannel.title": "Use a bot channel",
+  "webRemoteControl.botChannel.description": "Connect a chat bot for longer-running mobile access.",
+  "webRemoteControl.botChannel.weixin.title": "Weixin",
+  "webRemoteControl.botChannel.weixin.description": "Open this workspace from Weixin chat.",
+  "webRemoteControl.botChannel.feishu.title": "Feishu",
+  "webRemoteControl.botChannel.feishu.description": "Open this workspace from Feishu.",
+  "webRemoteControl.botChannel.lark.title": "Lark",
+  "webRemoteControl.botChannel.lark.description": "Open this workspace from Lark.",
+  "webRemoteControl.botChannel.telegram.title": "Telegram",
+  "webRemoteControl.botChannel.telegram.description": "Open this workspace from Telegram.",
+  "webRemoteControl.botChannel.configure": "Configure in bot channels",
+  "webRemoteControl.botChannel.manageBots": "Manage bots",
+  "webRemoteControl.linkLabel": "Remote control link",
+  "webRemoteControl.linkPending": "The remote control link will appear here once ready.",
+  "webRemoteControl.singlePageNote":
+    "This relay pairing supports one phone page at a time. If it is already open elsewhere, close the old page first.",
+  "webRemoteControl.copyLink.description": "Can't scan? Open the link on your phone.",
+  "webRemoteControl.failure.sessionNotFound":
+    "This Web remote control link is no longer valid. Start it again from desktop.",
+  "webRemoteControl.failure.sessionExpired":
+    "This Web remote control session has already ended. Generate a new link from desktop to continue.",
+  "webRemoteControl.failure.sessionConflict":
+    "This link is already being used by another page. Close the other page and scan again.",
+  "webRemoteControl.failure.kicked":
+    "The relay kicked this pairing. Close the other page and generate a new QR code from desktop.",
+  "webRemoteControl.failure.workspaceClosed":
+    "The shared desktop window has been closed. Go back to desktop and start Web remote control again.",
+  "webRemoteControl.failure.desktopDisconnected":
+    "The desktop side disconnected, so this Web remote control session can no longer continue.",
+  "webRemoteControl.failure.invalidMobileConnection":
+    "The current mobile connection is no longer valid. Reload the page and reconnect.",
+  "webRemoteControl.failure.desktopBootstrapTimeout":
+    "The desktop window did not respond in time. Make sure it is still running, then reload.",
+  "webRemoteControl.failure.connectionRecoveryTimeout":
+    "The mobile connection did not recover in time, so Web remote control cannot keep syncing yet.",
+  "webRemoteControl.failure.relayUnavailable":
+    "The external relay connection is unavailable. Make sure desktop is online, then try again.",
+  "webRemoteControl.failure.unsupportedAction":
+    "Web remote control mode can only open workspaces that are already open in the current desktop window.",
+  "webRemoteControl.failure.unexpectedError":
+    "Could not start mobile remote control. Try again from desktop.",
+  "webRemoteControl.copyLink": "Copy link",
+  "webRemoteControl.copyLink.copied": "Remote control link copied",
+  "webRemoteControl.copyLinkFailed": "Could not copy remote control link: {error}",
+  "webRemoteControl.refreshQr": "Refresh QR",
+  "webRemoteControl.refreshQr.confirmTitle": "Refresh QR code?",
+  "webRemoteControl.refreshQr.confirmDescription":
+    "Refreshing will invalidate any remote control links that were copied or scanned before. Connected phones will need to scan the new QR code.",
+  "webRemoteControl.refreshQr.success": "Remote control QR refreshed",
+  "webRemoteControl.refreshQr.failed": "Could not refresh remote control QR: {error}",
+  "webRemoteControl.stop": "Stop",
+  "webRemoteControl.switchWorkspace": "Switch workspace",
+  "webRemoteControl.expandNavigation": "Expand tasks and workspaces",
+  "webRemoteControl.collapseNavigation": "Collapse tasks and workspaces",
+  "webRemoteControl.homeOnlyWorkspaces": "Workspaces",
+  "webRemoteControl.noSwitchableWorkspaces": "No switchable workspaces",
+  "webRemoteControl.noTasks": "No tasks available in the current desktop window",
+  "webRemoteControl.openTask": "Open task {title}",
+  "webRemoteControl.taskStatus.idle": "Idle",
+  "webRemoteControl.taskStatus.running": "Running",
+  "webRemoteControl.taskStatus.completed": "Done",
+  "webRemoteControl.taskStatus.error": "Error",
+  "webRemoteControl.switchDevice": "Switch device",
+  "webRemoteControl.unnamedDevice": "Unnamed device",
+  "webRemoteControl.mobileShell.backHome": "Back to task home",
+  "webRemoteControl.mobileShell.chatTitle": "Task chat",
+  "webRemoteControl.mobileShell.reconnecting": "Reconnecting automatically...",
+  "webRemoteControl.stopSuccess": "Web remote control stopped",
+  "webRemoteControl.startFailed": "Failed to start Web remote control: {error}",
+  "webRemoteControl.stopFailed": "Failed to stop Web remote control: {error}",
+  "remote.selectDirectoryTitle": "Choose directory",
+  "remote.selectDirectoryDescription": "Choose a directory on {method} as the workspace.",
+  "remote.backToConnection": "Back to configuration",
   "remote.selectedMethod": "Selected method",
   "remote.methods": "Connection method",
+  "remote.connectionType": "Connection type",
   "remote.kind.ssh": "SSH",
+  "remote.kind.server": "Server",
   "remote.kind.wsl": "WSL",
   "remote.kind.docker": "Docker",
-  "remote.kind.ssh.wizardDescription": "Remote host",
-  "remote.kind.wsl.wizardDescription": "Windows Subsystem for Linux",
-  "remote.kind.docker.wizardDescription": "Local container",
+  "remote.kind.server.note":
+    "Server (direct connection to a running ZCode service) is shown only in development builds.",
+  "remote.addAndConnect": "Add and connect",
   "remote.connect": "Connect",
   "remote.connecting": "Connecting...",
-  "remote.minimize": "Minimize remote connection window",
-  "remote.startConnection": "Start connection",
+  "remote.minimize": "Collapse — connection will continue",
+  "remote.startConnection": "Establish link",
   "remote.retryConnection": "Retry connection",
   "remote.connectingHint": "Connecting with {method}.",
   "remote.connectionLog": "Connection log",
   "remote.connectionLogEmpty": "waiting for connection output...",
   "remote.connectingConfirmTitle": "Stop the current connection?",
+  "remote.sourceServerInstallTitle": "ZCode Server installation required",
+  "remote.sourceServerInstallDescription":
+    "ZCode will upload the matching release, install it under ~/.zcode/server, and start the background daemon. Existing legacy remote files will be preserved.",
+  "remote.sourceServerInstallConfirm": "Install and continue",
+  "remote.installTarget": "Target account",
+  "remote.installVersion": "Install version",
+  "remote.installLocation": "Install location",
+  "remote.sourceServerBoundaryTitle": "Local offline, tasks keep running",
+  "remote.sourceServerBoundaryDescription":
+    "Remote tasks keep running, even when you close ZCode or put your computer to sleep.",
+  "remote.sourceServerBoundaryEyebrow": "New remote connection",
+  "remote.sourceServerBoundaryLocalDevice": "This computer",
+  "remote.sourceServerBoundaryLocalStatus": "Sleeping / closed",
+  "remote.sourceServerBoundaryRemoteTask": "Remote tasks",
+  "remote.sourceServerBoundaryRemoteStatus": "Still running",
+  "settings.source.label": "Source",
+  "settings.source.offline": "Not connected",
+  "settings.source.uninstalled": "Uninstalled",
+  "settings.source.operationFailed": "The operation failed. Try again later.",
+  "settings.source.versionDetails":
+    "Current v{current} · Minimum compatible v{minimum} · Remote tasks pause briefly during the update",
+  "settings.source.managementTitle": "Remote connections",
+  "settings.remoteDevicesTitle": "Remote devices",
+  "settings.remoteDevicesDescription":
+    "Manage your servers, WSL distributions, and Docker containers.",
+  "settings.source.newConnection": "New connection",
+  "settings.source.addRoute": "Add a connection — use another SSH target for this device",
+  "settings.source.archivedAt": "archived {time}",
+  "settings.source.retiredReason.reinstalled":
+    "Archived after the connection target identity changed; kept for records",
+  "settings.source.retiredEntryNote": "Connection target changed; new identity confirmed",
+  "settings.source.retiredNameSuffix": " (old)",
+  "settings.source.reinstallRequired":
+    "ZCode Server was uninstalled remotely; connection and task records remain on this device.",
+  "settings.source.reinstallAndConnect": "Reinstall and connect",
+  "settings.source.copyDeviceId": "Copy device ID",
+  "common.justNow": "just now",
+  "common.minutesAgo": "{count}m ago",
+  "common.hoursAgo": "{count}h ago",
+  "common.yesterday": "yesterday",
+  "settings.source.profileName": "Connection name",
+  "settings.source.linesTitle": "Connections",
+  "settings.source.editConnection": "Edit",
+  "settings.source.editConnectionTitle": "Edit connection",
+  "settings.source.editConnectionDescription":
+    "Connection changes take effect the next time you connect. Existing projects and tasks are unchanged.",
+  "settings.source.deviceName": "Device name",
+  "settings.source.removeSourceServer": "Remove device",
+  "settings.source.removeOpenProjects": "These open projects will be disconnected:\n{projects}",
+  "settings.source.noOpenProjects": "This device has no open projects.",
+  "settings.source.disconnectHint": "Remote tasks will continue running after you disconnect.",
+  "settings.machine.local": "This computer",
+  "settings.machine.remote": "{name} (remote)",
+  "settings.machine.unknownRemote": "Remote device",
+  "settings.machine.scope": "{scope} · {machine}",
+  "settings.source.connectionName": "Connection name",
+  "settings.source.connectionAddress": "Address",
+  "settings.source.connectionNameHint": "Used only to distinguish this connection in ZCode.",
+  "settings.source.deviceNameRequired": "Device name is required.",
+  "settings.source.error.connection-profile-unavailable":
+    "This connection is no longer available. Refresh and try again.",
+  "settings.source.error.recent-project-unresolved":
+    "The original project cannot be identified. Select a project from the sidebar.",
+  "settings.source.connectionNameRequired": "Connection name is required.",
+  "settings.source.keepSavedSecret": "Leave blank to keep the saved credential",
+  "settings.source.otherSavedConnections": "Other saved connections",
+  "settings.source.otherSavedConnectionsCount": "Other saved connections ({count})",
+  "settings.source.retry": "Retry",
+  "settings.source.lastConnected": "Last success {time}",
+  "settings.source.lastConnectError": "Last failure: {error}",
+  "settings.source.devicesHeading": "Devices",
+  "settings.source.recentProjects": "Recent projects",
+  "settings.source.showAllProjects": "Show all ({count})",
+  "settings.source.showLessProjects": "Show less",
+  "settings.source.projectOpened": "Opened",
+  "settings.source.projectCount": "{count} project(s)",
+  "settings.source.lastOnline": "Last online {time}",
+  "settings.source.lastOnlineNow": "Online just now",
+  "settings.source.neverOnline": "Never online",
+  "settings.source.migrationConnectRequired": "Available after connecting",
+  "settings.source.connectionHistoryNeedsAttention": "Connection history needs attention",
+  "settings.source.showMigrationReport": "Migration report",
+  "settings.source.hideMigrationReport": "Hide migration report",
+  "settings.source.online": "Connected",
+  "settings.source.unknownDevice": "Remote device",
+  "settings.source.updateAvailable": "A remote component update is available.",
+  "settings.source.updateRequired": "Update the remote component before connecting.",
+  "settings.source.updateInProgress": "Updating the remote component…",
+  "settings.source.updateProgress": "Remote component update progress",
+  "settings.source.updatePhase.preparing": "Preparing the update",
+  "settings.source.updatePhase.checking": "Checking the device and update files",
+  "settings.source.updatePhase.downloading": "Downloading update files",
+  "settings.source.updatePhase.uploading": "Uploading update files",
+  "settings.source.updatePhase.installing": "Installing ZCode Server",
+  "settings.source.updatePhase.reconnecting": "Starting the service and reconnecting",
+  "settings.source.updatePhase.completed": "Update complete",
+  "settings.source.updateLog": "Update log ({count})",
+  "settings.source.updateLogWaiting": "Waiting for update logs…",
+  "settings.source.defaultProfile": "Default",
+  "settings.source.defaultProfileMenuItem": "Default connection",
+  "settings.source.setDefault": "Set as default connection",
+  "settings.source.removeProfile": "Remove connection",
+  "settings.source.renameProfile": "Rename connection",
+  "settings.source.assetInstallModeMenu": "Resource download method",
+  "settings.source.assetInstallModeShort.local-download-upload": "Local upload",
+  "settings.source.assetInstallModeShort.remote-download": "Remote download",
+  "settings.source.showInSidebar": "Show in sidebar",
+  "settings.source.renameSource": "Rename",
+  "settings.source.connectAndIdentify": "Connect",
+  "settings.source.deleteProfileRecord": "Delete connection record",
+  "settings.source.deleteConnectionRecord": "Delete connection record",
+  "settings.source.pendingMigrationCount": "{count} pending",
+  "settings.source.removeAllLines": "Remove all connections",
+  "settings.source.removeSourceServerTitle": "Remove this device?",
+  "settings.source.removeSourceServerDescription":
+    "This removes all local connections, credentials, and project records. Remote services and data are not affected.",
+  "settings.source.connectionPreferences": "Connection preferences",
+  "settings.source.startupAutoReconnect": "Reconnect automatically at startup",
+  "settings.source.startupAutoReconnectDescription":
+    "Reconnects devices seen online in the last 7 days at startup. Changes take effect on the next startup.",
+  "settings.source.updateAvailableVersion": "Update to v{version}",
+  "settings.source.error.source-server-remove-callback-missing":
+    "The device cannot be removed because desktop connection cleanup is not ready.",
+  "settings.source.error.source-server-remove-callback-failed":
+    "The device cannot be removed because connection cleanup failed. Nothing was deleted.",
+  "settings.source.error.source-server-remove-persist-failed":
+    "The device is disconnected, but local records could not be fully deleted. Try again later.",
+  "settings.source.identityChangeTitle": "Connection target identity has changed",
+  "settings.source.identityChangeDescription":
+    "Confirm to create a new device record and independent connection record. Existing task history stays with the previous device.",
+  "settings.source.identityChangeConfirm": "Use as a new device",
+  "settings.source.removeProfileTitle": "Remove this connection?",
+  "settings.source.removeProfileDescription":
+    "{name} and its saved credentials will be removed from this device.",
+  "settings.source.connect": "Connect",
+  "settings.source.reconnect": "Reconnect",
+  "settings.source.disconnect": "Disconnect",
+  "settings.source.newTask": "New task",
+  "settings.source.update": "Update",
+  "settings.source.updateNow": "Update now",
+  "sourceServer.updateAvailableToast": "{source} has an update\nDevice {current} → {available}.",
+  "sourceServer.updateRequiredToast":
+    "{source} must be updated before it can connect\nCurrent {current}; required {available}.",
+  "sourceServer.updateStartedToast": "Updating {source}…",
+  "sourceServer.updateCompletedToast": "{source} was updated and reconnected.",
+  "sourceServer.updateFailedToast":
+    "{source} could not be updated. Review the log under Remote devices and try again.",
+  "sourceServer.controllerUpdateAvailableToast":
+    "ZCode has an update for {source}\nDesktop {current} → {available}; update ZCode to match this Source.",
+  "settings.source.forceUpdate": "Force update",
+  "settings.source.forceUpdateTitle": "Force-update this device?",
+  "settings.source.forceUpdateDescription":
+    "A forced update stops tasks that are still running on this device. Confirm that those tasks may be interrupted.",
+  "settings.source.controllerUpdateRequired":
+    "Update this ZCode Desktop first; the Server cannot be updated from here.",
+  "settings.source.neverConnected": "Not connected",
+  "settings.source.unidentifiedProfiles": "Not connected",
+  "settings.source.unidentifiedProfilesDescription":
+    "Saved records from older versions or not yet successfully connected. Device details update after a successful connection.",
+  "settings.source.retiredProfiles": "Archived connections",
+  "settings.source.retiredProfilesWithCount": "Archived connections ({count})",
+  "settings.source.retiredProfilesDescription":
+    "Archived after the connection target identity changed; kept for records",
+  "settings.source.empty": "No remote device connections yet.",
+  "settings.source.migrationCountsRequireConnection":
+    "Connect this device to inspect its migration counts.",
+  "settings.source.migrationReport": "Migration report",
+  "settings.source.loginUnavailable":
+    "Account login must be completed on this device and is unavailable from Settings.",
+  "settings.source.exportMigrationReport": "Export JSON",
+  "settings.source.exportMigrationJson": "Export migration details JSON",
+  "settings.source.noMigrationIssues": "No migration issues.",
+  "settings.source.abandonMigration": "Abandon merge",
+  "settings.source.abandonMigrationTitle": "Keep current history and stop automatic merging?",
+  "settings.source.abandonMigrationDescription":
+    "Other history will be archived. This directory keeps the current history; you can retry merging later.",
+  "settings.source.retryMigration": "Retry merge",
+  "settings.source.migrationConflictCount": "{count} conflict(s)",
+  "settings.source.migrationMergedHistory": "Merged history from {count} connection(s)",
+  "settings.source.migrationDetailUnavailable": "Details unavailable",
+  "settings.source.state.absent": "Not configured",
+  "settings.source.state.bootstrapping": "Starting",
+  "settings.source.state.needsInstall": "Install required",
+  "settings.source.state.needsUpgrade": "Upgrade required",
+  "settings.source.state.updating": "Updating",
+  "settings.source.state.online": "Online",
+  "settings.source.state.retrying": "Recovering",
+  "settings.source.state.offline": "Offline",
+  "settings.source.state.identityChangePending": "Identity replacement pending",
+  "settings.source.state.failed": "Connection failed",
+  "settings.source.migrationStatus.running": "Migrating",
+  "settings.source.migrationStatus.completed": "Completed",
+  "settings.source.migrationStatus.failed": "Failed",
+  "settings.source.migrationStatus.abandoned": "Archived",
+  "settings.source.migrationStatus.abandonedDiverged": "Archived (changed later)",
+  "settings.source.migrationPhase.preflight": "Preflight",
+  "settings.source.migrationPhase.backupsCreated": "Backups created",
+  "settings.source.migrationPhase.taskDbMerged": "Task data merged",
+  "settings.source.migrationPhase.sessionDbMerged": "Session data merged",
+  "settings.source.migrationPhase.configDirsMerged": "Configuration directories merged",
+  "settings.source.migrationPhase.aliasPublished": "Workspace alias published",
+  "settings.source.migrationPhase.completed": "Migration completed",
   "remote.connectingConfirmDescription":
     "The remote connection is still in progress. If you go back or close this window now, the current connection attempt will be cancelled.",
   "remote.stopConnecting": "Stop connecting",
@@ -2135,7 +2802,6 @@ const enUS: Record<string, string> = {
   "remote.connectedConfirmDescription":
     "The remote connection is ready, but no directory has been opened yet. If you go back or close this window now, the current remote session will be discarded.",
   "remote.leaveConnectedSession": "Leave session",
-  "remote.success": "Connected. Choose a directory to continue.",
   "remote.optionsLoadFailed":
     "Failed to load local runtime options. You can still enter values manually.",
   "remote.log.prepare": "Wizard parameters validated. Preparing the connection request.",
@@ -2144,31 +2810,41 @@ const enUS: Record<string, string> = {
   "remote.log.requestingSession": "Requesting the host process to create a remote session...",
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
-  "wsl.description":
-    "Connect to the default distro, or choose a specific distro installed on this device.",
+  "server.description": "Connect to an already running ZCode server.",
+  "server.url": "Server URL",
+  "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
+  "server.name": "Display name",
+  "server.namePlaceholder": "e.g. Studio",
+  "server.token": "Token (optional)",
+  "server.tokenPlaceholder": "Enter connection token",
+  "server.workspacePath": "Default directory (optional)",
+  "server.workspacePathPlaceholder": "e.g. /srv/project",
+  "server.workspacePathDescription":
+    "Leave empty to choose a directory on the server after connecting.",
+  "server.validation.urlRequired": "Server URL is required",
+  "server.validation.invalidUrl": "Server URL is invalid",
   "wsl.distro": "Distribution",
-  "wsl.defaultDistro": "Default distro",
+  "wsl.defaultDistro": "Default distribution",
   "wsl.user": "Linux user",
   "wsl.defaultUser": "Default user",
   "wsl.userDescription":
-    "Leave empty to use the distro default user. Enter root or another existing Linux user to run WSL commands as that user.",
+    "Leave empty to use the distribution default user. Enter root or another existing Linux user to run WSL commands as that user.",
   "wsl.rootWarning":
     "Root mode runs the remote host, agent, and terminal as root. Files created during the session may be owned by root.",
   "wsl.validation.invalidUser":
     "Linux user names cannot contain control characters, colons, slashes, or backslashes, and must be 64 characters or fewer.",
-  "wsl.loading": "Detecting WSL distros...",
-  "wsl.detectedCount": "{count} distros detected on this device.",
+  "wsl.loading": "Detecting WSL distribution...",
+  "wsl.detectedCount": "{count} distribution detected on this device.",
   "wsl.noDistros":
-    "No WSL distros were detected. You can still connect to the default distro if WSL is installed.",
-  "docker.description": "Connect to a local container using docker exec and docker cp.",
+    "No WSL distribution were detected. You can still connect to the default distribution if WSL is installed.",
   "docker.container": "Container",
   "docker.containerPlaceholder": "Enter container name or ID, e.g. my-container",
   "docker.manualContainerHint":
     "If the running container list is incomplete, enter a container name or ID manually to connect.",
   "docker.selectContainer": "Choose a running container",
   "docker.loading": "Detecting running containers...",
-  "docker.unavailable": "No running containers detected.",
-  "docker.noContainers": "No running containers detected.",
+  "docker.unavailable": "Docker is unavailable",
+  "docker.noContainers": "No running containers",
   "docker.validation.required": "Container name or ID is required",
 
   // Locale switch
@@ -2195,46 +2871,36 @@ const enUS: Record<string, string> = {
     "An input submitted before the CLI restarted did not reach the conversation. Confirm whether to send it again.",
   "chat.pendingCommand.resend": "Send again",
   "chat.pendingCommand.dismiss": "Later",
-  // Soft gate: persistent banner when workspace hooks are pending review
+  // Soft gate (D4): persistent banner when workspace hooks are pending review
   "chat.workspaceHookPending.message":
     "{count} workspace hook(s) pending review; disabled for this session",
   "chat.workspaceHookPending.review": "Review",
   "chat.workspaceHookPending.dismiss": "Dismiss",
 
   // Task list
-  "taskList.newTask": "New task",
+  "taskList.title": "Task list",
   "taskList.newThread": "New task",
   "taskList.forkedUntitled": "New task",
   "taskList.noTasks": "No tasks yet",
-  "taskList.noArchivedTasks": "No archived tasks",
   "taskList.loading": "Loading tasks...",
-  "taskList.syncingRemoteWorkspaces": "Loading remote tasks...",
+  "taskList.remoteConnectionUnknown": "Remote connection unavailable",
   "taskList.showMore": "Show more",
   "taskList.showLess": "Show less",
   "taskList.pinnedSection": "Pinned",
-  "taskList.recentSection": "Recent",
-  "taskList.delete": "Delete task",
   "taskList.pin": "Pin task",
   "taskList.unpin": "Unpin task",
   "taskList.rename": "Rename task",
   "taskList.archive": "Archive task",
-  "taskList.archiveLocal": "Archive local task",
-  "taskList.archiveRemote": "Archive remote task",
   "taskList.archiveFailed": "Could not archive task",
   "taskList.unarchive": "Unarchive task",
   "taskList.renamePlaceholder": "Task name",
   "taskList.renameFailed": "Could not rename task",
   "taskList.pinFailed": "Could not update pinned state",
   "taskList.markAsUnread": "Mark as unread",
-  "taskList.openInSplitPane": "Open in split view",
   "chat.toolCall.agent.openInSidePane": "Open in side pane",
-  "v4Pane.splitRight": "Split right",
   "v4Pane.renamePlaceholder": "Rename session…",
   "v4Pane.renameSession": "Rename session",
   "v4Pane.deleteSession": "Delete session",
-  "v4Pane.splitRightTitle": "Split a new pane to the right (new session)",
-  "v4Pane.splitDown": "Split down",
-  "v4Pane.splitDownTitle": "Split a new pane below (new session)",
   "v4Pane.closePane": "Close pane",
   "v4Pane.closePaneTitle": "Close pane (session keeps running)",
   "v4Pane.remote": "Remote",
@@ -2242,18 +2908,11 @@ const enUS: Record<string, string> = {
   "taskList.feedback": "Report issue",
   "taskList.viewModelTrajectory": "View model trajectory",
   "taskList.feedbackOpened": "Feedback opened with the current task context attached",
-  "taskList.resume": "Resume",
   "taskList.untitled": "New task",
   "taskList.justNow": "now",
   "taskList.minutesAgo": "{minutes}m",
   "taskList.hoursAgo": "{hours}h",
   "taskList.daysAgo": "{days}d",
-  "taskList.status.streaming": "Running",
-  "taskList.status.restoring": "Restoring",
-  "taskList.status.ready": "Ready",
-  "taskList.status.completed": "Done",
-  "taskList.status.failed": "Failed",
-  "taskList.status.notReady": "Not ready",
   "taskList.openSettings": "Settings",
   "taskList.permissionTag": "Awaiting approval",
   "taskList.userInputTag": "Awaiting approval",
@@ -2334,6 +2993,11 @@ const enUS: Record<string, string> = {
   "chat.previewCards.video": "Video",
   "chat.previewCards.audio": "Audio",
   "chat.previewCards.openExternal": "Open in browser",
+  "chat.previewCards.previewInSidePane": "Preview",
+  "chat.previewCards.openDefaultApp": "Open",
+  "chat.previewCards.openWith": "Open with",
+  "chat.previewCards.copyLink": "Copy link",
+  "chat.previewCards.openFileFailed": "Could not open this file",
   "chat.previewCards.noOpenApps": "No apps found",
   "chat.turnNavigator.label": "Conversation query map",
   "chat.turnNavigator.jumpToQuery": "Jump to query {index}",
@@ -2386,6 +3050,7 @@ const enUS: Record<string, string> = {
   "settings.themeMode.zai-dark": "Dark",
   "settings.themeMode.system": "System",
   "settings.appearanceTitle": "Appearance",
+  "settings.shortcuts.saveFailed": "Failed to save shortcuts. Try again.",
   "settings.shortcuts.title": "Keyboard Shortcuts",
   "settings.shortcuts.searchPlaceholder": "Search shortcuts",
   "settings.shortcuts.keySearchAria": "Search by key combination",
@@ -2429,6 +3094,7 @@ const enUS: Record<string, string> = {
   "settings.shortcuts.command.toggleSidebar": "Toggle Sidebar",
   "settings.shortcuts.command.switchTheme": "Toggle Light/Dark Theme",
   "settings.shortcuts.command.toggleSidePane": "Toggle Side Pane",
+  "settings.shortcuts.command.toggleSidePaneFullView": "Enter or Exit Full View",
   "settings.shortcuts.command.toggleTerminal": "Toggle Terminal",
   "settings.shortcuts.command.previousConversation": "Previous Task",
   "settings.shortcuts.command.nextConversation": "Next Task",
@@ -2468,47 +3134,17 @@ const enUS: Record<string, string> = {
   "settings.integratedTerminalShellDescription":
     "Applies to new sessions only. On Windows, Bash uses this shell; Auto tries Git Bash, then cmd.exe.",
   "settings.integratedTerminalShell.auto": "Auto",
+  "settings.toolSearch": "Tool search",
+  "settings.toolSearchDescription":
+    "Auto selects native or local search for the model. Local loads tools on demand. Off sends the full tool catalog. Applies to new sessions and sessions restored after an app restart; active sessions keep their settings.",
+  "settings.toolSearchExperimentalNotice":
+    "Experimental feature. Using native mode with a model provider that does not fully support native ToolSearch may invalidate prompt caching and increase token usage.",
+  "settings.toolSearch.auto": "Auto",
+  "settings.toolSearch.local": "Local",
+  "settings.toolSearch.off": "Off",
   "settings.nativeSearchEnhancements": "Enhanced Find and Grep",
   "settings.nativeSearchEnhancementsDescription":
     "Use enhanced Find and Grep in new sessions and sessions restored after an app restart. Active sessions keep their current setting; Find remains unchanged on Windows.",
-  // ── task-73 Tool & Permissions section ──
-  // Scope: global authorization policy (whether dangerous commands can be remembered, and
-  // which commands count as dangerous). Per-resource enablement stays on each resource page.
-  "settings.toolPolicy.title": "Tools & Permissions",
-  "settings.toolPolicy.persistent.label": "Let dangerous commands be remembered for the project",
-  "settings.toolPolicy.persistent.description":
-    "When off, dangerous commands ask every time and previously remembered grants no longer apply. When on, they can be remembered, but only the exact command — never a whole family of commands.",
-  "settings.toolPolicy.persistent.behaviorChange":
-    "This upgrade turns it off by default: dangerous commands you previously remembered now ask again.",
-  "settings.toolPolicy.appliesToNewSessions":
-    "Applies to new sessions; sessions already open keep their current setting.",
-  "settings.toolPolicy.list.title": "Dangerous commands",
-  "settings.toolPolicy.list.hint":
-    "Turning an entry off relaxes it: it is no longer treated as dangerous.",
-  "settings.toolPolicy.list.defaultsNotDeletable":
-    "Built-in entries can be turned off and on again; turn one off to remove it from effect.",
-  "settings.toolPolicy.entry.privilege": "{name} (privilege escalation)",
-  "settings.toolPolicy.entry.privilege.description":
-    "Any command escalated through it is treated as dangerous, whatever follows.",
-  "settings.toolPolicy.entry.executable.description":
-    "This command is never remembered by prefix — only the exact command is remembered.",
-  "settings.toolPolicy.entry.enable": "Turn {name} back on",
-  "settings.toolPolicy.entry.disable": "Turn {name} off",
-  "settings.toolPolicy.custom.title": "Custom dangerous commands",
-  "settings.toolPolicy.custom.executable.description": "Matched by command name.",
-  "settings.toolPolicy.custom.prefix.description":
-    "Matched by command prefix, covering every command under it.",
-  "settings.toolPolicy.custom.delete": "Delete {name}",
-  "settings.toolPolicy.custom.add.label": "Add a dangerous command",
-  "settings.toolPolicy.custom.add.description":
-    "Enter a command name (such as kubectl) or a command prefix (such as docker run). Adding one only makes things stricter; it never allows anything.",
-  "settings.toolPolicy.custom.add.placeholder": "docker run",
-  "settings.toolPolicy.custom.add.action": "Add",
-  "settings.toolPolicy.custom.invalid":
-    "Enter a command name or prefix, without quotes, pipes, or similar symbols.",
-  "settings.toolPolicy.custom.duplicate": "That entry is already in the list.",
-  "settings.toolPolicy.custom.tooMany":
-    "You have reached the limit for custom entries. Delete some first.",
   "settings.memory": "Memory",
   "settings.memory.workspaceMemory": "Workspace Memory",
   "settings.memoryDescription":
@@ -2567,21 +3203,6 @@ const enUS: Record<string, string> = {
     "Optional. Set a PEM root certificate path to inject it as NODE_EXTRA_CA_CERTS for models, MCP, and command tools, and to trust it in renderer certificate verification. Restart the app to take effect.",
   "settings.httpProxyCaCertPathPlaceholder": "e.g. /Users/name/certs/root-ca.pem",
   "settings.httpProxySavedHint": "Network proxy settings saved. Restart the app to take effect.",
-  // Kept deliberately low-key: the label is the whole affordance, with only format,
-  // scope, and how to disable it spelled out.
-  "settings.githubMirror": "China mirror",
-  "settings.githubMirrorDescription":
-    "Set a mirror prefix when GitHub is unreachable or slow; the plugin marketplace and update checks will use it. Leave blank to connect directly. Must be an https URL; restart the app to take effect.",
-  "settings.githubMirrorPlaceholder": "e.g. https://ghfast.top/",
-  "settings.githubMirrorSavedHint": "Mirror prefix saved. Restart the app to take effect.",
-  "settings.githubMirror.error.invalidUrl":
-    "Enter a complete https URL, for example https://ghfast.top/",
-  "settings.githubMirror.error.insecureProtocol": "The mirror prefix must be an https URL",
-  "settings.githubMirror.error.credentials":
-    "The mirror prefix must not contain a username or password",
-  "settings.githubMirror.error.queryOrFragment":
-    "The mirror prefix must not contain a query string or # fragment",
-  "settings.githubMirror.error.saveFailed": "Failed to save the mirror prefix. Please try again.",
   "settings.desktopChromiumHardwareAcceleration": "Chrome hardware acceleration",
   "settings.desktopChromiumHardwareAccelerationDescription":
     "Turn this off to work around blank windows, crashes, or rendering issues caused by some GPUs or drivers. Restart the app to take effect.",
@@ -2612,7 +3233,11 @@ const enUS: Record<string, string> = {
   "notification.file": "File: {paths}",
   "settings.closeToTrayOnWindows": "Hide to tray when closing window",
   "settings.closeToTrayOnWindowsDescription":
-    "Windows only. The close button and close-window shortcut hide the window, while Quit from the tray still exits the app.",
+    "The close button and close-window shortcut hide the window, while Quit from the tray still exits the app. On by default on Windows; on Linux it depends on whether the desktop environment provides a system tray.",
+  "settings.closeToTrayUnavailable":
+    "Your desktop environment has no system tray, so close-to-tray cannot be enabled.",
+  "settings.closeToTrayGnomeHint":
+    "On GNOME, install an AppIndicator extension and restart the app to enable this.",
   "settings.keepAwakeWhileRunning": "Keep computer running",
   "settings.keepAwakeWhileRunningDescription":
     "Prevent the system from sleeping due to idle. You can still sleep manually or by closing the lid. Desktop only.",
@@ -2638,17 +3263,31 @@ const enUS: Record<string, string> = {
   "settings.askUserQuestionAutoResolution": "Automatically continue questions",
   "settings.askUserQuestionAutoResolutionDescription":
     "When enabled, Agent questions automatically continue after 5 minutes without an answer. When disabled, current and future questions wait for your response.",
+  "settings.dynamicWorkflow": "Dynamic workflows",
+  "settings.dynamicWorkflowDescription":
+    "Let the model orchestrate many subagents working in parallel, so it can take on complex tasks and deliver polished results.",
+  "settings.dynamicWorkflow.option.disabled": "Off",
+  "settings.dynamicWorkflow.option.disabled.description":
+    "Turn workflows off. The model cannot start new ones, and the Workflows tab leaves the Automations page. Workflows already in your conversations stay readable.",
+  "settings.dynamicWorkflow.option.onDemand": "On command",
+  "settings.dynamicWorkflow.option.onDemand.description":
+    "The model starts a workflow only when you type /workflow.",
+  "settings.dynamicWorkflow.option.alwaysOn": "Always on",
+  "settings.dynamicWorkflow.option.alwaysOn.description":
+    "You can type /workflow, and the model can also start a workflow on its own when your request calls for one.",
+  "settings.dynamicWorkflow.defaultTag": "Default",
+  "settings.dynamicWorkflow.saveError": "Could not save the dynamic workflow setting",
   "settings.modelIoFullRetention": "Keep complete model I/O",
   "settings.modelIoFullRetentionDescription":
     "Keep complete model requests and responses without compression, size limits, or automatic deletion.",
   "settings.performanceMode": "Performance mode",
   "settings.performanceModeDescription": "Simplify rendered output to improve performance.",
-  "settings.taskAutoArchive": "Auto-archive old tasks",
+  "settings.taskAutoArchive": "Auto-archive old sessions",
   "settings.taskAutoArchiveDescription":
-    "Periodically scan recently opened workspaces and automatically archive completed, unread-free, unpinned tasks after the retention window.",
+    "Periodically archive sessions whose last activity is older than the retention window; pinned and running sessions are never affected.",
   "settings.taskAutoArchiveDays": "Archive retention",
   "settings.taskAutoArchiveDaysDescription":
-    "A task becomes eligible for auto-archive only after its last update is older than this window.",
+    "A session becomes eligible for auto-archive only after its last update is older than this window.",
   "settings.taskAutoArchiveDays.option.3": "Archive after 3 days",
   "settings.taskAutoArchiveDays.option.7": "Archive after 7 days",
   "settings.taskAutoArchiveDays.option.14": "Archive after 14 days",
@@ -3052,9 +3691,6 @@ const enUS: Record<string, string> = {
   "settings.mcp.form.type.sse": "SSE (Server-Sent Events)",
   "settings.mcp.form.command": "Command",
   "settings.mcp.form.args": "Arguments (space separated)",
-  "settings.mcp.form.disabledTools": "Disabled tools (optional)",
-  "settings.mcp.form.disabledToolsHint":
-    "One tool name per line, spelled as the MCP server reports it (e.g. get_issue). A disabled tool is hidden from the model, and calling it directly fails. Leave empty to enable everything.",
   "settings.mcp.form.add": "Add",
   "settings.mcpServers.import.open": "Import MCP servers from external agents",
   "settings.mcpServers.import.title": "Import external agent MCP servers",
@@ -3130,7 +3766,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.modelSaveFailure": "Failed to save {provider} / {model}: {error}",
   "settings.modelProvider.cancel": "Cancel",
   "settings.modelProvider.name": "Name",
-  "settings.modelProvider.namePlaceholder": "e.g. DeepSeek",
+  "settings.modelProvider.namePlaceholder": "e.g. Z.ai GLM",
   "settings.modelProvider.addProviderTitle": "Add model provider",
   "settings.modelProvider.addProviderDescription":
     "Configure a custom API endpoint and initial model.",
@@ -3161,6 +3797,14 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.apiFormat.title.chatCompletions": "Chat completions",
   "settings.modelProvider.apiFormat.title.responses": "Responses",
   "settings.modelProvider.apiFormat.title.anthropicMessages": "Anthropic messages",
+  "settings.modelProvider.anthropicEndpoint": "Anthropic endpoint",
+  "settings.modelProvider.anthropicEndpointPlaceholder": "e.g. https://api.anthropic.com",
+  "settings.modelProvider.openaiEndpoint": "OpenAI endpoint",
+  "settings.modelProvider.openaiEndpointPlaceholder": "e.g. https://api.openai.com/v1",
+  "settings.modelProvider.geminiEndpoint": "Gemini endpoint",
+  "settings.modelProvider.geminiEndpointPlaceholder":
+    "e.g. https://generativelanguage.googleapis.com",
+  "settings.modelProvider.endpointNoMatch": "No matching endpoint",
   "settings.modelProvider.apiKey": "API key",
   "settings.modelProvider.apiKeyPlaceholder": "Enter API key",
   "settings.modelProvider.apiKeyDisabledHint": "Set an API key to enable this provider.",
@@ -3232,6 +3876,8 @@ const enUS: Record<string, string> = {
     "Not subscribed, enabled after subscription",
   "settings.modelProvider.codingPlan.status.purchased": "Subscribed",
   "settings.modelProvider.codingPlan.status.unavailable": "Fetch failed",
+  "settings.modelProvider.remoteOAuthNotReady":
+    "OAuth sign-in cannot be started directly on a remote Source. Configure an API key or sync the signed-in account from the local Source.",
   "settings.modelProvider.codingPlan.status.teamExpired":
     "Team plan expired. Contact your team administrator.",
   "settings.modelProvider.codingPlan.status.teamUnavailable":
@@ -3374,6 +4020,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.startPlan.expiresAt": "Expires {date}",
   "settings.modelProvider.codingPlan.openApiKeyProvider": "Open BigModel - API key",
   "settings.modelProvider.codingPlan.plansTitle": "Coding Plan",
+  "settings.modelProvider.codingPlan.billingDiscountInfo.open": "View 150% quota campaign details",
   "settings.modelProvider.codingPlan.audience.personal": "Individuals",
   "settings.modelProvider.codingPlan.audience.enterprise": "Enterprise",
   "settings.modelProvider.codingPlan.period.monthly": "Monthly",
@@ -3672,7 +4319,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.codingPlan.product.firstPromo": "First-time subscription discount",
   "settings.modelProvider.codingPlan.product.delay": "Effective {time}",
   "settings.modelProvider.codingPlan.zai.plan.lite.name": "Lite",
-  "settings.modelProvider.codingPlan.zai.plan.lite.summary": "3x higher Claude Pro usage limits",
+  "settings.modelProvider.codingPlan.zai.plan.lite.summary": "Base usage limits",
   "settings.modelProvider.codingPlan.zai.plan.pro.name": "Pro",
   "settings.modelProvider.codingPlan.zai.plan.pro.summary":
     "Everything in Lite, plus 5x Lite usage",
@@ -3680,7 +4327,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.codingPlan.zai.plan.max.summary":
     "Everything in Pro, plus 20x Lite usage",
   "settings.modelProvider.codingPlan.bigmodel.plan.lite.name": "Lite",
-  "settings.modelProvider.codingPlan.bigmodel.plan.lite.summary": "3x Claude Pro usage quota",
+  "settings.modelProvider.codingPlan.bigmodel.plan.lite.summary": "Base usage quota",
   "settings.modelProvider.codingPlan.bigmodel.plan.pro.name": "Pro",
   "settings.modelProvider.codingPlan.bigmodel.plan.pro.summary":
     "5x Lite usage quota + all Lite benefits",
@@ -3758,28 +4405,6 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.models": "Model list",
   "settings.modelProvider.modelsEmpty": "No models are configured. Add a model to use it in chat.",
   "settings.modelProvider.addModel": "Add model",
-  "settings.modelProvider.modelCatalog.button": "Fetch models",
-  "settings.modelProvider.modelCatalog.title": "Fetch models from provider",
-  "settings.modelProvider.modelCatalog.description":
-    "Reads this provider's models endpoint. Select the models to add. Fetching only reads the list and does not change your configuration.",
-  "settings.modelProvider.modelCatalog.loading": "Fetching model list…",
-  "settings.modelProvider.modelCatalog.retry": "Retry",
-  "settings.modelProvider.modelCatalog.empty":
-    "The provider returned no models. Check the Base URL and API format.",
-  "settings.modelProvider.modelCatalog.allExisting":
-    "Every fetched model is already in the list. Nothing to add.",
-  "settings.modelProvider.modelCatalog.selectAll": "Select all",
-  "settings.modelProvider.modelCatalog.clearAll": "Clear selection",
-  "settings.modelProvider.modelCatalog.alreadyExists": "Already added",
-  "settings.modelProvider.modelCatalog.addSelected": "Add {count} models",
-  "settings.modelProvider.modelCatalog.searchPlaceholder": "Search models",
-  "settings.modelProvider.modelCatalog.clearSearch": "Clear search",
-  "settings.modelProvider.modelCatalog.noMatch": "No models match your search.",
-  "settings.modelProvider.modelCatalog.partialFailure": "Some models could not be added",
-  "settings.modelProvider.hiddenModels.title": "Hidden models ({count})",
-  "settings.modelProvider.hiddenModels.description":
-    "These built-in models were deleted; restoring brings them back to the list and the model picker.",
-  "settings.modelProvider.hiddenModels.restore": "Restore",
   "settings.modelProvider.modelId": "Model ID",
   "settings.modelProvider.modelDisplayName": "Display name",
   "settings.modelProvider.modelApiFormat.anthropic": "Anthropic messages",
@@ -3826,6 +4451,14 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.newProviderName": "New provider",
   "settings.modelProvider.modelsPlaceholder": "One model name per line",
   "settings.modelProvider.modelsCount": "{count} models",
+  "settings.modelProvider.claudeMapping": "Claude model mapping",
+  "settings.modelProvider.claudeMappingDescription":
+    "Choose a matching model for each Claude model slot",
+  "settings.modelProvider.slot.haiku": "Haiku (light tasks)",
+  "settings.modelProvider.slot.sonnet": "Sonnet (general tasks)",
+  "settings.modelProvider.slot.opus": "Opus (complex tasks)",
+  "settings.modelProvider.slot.reasoning": "Reasoning (reasoning tasks)",
+  "settings.modelProvider.mappingNotSet": "Not set",
   "settings.modelProvider.presetTitle": "Providers",
   "settings.usage.sectionTitle": "Usage stats",
   "settings.usage.sectionDescription": "Built from local app session history.",
@@ -4138,6 +4771,7 @@ const enUS: Record<string, string> = {
   "settings.resourceFilter.all": "All",
   "settings.resourceFilter.enabled": "Enabled",
   "settings.resourceFilter.disabled": "Disabled",
+  "settings.skills.agent.common": "Common",
   "settings.skills.copyToCommon": "Copy to common",
   "settings.skills.removeFromCommon": "Remove from common",
   "settings.skills.copiedToCommon": "Copied to common skills.",
@@ -4147,6 +4781,8 @@ const enUS: Record<string, string> = {
   "settings.skills.delete.title": "Delete skill",
   "settings.skills.delete.description":
     'Delete "{name}"? This removes the skill folder from disk and cannot be undone.',
+  "settings.skills.agent.glm": "ZCode Agent",
+  "settings.skills.agent.unknown": "Unknown source",
   "settings.skills.create.open": "New skill",
   "settings.skills.create.taskCreateFailed":
     "Could not create a new task for the selected agent. Check availability and try again.",
@@ -4345,7 +4981,11 @@ const enUS: Record<string, string> = {
   "settings.subagents.model.select": "Select model",
   "settings.subagents.model.main": "Main",
   "settings.subagents.model.lite": "Lite",
+  "settings.subagents.permissionMode.default": "Default",
+  "settings.subagents.permissionMode.acceptEdits": "Accept edits",
   "settings.subagents.permissionMode.auto": "Auto",
+  "settings.subagents.permissionMode.bypassPermissions": "Bypass permissions",
+  "settings.subagents.permissionMode.dontAsk": "Don't ask",
   "settings.subagents.permissionMode.plan": "Plan",
   "settings.subagents.color.blue": "Blue",
   "settings.subagents.color.cyan": "Cyan",
@@ -4406,13 +5046,25 @@ const enUS: Record<string, string> = {
   "settings.plugin.source.plugin": "Plugin",
   "settings.plugins.description":
     "Enable or disable installed plugins. Plugins bundle skills, commands, hooks, and MCP servers.",
-  "settings.plugins.store.subtitle":
-    "Extend ZCode with skills, commands, and MCP servers from plugins",
   "settings.plugins.store.searchPlaceholder": "Search plugins",
   "settings.plugins.store.searchResults": "Search results ({count})",
   "settings.plugins.store.searchEmpty": "No plugins match your search",
   "settings.plugins.store.installedStrip": "Installed",
-  "settings.plugins.store.manageInstalled": "Manage installed",
+  "settings.plugins.store.manageInstalled": "Manage plugins",
+  "settings.plugins.store.segment.community": "Community",
+  "settings.plugins.store.communityEmpty": "No community plugins yet",
+  "settings.plugins.store.ui.open": "Open",
+  "settings.plugins.store.ui.unsupported": "Plugin UI is available in local desktop projects only.",
+  "settings.plugins.store.ui.needsSession":
+    "Open this plugin in an available session of the current project.",
+  "settings.plugins.store.ui.unavailable":
+    "No plugin UI is available in this project. Check whether the plugin is enabled.",
+  "settings.plugins.store.ui.chooseSurface": "Choose a plugin interface",
+  "settings.plugins.store.ui.preview": "Enlarge preview",
+  "settings.plugins.store.ui.capability":
+    "Provides interactive interfaces that open in the side pane.",
+  "settings.plugins.store.ui.title": "App plugins",
+  "settings.plugins.store.browseAll": "Browse all plugins",
   "settings.plugins.store.segment.public": "Public",
   "settings.plugins.store.segment.personal": "Personal",
   "settings.plugins.store.featured": "Featured",
@@ -4491,6 +5143,8 @@ const enUS: Record<string, string> = {
   "settings.plugins.marketplacePlugins.install": "Install",
   "settings.plugins.marketplacePlugins.installed": "Installed",
   "settings.plugins.marketplace.searchPlaceholder": "Search Plugins, Skills, MCPs...",
+  "settings.plugins.marketplace.recommendTitle": "Recommend",
+  "settings.plugins.marketplace.claudeCodePlugins": "Claude Code Plugins",
   "settings.plugins.marketplace.catalogLoading": "Loading plugins…",
   "settings.plugins.marketplace.sourceInfo.label": "Discover source information",
   "settings.plugins.marketplace.sourceInfo.title": "Discover uses GitHub marketplaces",
@@ -4779,6 +5433,7 @@ const enUS: Record<string, string> = {
   "settings.hooks.customJson": "Custom fields JSON",
   "settings.hooks.customJsonObjectError": "Custom fields must be a JSON object.",
   "settings.hooks.customJsonParseError": "Custom fields JSON parsing failed.",
+  "settings.plugins.zcodeOnly": "ZCode Agent only",
   "settingsSync.dialog.title": "Import Settings",
   "settingsSync.dialog.description":
     "Only missing items will be imported. Existing settings will be skipped automatically.",
@@ -4857,6 +5512,7 @@ const enUS: Record<string, string> = {
   "onboarding.step.pluginsImport": "Plugins",
   "onboarding.step.commandsImport": "Commands",
   "onboarding.step.agentsFile": "AGENTS.md",
+  "onboarding.step.agentSettings": "Agent settings",
   "onboarding.step.migration": "Migration",
   "onboarding.stepDescription.session":
     "Review what we found and choose sessions and workspaces to migrate.",
@@ -4868,6 +5524,7 @@ const enUS: Record<string, string> = {
     "Import selected plugins from external agents before the final migration.",
   "onboarding.stepDescription.commandsImport":
     "Import selected commands from external agents before the final migration.",
+  "onboarding.stepDescription.agentSettings": "Choose which agents' providers to bring in.",
   "onboarding.stepDescription.migration":
     "Start migration and wait while ZCode imports your selections.",
   "onboarding.sessions.empty":
@@ -4877,6 +5534,7 @@ const enUS: Record<string, string> = {
   "onboarding.sessions.chooseWorkspace": "Choose workspace",
   "onboarding.agentSettings.empty":
     "Nothing to import right now. Scan again or continue without migration.",
+  "onboarding.agentSettings.providersToggleAllAria": "Select or clear providers for all agents",
   "onboarding.agentSettings.categoryToggleAllAria": "Select or clear {category} for all agents",
   "onboarding.agentsFile.copyTitle": "Copy CLAUDE.md to AGENTS.md",
   "onboarding.agentsFile.sourceLabel": "Source",
@@ -4893,6 +5551,7 @@ const enUS: Record<string, string> = {
   "onboarding.finish.summary.label.skipped": "Skipped",
   "onboarding.finish.summary.label.failed": "Failed",
   "onboarding.footer.helper": "Skip anytime and resume migration from Settings later.",
+  "onboarding.footer.selection": "{count} items selected",
   "onboarding.footer.workspaceSelection": "{count} workspaces selected",
   "onboarding.action.continue": "Continue",
   "onboarding.action.beginMigration": "Begin migration",
@@ -4950,12 +5609,18 @@ const enUS: Record<string, string> = {
   "chat.draft.suggestedPrompt.pluginFlow.installReturnedEmpty": "No installed plugin was returned",
   "chat.draft.suggestedPrompt.pluginFlow.enableSucceeded": "Plugin enabled successfully",
   "chat.draft.suggestedPrompt.pluginFlow.enableFailed": "Plugin enable failed",
+  "chat.empty.newRemoteConnection": "New remote connection…",
+  "chat.remoteFolder.restored": "Returned to {device} · {project}",
+  "chat.remoteFolder.confirm": "Select folder",
+  "chat.remoteFolder.unresolved":
+    "This folder has no selected project. Choose another folder or cancel.",
+  "chat.empty.createProjectOnDevice": "Create project on this device",
   "chat.empty.workspaceMenu": "Choose workspace",
   "chat.empty.selectProject": "Select project",
   "chat.empty.workOutsideProject": "Work outside a project",
   "chat.empty.detachProject": "Remove current project selection",
-  "chat.empty.workspaceSearchPlaceholder": "Search workspaces",
-  "chat.empty.workspaceSearchEmpty": "No matching workspaces",
+  "chat.empty.workspaceSearchPlaceholder": "Search projects or devices",
+  "chat.empty.workspaceSearchEmpty": "No matching projects",
   "chat.empty.cliMenu": "Choose CLI",
   "chat.empty.home": "Home",
   "chat.empty.createWorkspace.title": "Create workspace",
@@ -4978,11 +5643,11 @@ const enUS: Record<string, string> = {
   "chat.send": "Send",
   "chat.scrollToBottom": "Scroll to bottom",
   "chat.message.edit": "Edit",
+  "chat.message.sentByScheduledTask": "Sent by scheduled task",
   "chat.message.restore": "Restore",
   "chat.message.copy": "Copy",
   "chat.message.copy.copied": "Copied",
   "chat.message.copy.requiresFull": "Load full message before copying",
-  "chat.message.copy.fullResponse": "Copy full response",
   "chat.message.like": "Like",
   "chat.message.liked": "Liked",
   "chat.message.dislike": "Dislike",
@@ -5030,6 +5695,11 @@ const enUS: Record<string, string> = {
   "chat.history.workingFor": "Working for {duration}",
   "chat.history.workedFor": "Worked for {duration}",
   "chat.history.worked": "Worked",
+  "chat.topicPreparation.preparing": "Preparing materials",
+  "chat.topicPreparation.waitingStop": "Waiting for the current run to stop",
+  "chat.topicPreparation.failed": "Material preparation failed",
+  "chat.topicPreparation.retry": "Retry",
+  "chat.history.topicInterrupted": "Interrupted by a new message",
   "chat.history.stopped": "Stopped",
   "chat.history.duration.day": "d",
   "chat.history.duration.hour": "h",
@@ -5037,6 +5707,7 @@ const enUS: Record<string, string> = {
   "chat.history.duration.second": "s",
   "chat.stop": "Stop",
   "chat.stop.short": "Stop",
+  "chat.qimenPan.rendering": "Rendering Qimen chart…",
   "chat.promptEnhance.title": "Enhance prompt",
   "chat.promptEnhance.description":
     "Refine the current draft with the selected model configuration.",
@@ -5086,8 +5757,6 @@ const enUS: Record<string, string> = {
   "chat.contextUsageDescription":
     "Prompt text, tool calls, and responses all share this context window.",
   "chat.contextUsage.cacheHitRate": "Average cache hit rate",
-  // Trigger label when only a claimable plan exists (no balance / Coding Plan sections).
-  "chat.contextUsage.claimTitle": "Claimable quota",
   "chat.contextUsage.breakdown": "Context sources",
   "chat.contextUsage.breakdown.messages": "Messages",
   "chat.contextUsage.breakdown.systemPrompt": "System prompt",
@@ -5209,10 +5878,18 @@ const enUS: Record<string, string> = {
   "chat.statusPanel.runningAgentsValue": "{count} running",
   "chat.statusPanel.runningAgentsValuePlural": "{count} running",
   "chat.statusPanel.runningStop": "Stop",
+  "chat.toolbar.connection.switchFailed": "Could not switch connection. Select again to retry.",
+  "chat.toolbar.combined.provider": "Provider",
+  "chat.toolbar.combined.models": "Models",
+  "chat.toolbar.combined.effort": "Effort",
+  "chat.toolbar.combined.selectModel": "Select model",
   "chat.toolbar.model.label": "Choose model",
   "chat.toolbar.draftConfigWriteFailed": "Failed to update configuration. Please try again.",
   "chat.toolbar.model.description":
     "Choose the model used by this task. The shortcut opens the model menu.",
+  "chat.agentSwitch.switchTo": "{provider}",
+  "chat.agentSwitch.success": "Switched to {provider}",
+  "chat.agentSwitch.failed": "Could not switch agent",
   "chat.toolbar.model.manageModels": "Manage models",
   "chat.toolbar.model.searchPlaceholder": "Search models...",
   "chat.toolbar.model.empty": "No models found",
@@ -5227,8 +5904,8 @@ const enUS: Record<string, string> = {
   "chat.toolbar.modelSwitch.lockedByRunningTask.short": "busy",
   "chat.goal.runningBlocked": "Set a goal after the current task finishes.",
   "chat.goal.planModeBlocked": "Goal is unavailable in Plan mode. Switch modes to continue.",
-  "chat.plan.attachmentsBlocked":
-    "The /plan shortcut supports text only for now. Remove attachments or context and try again.",
+  "chat.slash.app.plan.label": "Plan mode",
+  "chat.slash.app.plan.description": "Enable Plan mode",
   "chat.compact.runningBlocked": "Compact context after the current task finishes.",
   "chat.compact.queued": "Compaction queued and will run in order.",
   "chat.compact.duplicateBlocked": "A compaction is already running or queued.",
@@ -5275,6 +5952,8 @@ const enUS: Record<string, string> = {
   "chat.longRunning.elapsedSeconds": "Running for {seconds}s",
   "chat.longRunning.elapsedMinutesSeconds": "Running for {minutes}m {seconds}s",
   "chat.toolCall.status.pending": "Pending",
+  "chat.toolCall.progress.waited": "Waiting {duration}",
+  "chat.turn.runningFor": "Running for {duration}",
   "chat.toolCall.status.running": "Running",
   "chat.toolCall.status.completed": "Completed",
   "chat.toolCall.status.failed": "Failed",
@@ -5283,6 +5962,8 @@ const enUS: Record<string, string> = {
   "chat.toolCall.expandDetails": "Expand tool details",
   "chat.toolCall.collapseDetails": "Collapse tool details",
   "chat.toolCall.childCount": "{count} child tools",
+  "chat.toolCall.previewFailed": "Could not load preview",
+  "chat.toolCall.previewUnavailable": "Preview unavailable",
   "chat.toolCall.loading": "Loading...",
   "chat.toolCall.planFile": "Plan file",
   "chat.toolCall.result": "Result",
@@ -5294,6 +5975,10 @@ const enUS: Record<string, string> = {
   "chat.toolCall.mcp.parameters": "Parameters",
   "chat.toolCall.toolCall": "Tool call",
   "chat.toolCall.kind.read": "Read",
+  "chat.toolCall.explore.bucket.fetch.one": "fetch",
+  "chat.toolCall.explore.bucket.fetch.other": "fetches",
+  "chat.toolCall.kind.webFetch": "Fetch",
+  "chat.toolCall.webFetch.fetching": "Fetching",
   "chat.toolCall.kind.search": "Search",
   "chat.toolCall.kind.write": "Write",
   "chat.toolCall.kind.edit": "Edit",
@@ -5332,6 +6017,8 @@ const enUS: Record<string, string> = {
   "chat.toolCall.changesGroup.tool.one": "{count} tool",
   "chat.toolCall.changesGroup.tool.other": "{count} tools",
   "chat.toolCall.execute.terminal": "Terminal",
+  "chat.toolCall.execute.expandCommand": "Show full command",
+  "chat.toolCall.execute.collapseCommand": "Collapse",
   "chat.toolCall.execute.noOutput": "No output.",
   "chat.toolCall.executeGroup.command.one": "{count} command",
   "chat.toolCall.executeGroup.command.other": "{count} commands",
@@ -5461,6 +6148,9 @@ const enUS: Record<string, string> = {
     "{count} more subagents · list everyone in the run pane",
   "chat.toolCall.workflow.timeline.roster.door.list": "{count} more subagents · list them here",
   "chat.toolCall.workflow.timeline.roster.door.fold": "{count} more subagents · fold",
+  // 门后名单末尾的那一行：被淘汰的子代理没有行，差额在这里说明（本仓的轻量 intl 无 ICU 复数）。
+  "chat.toolCall.workflow.timeline.roster.unlisted.one": "1 more agent not listed",
+  "chat.toolCall.workflow.timeline.roster.unlisted.many": "{count} more agents not listed",
   "chat.toolCall.workflow.timeline.ledge.earlier": "{count} earlier phase(s), scrolled out of view",
   "chat.toolCall.workflow.timeline.ledge.later": "{count} later phase(s), scrolled out of view",
   "chat.toolCall.workflow.timeline.scrollbar": "Timeline scroll position",
@@ -5485,6 +6175,42 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.card.artifacts": "{count} artifacts",
   "chat.toolCall.workflow.digest.question": "{count} question",
   "chat.toolCall.workflow.digest.questions": "{count} questions",
+  // ── Holes (docs/dynamic-workflow/presentation.md "Holes on the timeline", transcript-and-notifications.md "The hole row's live state") ──
+  "chat.toolCall.workflow.digest.hole": "{count} hole to fill",
+  "chat.toolCall.workflow.digest.holes": "{count} holes to fill",
+  "chat.toolCall.workflow.card.hole": "{count} hole",
+  "chat.toolCall.workflow.card.holes": "{count} holes",
+  "chat.toolCall.workflow.hole.waiting": "waiting",
+  "chat.toolCall.workflow.hole.head.title": "Hole “{name}” · filled by the agent · {time}",
+  "chat.toolCall.workflow.hole.head.title.untimed": "Hole “{name}” · filled by the agent",
+  "chat.toolCall.workflow.hole.open": "Open the fill of “{name}”",
+  // Kind words of the FillWorkflowHole row (same table as CreateWorkflow / AmendWorkflow).
+  "chat.toolCall.workflow.hole.writing": "Filling hole",
+  "chat.toolCall.workflow.hole.revising": "Revising hole fill",
+  "chat.toolCall.workflow.hole.draft": "Hole draft",
+  "chat.toolCall.workflow.hole.awaitingConfirmation": "Hole fill awaiting confirmation",
+  "chat.toolCall.workflow.hole.ran": "Hole fill",
+  "chat.toolCall.workflow.hole.filled": "Hole filled",
+  "chat.toolCall.workflow.hole.phasesAdded": "{count} phases",
+  // The notification row's expanded body.
+  "chat.toolCall.workflow.hole.stands.between":
+    "The hole stands after “{before}” and before “{after}”;",
+  "chat.toolCall.workflow.hole.stands.after": "The hole stands after “{before}”;",
+  "chat.toolCall.workflow.hole.stands.before": "The hole stands before “{after}”;",
+  "chat.toolCall.workflow.hole.draftPath": "Draft",
+  "chat.toolCall.workflow.hole.waited": "Waiting · {time}",
+  "chat.backgroundResult.workflow.hole.waiting": "Workflow waiting for code",
+  "chat.backgroundResult.workflow.hole.filled": "Hole filled",
+  "chat.backgroundResult.workflow.hole.left": "Workflow left a hole",
+  // The run pane.
+  "chat.toolCall.workflow.run.hole.waitingFor": "Waiting for the agent to fill it",
+  "chat.toolCall.workflow.run.hole.filledAt": "Filled · {time}",
+  // The confirmation window.
+  "chat.permission.workflow.hole.title": "Fill this hole?",
+  "chat.permission.workflow.holes.label": "Holes",
+  "chat.permission.workflow.holes.note": "The run pauses at a hole until the agent fills it.",
+  // The sidebar run line.
+  "taskList.workflowRun.holeWaiting": "{name} · waiting",
   "chat.toolCall.workflow.digest.showAgents": "Show subagents",
   "chat.toolCall.workflow.digest.hideAgents": "Hide subagents",
   "chat.toolCall.workflow.completion.time": "time",
@@ -5500,10 +6226,13 @@ const enUS: Record<string, string> = {
   "chat.workflowLaunch.startedByYou": "Started by you from the workflows hub",
   "chat.workflowLaunch.settingsChangedByYou": "Settings changed by you",
   "chat.workflowLaunch.settings.model": "Subagent model",
-  "chat.workflowLaunch.settings.limit": "At once, at most",
+  "chat.workflowLaunch.settings.limit": "Max concurrency",
   "chat.workflowLaunch.settings.sessionModel": "session model",
-  "chat.workflowLaunch.settings.machineLimit": "this machine's limit",
-  "chat.workflowLaunch.settings.machineLimitValue": "{n} (this machine's limit)",
+  "chat.workflowLaunch.settings.defaultLimit": "default",
+  "chat.workflowLaunch.settings.defaultLimitValue": "default {n}",
+  // ── 可复用工作流（docs/dynamic-workflow/launch.md）：SaveWorkflow / ListSavedWorkflows
+  // 的聊天卡。overwrite 这个词由保存确认窗共用——同一次保存在两个面上必须同名，
+  // 照 run 卡复用 chat.toolCall.workflow.run.status.* 词汇表的同一条先例。
   "chat.toolCall.workflow.save.saving": "Saving workflow",
   "chat.toolCall.workflow.save.saved": "Saved workflow",
   "chat.toolCall.workflow.save.overwrite": "overwrite",
@@ -5541,6 +6270,7 @@ const enUS: Record<string, string> = {
     "Workflows saved in your open projects. Fill in the arguments and run them again.",
   "workflows.hub.sectionTitle": "Saved workflows",
   "workflows.hub.refresh": "Refresh",
+  "workflows.hub.openSettings": "Workflow settings",
   "workflows.hub.createViaChat": "Create in chat",
   "workflows.hub.group.current": "Current",
   "workflows.hub.global.title": "Global",
@@ -5744,7 +6474,10 @@ const enUS: Record<string, string> = {
   "chat.backgroundResult.workflow.stall.body":
     "No model request in this run has succeeded for {minutes} min. It is still running and retrying with backoff; stop it from the run card if you no longer need it.",
   "chat.backgroundResult.workflow.stall.reason": "Retry reason",
-  "chat.backgroundResult.workflow.stall.cap": "Current fan-out",
+  "chat.backgroundResult.workflow.stall.cap": "Max concurrency",
+  // 主代理闲着、run 还欠着决定时的提醒：计数词复用 digest.question(s) / card.hole(s)。
+  "chat.backgroundResult.workflow.blocked": "Workflow waiting on the agent",
+  "chat.backgroundResult.workflow.blocked.openFor": "open for {minutes} min",
   "chat.backgroundResult.workflow.waiting": "Subagent is waiting for an answer",
   "chat.backgroundResult.workflow.answered": "Subagent question answered",
   "chat.backgroundResult.workflow.asked": "Subagent asked a question",
@@ -5764,9 +6497,6 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.resolveQuestion.outcome": "Outcome",
   "chat.toolCall.workflow.resolveQuestion.fallbackName": "Answer",
   "chat.toolCall.workflow.openRunDetails": "Open run details",
-  // Workflow hole row (F6 hole variant, from upstream 3.15.1, Apache-2.0).
-  "chat.toolCall.workflow.hole.draftPath": "Draft",
-  "chat.toolCall.workflow.hole.waited": "Waiting · {time}",
   "chat.toolCall.workflow.run.status.pending": "Pending",
   "chat.toolCall.workflow.run.status.running": "Running",
   "chat.toolCall.workflow.run.status.completed": "Completed",
@@ -5787,6 +6517,9 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.usage.label": "Usage",
   "chat.toolCall.workflow.run.usage.tokens": "{tokens} tokens",
   "chat.toolCall.workflow.run.usage.value": "{tokens} tokens · {steps} steps",
+  // 实例表撞界后卡与详情页各有的那一句：停的是每一步的**详情**，不是 run，
+  // 它上面那些计数已经把表外的实例算进来了（docs/dynamic-workflow/presentation.md）。
+  "chat.toolCall.workflow.run.truncated": "Details shown for {shown} of {total} steps",
   "chat.toolCall.workflow.run.cancel": "Stop run",
   "chat.toolCall.workflow.run.cancelling": "Stopping…",
   "chat.toolCall.workflow.run.cancelDisabled": "Only a running workflow can be stopped.",
@@ -5818,6 +6551,52 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.resume": "Resume run",
   "chat.toolCall.workflow.run.resumeHint":
     "Continue from where it stopped: finished steps are reused, interrupted steps run again.",
+  // 「配置」弹层（docs/dynamic-workflow/presentation.md「The settings popover」）：改子代理模型与最大并发数，
+  // 应用即一次 GUI 修订（新 run 接着跑，旧 run 停下，已完成的步骤作缓存带过去）。
+  // 完成卡与 run 侧板上的「保存 / 再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
+  // 「Saving the run, and running it again」）。两条路：交给 ZCode 提炼，或按原样直接写下去。
+  "chat.toolCall.workflow.saveRun.action": "Save",
+  "chat.toolCall.workflow.saveRun.runAgain": "Run again",
+  "chat.toolCall.workflow.saveRun.starting": "Starting…",
+  "chat.toolCall.workflow.saveRun.chip": "Saved",
+  "chat.toolCall.workflow.saveRun.chip.hint": "View in the workflow hub",
+  "chat.toolCall.workflow.saveRun.announce.project": "Saved to the project",
+  "chat.toolCall.workflow.saveRun.announce.global": "Saved as a global workflow",
+  "chat.toolCall.workflow.saveRun.title": "Save workflow",
+  "chat.toolCall.workflow.saveRun.lead": "Let ZCode refine and save it",
+  "chat.toolCall.workflow.saveRun.lead.hint":
+    "ZCode distills a reusable workflow for you, then asks you to confirm.",
+  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to ZCode…",
+  "chat.toolCall.workflow.saveRun.lead.unsupported": "This agent cannot save directly.",
+  "chat.toolCall.workflow.saveRun.or": "or save it as is",
+  "chat.toolCall.workflow.saveRun.name": "Name",
+  "chat.toolCall.workflow.saveRun.name.placeholder": "pr-layered-review",
+  "chat.toolCall.workflow.saveRun.name.helper": "Letters, digits, - _ . ; 64 characters at most",
+  "chat.toolCall.workflow.saveRun.name.invalid": "Only letters, digits and - _ .",
+  "chat.toolCall.workflow.saveRun.scope.remoteOnly":
+    "A remote project can only save into the project.",
+  "chat.toolCall.workflow.saveRun.description": "Description",
+  "chat.toolCall.workflow.saveRun.description.helper":
+    "When-to-use and arguments can be added later in the workflow hub.",
+  "chat.toolCall.workflow.saveRun.consequence":
+    "Writes {path}; afterwards it runs again by name from Automations › Workflows.",
+  "chat.toolCall.workflow.saveRun.overwrite":
+    "This project already has a workflow of this name; saving overwrites it. Its run records stay.",
+  "chat.toolCall.workflow.saveRun.shadowing": "{text}.",
+  "chat.toolCall.workflow.saveRun.submit": "Save as is",
+  "chat.toolCall.workflow.saveRun.submit.overwrite": "Overwrite and save as is",
+  "chat.toolCall.workflow.saveRun.submit.saving": "Saving…",
+  "chat.toolCall.workflow.saveRun.error.invalid_name": "Only letters, digits and - _ .",
+  "chat.toolCall.workflow.saveRun.error.run_not_found":
+    "This run has no record here, so it cannot be saved directly.",
+  "chat.toolCall.workflow.saveRun.error.script_missing":
+    "This run did not keep its script, so use the path above.",
+  "chat.toolCall.workflow.saveRun.error.target_exists":
+    "A workflow of this name exists; confirm the overwrite and save again.",
+  "chat.toolCall.workflow.saveRun.error.compile_failed":
+    "The script did not pass typecheck; nothing was written.",
+  "chat.toolCall.workflow.saveRun.error.write_error": "Writing failed; nothing was saved.",
+  "chat.toolCall.workflow.saveRun.error.generic": "Saving failed.",
   "chat.toolCall.workflow.run.configure": "Configure",
   "chat.toolCall.workflow.run.settings.title": "Configure workflow",
   "chat.toolCall.workflow.run.settings.model": "Subagent model",
@@ -5826,11 +6605,11 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.settings.model.unavailable": "unavailable",
   "chat.toolCall.workflow.run.settings.model.noCatalog":
     "This agent has no model catalog; subagents stay on the session model.",
-  "chat.toolCall.workflow.run.settings.limit": "Subagents at once, at most",
-  "chat.toolCall.workflow.run.settings.limit.ceiling": "this machine allows up to {n}",
-  "chat.toolCall.workflow.run.settings.limit.atCeiling": "= this machine's limit",
-  "chat.toolCall.workflow.run.settings.limit.decrease": "Fewer at once",
-  "chat.toolCall.workflow.run.settings.limit.increase": "More at once",
+  "chat.toolCall.workflow.run.settings.limit": "Max concurrency",
+  "chat.toolCall.workflow.run.settings.limit.default": "default {n}",
+  "chat.toolCall.workflow.run.settings.limit.atDefault": "= default",
+  "chat.toolCall.workflow.run.settings.limit.decrease": "Lower max concurrency",
+  "chat.toolCall.workflow.run.settings.limit.increase": "Raise max concurrency",
   "chat.toolCall.workflow.run.settings.consequence.running":
     "Stops this run and starts a new one with these settings; finished steps are kept.",
   "chat.toolCall.workflow.run.settings.consequence.pending":
@@ -5839,6 +6618,9 @@ const enUS: Record<string, string> = {
     "Continues as a new run with these settings; finished steps are kept.",
   "chat.toolCall.workflow.run.settings.consequence.errored":
     "Retries as a new run with these settings; finished steps are kept.",
+  // 只改并发上限、而且运行正在跑：就地生效（docs/dynamic-workflow/concurrency.md）。
+  "chat.toolCall.workflow.run.settings.consequence.concurrencyLive":
+    "Applies to this run right away; no new run is started.",
   "chat.toolCall.workflow.run.settings.apply": "Apply",
   "chat.toolCall.workflow.run.settings.applying": "Applying…",
   "chat.toolCall.workflow.run.settings.rejection.not_found":
@@ -5865,7 +6647,7 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.settingsChange.model": "subagents on {model}",
   "chat.toolCall.workflow.settingsChange.modelSession": "subagents back on the session model",
   "chat.toolCall.workflow.settingsChange.limit": "at most {n} at once",
-  "chat.toolCall.workflow.settingsChange.limitCeiling": "limit back to this machine's default",
+  "chat.toolCall.workflow.settingsChange.limitDefault": "limit back to the default",
   "chat.toolCall.workflow.run.result.title": "Result",
   "chat.toolCall.workflow.run.result.completedHint":
     "This run finished. Its result was delivered to the conversation as a background result message.",
@@ -5887,9 +6669,13 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.previousVersion": "Previous version",
   "chat.toolCall.workflow.run.artifacts.nextVersion": "Next version",
   "chat.toolCall.workflow.run.artifacts.open": "Open artifact",
+  // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
+  // 落的是宿主 ~/.zcode/tmp 下的副本，不是用户挑的位置。
   "chat.toolCall.workflow.run.artifacts.reveal": "Reveal in workspace",
   "chat.toolCall.workflow.run.artifacts.copy": "Copy",
   "chat.toolCall.workflow.run.artifacts.copied": "Copied",
+  "chat.toolCall.workflow.run.artifacts.openAsFile": "Open as file",
+  "chat.toolCall.workflow.run.artifacts.openAsFileFailed": "Could not open this artifact as a file",
   "chat.toolCall.workflow.run.artifacts.openInBrowser": "Open in browser",
   "chat.toolCall.workflow.run.artifacts.openInBrowserNote":
     "Opens the copy in your workspace, not the bytes pinned to this version.",
@@ -5975,11 +6761,14 @@ const enUS: Record<string, string> = {
     "Waiting for provider ({reason}) · retry in {seconds}s",
   "chat.toolCall.workflow.run.event.nodeExecuting": "Request sent",
   "chat.toolCall.workflow.run.event.concurrencyChanged": "Concurrency {previous} → {next}",
+  // 上一条是治理器在压共享桶；这一条是用户改了这次 run 自己的上限（就地生效，不另起一次运行）。
+  "chat.toolCall.workflow.run.event.runCapsChanged": "Concurrency limit {previous} → {next}",
   "chat.toolCall.workflow.run.throttle.reason.rateLimited": "rate limited",
   "chat.toolCall.workflow.run.throttle.reason.overloaded": "overloaded",
   "chat.toolCall.workflow.run.throttle.reason.offpeak": "off-peak queue",
   "chat.toolCall.workflow.run.throttle.reason.transient": "transient error",
-  "chat.toolCall.workflow.run.concurrency.label": "Concurrency {cap}",
+  // 芯片上的数是一条界（min(共享 cap, 本 run 的 limit)），不是此刻在跑的个数。
+  "chat.toolCall.workflow.run.concurrency.label": "Max concurrency {cap}",
   "chat.toolCall.workflow.run.concurrency.cooldown": "cooling down until {time}",
   "chat.toolCall.workflow.run.subagentModel.label": "Subagents {model}",
   "chat.toolCall.workflow.subagentModel.withLevel": "{model} · thinking {level}",
@@ -5989,6 +6778,8 @@ const enUS: Record<string, string> = {
   "chat.toolCall.todo.updated": "Updated todo",
   "chat.toolCall.search.find": "Find",
   "chat.toolCall.search.findWithQuery": "Find {query}",
+  "chat.toolCall.search.tools": "Search tools",
+  "chat.toolCall.search.toolsWithQuery": "Search tools: {query}",
   "chat.toolCall.search.list": "List",
   "chat.toolCall.search.listIn": "List in {cwd}",
   "chat.toolCall.search.searching": "Searching",
@@ -6059,6 +6850,8 @@ const enUS: Record<string, string> = {
   "chat.attachments.clipboardText.description": "{lineCount} lines",
   "chat.attachments.preview.open": "Open image preview",
   "chat.attachments.preview.openVideo": "Open video preview",
+  "chat.attachments.preview.openText": "Open text attachment",
+  "chat.attachments.topicHistory": "Topic history · {count} messages",
   "chat.attachments.preview.openPdf": "Open PDF preview",
   "chat.attachments.preview.title": "Image preview",
   "chat.attachments.preview.pdfLoading": "Loading PDF preview…",
@@ -6070,7 +6863,7 @@ const enUS: Record<string, string> = {
   "markdownImage.download": "Download image",
   "markdownImage.downloadFailed": "Failed to download image",
   "markdownImage.downloadStarted": "Image download started",
-  "markdownImage.downloadSucceeded": "Image saved to {path}",
+  "markdownImage.downloadSucceeded": "Download complete",
   "chat.attachments.preview.loading": "Loading image preview…",
   "chat.attachments.preview.videoLoading": "Loading video preview…",
   "chat.attachments.preview.unavailable": "This image is no longer available to preview.",
@@ -6157,6 +6950,8 @@ const enUS: Record<string, string> = {
   "chat.error.feedback": "Report issue",
   "chat.error.feedbackOpened": "Feedback opened with the error context attached",
   "chat.error.noAvailableModel": "No model available. Upgrade or set a custom model.",
+  "chat.error.remoteNoAvailableModel":
+    "This remote device has no available model yet. Configure models on this computer first; they will sync to the remote device automatically after you save.",
   "chat.error.sendFailed": "Failed to send. Try again later.",
   "chat.error.modelSettings": "Model settings",
   "chat.error.setModels": "Set",
@@ -6204,11 +6999,6 @@ const enUS: Record<string, string> = {
     "Do not ask again for matching commands in this project",
   "chat.permission.allowCommand": "Always allow this command",
   "chat.permission.allowForProject": "Always allow in this project",
-  // ── task-73 Tool & Permissions: granted-scope visualization ──
-  // The user must see how far a "remember" reaches. A rule without ruleContent matches
-  // every call of that tool; the previous implementation silently dropped it from the
-  // visualization (security audit task-72 P1 — all three UI fallbacks failed).
-  "chat.permission.ruleScope.anyToolCommand": "Any {toolName} command",
   "chat.permission.cua.allowForProject": "Always allow Computer Use in this project",
   "chat.permission.cua.allowForProject.description":
     "Do not ask again for official Computer Use actions in this project",
@@ -6232,6 +7022,30 @@ const enUS: Record<string, string> = {
   "chat.permission.workflow.amends.scriptUnchanged": "script unchanged",
   "chat.permission.workflow.maxConcurrency": "At most {count} subagents at once",
   "chat.permission.workflow.subagentModel": "Subagents run on {model}",
+  // 脚本给某些子代理点名了模型时（docs/dynamic-workflow/launch.md「Models the script names」）：那些
+  // 名字不列（作者模型的选择），这一句只改口「默认」——它不再替每一个子代理说话。
+  "chat.permission.workflow.subagentModelDefault": "By default, subagents run on {model}",
+  // 确认窗里可调的两句（docs/dynamic-workflow/presentation.md「The confirmation window」）：句中的值
+  // 就是控件，所以句子被拆成控件前后的两截；改过的那一行句尾多一截「· 原为 X ↺」。
+  "chat.permission.workflow.settings.model.lead": "Subagents run on",
+  "chat.permission.workflow.settings.model.noCatalog": "Subagents stay on the session model",
+  "chat.permission.workflow.settings.model.noCatalogReason": "this agent has no model catalog",
+  "chat.permission.workflow.settings.model.leadDefault": "By default, subagents run on",
+  "chat.permission.workflow.settings.model.noCatalogDefault":
+    "By default, subagents stay on the session model",
+  "chat.permission.workflow.settings.limit.lead": "At most",
+  "chat.permission.workflow.settings.limit.trail": "subagents at once",
+  "chat.permission.workflow.settings.limit.none": "no limit of its own",
+  "chat.permission.workflow.settings.was": "was {value}",
+  "chat.permission.workflow.settings.reset": "Back to the proposed value",
+  // 改过设置后前两个选项换描述（docs/dynamic-workflow/launch.md「The options」）：会话免确认只管
+  // 「以后不再问」，调整只随这一次应答走。
+  "chat.permission.workflow.allowOnce.adjusted": "Run once with the adjusted settings",
+  "chat.permission.workflow.allowForSession.adjusted":
+    "This run with the adjusted settings; later runs are not asked and carry their own",
+  // ── 可复用工作流（docs/dynamic-workflow/launch.md）──
+  // saved 来源徽标（运行确认窗）：只说明脚本来自哪个文件、带了什么实参。
+  // 它不表达任何信任——保存不产生信任，已保存的工作流照样过完整的运行确认。
   "chat.permission.workflow.saved.badge": "Saved workflow",
   "chat.permission.workflow.saved.scope.project": "project",
   "chat.permission.workflow.saved.args": "Arguments",
@@ -6249,8 +7063,15 @@ const enUS: Record<string, string> = {
   "chat.permission.workflow.save.args.requiredYes": "Required",
   "chat.permission.workflow.save.args.requiredNo": "Optional",
   "chat.permission.workflow.save.args.default": "Default",
+  "chat.permission.workflow.save.args.showAll": "Show all {count} arguments",
+  "chat.permission.workflow.save.args.showFewer": "Show fewer arguments",
+  "chat.permission.workflow.save.showMore": "Show more",
+  "chat.permission.workflow.save.showLess": "Show less",
   "chat.interactionOrigin.subagent": "Subagent",
   "chat.interactionOrigin.subagent.title": "Request from subagent: {agentType}",
+  "chat.interactionOrigin.subagent.named": "Subagent · {description}",
+  "chat.interactionOrigin.subagent.titleNamed":
+    "Request from subagent: {agentType} · {description}",
   "chat.cuaPermission.openAccessibility": "Open Accessibility Settings",
   "chat.cuaPermission.openScreenRecording": "Open Screen Recording",
   "chat.cuaPermission.opening": "Opening...",
@@ -6282,19 +7103,10 @@ const enUS: Record<string, string> = {
   "chat.askQuestion.noAnswerProvided": "No answer provided",
   "chat.askQuestion.autoContinued": "No answer; continued automatically",
   "chat.permission.allowOnce.description": "Allow only this time",
-  // ── task-73: make the real scope of "remember" visible (user decision "position A") ──
-  // The previous copy ("Do not ask again for the same command") read like "this once" or
-  // "the same request", while the grant is actually "matching requests in this project,
-  // permanently". Prefix rules reach further (npm install:* covers any package), and a rule
-  // without ruleContent covers the whole tool. The dialog now inlines prefix/exact/any scope,
-  // so these three descriptions are the fallback when no scope is rendered and must state
-  // both the scope and the persistence themselves.
-  "chat.permission.allowAlways.description.command":
-    "Do not ask again for the same command in this project",
-  "chat.permission.allowAlways.description.file":
-    "Do not ask again for the same file operation in this project",
+  "chat.permission.allowAlways.description.command": "Do not ask again for the same command",
+  "chat.permission.allowAlways.description.file": "Do not ask again for the same file operation",
   "chat.permission.allowAlways.description.generic":
-    "Do not ask again for this kind of request in this project",
+    "Do not ask again for the same permission request",
   "chat.permission.denyOnce.description": "Reject it for now",
   "chat.permission.denyAlways.description.command": "Always reject the same command in the future",
   "chat.permission.denyAlways.description.file":
@@ -6308,11 +7120,17 @@ const enUS: Record<string, string> = {
   "chat.permission.fileChange.mixedMany": "Update {count} files",
 
   // Modes
+  "mode.default": "Default",
   "mode.plan": "Plan",
+  "mode.acceptEdits": "Accept edits",
+  "mode.label.glm.default": "Default",
   "mode.label.glm.build": "Ask before changes",
   "mode.label.glm.edit": "Edit automatically",
   "mode.label.glm.plan": "Plan mode",
+  "mode.label.glm.guarded": "Autonomous mode",
+  "mode.description.glm.guarded": "Ask when there’s risk",
   "mode.label.glm.yolo": "Full access",
+  "mode.description.glm.default": "Use default confirmations.",
   "mode.description.glm.build": "Ask before file changes.",
   "mode.description.glm.edit": "Edit files automatically.",
   "mode.description.glm.plan": "Plan before editing.",
@@ -6355,6 +7173,10 @@ const enUS: Record<string, string> = {
     "The current model is no longer available. Select an available model from the current model list to continue.",
   "zcode.error.ZCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
     "The current model is unavailable. Check whether the current account has been added to the project member list.",
+  "zcode.error.CLAUDE_UNKNOWN_COMMAND":
+    "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
+  "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
+    "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
   "zcode.error.providerBusiness.1006": "Your login session has expired. Please sign in again.",
   "zcode.error.providerBusiness.1005":
     "Today's free plan quota has been used up. Upgrade to continue now, or wait for the quota to reset.",
@@ -6364,8 +7186,6 @@ const enUS: Record<string, string> = {
     "You're sending requests too quickly. Please try again later.",
   "zcode.error.providerBusiness.3001":
     "The request parameters are invalid. Check the input and try again.",
-  "zcode.error.providerBusiness.3007":
-    "The request was rejected by the gateway security check. Please try again later or contact support.",
   "zcode.error.providerBusiness.3008":
     "The system is busy. Please switch models, upgrade your account, or try again later.",
   "zcode.error.providerBusiness.3009":
@@ -6374,8 +7194,6 @@ const enUS: Record<string, string> = {
     "The system is busy. Please switch models, upgrade your account, or try again later.",
   "zcode.error.providerBusiness.3102":
     "This run exceeded the maximum single-run time. Create a new off-peak task to continue.",
-  "zcode.error.modelSuspiciousEmpty":
-    "The model returned no content (often caused by an expired token or plan issues). Please send again.",
   "zcode.error.providerBusiness.2007":
     "The upstream service is temporarily unavailable. Please try again later.",
   "zcode.error.providerBusiness.429":
@@ -6395,6 +7213,20 @@ const enUS: Record<string, string> = {
   "resourceManager.processCount": "{count} processes",
   "resourceManager.cpu": "CPU",
   "resourceManager.memory": "Memory",
+  "resourceManager.network": "Network",
+  "resourceManager.network.description":
+    "Records local app requests while this window is open. Keeps the latest 1,000.",
+  "resourceManager.network.filter": "Filter by URL, process, PID or method",
+  "resourceManager.network.clear": "Clear",
+  "resourceManager.network.unavailable": "Network requests are unavailable",
+  "resourceManager.network.count": "{count} requests · {dropped} evicted or dropped",
+  "resourceManager.network.previous": "Previous",
+  "resourceManager.network.next": "Next",
+  "resourceManager.network.time": "Time",
+  "resourceManager.network.process": "Process / PID",
+  "resourceManager.network.method": "Method",
+  "resourceManager.network.empty": "Waiting for new network requests…",
+  "resourceManager.network.noMatches": "No matching requests",
   "resourceManager.storage": "Storage",
   "resourceManager.appUsage": "ZCode",
   "resourceManager.systemUsage": "System",
@@ -6676,7 +7508,7 @@ const enUS: Record<string, string> = {
   "feedback.submit.simple.logsTitle": "Logs",
   "feedback.submit.simple.logsLabel": "Upload diagnostic logs",
   "feedback.submit.simple.logsHint":
-    "Off by default. Uploads today's diagnostic logs, excluding databases, configuration files and model conversation traces. Automatic redaction may not remove all business information. Please choose carefully.",
+    "On by default; you can turn it off. Uploads today's diagnostic logs, a safe projection of CLI configuration, and today's model-call traces; databases are excluded. Automatic redaction may not remove all business information. Please choose carefully.",
   "feedback.submit.simple.footerHint": "Track progress later in My feedback.",
   "feedback.submit.missingDescription": "Please describe the issue first",
   "feedback.submit.addScreenshot": "Add screenshot",
@@ -7211,6 +8043,345 @@ const enUS: Record<string, string> = {
   "cuaPermission.ready.sessionValidationHint":
     "ZCode will verify the Computer Use tools against the exact session when your first session starts.",
   "settings.computerUse.title": "Computer Use",
+  "settings.computerUse.toggleLabel": "Enable Computer Use",
+  "settings.computerUse.toggleDescription":
+    "Turning this on enables Computer Use — its MCP server and skills.",
+  "settings.computerUse.composerEntry.label": "Show Computer Use button in the composer",
+  "settings.computerUse.composerEntry.description": "When off, the composer button is hidden.",
+  "settings.computerUse.composerEntry.requiresEnabled":
+    "Turn on Computer Use first to show this button in the composer.",
+  "settings.computerUse.composerEntry.saveFailed": "Failed to save: {error}",
+  "settings.computerUse.pluginDisabledHint":
+    "The Computer Use plugin is not enabled. Enable it in Plugins to use Computer Use.",
+  "settings.computerUse.unsupported.title": "Computer Use is unavailable here",
+  "settings.computerUse.unsupported.remoteDescription":
+    "Computer Use is not yet supported for SSH, WSL, Docker, or other remote environments. Switch to a local macOS or Windows workspace.",
+  "settings.computerUse.unsupported.linuxDescription":
+    "Computer Use is not yet supported on Linux desktops. Switch to a local macOS or Windows workspace.",
+  "settings.computerUse.unsupported.badge": "Unavailable here",
+  "settings.computerUse.unsupported.group": "Unavailable built-in capabilities",
+  "scheduledPreview.keepAwakeEnabled": "Keep awake enabled",
+  "scheduledPreview.keepAwakeDisabled": "Keep awake disabled",
+  "scheduledPreview.toast.running": "Running “{title}”…",
+  "scheduledPreview.toast.view": "View",
+  "scheduledPreview.addSchedule": "Add schedule",
+  "chat.highspeed.label": "Highspeed",
+  "chat.highspeed.expiresAt": "Highspeed card expires at {time}",
+  "chat.highspeed.modelLocked": "Model is locked while Highspeed is active",
+  "chat.highspeed.originalModel": "Original model: {model}",
+  "chat.highspeed.remainingTime": "Time remaining: {time}",
+  "chat.highspeed.generatedBy": "Generated by Highspeed",
+  "chat.highspeed.shareAction": "Share",
+  "chat.highspeed.viewAction": "View",
+  "chat.highspeed.share": "Share this accelerated run",
+  "chat.highspeed.shareFailed": "Could not share. Try again later.",
+  "chat.highspeed.savedDuration": "About {duration} saved",
+  "chat.highspeed.statusTag": "HighSpeed",
+  "chat.highspeed.cardExpiredFallback":
+    "The Highspeed card has expired. The rest of this turn will continue with the original model.",
+  "chat.highspeed.requestFailedFallback":
+    "Highspeed is temporarily unavailable. The rest of this turn will continue with the original model.",
+  "globalNotice.highspeed.title": "Highspeed run completed",
+  "globalNotice.highspeed.summary": "{tokens} output tokens · {duration}s",
+  "globalNotice.highspeed.tagline": "Share a Highspeed moment",
+  "globalNotice.highspeed.sidebarTagline": "Share your speedup",
+  "globalNotice.highspeed.share": "Share",
+  "globalNotice.highspeed.view": "View",
+  "globalNotice.highspeed.imageCopied": "Acceleration stats copied",
+  "globalNotice.highspeed.imageCopyFailed": "Could not copy image. Try again.",
+  "globalNotice.highspeed.textCopied": "Share text copied",
+  "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
+  "globalNotice.highspeed.copyImage": "Copy image",
+  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
+  "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
+  "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
+  "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
+  "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
+  "globalNotice.highspeed.copySummary":
+    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
+  "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
+  "globalNotice.highspeed.close": "Close Highspeed share card",
+  ...requestSecurityMessagesEnUS,
+
+  // ── CE 线增量键（社区版专属功能文案；官方底座之上追加，勿并入官方段）──
+  "chat.toolbar.thoughtLevel.value.auto": "Auto",
+  "chat.toolbar.thoughtLevel.auto.description":
+    "Top level; drops one level on tool-continuation turns. Applies to new sessions.",
+  "chat.toolbar.streamSpeed.title":
+    "Output speed is measured from the first token to reply completion (excludes tool runs and waits); cache hit is the session cumulative stat",
+  "chat.toolbar.streamSpeed.cache": "cache hit",
+  "codeBlock.sendToTerminal": "Send to terminal (won't run until you press Enter there)",
+  "codeBlock.sendToTerminalElevated":
+    "Send to terminal (needs administrator privileges; won't run until you press Enter there)",
+  "codeBlock.sendToTerminalDelivered":
+    "Sent to the terminal. Review it there and press Enter to run.",
+  "codeBlock.sendToTerminalNeedsBracketedPaste":
+    "This multi-line command can't be pasted safely in one go here. Send it line by line or copy it manually.",
+  "codeBlock.sendToTerminalUnavailable":
+    "No integrated terminal is available. Open a terminal first.",
+  "codeBlock.sendToTerminalOpenFailed": "Could not open a terminal. Please try again.",
+  "update.toast.unsupportedPlatform":
+    "Auto-update isn't available on macOS: download the unsigned installer from GitHub Releases (allow Gatekeeper on first launch).",
+  "workspaceRuntime.starting.title": "Starting workspace…",
+  "workspaceRuntime.failed.title": "Failed to start “{workspace}”",
+  "workspaceRuntime.failed.reasonUnavailable":
+    "No specific reason was reported. Retry once; check logs if it keeps failing.",
+  "workspaceRuntime.failed.retry": "Retry",
+  "workspaceRuntime.notStarted.title":
+    "Not started (opening starts it; other workspaces are unaffected)",
+  "workspaceRuntime.notStarted.persistedSessions":
+    "{count} sessions on record, last active {activity} ago",
+  "workspaceRuntime.notStarted.noSessions": "No sessions yet; open it to create a task",
+  "workspaceRuntime.notStarted.open": "Open and start",
+  "workspaceSidebar.registry.showAll": "Show all workspaces ({count} more)",
+  "workspaceSidebar.registry.hideAll": "Hide workspaces not opened here",
+  "workspaceSidebar.registry.loadFailed": "Failed to read the workspace list: {reason}",
+  "workspaceSidebar.registry.retry": "Reload",
+  "remotePanel.entry.title": "Remote control",
+  "remotePanel.entry.status.off": "Off",
+  "remotePanel.entry.status.running": "Running",
+  // Restored in ce.4: once the connection plane landed, waiting finally has a producer —
+  // "service is running AND zero connected devices" (GET …/connections returns an empty array).
+  // Same meaning as upstream webRemoteControl.statusDetail.idle; wording is our own.
+  "remotePanel.entry.status.waiting": "Waiting for connection",
+  "remotePanel.title": "Remote control",
+  "remotePanel.subtitle": "Scan or open the link to use the workbench on this machine",
+  // Tabs (task-93): two different remote paths, side by side rather than merged.
+  // Naming red line: never call our path "self-hosted" in the UI — that is an implementation
+  // detail, not a user capability. The umbrella name stays "Remote control"; the two paths are
+  // "Web control" (a browser drives the workbench on this machine) and "Chat bot" (you talk to a
+  // bot inside a chat app). Keep clear of the sidebar's existing "Remote connection"
+  // (`remote.trigger`, i.e. connect out) — that one points the opposite way.
+  // "Chat bot" is chosen because it is literally the official English wording
+  // (`webRemoteControl.description` says "through chat bots") and shares no words with
+  // "Remote connection". The description names WeChat / Feishu / Telegram to disambiguate.
+  "remotePanel.tab.web": "Web control",
+  "remotePanel.tab.imBot": "Chat bot",
+  "remotePanel.imBot.description":
+    "Talk to a bot in WeChat, Feishu or Telegram and let it drive this workspace.",
+  "remotePanel.imBot.badge.disabled": "Not enabled",
+  "remotePanel.imBot.badge.enabling": "Enabling",
+  "remotePanel.imBot.badge.enabled": "Enabled",
+  "remotePanel.imBot.action.enable": "Enable",
+  // fix.2: the "server-side capability is not wired in yet" notice was removed together with its
+  // only producer — a missing channel now hides the whole tab (canRenderRemoteControlImBotTab in
+  // remoteControlPanelModel.ts), so the key would be unreachable. Keeping it would suggest a path
+  // that no longer exists.
+  "remotePanel.imBot.state.enabling": "Enabling…",
+  "remotePanel.imBot.state.requested":
+    "Enable requested, waiting for the server side; the bot sends and receives nothing until then.",
+  "remotePanel.imBot.state.enabled":
+    "Enabled: message the bot in your chat app to drive this workspace.",
+  "remotePanel.imBot.reminder.title": "Before you enable",
+  "remotePanel.imBot.reminder.account":
+    "An external account is required: the bot identity and credentials for WeChat, Feishu and Telegram are issued by those platforms, not by ZCode.",
+  "remotePanel.imBot.reminder.thirdParty":
+    "Messages and files go through the third-party platform's servers: what you send the bot and what it replies are not confined to this machine.",
+  "remotePanel.imBot.reminder.platformRecords":
+    "Those platform-side records are outside this machine's control; deleting local data does not delete them.",
+  // When it takes effect (spec §10 P4: a newly added channel needs a restart; acceptable, but
+  // must not be silent). Not phrased as "the config has not taken effect" — the user needs to
+  // know what to do now.
+  "remotePanel.imBot.restartNotice":
+    "After you add or enable a channel, inbound callbacks only work once the service is restarted; deleting a channel takes effect immediately.",
+  "remotePanel.imBot.confirm.title": "Enable the chat bot?",
+  "remotePanel.imBot.confirm.body":
+    "Once enabled, the bot sends messages and files to a third-party chat platform. Confirm these three points before continuing:",
+  "remotePanel.imBot.confirm.continue": "Enable anyway",
+  "remotePanel.badge.stopped": "Off",
+  "remotePanel.badge.stale": "Stopped",
+  "remotePanel.badge.starting": "Starting",
+  "remotePanel.badge.running": "Running",
+  "remotePanel.badge.stopping": "Stopping",
+  "remotePanel.badge.untrusted": "Not adopted",
+  "remotePanel.badge.failed": "Failed to start",
+  "remotePanel.advice.stopped":
+    "Turn it on and other devices can reach this machine's workbench in a browser.",
+  "remotePanel.advice.stale": "The previous service is gone. You can turn it on again.",
+  "remotePanel.advice.stale.pidDead":
+    "The previous service process exited. You can turn it on again.",
+  "remotePanel.advice.stale.portClosed": "The previous service is gone. You can turn it on again.",
+  "remotePanel.advice.stale.probeTimeout":
+    "Something is on that port but not responding. Turn it on again, or check the port first.",
+  "remotePanel.advice.starting": "Starting…",
+  "remotePanel.advice.stopping": "Stopping…",
+  "remotePanel.advice.running": "Open the link in a browser to use this machine's workbench.",
+  "remotePanel.advice.running.adopted":
+    "A workbench is already running on this machine; showing it here.",
+  "remotePanel.advice.untrusted":
+    "Another service owns that port, so it was not adopted. Try another port.",
+  "remotePanel.advice.failed": "Failed to start. Retry, or check the logs.",
+  "remotePanel.advice.failed.portTaken": "That port is already in use. Try another port.",
+  "remotePanel.advice.failed.spawnFailed":
+    "The service process could not start. Check the logs and retry.",
+  "remotePanel.advice.failed.probeTimeout":
+    "The service was not ready in time. Retry, or check the logs.",
+  "remotePanel.advice.failed.tokenUnreadable":
+    "The token file could not be read. Check its permissions and retry.",
+  // Wording fix after this batch's server hardening: do NOT offer "this machine only" as the
+  // no-token fallback — with trusted-proxy/registered-host signals present, loopback binding is
+  // refused too (packages/server/src/exposureGate.ts), so that would promise a way out that
+  // does not exist.
+  "remotePanel.advice.failed.nonLoopbackWithoutToken":
+    "Without a usable token it cannot listen beyond this machine. Restore the token file, or find out why it is empty.",
+  "remotePanel.action.none": "Unavailable",
+  "remotePanel.action.start": "Turn on",
+  "remotePanel.action.stop": "Stop",
+  "remotePanel.action.retry": "Retry",
+  "remotePanel.action.retryOtherPort": "Retry on another port",
+  "remotePanel.action.copyLink": "Copy link",
+  "remotePanel.action.copied": "Copied",
+  "remotePanel.action.copyFailed": "Copy failed",
+  // ce.4 connection plane: the token-rotation entry appears on the DESKTOP panel only
+  // (spec §6.5 decision ④). The UI gates it on "does the host provide the action" —
+  // absent means NOT rendered (not rendered as a disabled button).
+  "remotePanel.action.rotateToken": "Rotate token",
+  "remotePanel.action.rotatingToken": "Rotating…",
+  // Listen scope (spec §3.3): defaults to the local network, with a one-click switch back to loopback.
+  "remotePanel.listen.label": "Listen on",
+  "remotePanel.listen.loopback": "This machine only",
+  "remotePanel.listen.lan": "Local network",
+  "remotePanel.listen.portAuto": "Pick a free port",
+  "remotePanel.listen.customPort": "Custom port",
+  "remotePanel.listen.portLabel": "Port",
+  "remotePanel.listen.portPlaceholder": "Empty = pick a free port",
+  "remotePanel.listen.portInvalid":
+    "The port must be an integer from 1 to 65535; leave it empty to pick a free port.",
+  // Connected devices (spec §3.3 / §6.4). Empty and unreadable are two different facts:
+  // an empty array means nobody is connected; unreadable (null) means unknown, so we claim nothing.
+  "remotePanel.devices.title": "Connected devices",
+  "remotePanel.devices.empty": "No devices yet",
+  "remotePanel.devices.unknown": "Connected devices are not readable right now.",
+  "remotePanel.devices.revokeOne": "Disconnect",
+  "remotePanel.devices.revokeAll": "Disconnect all",
+  "remotePanel.devices.column.address": "Address",
+  "remotePanel.devices.column.role": "Role",
+  "remotePanel.devices.column.connectedAt": "Connected at",
+  "remotePanel.devices.column.userAgent": "Client",
+  "remotePanel.devices.role.terminalClient": "Browser",
+  "remotePanel.devices.role.trustedHost": "Trusted host",
+  "remotePanel.connection.title": "How to connect",
+  "remotePanel.connection.audience": "Phones and computers",
+  "remotePanel.connection.linkPending": "Preparing the link…",
+  "remotePanel.qr.alt": "Remote control QR code",
+  "remotePanel.qr.fallback": "Can't scan? Use the link",
+  "remotePanel.safety.title": "Safety",
+  "remotePanel.safety.lanExposure":
+    "Listening on the local network: anyone on the same network can try to connect. The token is the only barrier.",
+  "remotePanel.safety.tokenIsTheOnlyBarrier":
+    "The token is agent-level access: it can run commands and read or write files on this machine.",
+  "remotePanel.safety.linkIsCredential":
+    "The link and QR code are credentials themselves. Do not share them publicly or send screenshots.",
+  "remotePanel.safety.plainHttp":
+    "Plain http is for trusted local networks only; put TLS or a tunnel in front for anything wider.",
+  "remotePanel.confirm.startLan.title": "Listen on the local network?",
+  "remotePanel.confirm.startLan.body":
+    "Once on, anyone on the same network can try to connect to the workbench on this machine.\nThe token is the only barrier: whoever has it can run commands and read or write files on this machine.",
+  "remotePanel.confirm.startLan.continue": "Continue",
+  // Second confirmation for ce.4 write actions (spec §6.3).
+  "remotePanel.confirm.stop.title": "Stop the service?",
+  "remotePanel.confirm.stop.body":
+    "Every connected device will be disconnected and must scan or open the link again.",
+  "remotePanel.confirm.rotateToken.title": "Rotate the token?",
+  "remotePanel.confirm.rotateToken.body":
+    "Old links and QR codes stop working immediately, and everyone must reconnect.",
+  "remotePanel.confirm.revokeOne.title": "Disconnect this device?",
+  "remotePanel.confirm.revokeOne.body":
+    "That device is disconnected and must scan or open the link again.",
+  "remotePanel.confirm.revokeAll.title": "Disconnect all devices?",
+  "remotePanel.confirm.revokeAll.body":
+    "Every connected device will be disconnected and must scan or open the link again.",
+  // Always-on danger notice (spec §3.5; cannot be dismissed).
+  "remotePanel.danger.credentials": "Links and QR codes are credentials — do not share them.",
+  "remotePanel.danger.sharedToken":
+    "The token is a shared secret; rotating it reconnects everyone.",
+  "remotePanel.danger.noTls":
+    "Plain http is for trusted local networks only; use a TLS reverse proxy or tunnel across networks.",
+  "settings.toolPolicy.title": "Tools & Permissions",
+  "settings.toolPolicy.persistent.label": "Let dangerous commands be remembered for the project",
+  "settings.toolPolicy.persistent.description":
+    "When off, dangerous commands ask every time and previously remembered grants no longer apply. When on, they can be remembered, but only the exact command — never a whole family of commands.",
+  "settings.toolPolicy.persistent.behaviorChange":
+    "This upgrade turns it off by default: dangerous commands you previously remembered now ask again.",
+  "settings.toolPolicy.appliesToNewSessions":
+    "Applies to new sessions; sessions already open keep their current setting.",
+  "settings.toolPolicy.list.title": "Dangerous commands",
+  "settings.toolPolicy.list.hint":
+    "Turning an entry off relaxes it: it is no longer treated as dangerous.",
+  "settings.toolPolicy.list.defaultsNotDeletable":
+    "Built-in entries can be turned off and on again; turn one off to remove it from effect.",
+  "settings.toolPolicy.entry.privilege": "{name} (privilege escalation)",
+  "settings.toolPolicy.entry.privilege.description":
+    "Any command escalated through it is treated as dangerous, whatever follows.",
+  "settings.toolPolicy.entry.executable.description":
+    "This command is never remembered by prefix — only the exact command is remembered.",
+  "settings.toolPolicy.entry.enable": "Turn {name} back on",
+  "settings.toolPolicy.entry.disable": "Turn {name} off",
+  "settings.toolPolicy.custom.title": "Custom dangerous commands",
+  "settings.toolPolicy.custom.executable.description": "Matched by command name.",
+  "settings.toolPolicy.custom.prefix.description":
+    "Matched by command prefix, covering every command under it.",
+  "settings.toolPolicy.custom.delete": "Delete {name}",
+  "settings.toolPolicy.custom.add.label": "Add a dangerous command",
+  "settings.toolPolicy.custom.add.description":
+    "Enter a command name (such as kubectl) or a command prefix (such as docker run). Adding one only makes things stricter; it never allows anything.",
+  "settings.toolPolicy.custom.add.placeholder": "docker run",
+  "settings.toolPolicy.custom.add.action": "Add",
+  "settings.toolPolicy.custom.invalid":
+    "Enter a command name or prefix, without quotes, pipes, or similar symbols.",
+  "settings.toolPolicy.custom.duplicate": "That entry is already in the list.",
+  "settings.toolPolicy.custom.tooMany":
+    "You have reached the limit for custom entries. Delete some first.",
+  "settings.githubMirror": "China mirror",
+  "settings.githubMirrorDescription":
+    "Set a mirror prefix when GitHub is unreachable or slow; the plugin marketplace and update checks will use it. Leave blank to connect directly. Must be an https URL; restart the app to take effect.",
+  "settings.githubMirrorPlaceholder": "e.g. https://ghfast.top/",
+  "settings.githubMirrorSavedHint": "Mirror prefix saved. Restart the app to take effect.",
+  "settings.githubMirror.error.invalidUrl":
+    "Enter a complete https URL, for example https://ghfast.top/",
+  "settings.githubMirror.error.insecureProtocol": "The mirror prefix must be an https URL",
+  "settings.githubMirror.error.credentials":
+    "The mirror prefix must not contain a username or password",
+  "settings.githubMirror.error.queryOrFragment":
+    "The mirror prefix must not contain a query string or # fragment",
+  "settings.githubMirror.error.saveFailed": "Failed to save the mirror prefix. Please try again.",
+  "settings.mcp.form.disabledTools": "Disabled tools (optional)",
+  "settings.mcp.form.disabledToolsHint":
+    "One tool name per line, spelled as the MCP server reports it (e.g. get_issue). A disabled tool is hidden from the model, and calling it directly fails. Leave empty to enable everything.",
+  "settings.modelProvider.modelCatalog.button": "Fetch models",
+  "settings.modelProvider.modelCatalog.title": "Fetch models from provider",
+  "settings.modelProvider.modelCatalog.description":
+    "Reads this provider's models endpoint. Select the models to add. Fetching only reads the list and does not change your configuration.",
+  "settings.modelProvider.modelCatalog.loading": "Fetching model list…",
+  "settings.modelProvider.modelCatalog.retry": "Retry",
+  "settings.modelProvider.modelCatalog.empty":
+    "The provider returned no models. Check the Base URL and API format.",
+  "settings.modelProvider.modelCatalog.allExisting":
+    "Every fetched model is already in the list. Nothing to add.",
+  "settings.modelProvider.modelCatalog.selectAll": "Select all",
+  "settings.modelProvider.modelCatalog.clearAll": "Clear selection",
+  "settings.modelProvider.modelCatalog.alreadyExists": "Already added",
+  "settings.modelProvider.modelCatalog.addSelected": "Add {count} models",
+  "settings.modelProvider.modelCatalog.searchPlaceholder": "Search models",
+  "settings.modelProvider.modelCatalog.clearSearch": "Clear search",
+  "settings.modelProvider.modelCatalog.noMatch": "No models match your search.",
+  "settings.modelProvider.modelCatalog.partialFailure": "Some models could not be added",
+  "settings.modelProvider.hiddenModels.title": "Hidden models ({count})",
+  "settings.modelProvider.hiddenModels.description":
+    "These built-in models were deleted; restoring brings them back to the list and the model picker.",
+  "settings.modelProvider.hiddenModels.restore": "Restore",
+  "chat.message.copy.fullResponse": "Copy full response",
+  "chat.contextUsage.claimTitle": "Claimable quota",
+  "chat.workflowLaunch.settings.machineLimit": "this machine's limit",
+  "chat.workflowLaunch.settings.machineLimitValue": "{n} (this machine's limit)",
+  "chat.toolCall.workflow.run.settings.limit.ceiling": "this machine allows up to {n}",
+  "chat.toolCall.workflow.run.settings.limit.atCeiling": "= this machine's limit",
+  "chat.toolCall.workflow.settingsChange.limitCeiling": "limit back to this machine's default",
+  "chat.permission.ruleScope.anyToolCommand": "Any {toolName} command",
+  "zcode.error.providerBusiness.3007":
+    "The request was rejected by the gateway security check. Please try again later or contact support.",
+  "zcode.error.modelSuspiciousEmpty":
+    "The model returned no content (often caused by an expired token or plan issues). Please send again.",
   "settings.remoteAssets.title": "Remote assets",
   "settings.remoteAssets.cdnBaseUrl": "Custom remote asset CDN URL",
   "settings.remoteAssets.cdnBaseUrlDescription":
@@ -7222,16 +8393,6 @@ const enUS: Record<string, string> = {
   "settings.remoteAssets.error.queryOrFragment":
     "The URL must not contain a ? query or # fragment — enter only the publish root, e.g. https://your-host/assets.",
   "settings.remoteAssets.error.saveFailed": "Could not save. Please try again.",
-  "settings.computerUse.toggleLabel": "Enable Computer Use",
-  "settings.computerUse.toggleDescription":
-    "Turning this on enables Computer Use — its MCP server and skills.",
-  "settings.computerUse.composerEntry.label": "Show Computer Use button in the composer",
-  "settings.computerUse.composerEntry.description": "When off, the composer button is hidden.",
-  "settings.computerUse.composerEntry.requiresEnabled":
-    "Turn on Computer Use first to show this button in the composer.",
-  "settings.computerUse.composerEntry.saveFailed": "Failed to save: {error}",
-  "settings.computerUse.pluginDisabledHint":
-    "The Computer Use plugin is not enabled. Enable it in Plugins to use Computer Use.",
   "settings.computerUse.toggleDescriptionUnavailable":
     "The Computer Use plugin is missing from the current plugin list, so this switch is unavailable. See the note below.",
   // Switch-state copy: prerequisite states (loading / plugin missing) must stay distinct from
@@ -7257,19 +8418,9 @@ const enUS: Record<string, string> = {
   "settings.computerUse.pluginState.unavailable": "Unavailable",
   "settings.computerUse.pluginState.retry": "Read again",
   "settings.computerUse.pluginState.retrying": "Reading…",
-  "settings.computerUse.unsupported.title": "Computer Use is unavailable here",
-  "settings.computerUse.unsupported.remoteDescription":
-    "Computer Use is not yet supported for SSH, WSL, Docker, or other remote environments. Switch to a local workspace.",
   "settings.computerUse.experimental.title": "Experimental on Linux",
   "settings.computerUse.experimental.linuxDescription":
     "On Linux desktops Computer Use runs on the open-source trycua/cua implementation. The driver ships with the app, but its X11 / Wayland coverage has not been fully verified, so mouse/keyboard control and screenshots may not work. Please report issues through the feedback entry.",
-  "settings.computerUse.unsupported.badge": "Unavailable here",
-  "settings.computerUse.unsupported.group": "Unavailable built-in capabilities",
-  "scheduledPreview.keepAwakeEnabled": "Keep awake enabled",
-  "scheduledPreview.keepAwakeDisabled": "Keep awake disabled",
-  "scheduledPreview.toast.running": "Running “{title}”…",
-  "scheduledPreview.toast.view": "View",
-  "scheduledPreview.addSchedule": "Add schedule",
   "settings.feedback.title": "Feedback & Diagnostics",
   "settings.feedback.channel.label": "Feedback channel",
   "settings.feedback.channel.description":
@@ -7339,1369 +8490,6 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.manualClaim.captcha.retry": "Verify again",
   "settings.modelProvider.manualClaim.captcha.unsupported":
     "Claiming requires a security check that is only available in the desktop app. Please claim from ZCode Desktop.",
-  manual_claim_failure_not_found: "This plan no longer exists. Refresh and try again.",
-  manual_claim_failure_unavailable: "The campaign has not started or has already ended.",
-  manual_claim_failure_already_claimed: "This account has already claimed this plan.",
-  manual_claim_failure_ineligible:
-    "This account or client version does not meet the campaign requirements.",
-  manual_claim_failure_quota_exhausted: "Today's quota is used up. Try again tomorrow.",
-  manual_claim_failure_invalid_request:
-    "The request was rejected. Update to the latest version and retry.",
-  manual_claim_failure_captcha: "The security check did not pass. Please verify again.",
-  manual_claim_failure_captcha_unavailable:
-    "This machine cannot complete the security check right now. Try again later.",
-  manual_claim_failure_login_required: "Sign in before claiming.",
-  manual_claim_failure_http_error: "The service is temporarily unavailable. Try again later.",
-  manual_claim_failure_network: "Network error. Check your connection and retry.",
-  manual_claim_failure_unknown: "Claim failed. Try again later.",
-  // ---- Bot management UI (BotsDialog) — ported from upstream v3.14.3 (Apache-2.0, see third-party/copied-components.json) ----
-  "bots.title": "Bots",
-  "bots.description": "Connect external chats and webhooks to ZCode bots.",
-  "bots.listTitle": "Bots",
-  "bots.addBot": "New bot",
-  "bots.addBinding": "Add binding",
-  "bots.setup.chooseBot": "Choose bot",
-  "bots.setup.createBot": "Create bot",
-  "bots.setup.createAndTest": "Test and continue",
-  "bots.setup.bindBot": "Bind bot",
-  "bots.setup.setBot": "Set bot",
-  "bots.setup.next": "Next",
-  "bots.setup.finish": "Finish",
-  "bots.setup.bindDescription":
-    "Create a bind code, then send the bind command in the bot private chat.",
-  "bots.setup.bindCodeCreating": "Creating bind code...",
-  "bots.setup.bindExpiresIn": "Bind code expires in {time}",
-  "bots.setup.bindRegenerating": "Bind code expired. Creating a new one...",
-  "bots.setup.refreshBindCode": "Refresh code",
-  "bots.setup.bound": "{count} user(s) bound. Continue to configure this bot.",
-  "bots.setup.bindAdvanceIn": "Continuing in {seconds}s.",
-  "bots.setup.allowedWorkspaces": "Allowed workspaces",
-  "bots.setup.allowedAll": "Allow all workspaces (*)",
-  "bots.setup.allowedSelected": "Allow selected workspaces only",
-  "bots.setup.allowedAllShort": "All",
-  "bots.setup.allowedSelectedShort": "Selected",
-  "bots.setup.allowedAllDescription": "This bot can use every configured workspace.",
-  "bots.setupDescription.chooseBot": "Choose the third-party chat bot to connect.",
-  "bots.setupDescription.createBot":
-    "Enter bot or webhook credentials. The next step tests connectivity first.",
-  "bots.setupDescription.bindBot":
-    "Create a bind code and bind the account in the bot private chat.",
-  "bots.setupDescription.setBot":
-    "Set the default context, allowed workspaces, and third-party reply detail.",
-  "bots.setup.guide.createTitle": "Preparation guide",
-  "bots.setup.guide.bindTitle": "Binding guide",
-  "bots.setup.guide.createNote":
-    "Prepare the third-party side first, then come back and click Test and continue.",
-  "bots.setup.callbackUrlTitle": "Callback URL",
-  "bots.setup.callbackUrlDescription.webhook":
-    "Your external system should send inbound message callbacks to this address. Asynchronous outbound replies still use the Webhook URL entered on the left.",
-  "bots.setup.callbackUrlDescription.webhookBind":
-    "Webhook binding uses the same endpoint: send a private callback request here with text = /bind <code>.",
-  "bots.setup.guide.telegram.create.1": "Open @BotFather in Telegram and create a new bot.",
-  "bots.setup.guide.telegram.create.2":
-    "Copy the HTTP API token returned by BotFather and paste it into this form.",
-  "bots.setup.guide.telegram.create.3":
-    "It helps to open the bot's private chat now because the bind command must be sent there.",
-  "bots.setup.guide.telegram.bind.1":
-    "Return to Telegram and open the private chat with the bot you created.",
-  "bots.setup.guide.telegram.bind.2":
-    "If the chat has never started, press Start or send any message first, then send {command}.",
-  "bots.setup.guide.telegram.bind.3": "Come back here after Telegram confirms the bind succeeded.",
-  "bots.setup.guide.weixin.create.1":
-    "Start Weixin QR login, scan the QR code with Weixin, then confirm on your phone.",
-  "bots.setup.guide.weixin.create.2":
-    "ZCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
-  "bots.setup.guide.weixin.create.3":
-    "ZCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
-  "bots.setup.guide.weixin.bind.1": "Open the Weixin direct chat you want to bind.",
-  "bots.setup.guide.weixin.bind.2": "Send {command}.",
-  "bots.setup.guide.weixin.bind.3":
-    "Come back here after the bind succeeds to finish the workspace and CLI defaults.",
-  "bots.setup.guide.feishu.create.1":
-    "Create a self-built app in the Feishu/Lark developer console and enable bot capability.",
-  "bots.setup.guide.feishu.create.2":
-    "Copy the App ID and App Secret, then enable persistent connection events for `im.message.receive_v1` and card actions.",
-  "bots.setup.guide.feishu.create.3":
-    "Choose the matching Feishu or Lark domain here, then paste the credentials into the form.",
-  "bots.setup.guide.feishu.bind.1":
-    "Install the app into your tenant and open a direct chat with the bot.",
-  "bots.setup.guide.feishu.bind.2": "Send {command} in that direct chat.",
-  "bots.setup.guide.feishu.bind.3":
-    "Return here after the bind succeeds to finish the workspace and CLI defaults.",
-  "bots.setup.guide.webhook.create.1":
-    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZCode.",
-  "bots.setup.guide.webhook.create.2":
-    "Set a shared secret first; add an outbound webhook URL as well if you want asynchronous replies pushed back.",
-  "bots.setup.guide.webhook.create.3":
-    "Keep one stable userId per external user so binding and future context resolve to the same person.",
-  "bots.setup.guide.webhook.bind.1":
-    "POST a private-message callback to ZCode's `/api/bots/webhook` endpoint.",
-  "bots.setup.guide.webhook.bind.2":
-    'The payload should at least include this botId, a stable userId, `chatType: "private"`, and set text to {command}.',
-  "bots.setup.guide.webhook.bind.3":
-    "If the bot uses a secret, also send `x-zcode-bot-secret`; then return here after the bind succeeds.",
-  "bots.setup.footer.choose": "Choose a supported bot to continue.",
-  "bots.setup.footer.create": "Connectivity must pass before binding.",
-  "bots.setup.testSuccess": "Connectivity test passed",
-  "bots.setup.testFailed": "Connectivity test failed",
-  "bots.setup.footer.bind":
-    "The bind code initially allows all workspaces; the final scope is saved next.",
-  "bots.setup.footer.set": "Finish enables the bot and returns it to the added list.",
-  "bots.setup.discardTitle": "Discard this bot?",
-  "bots.setup.discardDescription":
-    "This setup flow is not finished. The temporary bot will be deleted.",
-  "bots.setup.discardConfirm": "Discard setup",
-  "bots.refresh": "Refresh bots",
-  "bots.namePlaceholder": "Bot name",
-  "bots.credentialPlaceholder": "Link bot",
-  "bots.weixinBotTokenPlaceholder": "Saved after QR login; you can also paste bot_token manually",
-  "bots.webhookSecretPlaceholder": "Webhook secret",
-  "bots.webhookUrlPlaceholder": "Outbound webhook URL",
-  "bots.feishuAppIdPlaceholder": "Feishu App ID",
-  "bots.feishuAppSecretPlaceholder": "Feishu App Secret",
-  "bots.callbackSecretPlaceholder": "Callback secret",
-  "bots.feishuRegistrationTitle": "Scan to create app",
-  "bots.feishuRegistrationDescription": "Scan to create an app and save credentials.",
-  "bots.feishuRegistrationButton": "Scan",
-  "bots.feishuRegistrationQrAlt": "Feishu app registration QR code",
-  "bots.feishuRegistrationScanHint": "Scan with Feishu/Lark and confirm app creation.",
-  "bots.feishuRegistrationScanHint.feishu": "Scan with Feishu and confirm app creation.",
-  "bots.feishuRegistrationScanHint.lark": "Scan with Lark and confirm app creation.",
-  "bots.feishuRegistrationStarted": "Feishu registration started",
-  "bots.feishuRegistrationSuccess": "Feishu app credentials filled",
-  "bots.feishuRegistrationFailed": "Failed to start Feishu registration: {error}",
-  "bots.feishuRegistrationExpired": "The QR code expired. Start again.",
-  "bots.feishuRegistration.access_denied": "Registration was denied.",
-  "bots.feishuRegistration.expired": "The QR code expired. Start again.",
-  "bots.feishuRegistration.error": "Registration failed.",
-  "bots.enabledToggle": "Enable {name}",
-  "bots.replyGranularity": "Bot reply granularity",
-  "bots.replyGranularity.description": "Message detail level.",
-  "bots.replyGranularity.assistantChanges": "Standard reply",
-  "bots.replyGranularity.assistantChanges.description":
-    "Send assistant text and file changes, without tool-call progress.",
-  "bots.replyGranularity.assistantToolcallsChanges": "Full reply",
-  "bots.replyGranularity.assistantToolcallsChanges.description":
-    "Send assistant text, tool-call progress, and file changes.",
-  "bots.replyGranularity.summaryChanges": "Summary reply",
-  "bots.replyGranularity.summaryChanges.description":
-    "Send only the final result and change summary for quieter notifications.",
-  "bots.replyGranularity.streamingCard": "Streaming card",
-  "bots.replyGranularity.streamingCard.description":
-    "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
-  "bots.add": "Add",
-  "bots.channel.telegram": "Telegram",
-  "bots.channel.weixin": "Weixin",
-  "bots.channel.feishu": "Feishu",
-  "bots.channel.lark": "Lark",
-  "bots.channel.dingding": "DingTalk",
-  "bots.channel.discord": "Discord",
-  "bots.channel.wecom": "WeCom",
-  "bots.channel.webhook": "Webhook",
-  "bots.newBot.title": "New bot",
-  "bots.newBot.chooseChannel": "Choose channel",
-  "bots.newBot.description":
-    "Choose where this bot will receive messages. After selecting a channel, configure credentials, binding, allowed workspaces, and defaults.",
-  "bots.newBot.selectProviderHint": "Choose a channel on the right to create a bot.",
-  "bots.newBot.fallbackName": "New bot",
-  "bots.newBot.comingSoon": "Coming soon",
-  "bots.newBot.providerDescription.telegram": "Create a bot, then bind by message.",
-  "bots.newBot.providerDescription.weixin": "Scan to log in; first message activates.",
-  "bots.newBot.providerDescription.feishu": "Scan to create an app, then bind by message.",
-  "bots.newBot.providerDescription.lark": "Scan to create an app, then bind by message.",
-  "bots.newBot.providerDescription.dingding": "DingTalk bot integration is planned.",
-  "bots.newBot.providerDescription.webhook":
-    "Receive callbacks from your own system and optionally push replies back.",
-  "bots.newBot.providerDescription.discord": "Discord bot integration is planned.",
-  "bots.newBot.providerDescription.wecom": "WeCom bot integration is planned.",
-  "bots.empty": "No bots configured.",
-  "bots.name": "Bot name",
-  "bots.provider": "Channel",
-  "bots.enabled": "Enabled",
-  "bots.enabled.description": "Turn this bot on or off and clear its runtime state.",
-  "bots.credential": "Credential",
-  "bots.webhookSecret": "Webhook secret",
-  "bots.webhookUrl": "Webhook URL",
-  "bots.providerSettings": "Channel settings",
-  "bots.providerSettings.telegram": "Save the BotFather token.",
-  "bots.providerSettings.weixin":
-    "Credentials are saved after scan; the first Weixin message activates the chat.",
-  "bots.providerSettings.feishu": "Scan to get app credentials.",
-  "bots.providerSettings.lark": "Scan to get app credentials.",
-  "bots.providerSettings.webhook":
-    "Webhook uses a callback secret for inbound requests and an optional outbound URL for replies.",
-  "bots.providerSettings.discord": "Discord support is not available yet.",
-  "bots.providerSettings.wecom": "WeCom support is not available yet.",
-  "bots.telegramBotToken": "Link bot",
-  "bots.weixinRegistrationTitle": "Weixin QR login",
-  "bots.weixinRegistrationDescription":
-    "Scan to log in, then send any message in Weixin to activate the chat.",
-  "bots.weixinRegistrationButton": "Scan",
-  "bots.weixinRegistrationQrAlt": "Weixin login QR code",
-  "bots.weixinRegistrationScanHint": "Scan with Weixin and confirm login.",
-  "bots.weixinRegistrationStarted": "Weixin QR login started",
-  "bots.weixinRegistrationSuccess": "Weixin bot linked. Send any message in Weixin to activate it.",
-  "bots.weixinActivationHint":
-    "Send any message to the bot in Weixin; the first message will receive a welcome and command guide.",
-  "bots.weixinRegistrationFailed": "Failed to start Weixin QR login: {error}",
-  "bots.weixinRegistration.pending": "Waiting for scan",
-  "bots.weixinRegistration.scanned": "Scanned, waiting for confirmation",
-  "bots.weixinRegistration.success": "Login succeeded",
-  "bots.weixinRegistration.expired": "The QR code expired. Start again.",
-  "bots.weixinRegistration.error": "Login failed.",
-  "bots.weixinBotToken": "Weixin bot_token",
-  "bots.feishuAppSecret": "Feishu App Secret",
-  "bots.callbackSecret": "Callback secret",
-  "bots.webhookOutboundUrl": "Outbound Webhook URL",
-  "bots.webhookAuthHeaderName": "Auth header name",
-  "bots.feishuAppId": "Feishu App ID",
-  "bots.saveSecrets": "Save secrets",
-  "bots.saveSecret": "Save",
-  "bots.removeSecret": "Remove secret",
-  "bots.removeSecretFailed": "Failed to remove secret: {error}",
-  "bots.botToken": "Link bot",
-  "bots.botTokenDescription.telegram": "Save the BotFather token.",
-  "bots.botTokenDescription.feishu": "Scan to get app credentials.",
-  "bots.botTokenDescription.lark": "Scan to get app credentials.",
-  "bots.botTokenDescription.weixin": "Credentials are saved after scan.",
-  "bots.botTokenDescription.webhook": "Used to connect this webhook bot.",
-  "bots.telegramBotFatherQrAlt": "Telegram BotFather QR code",
-  "bots.telegramBotFatherScanHint": "Scan to open BotFather, create a bot, and paste the token.",
-  "bots.openBotFather": "Open BotFather",
-  "bots.connected": "Connected",
-  "bots.notConnected": "Not connected",
-  "bots.runtime.telegramLongPollingRunning": "Telegram long polling is running.",
-  "bots.runtime.telegramLongPollingStarting": "Telegram long polling is starting.",
-  "bots.runtime.telegramLongPollingStopped": "Telegram long polling is stopped.",
-  "bots.runtime.telegramLongPollingHandledElsewhere":
-    "Telegram long polling is handled by another ZCode window.",
-  "bots.runtime.telegramTokenMissing": "Telegram bot credential is missing.",
-  "bots.runtime.telegramPollingFailedRetrying": "Telegram polling failed; retrying.",
-  "bots.runtime.feishuWebSocketStarting": "Feishu WebSocket is starting.",
-  "bots.runtime.feishuWebSocketConnecting": "Feishu WebSocket is connecting.",
-  "bots.runtime.feishuWebSocketRunning": "Feishu WebSocket is running.",
-  "bots.runtime.feishuWebSocketStopped": "Feishu WebSocket is stopped.",
-  "bots.runtime.connectionFailed": "Bot connection failed",
-  "bots.runtime.feishuConnectionFailed": "Feishu connection failed",
-  "bots.runtime.larkConnectionFailed": "Lark connection failed",
-  "bots.runtime.cannotConnectFeishu": "Unable to connect to Feishu",
-  "bots.runtime.cannotConnectLark": "Unable to connect to Lark",
-  "bots.runtime.feishuConnectionInterrupted": "Feishu connection interrupted",
-  "bots.runtime.larkConnectionInterrupted": "Lark connection interrupted",
-  "bots.runtime.boundConnectionInterrupted": "Disconnected",
-  "bots.runtime.boundConnectionInterruptedDescription":
-    "The bot is bound, but its persistent connection is interrupted.",
-  "bots.runtime.credentialsSavedConnectionFailedDescription":
-    "App credentials are saved, but the persistent connection failed.",
-  "bots.runtime.connectionBlocksBinding":
-    "The bot cannot receive messages, so binding is temporarily unavailable.",
-  "bots.runtime.feishuConnectionRecoverySuggestion":
-    "The long-connection limit may have been reached, or Feishu may be busy. Try again later; if the problem persists, bind a new bot.",
-  "bots.runtime.larkConnectionRecoverySuggestion":
-    "The long-connection limit may have been reached, or Lark may be busy. Try again later; if the problem persists, bind a new bot.",
-  "bots.runtime.errorCode": "Error code",
-  "bots.runtime.errorDetail": "Details",
-  "bots.runtime.unknownError": "Unknown connection error",
-  "bots.runtime.weixinLongPollingRunning": "Weixin long polling is running.",
-  "bots.runtime.weixinLongPollingStarting": "Weixin long polling is starting.",
-  "bots.runtime.weixinLongPollingStopped": "Weixin long polling is stopped.",
-  "bots.runtime.botDisabled": "Bot is disabled.",
-  "bots.scanQrCode": "Scan QR code",
-  "bots.authorizationQr": "Authorization QR",
-  "bots.bindCommand": "Bind command",
-  "bots.binding": "Binding",
-  "bots.allowedCommands": "Allowed commands",
-  "bots.unbound": "Not bound",
-  "bots.generateBindCode": "Generate bind code",
-  "bots.resetState": "Reset state",
-  "bots.allowedWorkspaces": "Project access",
-  "bots.allowedWorkspaces.all": "All",
-  "bots.allowedWorkspaces.mode.all": "All projects",
-  "bots.allowedWorkspaces.mode.selected": "Selected projects",
-  "bots.allowedWorkspaces.allDescription": "This bot can use any configured project.",
-  "bots.allowedWorkspaces.selectedDescription": "This bot can use {count} selected projects.",
-  "bots.botMeta": "{users} bound users · workspace {workspace}",
-  "bots.botSummary": "{users} users · {workspaces} workspaces · {workspace}",
-  "bots.userCount": "{count} users",
-  "bots.editDescription": "Review runtime state, default context, reply detail, and bound users.",
-  "bots.edit.basicSettings": "Basic settings",
-  "bots.edit.binding": "Bound users",
-  "bots.edit.emptyUsers":
-    "No users bound yet. Create a bind code, then send the bind command in the bot private chat.",
-  "bots.edit.userWorkspaces": "{count} workspace(s) allowed",
-  "bots.test": "Test",
-  "bots.bind": "Bind",
-  "bots.unbind": "Unbind",
-  "bots.delete": "Delete bot",
-  "bots.delete.description": "Remove this bot.",
-  "bots.deleteConfirmTitle": 'Delete bot "{name}"?',
-  "bots.deleteConfirmDescription":
-    "This removes the bot configuration, credentials, and binding state. This cannot be undone.",
-  "bots.bindCode": "Binding code",
-  "bots.bindHint": "Send {command} in a private bot chat.",
-  "bots.bindCodeExpires": "Bind code expires in {time}",
-  "bots.bindCodeExpired": "Bind code expired. Generate a new code.",
-  "bots.bindSuccess": "Bound successfully",
-  "bots.copyBindCommand": "Copy bind command",
-  "bots.bindCommandGuide":
-    "Copy the bind command below, then send it to the bot in a private chat.",
-  "bots.bindCommandStep.copy": "Copy the bind command",
-  "bots.bindCommandStep.openChat": "Open the private chat with the bot",
-  "bots.bindCommandStep.send": "Paste and send it to bind the current workspace",
-  "bots.bindCommandCopied":
-    "Bind command copied. Open the private bot chat, then paste and send it.",
-  "bots.bindCommandCopyFailed": "Failed to copy bind command: {error}",
-  "bots.loadFailed": "Failed to load bots: {error}",
-  "bots.saveSuccess": "Bot saved",
-  "bots.saveFailed": "Failed to save bot: {error}",
-  "bots.testFailed": "Bot test failed: {error}",
-  "bots.bindCodeCreated": "Binding code created",
-  "bots.bindCodeFailed": "Failed to create binding code: {error}",
-  "bots.unbindSuccess": "Bot unbound",
-  "bots.unbindFailed": "Failed to unbind bot: {error}",
-  "bots.deleteFailed": "Failed to delete bot: {error}",
-
-  // Welcome / Login
-
-  // App header
-  "browser.permission.promptAriaLabel": "Site permission request",
-  "browser.permission.wantsToUse": "wants to use",
-  "browser.permission.siteInfo": "View site information",
-  "browser.permission.settings": "Site permissions",
-  "browser.permission.denyThisTime": "Don't allow",
-  "browser.permission.close": "Close",
-  "browser.permission.saved":
-    "Permissions updated. Reload the page to apply changes to active resources.",
-  "browser.permission.readError": "Could not load permissions.",
-  "browser.permission.saveError": "Could not save permission changes.",
-  "browser.permission.resetError": "Could not complete the permission reset.",
-  "browser.permission.retry": "Retry",
-  "browser.permission.unsupported": "Site permissions are available in the desktop browser.",
-  "browser.permission.reset": "Reset site permissions",
-  "browser.permission.resetDone": "Permissions reset. Reload the page to request access again.",
-  "browser.permission.allowOnce": "Allow once",
-  "browser.permission.allowAlways": "Allow on this site",
-  "browser.permission.blockAlways": "Block",
-  "browser.permission.cancel": "Cancel",
-  "browser.permission.share": "Share",
-  "browser.permission.media": "camera and microphone",
-  "browser.permission.mediaVideo": "camera",
-  "browser.permission.mediaAudio": "microphone",
-  "browser.permission.mediaBoth": "camera and microphone",
-  "browser.permission.clipboardRead": "clipboard reading",
-  "browser.permission.geolocation": "location",
-  "browser.permission.notifications": "notifications",
-  "browser.permission.midi": "MIDI devices",
-  "browser.permission.idleDetection": "idle detection",
-  "browser.permission.speakerSelection": "audio output selection",
-  "browser.permission.windowManagement": "window management",
-  "browser.permission.storageAccess": "storage access",
-  "browser.permission.keyboardLock": "keyboard lock",
-  "browser.permission.fileSystem": "file access",
-  "browser.permission.deviceHid": "HID devices",
-  "browser.permission.deviceUsb": "USB devices",
-  "browser.permission.deviceSerial": "serial devices",
-  "browser.permission.deviceBluetooth": "Bluetooth devices",
-  "browser.permission.unknownCapability": "an unknown capability",
-  "browser.permission.screenShareTitle": "{origin} wants to share your screen",
-  "browser.permission.screenShareDescription":
-    "Choose the screen or window to share. This choice applies only to this session.",
-  "browser.permission.deviceTitle": "{origin} wants to connect a device",
-  "browser.permission.connect": "Connect",
-  "browser.permission.screenGroup.screen": "Entire Screen",
-  "browser.permission.screenGroup.window": "Window",
-  "browser.permission.stateAllow": "Allow",
-  "browser.permission.stateDeny": "Block",
-  "browser.permission.stateAsk": "Ask",
-  "sidePane.fullView.enter": "Enter full view",
-  "sidePane.fullView.exit": "Exit full view",
-  "sidePane.fullView.openAnswer": "Show messages",
-  "sidePane.fullView.minimize": "Minimize editor",
-  "sidePane.fullView.restore": "Restore editor",
-  "sidePane.fullView.openConversation": "Open in full view",
-  "sidePane.fullView.handle": "Drag to move · Click for options",
-  "sidePane.fullView.expandMessages": "Expand messages",
-  "sidePane.fullView.collapseMessages": "Collapse messages",
-  "sidePane.fullView.statusRunning": "Running",
-  "sidePane.fullView.statusIdle": "Idle",
-  "sidePane.newTab": "New tab",
-  "chat.statusPanel.workflowsLive": "{count} running",
-  "sidePane.launcher.selection-side-conversation": "Continue a conversation in the side pane.",
-  "sidePane.launcher.review": "Review code changes and diffs.",
-  "sidePane.launcher.terminal": "Run commands and view output.",
-  "sidePane.launcher.browser": "Browse websites and preview apps.",
-  "sidePane.launcher.developer-tools": "Inspect and debug the app.",
-  "sidePane.launcher.viewAllPlugins": "View all plugins",
-  "sidePane.launcher.empty": "No recommended app plugins yet",
-  "pluginUi.loading": "Loading plugin UI...",
-  "pluginUi.loadFailed": "Plugin UI failed to load.",
-  "pluginUi.retry": "Reload",
-  "pluginUi.pin": "Keep expanded",
-  "pluginUi.unpin": "Stop keeping expanded",
-  "pluginUi.openInSidePane": "Open in side pane",
-  "pluginUi.openedInSidePane": "Opened in side pane",
-  "genUi.copyImage": "Copy image",
-  "genUi.title": "Interactive view",
-  "genUi.desktopOnly": "Open this interactive view in the desktop app",
-  "genUi.offline": "Workspace is offline. Reconnect and retry",
-  "genUi.failed": "Unable to load interactive view",
-  "genUi.loading": "Loading…",
-  "genUi.retry": "Retry",
-  "genUi.tweak": "Adjust design",
-  "genUi.expand": "Expand",
-  "genUi.collapse": "Collapse",
-  "genUi.expanded": "Showing in expanded view",
-  "genUi.confirm": "Interactive view wants to send a message",
-  "genUi.cancel": "Cancel",
-  "genUi.send": "Send",
-  "genUi.incomplete": "This response did not finish. The interactive view was not loaded.",
-  "genUi.waiting": "Interactive view will appear when generation completes",
-  "genUi.invalid": "Invalid interactive view reference",
-  "genUi.reset": "Reset",
-  "genUi.original": "Preview original",
-  "genUi.submit": "Submit design changes",
-  "genUi.from": "From interactive view {name}",
-  "pluginUi.fromPlugin": "From plugin {name}",
-  "pluginUi.followUp.title": "A plugin wants to send a message as you",
-  "pluginUi.followUp.description": "From plugin {name}. You can edit it before sending.",
-  "pluginUi.followUp.send": "Send",
-  "pluginUi.followUp.cancel": "Cancel",
-  "pluginUi.modelContext.label": "Plugin context",
-  "pluginUi.modelContext.remove": "Remove plugin context",
-  "sidePane.pluginUi": "Plugin",
-  "fileManager.resizeNavigation": "Resize file navigation",
-  "fileManager.title": "Files",
-  "fileManager.showNavigation": "Show file navigation",
-  "fileManager.hideNavigation": "Hide file navigation",
-  "fileManager.empty": "Select a file from the navigation",
-  "appHeader.copyClaudeJsonlPath": "Copy JSONL path",
-  "appHeader.goToProviderConfig": "Go to config",
-  "appHeader.goToProviderConfigPrefix": "Go to",
-  "appHeader.goToProviderConfigSuffix": "config",
-  "appHeader.openProviderConfigWithEditorPrefix": "Use",
-  "appHeader.openProviderConfigWithEditorMiddle": "to open",
-  "appHeader.openProviderConfigWithEditorSuffix": "config file",
-  "appHeader.openProviderConfigInEditorFailed": "Could not open provider config in {editor}",
-  "workspaceHeader.help.reportVulnerability": "Report a vulnerability",
-
-  // Directory browser
-  "directoryBrowser.errorUnavailable":
-    "Cannot open this folder. Check that it exists and you have access, or choose another folder.",
-  "remote.directory.willOpen": "Will open {path}",
-  "directoryBrowser.opening": "Opening…",
-
-  // Update ready button
-
-
-  // Workspace
-  "taskList.codexConnectivityUnavailable":
-    "Warmup could not reach {host}. Starting a conversation may fail until the network is available.",
-  "workspaceSidebar.sourceTaskUnavailable": "This device is not ready. Reconnect it first.",
-  "workspaceSidebar.connectIdentifyTitle": "Connect this device",
-  "workspaceSidebar.connectionOffline": "Offline",
-  "workspaceSidebar.openRemoteProject": "Open remote project",
-  "workspaceSidebar.remoteProject": "Remote project",
-  "workspaceSidebar.connectionDetails": "View connection details for {device}",
-  "workspaceSidebar.openProjectHint": "Click the project name to open it",
-  "workspaceSidebar.reconnectProjectHint":
-    "Click the project name to reconnect and open this directory",
-  "workspaceSidebar.projectPath": "Directory",
-  "workspaceSidebar.projectDevice": "Device",
-  "workspaceSidebar.projectLine": "Connection",
-  "settings.source.pending": "Not connected",
-  "settings.source.pendingDescription": "Device details update automatically after connecting",
-  "workspaceSidebar.recoveringAutomatic": "Recovering connection automatically",
-  "workspaceSidebar.recoveringAutomaticShort": "Recovering {attempt}/{limit}",
-  "workspaceSidebar.manageDevice": "Manage in settings",
-  "workspaceSidebar.newRemoteConnection": "New remote connection…",
-  "workspaceSidebar.recoveringAutomaticAttempt":
-    "Recovering connection automatically ({attempt}/{limit})",
-  "workspaceSidebar.reconnectingManual": "Reconnecting manually",
-  "remote.error.sourceServerInstallRequired":
-    "The remote device is not installed. Confirm installation to continue.",
-  "remote.error.sourceServerIdentityChangePending":
-    "The connection target identity has changed. Confirm whether to use it as a new device.",
-  "remote.error.credentialsRequired":
-    "No usable SSH password or private-key credential is available. Return to settings to add one.",
-  "remote.error.sourceServerUpgradeRequired":
-    "remote device is incompatible with this ZCode Desktop version and must be upgraded.",
-  "remote.error.sourceServerRunningTasks":
-    "remote device still has running tasks. Wait for them to finish or confirm a forced update.",
-  "remote.error.workspaceTaskIdentityConflict":
-    "This remote directory contains task identity conflicts that cannot be merged automatically.",
-  "remote.error.workspaceConfigConflict":
-    "This remote directory contains configuration conflicts that cannot be merged automatically.",
-  "remote.error.bindCanceled": "The remote workspace attachment was canceled.",
-  "remote.error.bindSessionMissing":
-    "The remote workspace session is no longer available. Reconnect and try again.",
-  "remote.error.workspaceDirectoryUnavailable":
-    "The remote project directory is missing, is not a folder, or cannot be accessed. Check the directory and permissions, then try again.",
-  "remote.error.recoveryBudgetExhausted":
-    "Automatic recovery stopped after {attempt}/{limit} attempts. Reconnect manually to try again.",
-  "remote.error.workspaceMigrationPlanDiverged":
-    "A new workspace identity appeared while migration was paused. Review the migration report before retrying.",
-  "remote.error.workspaceSessionGenerationChanged":
-    "The session database changed while migration was paused. Restore the recorded generation before retrying.",
-  "remote.error.hostUnreachable": "Unable to connect to host",
-  "remote.error.connectionTimeout": "Connection timed out",
-  "remote.error.hostNotFound": "Host not found",
-  "remote.error.hostKeyChanged": "Host identity has changed",
-  "remote.error.downloadFailed": "Download failed",
-  "remote.error.uploadFailed": "Upload failed",
-  "remote.error.preflightFailed": "Remote environment check failed",
-  "remote.error.installFailed": "Remote installation failed",
-  "remote.error.spaceInsufficient": "Not enough space on remote device",
-  "remote.error.permissionDenied": "Remote write permission denied",
-  "remote.error.connectionCanceled": "Connection canceled",
-  "remote.error.unknown": "Connection failed",
-  "settings.source.recentLog": "View recent logs",
-  "remote.error.retryableHint": "You can try again later.",
-  "remote.error.connectionClosed": "The remote connection was closed",
-
-  // SSH dialog
-  "ssh.advancedOptions": "Advanced options",
-  "ssh.validation.hostRequired": "Enter a host",
-  "ssh.validation.usernameRequired": "Enter a username",
-  "ssh.importFromConfig": "Import from SSH config",
-  "ssh.importEmpty": "No SSH config hosts found",
-  "ssh.configAliasLinked": "Linked to Host {alias}",
-  "ssh.configAliasUnlink": "Unlink",
-  "ssh.configAliasLinkedHint": "Editing any field unlinks it",
-  "ssh.pasteRecognized": "Recognized {target}",
-  "remote.selection.step": "Select device",
-  "remote.selection.connect": "Connect",
-  "remote.selection.search": "Search devices, Hosts or containers",
-  "remote.selection.saved": "Saved devices",
-  "remote.selection.aliases": "Hosts from SSH config",
-  "remote.selection.wsl": "WSL distributions",
-  "remote.selection.docker": "Running containers",
-  "remote.selection.empty": "No matching devices. Create a connection below.",
-  "remote.selection.new.ssh": "New SSH connection",
-  "remote.selection.new.wsl": "Enter WSL manually",
-  "remote.selection.new.docker": "Enter Docker manually",
-  "remote.selection.new.server": "Development Server",
-  "remote.selection.keyboard":
-    "Tab / ↑↓ to select · Enter to connect · Click a recent directory to open",
-  "remote.selection.back": "Back to list",
-  "remote.background.ready": "Connection complete",
-  "remote.background.continue": "Continue",
-  "remote.background.review": "View or resolve",
-  "remote.background.cancel": "Cancel connection",
-  "remote.minimized.device": "Continue choosing a device",
-  "remote.minimized.kind": "Continue choosing a device",
-  "remote.minimized.settings": "Continue setting up the connection",
-  "remote.minimized.directory": "Choose a directory on {device}",
-  "remote.minimized.resume": "Click to resume the connection wizard",
-  "remote.minimized.connecting": "Connecting to {device}…",
-  "remote.minimized.failed": "Connection to {device} failed",
-  "remote.minimized.waiting": "Waiting for confirmation or information",
-  "ssh.validation.port": "Port must be an integer from 1 to 65535",
-  "ssh.showPassword": "Show password",
-  "ssh.hidePassword": "Hide password",
-  "docker.inputMode.select": "Select a running container",
-  "docker.inputMode.manual": "Enter a container manually",
-  "remote.deviceStepTitle": "Connect remotely",
-  "remote.deviceStepDescription": "Choose a saved connection, or add a new one.",
-  "remote.deviceChat": "Chat on this device",
-  "remote.deviceConnectChat": "Connect and chat",
-  "remote.deviceReconnect": "Connect",
-  "remote.deviceReinstall": "Reinstall and connect",
-  "remote.deviceIdentify": "Connect",
-  "remote.directServer": "Direct server",
-  "remote.manage": "Manage",
-  "remote.connectingSubtitleConnected": "Connected to {device} · ready to choose a directory",
-  "remote.connectingSubtitleUpdating": "Updating the remote server",
-  "remote.phaseSub.uploading": "Uploading the archive",
-  "remote.phaseSub.extracting": "Extracting server files",
-  "remote.phaseSub.verifyingArchive": "Verifying the archive",
-  "remote.phaseSub.verifyingFiles": "Verifying server files",
-  "remote.phaseSub.restarting": "Restarting the remote server",
-  "remote.connectingSubtitleFailed":
-    "Connection failed · retry, or adjust the configuration and try again",
-  "remote.phase.channel": "Connect to device",
-  "remote.phase.identify": "Identify device",
-  "remote.phase.deploy": "Install ZCode Server",
-  "remote.phase.handshake": "Start and check compatibility",
-  "remote.progress.step": "Step {current}/{total}",
-  "remote.progress.elapsedSeconds": "{seconds}s elapsed",
-  "remote.progress.elapsedMinutesSeconds": "{minutes}m {seconds}s elapsed",
-  "remote.progress.copyError": "Copy error details",
-  "remote.progress.copied": "Copied",
-  "remote.link.local": "This device",
-  "remote.link.localVersion": "ZCode v{version}",
-  "remote.link.deviceHint": "Device details appear after connecting",
-  "remote.link.devicePending": "Remote device",
-  "remote.recognizedDevice": "Connected to device {device}",
-  "remote.recognizedDeviceBody":
-    "This connection ({profile}) is ready; task and workspace history stays unchanged.",
-  "remote.connectedBanner": "Connected {device} · {profile} · {version}",
-  "remote.connectedSummary": "Connection ready: {device}",
-  "remote.remoteRecord": "Remote record",
-  "remote.quickOpenWithHistory": "Quick open — recent and known remote workspaces",
-  "remote.syncAll": "Sync all",
-  "remote.syncSkills": "Sync skills to this device",
-  "remote.syncMcp": "Sync MCP config",
-  "remote.syncPlugins": "Sync plugins",
-  "remote.collapseContinues": "Connection continues in the background when collapsed",
-  "remote.goToDirectory": "Go to choose directory",
-  "remote.openWorkspaceHere": "Open workspace here",
-  "remote.useRemoteDownload": "Download directly on the device",
-  "remote.errorRetry": "Retry",
-  "remote.renameDevice": "Device name",
-  "remote.renameDeviceHint":
-    "Give it a memorable name on first connect; change it anytime in Settings · Remote devices",
-  "remote.quickOpen": "Quick open",
-  "remote.connectionLogLines": "{count} line(s)",
-  "remote.errorPanel.uploadFailedTitle": "Asset upload failed",
-  "remote.errorPanel.uploadFailedHint":
-    'If the target server has internet access, "Download on remote server" is usually faster.',
-  "remote.phaseSub.channelEstablished.ssh": "Connected to the SSH host",
-  "remote.phaseSub.channelEstablished.wsl": "Connected to the distribution",
-  "remote.phaseSub.channelEstablished.docker": "Connected to the container",
-  "remote.phaseSub.channelEstablished": "Connected to device",
-  "remote.phaseSub.identifyExisting": "Connected to device {device}",
-  "remote.phaseSub.identifyNew": "New device · ZCode Server not installed",
-  "remote.phaseSub.deploySkipped": "Remote already on v{version} · deployment skipped",
-  "remote.phaseSub.deployWaitingConfirm": "Waiting for install confirmation…",
-  "remote.phaseSub.deployUploading": "Uploading {file} · {sent} / {total}",
-  "remote.phaseSub.installed": "Installed; starting the connection",
-  "remote.phaseSub.uploadFailed": "Installation failed: {reason}",
-  "remote.phaseSub.handshakeDone": "systemd --user · port {port}",
-  "remote.phaseSub.readyOnline": "Device online; workspace history ready",
-  "remote.sourceServerInstallCancelled": "Installation cancelled. You can retry when ready.",
-  "webRemoteControl.trigger": "Mobile remote control",
-  "webRemoteControl.triggerStatus.idle": "Remote control is off",
-  "webRemoteControl.triggerStatus.starting": "Remote control is starting",
-  "webRemoteControl.triggerStatus.waiting": "Waiting for phone",
-  "webRemoteControl.triggerStatus.connecting": "Connecting phone",
-  "webRemoteControl.triggerStatus.connected": "Phone connected",
-  "webRemoteControl.triggerStatus.error": "Remote control failed",
-  "webRemoteControl.authRequired.title": "Sign in required",
-  "webRemoteControl.authRequired.description":
-    "Sign in to control this computer from your phone. Use the same account on both devices.",
-  "webRemoteControl.authRequired.login": "Sign in",
-  "webRemoteControl.title": "Mobile remote control",
-  "webRemoteControl.description":
-    "Scan the QR code or open the link on your phone to control this workspace.",
-  "webRemoteControl.statusLabel": "Session status",
-  "webRemoteControl.status.idle": "Idle",
-  "webRemoteControl.status.starting": "Starting",
-  "webRemoteControl.status.running": "Waiting for phone",
-  "webRemoteControl.status.connecting": "Connecting phone",
-  "webRemoteControl.status.active": "Phone connected",
-  "webRemoteControl.status.error": "Connection failed",
-  "webRemoteControl.themeMenu.trigger": "Choose theme",
-  "webRemoteControl.statusDetail.idle": "Ready to connect.",
-  "webRemoteControl.statusDetail.starting": "Starting remote control...",
-  "webRemoteControl.statusDetail.running": "Scan the QR code or open the link on your phone.",
-  "webRemoteControl.statusDetail.connecting": "Phone is connecting...",
-  "webRemoteControl.statusDetail.active": "Your phone can control this workspace.",
-  "webRemoteControl.statusDetail.error": "Could not start mobile remote control.",
-  "webRemoteControl.generating": "Preparing QR code...",
-  "webRemoteControl.qrAlt": "Web remote control QR code",
-  "webRemoteControl.mobileQr.title": "Scan from phone",
-  "webRemoteControl.mobileQr.description": "Use your phone camera to open this workspace remotely.",
-  "webRemoteControl.statusTag.phone": "Phone",
-  "webRemoteControl.statusTag.ready": "Ready",
-  "webRemoteControl.botChannel.title": "Use a bot channel",
-  "webRemoteControl.botChannel.description": "Connect a chat bot for longer-running mobile access.",
-  "webRemoteControl.botChannel.weixin.title": "Weixin",
-  "webRemoteControl.botChannel.weixin.description": "Open this workspace from Weixin chat.",
-  "webRemoteControl.botChannel.feishu.title": "Feishu",
-  "webRemoteControl.botChannel.feishu.description": "Open this workspace from Feishu.",
-  "webRemoteControl.botChannel.lark.title": "Lark",
-  "webRemoteControl.botChannel.lark.description": "Open this workspace from Lark.",
-  "webRemoteControl.botChannel.telegram.title": "Telegram",
-  "webRemoteControl.botChannel.telegram.description": "Open this workspace from Telegram.",
-  "webRemoteControl.botChannel.configure": "Configure in bot channels",
-  "webRemoteControl.botChannel.manageBots": "Manage bots",
-  "webRemoteControl.linkLabel": "Remote control link",
-  "webRemoteControl.linkPending": "The remote control link will appear here once ready.",
-  "webRemoteControl.singlePageNote":
-    "This relay pairing supports one phone page at a time. If it is already open elsewhere, close the old page first.",
-  "webRemoteControl.copyLink.description": "Can't scan? Open the link on your phone.",
-  "webRemoteControl.failure.sessionNotFound":
-    "This Web remote control link is no longer valid. Start it again from desktop.",
-  "webRemoteControl.failure.sessionExpired":
-    "This Web remote control session has already ended. Generate a new link from desktop to continue.",
-  "webRemoteControl.failure.sessionConflict":
-    "This link is already being used by another page. Close the other page and scan again.",
-  "webRemoteControl.failure.kicked":
-    "The relay kicked this pairing. Close the other page and generate a new QR code from desktop.",
-  "webRemoteControl.failure.workspaceClosed":
-    "The shared desktop window has been closed. Go back to desktop and start Web remote control again.",
-  "webRemoteControl.failure.desktopDisconnected":
-    "The desktop side disconnected, so this Web remote control session can no longer continue.",
-  "webRemoteControl.failure.invalidMobileConnection":
-    "The current mobile connection is no longer valid. Reload the page and reconnect.",
-  "webRemoteControl.failure.desktopBootstrapTimeout":
-    "The desktop window did not respond in time. Make sure it is still running, then reload.",
-  "webRemoteControl.failure.connectionRecoveryTimeout":
-    "The mobile connection did not recover in time, so Web remote control cannot keep syncing yet.",
-  "webRemoteControl.failure.relayUnavailable":
-    "The external relay connection is unavailable. Make sure desktop is online, then try again.",
-  "webRemoteControl.failure.unsupportedAction":
-    "Web remote control mode can only open workspaces that are already open in the current desktop window.",
-  "webRemoteControl.failure.unexpectedError":
-    "Could not start mobile remote control. Try again from desktop.",
-  "webRemoteControl.copyLink": "Copy link",
-  "webRemoteControl.copyLink.copied": "Remote control link copied",
-  "webRemoteControl.copyLinkFailed": "Could not copy remote control link: {error}",
-  "webRemoteControl.refreshQr": "Refresh QR",
-  "webRemoteControl.refreshQr.confirmTitle": "Refresh QR code?",
-  "webRemoteControl.refreshQr.confirmDescription":
-    "Refreshing will invalidate any remote control links that were copied or scanned before. Connected phones will need to scan the new QR code.",
-  "webRemoteControl.refreshQr.success": "Remote control QR refreshed",
-  "webRemoteControl.refreshQr.failed": "Could not refresh remote control QR: {error}",
-  "webRemoteControl.stop": "Stop",
-  "webRemoteControl.switchWorkspace": "Switch workspace",
-  "webRemoteControl.expandNavigation": "Expand tasks and workspaces",
-  "webRemoteControl.collapseNavigation": "Collapse tasks and workspaces",
-  "webRemoteControl.homeOnlyWorkspaces": "Workspaces",
-  "webRemoteControl.noSwitchableWorkspaces": "No switchable workspaces",
-  "webRemoteControl.noTasks": "No tasks available in the current desktop window",
-  "webRemoteControl.openTask": "Open task {title}",
-  "webRemoteControl.taskStatus.idle": "Idle",
-  "webRemoteControl.taskStatus.running": "Running",
-  "webRemoteControl.taskStatus.completed": "Done",
-  "webRemoteControl.taskStatus.error": "Error",
-  "webRemoteControl.switchDevice": "Switch device",
-  "webRemoteControl.unnamedDevice": "Unnamed device",
-  "webRemoteControl.mobileShell.backHome": "Back to task home",
-  "webRemoteControl.mobileShell.chatTitle": "Task chat",
-  "webRemoteControl.mobileShell.reconnecting": "Reconnecting automatically...",
-  "webRemoteControl.stopSuccess": "Web remote control stopped",
-  "webRemoteControl.startFailed": "Failed to start Web remote control: {error}",
-  "webRemoteControl.stopFailed": "Failed to stop Web remote control: {error}",
-  "remote.connectionType": "Connection type",
-  "remote.kind.server": "Server",
-  "remote.kind.server.note":
-    "Server (direct connection to a running ZCode service) is shown only in development builds.",
-  "remote.addAndConnect": "Add and connect",
-  "remote.sourceServerInstallTitle": "ZCode Server installation required",
-  "remote.sourceServerInstallDescription":
-    "ZCode will upload the matching release, install it under ~/.zcode/server, and start the background daemon. Existing legacy remote files will be preserved.",
-  "remote.sourceServerInstallConfirm": "Install and continue",
-  "remote.installTarget": "Target account",
-  "remote.installVersion": "Install version",
-  "remote.installLocation": "Install location",
-  "remote.sourceServerBoundaryTitle": "Local offline, tasks keep running",
-  "remote.sourceServerBoundaryDescription":
-    "Remote tasks keep running, even when you close ZCode or put your computer to sleep.",
-  "remote.sourceServerBoundaryEyebrow": "New remote connection",
-  "remote.sourceServerBoundaryLocalDevice": "This computer",
-  "remote.sourceServerBoundaryLocalStatus": "Sleeping / closed",
-  "remote.sourceServerBoundaryRemoteTask": "Remote tasks",
-  "remote.sourceServerBoundaryRemoteStatus": "Still running",
-  "settings.source.label": "Source",
-  "settings.source.offline": "Not connected",
-  "settings.source.uninstalled": "Uninstalled",
-  "settings.source.operationFailed": "The operation failed. Try again later.",
-  "settings.source.versionDetails":
-    "Current v{current} · Minimum compatible v{minimum} · Remote tasks pause briefly during the update",
-  "settings.source.managementTitle": "Remote connections",
-  "settings.remoteDevicesTitle": "Remote devices",
-  "settings.remoteDevicesDescription":
-    "Manage your servers, WSL distributions, and Docker containers.",
-  "settings.source.newConnection": "New connection",
-  "settings.source.addRoute": "Add a connection — use another SSH target for this device",
-  "settings.source.archivedAt": "archived {time}",
-  "settings.source.retiredReason.reinstalled":
-    "Archived after the connection target identity changed; kept for records",
-  "settings.source.retiredEntryNote": "Connection target changed; new identity confirmed",
-  "settings.source.retiredNameSuffix": " (old)",
-  "settings.source.reinstallRequired":
-    "ZCode Server was uninstalled remotely; connection and task records remain on this device.",
-  "settings.source.reinstallAndConnect": "Reinstall and connect",
-  "settings.source.copyDeviceId": "Copy device ID",
-  "common.justNow": "just now",
-  "common.minutesAgo": "{count}m ago",
-  "common.hoursAgo": "{count}h ago",
-  "common.yesterday": "yesterday",
-  "settings.source.profileName": "Connection name",
-  "settings.source.linesTitle": "Connections",
-  "settings.source.editConnection": "Edit",
-  "settings.source.editConnectionTitle": "Edit connection",
-  "settings.source.editConnectionDescription":
-    "Connection changes take effect the next time you connect. Existing projects and tasks are unchanged.",
-  "settings.source.deviceName": "Device name",
-  "settings.source.removeSourceServer": "Remove device",
-  "settings.source.removeOpenProjects": "These open projects will be disconnected:\n{projects}",
-  "settings.source.noOpenProjects": "This device has no open projects.",
-  "settings.source.disconnectHint": "Remote tasks will continue running after you disconnect.",
-  "settings.machine.local": "This computer",
-  "settings.machine.remote": "{name} (remote)",
-  "settings.machine.unknownRemote": "Remote device",
-  "settings.machine.scope": "{scope} · {machine}",
-  "settings.source.connectionName": "Connection name",
-  "settings.source.connectionAddress": "Address",
-  "settings.source.connectionNameHint": "Used only to distinguish this connection in ZCode.",
-  "settings.source.deviceNameRequired": "Device name is required.",
-  "settings.source.error.connection-profile-unavailable":
-    "This connection is no longer available. Refresh and try again.",
-  "settings.source.error.recent-project-unresolved":
-    "The original project cannot be identified. Select a project from the sidebar.",
-  "settings.source.connectionNameRequired": "Connection name is required.",
-  "settings.source.keepSavedSecret": "Leave blank to keep the saved credential",
-  "settings.source.otherSavedConnections": "Other saved connections",
-  "settings.source.otherSavedConnectionsCount": "Other saved connections ({count})",
-  "settings.source.retry": "Retry",
-  "settings.source.lastConnected": "Last success {time}",
-  "settings.source.lastConnectError": "Last failure: {error}",
-  "settings.source.devicesHeading": "Devices",
-  "settings.source.recentProjects": "Recent projects",
-  "settings.source.showAllProjects": "Show all ({count})",
-  "settings.source.showLessProjects": "Show less",
-  "settings.source.projectOpened": "Opened",
-  "settings.source.projectCount": "{count} project(s)",
-  "settings.source.lastOnline": "Last online {time}",
-  "settings.source.lastOnlineNow": "Online just now",
-  "settings.source.neverOnline": "Never online",
-  "settings.source.migrationConnectRequired": "Available after connecting",
-  "settings.source.connectionHistoryNeedsAttention": "Connection history needs attention",
-  "settings.source.showMigrationReport": "Migration report",
-  "settings.source.hideMigrationReport": "Hide migration report",
-  "settings.source.online": "Connected",
-  "settings.source.unknownDevice": "Remote device",
-  "settings.source.updateAvailable": "A remote component update is available.",
-  "settings.source.updateRequired": "Update the remote component before connecting.",
-  "settings.source.updateInProgress": "Updating the remote component…",
-  "settings.source.updateProgress": "Remote component update progress",
-  "settings.source.updatePhase.preparing": "Preparing the update",
-  "settings.source.updatePhase.checking": "Checking the device and update files",
-  "settings.source.updatePhase.downloading": "Downloading update files",
-  "settings.source.updatePhase.uploading": "Uploading update files",
-  "settings.source.updatePhase.installing": "Installing ZCode Server",
-  "settings.source.updatePhase.reconnecting": "Starting the service and reconnecting",
-  "settings.source.updatePhase.completed": "Update complete",
-  "settings.source.updateLog": "Update log ({count})",
-  "settings.source.updateLogWaiting": "Waiting for update logs…",
-  "settings.source.defaultProfile": "Default",
-  "settings.source.defaultProfileMenuItem": "Default connection",
-  "settings.source.setDefault": "Set as default connection",
-  "settings.source.removeProfile": "Remove connection",
-  "settings.source.renameProfile": "Rename connection",
-  "settings.source.assetInstallModeMenu": "Resource download method",
-  "settings.source.assetInstallModeShort.local-download-upload": "Local upload",
-  "settings.source.assetInstallModeShort.remote-download": "Remote download",
-  "settings.source.showInSidebar": "Show in sidebar",
-  "settings.source.renameSource": "Rename",
-  "settings.source.connectAndIdentify": "Connect",
-  "settings.source.deleteProfileRecord": "Delete connection record",
-  "settings.source.deleteConnectionRecord": "Delete connection record",
-  "settings.source.pendingMigrationCount": "{count} pending",
-  "settings.source.removeAllLines": "Remove all connections",
-  "settings.source.removeSourceServerTitle": "Remove this device?",
-  "settings.source.removeSourceServerDescription":
-    "This removes all local connections, credentials, and project records. Remote services and data are not affected.",
-  "settings.source.connectionPreferences": "Connection preferences",
-  "settings.source.startupAutoReconnect": "Reconnect automatically at startup",
-  "settings.source.startupAutoReconnectDescription":
-    "Reconnects devices seen online in the last 7 days at startup. Changes take effect on the next startup.",
-  "settings.source.updateAvailableVersion": "Update to v{version}",
-  "settings.source.error.source-server-remove-callback-missing":
-    "The device cannot be removed because desktop connection cleanup is not ready.",
-  "settings.source.error.source-server-remove-callback-failed":
-    "The device cannot be removed because connection cleanup failed. Nothing was deleted.",
-  "settings.source.error.source-server-remove-persist-failed":
-    "The device is disconnected, but local records could not be fully deleted. Try again later.",
-  "settings.source.identityChangeTitle": "Connection target identity has changed",
-  "settings.source.identityChangeDescription":
-    "Confirm to create a new device record and independent connection record. Existing task history stays with the previous device.",
-  "settings.source.identityChangeConfirm": "Use as a new device",
-  "settings.source.removeProfileTitle": "Remove this connection?",
-  "settings.source.removeProfileDescription":
-    "{name} and its saved credentials will be removed from this device.",
-  "settings.source.connect": "Connect",
-  "settings.source.reconnect": "Reconnect",
-  "settings.source.disconnect": "Disconnect",
-  "settings.source.newTask": "New task",
-  "settings.source.update": "Update",
-  "settings.source.updateNow": "Update now",
-  "sourceServer.updateAvailableToast": "{source} has an update\nDevice {current} → {available}.",
-  "sourceServer.updateRequiredToast":
-    "{source} must be updated before it can connect\nCurrent {current}; required {available}.",
-  "sourceServer.updateStartedToast": "Updating {source}…",
-  "sourceServer.updateCompletedToast": "{source} was updated and reconnected.",
-  "sourceServer.updateFailedToast":
-    "{source} could not be updated. Review the log under Remote devices and try again.",
-  "sourceServer.controllerUpdateAvailableToast":
-    "ZCode has an update for {source}\nDesktop {current} → {available}; update ZCode to match this Source.",
-  "settings.source.forceUpdate": "Force update",
-  "settings.source.forceUpdateTitle": "Force-update this device?",
-  "settings.source.forceUpdateDescription":
-    "A forced update stops tasks that are still running on this device. Confirm that those tasks may be interrupted.",
-  "settings.source.controllerUpdateRequired":
-    "Update this ZCode Desktop first; the Server cannot be updated from here.",
-  "settings.source.neverConnected": "Not connected",
-  "settings.source.unidentifiedProfiles": "Not connected",
-  "settings.source.unidentifiedProfilesDescription":
-    "Saved records from older versions or not yet successfully connected. Device details update after a successful connection.",
-  "settings.source.retiredProfiles": "Archived connections",
-  "settings.source.retiredProfilesWithCount": "Archived connections ({count})",
-  "settings.source.retiredProfilesDescription":
-    "Archived after the connection target identity changed; kept for records",
-  "settings.source.empty": "No remote device connections yet.",
-  "settings.source.migrationCountsRequireConnection":
-    "Connect this device to inspect its migration counts.",
-  "settings.source.migrationReport": "Migration report",
-  "settings.source.loginUnavailable":
-    "Account login must be completed on this device and is unavailable from Settings.",
-  "settings.source.exportMigrationReport": "Export JSON",
-  "settings.source.exportMigrationJson": "Export migration details JSON",
-  "settings.source.noMigrationIssues": "No migration issues.",
-  "settings.source.abandonMigration": "Abandon merge",
-  "settings.source.abandonMigrationTitle": "Keep current history and stop automatic merging?",
-  "settings.source.abandonMigrationDescription":
-    "Other history will be archived. This directory keeps the current history; you can retry merging later.",
-  "settings.source.retryMigration": "Retry merge",
-  "settings.source.migrationConflictCount": "{count} conflict(s)",
-  "settings.source.migrationMergedHistory": "Merged history from {count} connection(s)",
-  "settings.source.migrationDetailUnavailable": "Details unavailable",
-  "settings.source.state.absent": "Not configured",
-  "settings.source.state.bootstrapping": "Starting",
-  "settings.source.state.needsInstall": "Install required",
-  "settings.source.state.needsUpgrade": "Upgrade required",
-  "settings.source.state.updating": "Updating",
-  "settings.source.state.online": "Online",
-  "settings.source.state.retrying": "Recovering",
-  "settings.source.state.offline": "Offline",
-  "settings.source.state.identityChangePending": "Identity replacement pending",
-  "settings.source.state.failed": "Connection failed",
-  "settings.source.migrationStatus.running": "Migrating",
-  "settings.source.migrationStatus.completed": "Completed",
-  "settings.source.migrationStatus.failed": "Failed",
-  "settings.source.migrationStatus.abandoned": "Archived",
-  "settings.source.migrationStatus.abandonedDiverged": "Archived (changed later)",
-  "settings.source.migrationPhase.preflight": "Preflight",
-  "settings.source.migrationPhase.backupsCreated": "Backups created",
-  "settings.source.migrationPhase.taskDbMerged": "Task data merged",
-  "settings.source.migrationPhase.sessionDbMerged": "Session data merged",
-  "settings.source.migrationPhase.configDirsMerged": "Configuration directories merged",
-  "settings.source.migrationPhase.aliasPublished": "Workspace alias published",
-  "settings.source.migrationPhase.completed": "Migration completed",
-  "server.description": "Connect to an already running ZCode server.",
-  "server.url": "Server URL",
-  "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
-  "server.name": "Display name",
-  "server.namePlaceholder": "e.g. Studio",
-  "server.token": "Token (optional)",
-  "server.tokenPlaceholder": "Enter connection token",
-  "server.workspacePath": "Default directory (optional)",
-  "server.workspacePathPlaceholder": "e.g. /srv/project",
-  "server.workspacePathDescription":
-    "Leave empty to choose a directory on the server after connecting.",
-  "server.validation.urlRequired": "Server URL is required",
-  "server.validation.invalidUrl": "Server URL is invalid",
-
-  // Locale switch
-
-  // File tree
-
-  // Terminal
-  // Soft gate (D4): persistent banner when workspace hooks are pending review
-
-  // Task list
-  "taskList.title": "Task list",
-  "taskList.remoteConnectionUnknown": "Remote connection unavailable",
-  "chat.previewCards.previewInSidePane": "Preview",
-  "chat.previewCards.openDefaultApp": "Open",
-  "chat.previewCards.openWith": "Open with",
-  "chat.previewCards.copyLink": "Copy link",
-  "chat.previewCards.openFileFailed": "Could not open this file",
-
-  // Settings
-  "settings.shortcuts.saveFailed": "Failed to save shortcuts. Try again.",
-  "settings.shortcuts.command.toggleSidePaneFullView": "Enter or Exit Full View",
-  "settings.toolSearch": "Tool search",
-  "settings.toolSearchDescription":
-    "Auto selects native or local search for the model. Local loads tools on demand. Off sends the full tool catalog. Applies to new sessions and sessions restored after an app restart; active sessions keep their settings.",
-  "settings.toolSearchExperimentalNotice":
-    "Experimental feature. Using native mode with a model provider that does not fully support native ToolSearch may invalidate prompt caching and increase token usage.",
-  "settings.toolSearch.auto": "Auto",
-  "settings.toolSearch.local": "Local",
-  "settings.toolSearch.off": "Off",
-  "settings.closeToTrayUnavailable":
-    "Your desktop environment has no system tray, so close-to-tray cannot be enabled.",
-  "settings.closeToTrayGnomeHint":
-    "On GNOME, install an AppIndicator extension and restart the app to enable this.",
-  "settings.dynamicWorkflow": "Dynamic workflows",
-  "settings.dynamicWorkflowDescription":
-    "Let the model orchestrate many subagents working in parallel, so it can take on complex tasks and deliver polished results.",
-  "settings.dynamicWorkflow.option.disabled": "Off",
-  "settings.dynamicWorkflow.option.disabled.description":
-    "Turn workflows off. The model cannot start new ones, and the Workflows tab leaves the Automations page. Workflows already in your conversations stay readable.",
-  "settings.dynamicWorkflow.option.onDemand": "On command",
-  "settings.dynamicWorkflow.option.onDemand.description":
-    "The model starts a workflow only when you type /workflow.",
-  "settings.dynamicWorkflow.option.alwaysOn": "Always on",
-  "settings.dynamicWorkflow.option.alwaysOn.description":
-    "You can type /workflow, and the model can also start a workflow on its own when your request calls for one.",
-  "settings.dynamicWorkflow.defaultTag": "Default",
-  "settings.dynamicWorkflow.saveError": "Could not save the dynamic workflow setting",
-  "settings.modelProvider.anthropicEndpoint": "Anthropic endpoint",
-  "settings.modelProvider.anthropicEndpointPlaceholder": "e.g. https://api.anthropic.com",
-  "settings.modelProvider.openaiEndpoint": "OpenAI endpoint",
-  "settings.modelProvider.openaiEndpointPlaceholder": "e.g. https://api.openai.com/v1",
-  "settings.modelProvider.geminiEndpoint": "Gemini endpoint",
-  "settings.modelProvider.geminiEndpointPlaceholder":
-    "e.g. https://generativelanguage.googleapis.com",
-  "settings.modelProvider.endpointNoMatch": "No matching endpoint",
-  "settings.modelProvider.remoteOAuthNotReady":
-    "OAuth sign-in cannot be started directly on a remote Source. Configure an API key or sync the signed-in account from the local Source.",
-  "settings.modelProvider.codingPlan.billingDiscountInfo.open": "View 150% quota campaign details",
-  "settings.modelProvider.claudeMapping": "Claude model mapping",
-  "settings.modelProvider.claudeMappingDescription":
-    "Choose a matching model for each Claude model slot",
-  "settings.modelProvider.slot.haiku": "Haiku (light tasks)",
-  "settings.modelProvider.slot.sonnet": "Sonnet (general tasks)",
-  "settings.modelProvider.slot.opus": "Opus (complex tasks)",
-  "settings.modelProvider.slot.reasoning": "Reasoning (reasoning tasks)",
-  "settings.modelProvider.mappingNotSet": "Not set",
-  "settings.skills.agent.common": "Common",
-  "settings.skills.agent.glm": "ZCode Agent",
-  "settings.skills.agent.unknown": "Unknown source",
-  "settings.subagents.permissionMode.default": "Default",
-  "settings.subagents.permissionMode.acceptEdits": "Accept edits",
-  "settings.subagents.permissionMode.bypassPermissions": "Bypass permissions",
-  "settings.subagents.permissionMode.dontAsk": "Don't ask",
-  "settings.plugins.store.segment.community": "Community",
-  "settings.plugins.store.communityEmpty": "No community plugins yet",
-  "settings.plugins.store.ui.open": "Open",
-  "settings.plugins.store.ui.unsupported": "Plugin UI is available in local desktop projects only.",
-  "settings.plugins.store.ui.needsSession":
-    "Open this plugin in an available session of the current project.",
-  "settings.plugins.store.ui.unavailable":
-    "No plugin UI is available in this project. Check whether the plugin is enabled.",
-  "settings.plugins.store.ui.chooseSurface": "Choose a plugin interface",
-  "settings.plugins.store.ui.preview": "Enlarge preview",
-  "settings.plugins.store.ui.capability":
-    "Provides interactive interfaces that open in the side pane.",
-  "settings.plugins.store.ui.title": "App plugins",
-  "settings.plugins.store.browseAll": "Browse all plugins",
-  "settings.plugins.marketplace.recommendTitle": "Recommend",
-  "settings.plugins.marketplace.claudeCodePlugins": "Claude Code Plugins",
-
-  "settings.plugins.zcodeOnly": "ZCode Agent only",
-  "onboarding.step.agentSettings": "Agent settings",
-  "onboarding.stepDescription.agentSettings": "Choose which agents' providers to bring in.",
-  "onboarding.agentSettings.providersToggleAllAria": "Select or clear providers for all agents",
-  "onboarding.footer.selection": "{count} items selected",
-
-  // Chat
-  "chat.empty.newRemoteConnection": "New remote connection…",
-  "chat.remoteFolder.restored": "Returned to {device} · {project}",
-  "chat.remoteFolder.confirm": "Select folder",
-  "chat.remoteFolder.unresolved":
-    "This folder has no selected project. Choose another folder or cancel.",
-  "chat.empty.createProjectOnDevice": "Create project on this device",
-  "chat.message.sentByScheduledTask": "Sent by scheduled task",
-  "chat.topicPreparation.preparing": "Preparing materials",
-  "chat.topicPreparation.waitingStop": "Waiting for the current run to stop",
-  "chat.topicPreparation.failed": "Material preparation failed",
-  "chat.topicPreparation.retry": "Retry",
-  "chat.history.topicInterrupted": "Interrupted by a new message",
-  "chat.qimenPan.rendering": "Rendering Qimen chart…",
-  "chat.toolbar.connection.switchFailed": "Could not switch connection. Select again to retry.",
-  "chat.toolbar.combined.provider": "Provider",
-  "chat.toolbar.combined.models": "Models",
-  "chat.toolbar.combined.effort": "Effort",
-  "chat.toolbar.combined.selectModel": "Select model",
-  "chat.agentSwitch.switchTo": "{provider}",
-  "chat.agentSwitch.success": "Switched to {provider}",
-  "chat.agentSwitch.failed": "Could not switch agent",
-  "chat.slash.app.plan.label": "Plan mode",
-  "chat.slash.app.plan.description": "Enable Plan mode",
-  // CUA composer entry button
-  "chat.toolCall.progress.waited": "Waiting {duration}",
-  "chat.turn.runningFor": "Running for {duration}",
-  "chat.toolCall.previewFailed": "Could not load preview",
-  "chat.toolCall.previewUnavailable": "Preview unavailable",
-  "chat.toolCall.explore.bucket.fetch.one": "fetch",
-  "chat.toolCall.explore.bucket.fetch.other": "fetches",
-  "chat.toolCall.kind.webFetch": "Fetch",
-  "chat.toolCall.webFetch.fetching": "Fetching",
-  "chat.toolCall.execute.expandCommand": "Show full command",
-  "chat.toolCall.execute.collapseCommand": "Collapse",
-  // 门后名单末尾的那一行：被淘汰的子代理没有行，差额在这里说明（本仓的轻量 intl 无 ICU 复数）。
-  "chat.toolCall.workflow.timeline.roster.unlisted.one": "1 more agent not listed",
-  "chat.toolCall.workflow.timeline.roster.unlisted.many": "{count} more agents not listed",
-  // ── Holes (docs/dynamic-workflow/presentation.md "Holes on the timeline", transcript-and-notifications.md "The hole row's live state") ──
-  "chat.toolCall.workflow.digest.hole": "{count} hole to fill",
-  "chat.toolCall.workflow.digest.holes": "{count} holes to fill",
-  "chat.toolCall.workflow.card.hole": "{count} hole",
-  "chat.toolCall.workflow.card.holes": "{count} holes",
-  "chat.toolCall.workflow.hole.waiting": "waiting",
-  "chat.toolCall.workflow.hole.head.title": "Hole “{name}” · filled by the agent · {time}",
-  "chat.toolCall.workflow.hole.head.title.untimed": "Hole “{name}” · filled by the agent",
-  "chat.toolCall.workflow.hole.open": "Open the fill of “{name}”",
-  // Kind words of the FillWorkflowHole row (same table as CreateWorkflow / AmendWorkflow).
-  "chat.toolCall.workflow.hole.writing": "Filling hole",
-  "chat.toolCall.workflow.hole.revising": "Revising hole fill",
-  "chat.toolCall.workflow.hole.draft": "Hole draft",
-  "chat.toolCall.workflow.hole.awaitingConfirmation": "Hole fill awaiting confirmation",
-  "chat.toolCall.workflow.hole.ran": "Hole fill",
-  "chat.toolCall.workflow.hole.filled": "Hole filled",
-  "chat.toolCall.workflow.hole.phasesAdded": "{count} phases",
-  // The notification row's expanded body.
-  "chat.toolCall.workflow.hole.stands.between":
-    "The hole stands after “{before}” and before “{after}”;",
-  "chat.toolCall.workflow.hole.stands.after": "The hole stands after “{before}”;",
-  "chat.toolCall.workflow.hole.stands.before": "The hole stands before “{after}”;",
-  "chat.backgroundResult.workflow.hole.waiting": "Workflow waiting for code",
-  "chat.backgroundResult.workflow.hole.filled": "Hole filled",
-  "chat.backgroundResult.workflow.hole.left": "Workflow left a hole",
-  // The run pane.
-  "chat.toolCall.workflow.run.hole.waitingFor": "Waiting for the agent to fill it",
-  "chat.toolCall.workflow.run.hole.filledAt": "Filled · {time}",
-  // The confirmation window.
-  "chat.permission.workflow.hole.title": "Fill this hole?",
-  "chat.permission.workflow.holes.label": "Holes",
-  "chat.permission.workflow.holes.note": "The run pauses at a hole until the agent fills it.",
-  // The sidebar run line.
-  "taskList.workflowRun.holeWaiting": "{name} · waiting",
-  "chat.workflowLaunch.settings.defaultLimit": "default",
-  "chat.workflowLaunch.settings.defaultLimitValue": "default {n}",
-  // ── 可复用工作流（docs/dynamic-workflow/launch.md）：SaveWorkflow / ListSavedWorkflows
-  // 的聊天卡。overwrite 这个词由保存确认窗共用——同一次保存在两个面上必须同名，
-  // 照 run 卡复用 chat.toolCall.workflow.run.status.* 词汇表的同一条先例。
-
-  "workflows.hub.openSettings": "Workflow settings",
-  // ── Observation tool cards  ──
-  // run 级停滞通知：run 还在跑，只是没有进展。
-  // 主代理闲着、run 还欠着决定时的提醒：计数词复用 digest.question(s) / card.hole(s)。
-  "chat.backgroundResult.workflow.blocked": "Workflow waiting on the agent",
-  "chat.backgroundResult.workflow.blocked.openFor": "open for {minutes} min",
-  // ── Escalation tool cards ──
-  // escalate：子代理把阻塞问题升级给主代理，停驻等答案。asking 相可能持续很久，措辞要平静。
-  // stopped 的原因词，跟在状态词后。
-  // 实例表撞界后卡与详情页各有的那一句：停的是每一步的**详情**，不是 run，
-  // 它上面那些计数已经把表外的实例算进来了（docs/dynamic-workflow/presentation.md）。
-  "chat.toolCall.workflow.run.truncated": "Details shown for {shown} of {total} steps",
-  // 「配置」弹层（docs/dynamic-workflow/presentation.md「The settings popover」）：改子代理模型与最大并发数，
-  // 应用即一次 GUI 修订（新 run 接着跑，旧 run 停下，已完成的步骤作缓存带过去）。
-  // 完成卡与 run 侧板上的「保存 / 再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
-  // 「Saving the run, and running it again」）。两条路：交给 ZCode 提炼，或按原样直接写下去。
-  "chat.toolCall.workflow.saveRun.action": "Save",
-  "chat.toolCall.workflow.saveRun.runAgain": "Run again",
-  "chat.toolCall.workflow.saveRun.starting": "Starting…",
-  "chat.toolCall.workflow.saveRun.chip": "Saved",
-  "chat.toolCall.workflow.saveRun.chip.hint": "View in the workflow hub",
-  "chat.toolCall.workflow.saveRun.announce.project": "Saved to the project",
-  "chat.toolCall.workflow.saveRun.announce.global": "Saved as a global workflow",
-  "chat.toolCall.workflow.saveRun.title": "Save workflow",
-  "chat.toolCall.workflow.saveRun.lead": "Let ZCode refine and save it",
-  "chat.toolCall.workflow.saveRun.lead.hint":
-    "ZCode distills a reusable workflow for you, then asks you to confirm.",
-  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to ZCode…",
-  "chat.toolCall.workflow.saveRun.lead.unsupported": "This agent cannot save directly.",
-  "chat.toolCall.workflow.saveRun.or": "or save it as is",
-  "chat.toolCall.workflow.saveRun.name": "Name",
-  "chat.toolCall.workflow.saveRun.name.placeholder": "pr-layered-review",
-  "chat.toolCall.workflow.saveRun.name.helper": "Letters, digits, - _ . ; 64 characters at most",
-  "chat.toolCall.workflow.saveRun.name.invalid": "Only letters, digits and - _ .",
-  "chat.toolCall.workflow.saveRun.scope.remoteOnly":
-    "A remote project can only save into the project.",
-  "chat.toolCall.workflow.saveRun.description": "Description",
-  "chat.toolCall.workflow.saveRun.description.helper":
-    "When-to-use and arguments can be added later in the workflow hub.",
-  "chat.toolCall.workflow.saveRun.consequence":
-    "Writes {path}; afterwards it runs again by name from Automations › Workflows.",
-  "chat.toolCall.workflow.saveRun.overwrite":
-    "This project already has a workflow of this name; saving overwrites it. Its run records stay.",
-  "chat.toolCall.workflow.saveRun.shadowing": "{text}.",
-  "chat.toolCall.workflow.saveRun.submit": "Save as is",
-  "chat.toolCall.workflow.saveRun.submit.overwrite": "Overwrite and save as is",
-  "chat.toolCall.workflow.saveRun.submit.saving": "Saving…",
-  "chat.toolCall.workflow.saveRun.error.invalid_name": "Only letters, digits and - _ .",
-  "chat.toolCall.workflow.saveRun.error.run_not_found":
-    "This run has no record here, so it cannot be saved directly.",
-  "chat.toolCall.workflow.saveRun.error.script_missing":
-    "This run did not keep its script, so use the path above.",
-  "chat.toolCall.workflow.saveRun.error.target_exists":
-    "A workflow of this name exists; confirm the overwrite and save again.",
-  "chat.toolCall.workflow.saveRun.error.compile_failed":
-    "The script did not pass typecheck; nothing was written.",
-  "chat.toolCall.workflow.saveRun.error.write_error": "Writing failed; nothing was saved.",
-  "chat.toolCall.workflow.saveRun.error.generic": "Saving failed.",
-  "chat.toolCall.workflow.run.settings.limit.default": "default {n}",
-  "chat.toolCall.workflow.run.settings.limit.atDefault": "= default",
-  // 只改并发上限、而且运行正在跑：就地生效（docs/dynamic-workflow/concurrency.md）。
-  "chat.toolCall.workflow.run.settings.consequence.concurrencyLive":
-    "Applies to this run right away; no new run is started.",
-  "chat.toolCall.workflow.settingsChange.limitDefault": "limit back to the default",
-  // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
-  // 落的是宿主 ~/.zcode/tmp 下的副本，不是用户挑的位置。
-  "chat.toolCall.workflow.run.artifacts.openAsFile": "Open as file",
-  "chat.toolCall.workflow.run.artifacts.openAsFileFailed": "Could not open this artifact as a file",
-  // 待答问题区（升级问答）：actor 停驻在自己那次 ask 里等
-  // 主代理回话。只读——应答者是主代理，不是用户，所以文案不能读起来像在请用户作答。
-  // amend-resume: the first workspace write closed the predecessor cache; later steps run live.
-  // 上一条是治理器在压共享桶；这一条是用户改了这次 run 自己的上限（就地生效，不另起一次运行）。
-  "chat.toolCall.workflow.run.event.runCapsChanged": "Concurrency limit {previous} → {next}",
-  // 芯片上的数是一条界（min(共享 cap, 本 run 的 limit)），不是此刻在跑的个数。
-  "chat.toolCall.search.tools": "Search tools",
-  "chat.toolCall.search.toolsWithQuery": "Search tools: {query}",
-  "chat.attachments.preview.openText": "Open text attachment",
-  "chat.attachments.topicHistory": "Topic history · {count} messages",
-  // Errors
-  "chat.error.remoteNoAvailableModel":
-    "This remote device has no available model yet. Configure models on this computer first; they will sync to the remote device automatically after you save.",
-
-  // Start Plan per-bucket quota reminders
-
-  // Permissions
-  // 脚本给某些子代理点名了模型时（docs/dynamic-workflow/launch.md「Models the script names」）：那些
-  // 名字不列（作者模型的选择），这一句只改口「默认」——它不再替每一个子代理说话。
-  "chat.permission.workflow.subagentModelDefault": "By default, subagents run on {model}",
-  // 确认窗里可调的两句（docs/dynamic-workflow/presentation.md「The confirmation window」）：句中的值
-  // 就是控件，所以句子被拆成控件前后的两截；改过的那一行句尾多一截「· 原为 X ↺」。
-  "chat.permission.workflow.settings.model.lead": "Subagents run on",
-  "chat.permission.workflow.settings.model.noCatalog": "Subagents stay on the session model",
-  "chat.permission.workflow.settings.model.noCatalogReason": "this agent has no model catalog",
-  "chat.permission.workflow.settings.model.leadDefault": "By default, subagents run on",
-  "chat.permission.workflow.settings.model.noCatalogDefault":
-    "By default, subagents stay on the session model",
-  "chat.permission.workflow.settings.limit.lead": "At most",
-  "chat.permission.workflow.settings.limit.trail": "subagents at once",
-  "chat.permission.workflow.settings.limit.none": "no limit of its own",
-  "chat.permission.workflow.settings.was": "was {value}",
-  "chat.permission.workflow.settings.reset": "Back to the proposed value",
-  // 改过设置后前两个选项换描述（docs/dynamic-workflow/launch.md「The options」）：会话免确认只管
-  // 「以后不再问」，调整只随这一次应答走。
-  "chat.permission.workflow.allowOnce.adjusted": "Run once with the adjusted settings",
-  "chat.permission.workflow.allowForSession.adjusted":
-    "This run with the adjusted settings; later runs are not asked and carry their own",
-  // ── 可复用工作流（docs/dynamic-workflow/launch.md）──
-  // saved 来源徽标（运行确认窗）：只说明脚本来自哪个文件、带了什么实参。
-  // 它不表达任何信任——保存不产生信任，已保存的工作流照样过完整的运行确认。
-  "chat.permission.workflow.save.args.showAll": "Show all {count} arguments",
-  "chat.permission.workflow.save.args.showFewer": "Show fewer arguments",
-  "chat.permission.workflow.save.showMore": "Show more",
-  "chat.permission.workflow.save.showLess": "Show less",
-  "chat.interactionOrigin.subagent.named": "Subagent · {description}",
-  "chat.interactionOrigin.subagent.titleNamed":
-    "Request from subagent: {agentType} · {description}",
-
-  // Elicitation
-
-  // Modes
-  "mode.default": "Default",
-  "mode.acceptEdits": "Accept edits",
-  "mode.label.glm.default": "Default",
-  "mode.label.glm.guarded": "Autonomous mode",
-  "mode.description.glm.guarded": "Ask when there’s risk",
-  "mode.description.glm.default": "Use default confirmations.",
-
-  // ZCode Agent
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND":
-    "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
-  "zcode.error.CLAUDE_UNKNOWN_COMMAND_WITH_ARGS":
-    "Claude Code does not recognize {command} (args: {args}). Check the command name, or switch to an Agent/skill that supports it and try again.",
-
-  // Debug info bar
-
-  // Resource manager
-  "resourceManager.network": "Network",
-  "resourceManager.network.description":
-    "Records local app requests while this window is open. Keeps the latest 1,000.",
-  "resourceManager.network.filter": "Filter by URL, process, PID or method",
-  "resourceManager.network.clear": "Clear",
-  "resourceManager.network.unavailable": "Network requests are unavailable",
-  "resourceManager.network.count": "{count} requests · {dropped} evicted or dropped",
-  "resourceManager.network.previous": "Previous",
-  "resourceManager.network.next": "Next",
-  "resourceManager.network.time": "Time",
-  "resourceManager.network.process": "Process / PID",
-  "resourceManager.network.method": "Method",
-  "resourceManager.network.empty": "Waiting for new network requests…",
-  "resourceManager.network.noMatches": "No matching requests",
-
-  // Feedback
-  // Forms
-  // ---- Scheduled tasks / Automations ----
-  // CUA (Computer Use)
-  "settings.computerUse.unsupported.linuxDescription":
-    "Computer Use is not yet supported on Linux desktops. Switch to a local macOS or Windows workspace.",
-  "chat.highspeed.label": "Highspeed",
-  "chat.highspeed.expiresAt": "Highspeed card expires at {time}",
-  "chat.highspeed.modelLocked": "Model is locked while Highspeed is active",
-  "chat.highspeed.originalModel": "Original model: {model}",
-  "chat.highspeed.remainingTime": "Time remaining: {time}",
-  "chat.highspeed.generatedBy": "Generated by Highspeed",
-  "chat.highspeed.shareAction": "Share",
-  "chat.highspeed.viewAction": "View",
-  "chat.highspeed.share": "Share this accelerated run",
-  "chat.highspeed.shareFailed": "Could not share. Try again later.",
-  "chat.highspeed.savedDuration": "About {duration} saved",
-  "chat.highspeed.statusTag": "HighSpeed",
-  "chat.highspeed.cardExpiredFallback":
-    "The Highspeed card has expired. The rest of this turn will continue with the original model.",
-  "chat.highspeed.requestFailedFallback":
-    "Highspeed is temporarily unavailable. The rest of this turn will continue with the original model.",
-  "globalNotice.highspeed.title": "Highspeed run completed",
-  "globalNotice.highspeed.summary": "{tokens} output tokens · {duration}s",
-  "globalNotice.highspeed.tagline": "Share a Highspeed moment",
-  "globalNotice.highspeed.sidebarTagline": "Share your speedup",
-  "globalNotice.highspeed.share": "Share",
-  "globalNotice.highspeed.view": "View",
-  "globalNotice.highspeed.imageCopied": "Acceleration stats copied",
-  "globalNotice.highspeed.imageCopyFailed": "Could not copy image. Try again.",
-  "globalNotice.highspeed.textCopied": "Share text copied",
-  "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
-  "globalNotice.highspeed.copyImage": "Copy image",
-  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
-  "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
-  "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
-  "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
-  "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
-  "globalNotice.highspeed.copySummary":
-    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
-  "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
-  "globalNotice.highspeed.close": "Close Highspeed share card",
-  ...requestSecurityMessagesEnUS,
-
-  // ── CE 线增量键（社区版专属功能文案；官方底座之上追加，勿并入官方段）──
-  "chat.toolbar.thoughtLevel.value.auto": "Auto",
-  "chat.toolbar.thoughtLevel.auto.description":
-    "Top level; drops one level on tool-continuation turns. Applies to new sessions.",
-  "chat.toolbar.streamSpeed.title":
-    "Output speed is measured from the first token to reply completion (excludes tool runs and waits); cache hit is the session cumulative stat",
-  "chat.toolbar.streamSpeed.cache": "cache hit",
-  // Restored in ce.4: once the connection plane landed, waiting finally has a producer —
-  // "service is running AND zero connected devices" (GET …/connections returns an empty array).
-  // Same meaning as upstream webRemoteControl.statusDetail.idle; wording is our own.
-  // Tabs (task-93): two different remote paths, side by side rather than merged.
-  // Naming red line: never call our path "self-hosted" in the UI — that is an implementation
-  // detail, not a user capability. The umbrella name stays "Remote control"; the two paths are
-  // "Web control" (a browser drives the workbench on this machine) and "Chat bot" (you talk to a
-  // bot inside a chat app). Keep clear of the sidebar's existing "Remote connection"
-  // (`remote.trigger`, i.e. connect out) — that one points the opposite way.
-  // "Chat bot" is chosen because it is literally the official English wording
-  // (`webRemoteControl.description` says "through chat bots") and shares no words with
-  // "Remote connection". The description names WeChat / Feishu / Telegram to disambiguate.
-  // fix.2: the "server-side capability is not wired in yet" notice was removed together with its
-  // only producer — a missing channel now hides the whole tab (canRenderRemoteControlImBotTab in
-  // remoteControlPanelModel.ts), so the key would be unreachable. Keeping it would suggest a path
-  // that no longer exists.
-  // When it takes effect (spec §10 P4: a newly added channel needs a restart; acceptable, but
-  // must not be silent). Not phrased as "the config has not taken effect" — the user needs to
-  // know what to do now.
-  // Wording fix after this batch's server hardening: do NOT offer "this machine only" as the
-  // no-token fallback — with trusted-proxy/registered-host signals present, loopback binding is
-  // refused too (packages/server/src/exposureGate.ts), so that would promise a way out that
-  // does not exist.
-  // ce.4 connection plane: the token-rotation entry appears on the DESKTOP panel only
-  // (spec §6.5 decision ④). The UI gates it on "does the host provide the action" —
-  // absent means NOT rendered (not rendered as a disabled button).
-  // Listen scope (spec §3.3): defaults to the local network, with a one-click switch back to loopback.
-  // Connected devices (spec §3.3 / §6.4). Empty and unreadable are two different facts:
-  // an empty array means nobody is connected; unreadable (null) means unknown, so we claim nothing.
-  // Second confirmation for ce.4 write actions (spec §6.3).
-  // Always-on danger notice (spec §3.5; cannot be dismissed).
-  // Switch-state copy: prerequisite states (loading / plugin missing) must stay distinct from
-  // "turned off", or the loading window reads as "you need to switch it on" while the switch
-  // can only fail with Plugin not found.
   manual_claim_failure_not_found: "This plan no longer exists. Refresh and try again.",
   manual_claim_failure_unavailable: "The campaign has not started or has already ended.",
   manual_claim_failure_already_claimed: "This account has already claimed this plan.",

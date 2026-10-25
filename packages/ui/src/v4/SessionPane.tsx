@@ -5,11 +5,10 @@ import {
   getRemoteConnectionFailureCode,
 } from "@/lib/remoteWorkspaceServiceError.js";
 import { buildConversationShareItems } from "@/v4/conversationShareItems.js";
-// Modified by ZCode: F5: SessionPaneProps 增加 compactForRemoteControl 可选 prop(上游 compactForRemoteControl)。
 import { resolveSelectionSideInheritedModel } from "@/lib/selectionSideInheritedModel.js";
 import { useStartPlanRecommendation } from "@/hooks/useStartPlanRecommendation.js";
 import type { SessionCreateSource } from "@zcode/shared";
-// CE-SYNC: @/lib/sessionCreateTelemetry（會話建立來源上報）屬 CE 已剪除的上報模組，import 刪除。
+import { reportSessionCreate } from "@/lib/sessionCreateTelemetry.js";
 import { getLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 import { BotGroupDeliveryProvider } from "@/v4/BotGroupDeliveryAction.js";
 /* oxlint-disable eslint(max-lines) -- SessionPane 是单 pane 竖切的命令编排收口（订阅/发送/停止/fork/edit/retry/queue/slash 全集），与旧 ChatView 同粒度；HEAD 已超限（693 行计数），拆散命令组会打散 dispatchCommand/snapshotRef 的闭包纪律。 */
@@ -81,6 +80,7 @@ import { WORKSPACE_FILE_DRAG_MIME } from "@/lib/workspaceFileDrag.js";
 import { buildChatSessionScrollMemoryKey } from "@/lib/chatSessionScrollMemory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { useServices } from "@/hooks/useServices.js";
+import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { browserGlobalNoticeStore } from "@/global-notice/globalNoticeStore.js";
 import {
   HIGHSPEED_SEND_WAIT_BUDGET_MS,
@@ -123,6 +123,7 @@ import {
   collectHighspeedCardShareBlockers,
   listHighspeedCardsAwaitingAutoShare,
 } from "@/highspeed/highspeedShareDiagnostics.js";
+import type { SessionOpenTrigger } from "@/lib/sessionOpenArmsTelemetry.js";
 import { useDynamicWorkflowAvailability } from "@/hooks/useDynamicWorkflowAvailability.js";
 import { resolveWorkflowResumeHandler } from "@/v4/workflowResumeGate.js";
 import {
@@ -280,10 +281,14 @@ import type {
 import type { SessionLease } from "@/v4/sessionDataLayer.js";
 import { ProviderRuntimeHeadersCaptchaAttachment } from "@/v4/ProviderRuntimeHeadersCaptchaAttachment.js";
 import { V4InteractionDialogs } from "@/v4/V4InteractionDialogs.js";
-// CE-SYNC: 上游的 conversationTelemetry / sendFunnel / openArms / subscriptionError 四個遙測
-// hook 全屬「上報」鏈，CE 已整條移除（ConversationTelemetryAttachment、conversationTelemetrySupervisor、
-// useSessionSubscriptionErrorTelemetry、useSessionOpenArmsTelemetry 都不在樹上），以下 import 一併刪除；
-// localTtftObserver 是 CE 刻意保留的 no-op 協議形状（見該檔說明），不在此列。
+import {
+  useScopedConversationTelemetryForegroundEnabled,
+  useScopedConversationTelemetrySupervisor,
+} from "@/v4/telemetry/ConversationTelemetryAttachment.js";
+import type { ConversationPromptTelemetrySeed } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
+import { resolveSendAckSettlement } from "@/v4/telemetry/conversationTelemetrySupervisor.js";
+import { useSessionSubscriptionErrorTelemetry } from "@/v4/telemetry/useSessionSubscriptionErrorTelemetry.js";
+import { useSessionOpenArmsTelemetry } from "@/v4/telemetry/useSessionOpenArmsTelemetry.js";
 import {
   parseV4VisibleSlashCommand,
   parseSelectionSideSlashCommand,
@@ -348,31 +353,6 @@ import {
   type ConversationSelectionReference,
 } from "@/lib/conversationSelectionReference.js";
 
-// CE-SYNC: 上游把這兩個型別放在遙測模組裡（@/lib/sessionOpenArmsTelemetry、
-// @/v4/telemetry/conversationTelemetrySupervisor），CE 已整條剪除上報鏈，那兩個模組不在樹上。
-// 這裡只保留仍被業務代碼消費的形状：openTrigger 是呼叫端傳進來的開啟來源標記（上報者已移除，
-// 欄位保留只是為 V4ChatPane / WorkbenchPane / SelectionSideChatPane 的 JSX 相容），
-// telemetrySeed 則只剩 localTtft 還有真實用途（v4 命令信封的協議欄位，CE 端已降級為 no-op）。
-// CE-SYNC-TODO: 若要收斂成單一來源，可把這兩個型別搬進一個 type-only 模組，
-// 目前與 ConversationComposer 各留一份同 shape 定義（結構型別相容，不影響呼叫端）。
-type SessionOpenTrigger =
-  | "sidebar"
-  | "search"
-  | "deeplink"
-  | "reload"
-  | "subagent"
-  | "selection"
-  | "split"
-  | "pane";
-
-export interface ConversationPromptTelemetrySeed {
-  localTtft?: import("@zcode/shared").LocalTtftContext;
-  /** 用户触发原始发送动作的 renderer 时钟。 */
-  sendTime: number;
-  /** 是否中途经过队列二次确认弹窗（队列重发时沿用同一 seed）。 */
-  queueConfirmed?: boolean;
-}
-
 export interface SessionPaneProps {
   paneId: string;
   sessionId: string | null;
@@ -392,7 +372,6 @@ export interface SessionPaneProps {
   remoteSessionId?: string | null;
   /** Prompt 模板埋点当前仅覆盖 Desktop；Web / 手机远控保留 UI 行为但不触发该事件。 */
   isDesktop?: boolean;
-  /** 远控紧凑态(F5 plugin-ui 提取带入)。 */
   compactForRemoteControl?: boolean;
   provider?: ZCodeProvider;
   onSessionCreated?: (sessionId: string) => void;
@@ -693,8 +672,7 @@ export function SessionPane({
     fileChanges,
     fileRewindPreview,
   } = useV4Conversation();
-  // CE-SYNC: 原本的 const platform = useOptionalPlatform() 只供 ARMS 開啟上報當 reporter，
-  // 上報鏈已移除，此局部變數不再有消費方，連同 useOptionalPlatform 的 import 一起清掉。
+  const platform = useOptionalPlatform();
   const {
     conversationShareService,
     highspeedCardService,
@@ -732,8 +710,31 @@ export function SessionPane({
   });
   // SessionPane 已位于目标 Workspace 的 ServiceProvider 内，直接订阅该 Host Service；
   // 不再从展示组件二次解析 workspace/remote 路由。
-  // CE-SYNC: 上游此處的 conversationTelemetry supervisor / foreground 註冊屬上報鏈，CE 已移除，
-  // 對應的 attachForeground effect 一併刪除；telemetryVisible prop 保留（仍作為錯誤横幅的可見性閘）。
+  const conversationTelemetry = useScopedConversationTelemetrySupervisor({
+    workspacePath,
+    ...(workspaceIdentity ? { workspaceIdentity } : {}),
+    ...(remoteSessionId ? { remoteSessionId } : {}),
+  });
+  const conversationTelemetryForegroundEnabled = useScopedConversationTelemetryForegroundEnabled({
+    workspacePath,
+    ...(workspaceIdentity ? { workspaceIdentity } : {}),
+    ...(remoteSessionId ? { remoteSessionId } : {}),
+  });
+  const conversationTelemetryForegroundOwnerRef = useRef<object>({});
+  useEffect(() => {
+    if (
+      !conversationTelemetry ||
+      !conversationTelemetryForegroundEnabled ||
+      !telemetryVisible ||
+      !sessionId
+    ) {
+      return undefined;
+    }
+    return conversationTelemetry.attachForeground(
+      conversationTelemetryForegroundOwnerRef.current,
+      sessionId,
+    );
+  }, [conversationTelemetry, conversationTelemetryForegroundEnabled, sessionId, telemetryVisible]);
   const [lease, setLease] = useSessionPaneLease(sessionId, layer);
   const state = useConversationProjection(lease);
   const snapshot = state.snapshot;
@@ -1059,8 +1060,22 @@ export function SessionPane({
     workspacePath,
   ]);
   const sessionLeaseReady = lease?.sessionId === sessionId;
-  // CE-SYNC: 上游的 useSessionOpenArmsTelemetry（會話開啟耗时上報 ARMS）屬遙測鏈，CE 已移除，
-  // 连同 only-for-it 的 shouldMeasureExistingSessionOpen 一起刪；openTrigger prop 本身保留相容。
+  const shouldMeasureExistingSessionOpen =
+    sessionLeaseReady && newlyCreatedSessionIdRef.current !== sessionId;
+  useSessionOpenArmsTelemetry({
+    sessionId,
+    snapshot,
+    openTiming: sessionLeaseReady ? state.openTiming : undefined,
+    rendererTiming: sessionLeaseReady ? state.rendererTiming : undefined,
+    openKind: sessionLeaseReady ? lease?.openKind : undefined,
+    openTrigger,
+    startedAt: sessionLeaseReady ? lease?.startedAt : undefined,
+    status: state.status,
+    lastError: state.lastError,
+    enabled: shouldMeasureExistingSessionOpen,
+    readOnly,
+    reporter: platform,
+  });
   useEffect(() => {
     const newlyCreatedSessionId = newlyCreatedSessionIdRef.current;
     if (newlyCreatedSessionId !== null && newlyCreatedSessionId !== sessionId) {
@@ -1106,8 +1121,21 @@ export function SessionPane({
   const pluginReferenceIconsEnabled =
     isSessionPluginCatalogReady(state.status, sessionId, snapshot?.sessionId) &&
     hasPluginReferenceUserRows(snapshot?.rows.window ?? []);
-  // CE-SYNC: 上游這段 useEffect 只為 send_result 落定（notifyUserInputRendered）服務，
-  // 屬上報鏈，CE 已移除，整段刪除。
+  // send_result 的落定信号：用户消息真正画进对话历史。z-code 没有乐观渲染，
+  // 气泡必须等投影回流出 userInput row 才出现，所以 ACK accepted 不能算发送完成。
+  // 取 useEffect 而非 store 订阅回调 —— effect 在 DOM commit 之后跑，此刻气泡已在屏幕上。
+  useEffect(() => {
+    const rows = snapshot?.rows.window;
+    if (!rows || rows.length === 0) return;
+    // 不能只取最后一条 userInput：后台结果行可能紧随其后插到尾部，
+    // 只看尾部会漏掉用户自己那条，误判成 render_timeout。supervisor 侧按
+    // 待渲染表 O(1) 过滤，历史回填 / 切会话重载推来的老 row 不会误触发。
+    for (const row of rows) {
+      if (row.kind === "userInput" && row.sourceCommandId) {
+        conversationTelemetry?.notifyUserInputRendered(row.sourceCommandId);
+      }
+    }
+  }, [conversationTelemetry, snapshot]);
   const fileChangesRequestCache = useMemo(
     () => new Map<string, Promise<V4ConversationFileChangesResult>>(),
     [fileChanges, sessionId, snapshot?.logEpoch],
@@ -1890,8 +1918,28 @@ export function SessionPane({
     draftNavigation.controller = new AbortController();
     return () => draftNavigation.controller.abort();
   }, [draftNavigation]);
-  // CE-SYNC: 上游的 reportDraftCreated（會話建立來源上報，@/lib/sessionCreateTelemetry 已被 CE 剪除）
-  // 整段刪除；建立來源本身仍隨命令信封與 task group placement 傳遞，不損失業務語意。
+  // 首发 commandId 在 accepted 时已存在，也是 completion 的 message_id；不必等回复完成。
+  const reportDraftCreated = useCallback(
+    (createdSessionId: string, source: SessionCreateSource, messageId: string) => {
+      void reportSessionCreate(platform, {
+        sessionId: createdSessionId,
+        messageId,
+        workspacePath,
+        workspaceIdentity,
+        remoteSessionId,
+        source,
+        clientKind: isDesktop ? "desktop" : compactForRemoteControl ? "mobile" : "web",
+      });
+    },
+    [
+      platform,
+      workspacePath,
+      workspaceIdentity,
+      remoteSessionId,
+      isDesktop,
+      compactForRemoteControl,
+    ],
+  );
   const handleDraftSessionCreated = useCallback(
     async (
       createdSessionId: string,
@@ -1899,9 +1947,7 @@ export function SessionPane({
       messageId?: string,
       taskGroupId?: string | null,
     ) => {
-      // CE-SYNC: 上游這裡的 reportDraftCreated → reportSessionCreate（@/lib/sessionCreateTelemetry）
-      // 是「會話建立來源」的上報面，CE 已整條移除上報鏈；createSource / messageId 兩個參數保留，
-      // 因為它們仍參與 taskGroup placement（creationId）與命令信封。
+      if (messageId) reportDraftCreated(createdSessionId, createSource ?? "session", messageId);
       const commit = () => {
         // Bug 根因：Session 打开埋点只衡量已有 Session，但草稿首发过去会把新建/预热提升的
         // sessionId 直接交给同一 hook。预热 lease 还保留草稿期的 startedAt 与空 snapshot timing，
@@ -1967,6 +2013,7 @@ export function SessionPane({
       refreshTaskGroups,
       intl,
       draftNavigation,
+      reportDraftCreated,
       onSessionCreated,
       promoteComposerDraft,
       workspaceIdentity,
@@ -2187,7 +2234,17 @@ export function SessionPane({
           reasonCode: String(error),
           at: Date.now(),
         });
-        // CE-SYNC: 上游這裡的 send_result 落定（settleSendResult）屬上報鏈，CE 已移除。
+        // 发送漏斗落定：telemetrySeed 只有真实用户发送才携带，两步式 createSession
+        // 与后台任务无 seed，天然不会伪造 send_result。
+        if (telemetrySeed) {
+          conversationTelemetry?.settleSendResult({
+            seed: telemetrySeed,
+            sessionId: targetSessionId,
+            commandId: envelope.commandId,
+            status: "fail",
+            reasonCode: isProviderNotReadyError(error) ? "provider_not_ready" : "transport_error",
+          });
+        }
         throw error;
       }
       pendingCommandRegistry.applyAck(envelope, ack);
@@ -2204,8 +2261,21 @@ export function SessionPane({
         // watchdog 只重订阅，不伪造消息、不恢复旧分支，也不重放命令。
         lease.store.expectAcceptedInputProjection(envelope.commandId);
       }
-      // CE-SYNC: 上游這裡的 acceptPromptSeed（把已受理的 prompt seed 交給 supervisor 做
-      // 端到端耗時上報）屬遙測鏈，CE 已移除；acceptedSessionId 的解析只為它服務，一併刪除。
+      if (ack.status === "accepted" && telemetrySeed) {
+        const acceptedSessionId =
+          ack.result?.type === "createSelectionSideSession"
+            ? ack.result.sessionId
+            : (targetSessionId ??
+              (ack.result?.type === "createSession" ? ack.result.sessionId : null));
+        if (acceptedSessionId) {
+          conversationTelemetry?.acceptPromptSeed({
+            ...telemetrySeed,
+            sessionId: acceptedSessionId,
+            sourceCommandId: envelope.commandId,
+            memoryEnabled: ack.memoryEnabled,
+          });
+        }
+      }
       if (ack.status === "accepted" && highspeedCard && targetSessionId) {
         recordHighspeedTurn({
           sessionId: targetSessionId,
@@ -2214,8 +2284,36 @@ export function SessionPane({
           createdAt: Date.now(),
         });
       }
-      // CE-SYNC: 上游這裡的 resolveSendAckSettlement + awaitSendRender / settleSendResult 是
-      // 發送漏斗上報的落定分支，CE 已移除整條 supervisor，這段不再有行為等價物。
+      if (telemetrySeed) {
+        // 队列二次确认的 ACK 返回 null（非终态），落定会让 first-wins 吃掉真实结果。
+        const outcome = resolveSendAckSettlement(ack);
+        if (outcome) {
+          const settledSessionId =
+            ack.result?.type === "createSelectionSideSession"
+              ? ack.result.sessionId
+              : (targetSessionId ??
+                (ack.result?.type === "createSession" ? ack.result.sessionId : null));
+          if (outcome.kind === "awaitRender") {
+            // ACK 只代表 Host 收下了命令，用户气泡此刻还没画出来；
+            // 等投影回流出 userInput row（或 30s 超时）再落定端到端耗时。
+            conversationTelemetry?.awaitSendRender({
+              seed: telemetrySeed,
+              sessionId: settledSessionId,
+              commandId: envelope.commandId,
+              ackStatus: outcome.ackStatus,
+            });
+          } else {
+            conversationTelemetry?.settleSendResult({
+              seed: telemetrySeed,
+              sessionId: settledSessionId,
+              commandId: envelope.commandId,
+              status: outcome.status,
+              ackStatus: outcome.ackStatus,
+              reasonCode: outcome.reasonCode,
+            });
+          }
+        }
+      }
       // 生产构建 renderer 日志关闭，ack 摘要写入有界调试缓冲供 e2e/现场 probe。
       recordV4CommandAck({
         type,
@@ -2244,6 +2342,7 @@ export function SessionPane({
       captureAcceptedModelSelection,
       newTaskComposerScope,
       baseWorkspaceServices.projectService,
+      conversationTelemetry,
       lease,
       provider,
       sendCommand,
@@ -3638,8 +3737,7 @@ export function SessionPane({
           heldQueueDisposition,
           expectedHeldQueueItemIds,
           submission,
-          // CE-SYNC: 原本這裡傳的是 reportDraftCreated（建立來源上報），CE 已移除上報鏈，
-          // onAccepted 這個可選回調就不再傳。
+          (messageId) => reportDraftCreated(targetSessionId, createSourceAtSend, messageId),
         );
         if (consumed === "confirmationRequired") return consumed;
         if (consumed) {
@@ -3742,6 +3840,7 @@ export function SessionPane({
       availableSelectionSideSlashCommandNames,
       appSlashCommands,
       handleDraftSessionCreated,
+      reportDraftCreated,
       handleOpenSelectionSideConversationWithPrompt,
       invalidateActiveHighspeedCard,
       intl,
@@ -4623,8 +4722,12 @@ export function SessionPane({
   const queueEditActiveForCurrentComposer =
     queueEditOperation?.sessionId === sessionId && queueEditOperation.workspaceKey === workspaceKey;
   const errored = sessionId !== null && state.status === "error";
-  // CE-SYNC: 上游的 useSessionSubscriptionErrorTelemetry（訂閱失敗上報）屬遙測鏈，CE 已移除；
-  // errored 仍供錯誤橫幅與重試入口使用，保持原義。
+  useSessionSubscriptionErrorTelemetry({
+    supervisor: conversationTelemetry,
+    sessionId,
+    lastError: state.lastError,
+    visible: errored && telemetryVisible && conversationTelemetryForegroundEnabled,
+  });
   // retry 的产品裁决属于行级权威投影。这里仅提供命令能力，入口是否展示
   // 完全读取 row.actions.canRetry，禁止再用 pane phase 形成第二套 guard。
   const retryActionsEnabled = runtimeReady && !readOnly && !selectionSideChat && Boolean(sessionId);
@@ -5381,7 +5484,7 @@ export function SessionPane({
       onRuntimeRestart={onRuntimeRestart}
       onRuntimeLifecycle={onRuntimeLifecycle}
       provider={provider}
-      telemetryVisible={telemetryVisible}
+      telemetryVisible={telemetryVisible && conversationTelemetryForegroundEnabled}
       readPlanIdentitySnapshot={readPlanIdentitySnapshot}
       onSendText={handleSendText}
       highspeedCard={activeHighspeedCard}

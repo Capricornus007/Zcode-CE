@@ -5,7 +5,6 @@
 // 数据装配与交互接线，本文件承载纯展示分区。props 全是烹熟的视图值——不接触
 // 投影、lease 或命令通道。
 
-// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { workflowRunStopReasonMessageId } from "@/components/workflow-graph/run-status-presentation.js";
 import { memo, type ReactNode } from "react";
 import type { WorkflowRunSaveSlots } from "@/project-workflow/WorkflowRunSaveControls.js";
@@ -71,7 +70,7 @@ function SubagentModelSegment({
 /**
  * 状态头：第一行是名字与控件（Configure、
  * Resume、Stop），第二行是灯与状态词 + 并发芯片——三枚按钮挤在状态旁边太满，状态因此单独成行。
- * 其下是 lineage 行与与聊天卡页脚同文案的摘要行——同一个 run 在两个面上必须说同一句话。
+ * 其下是 lineage 行与与聊天卡页脚**同文案**的摘要行——同一个 run 在两个面上必须说同一句话。
  * 摘要行素材缺席（图不可得，建不出时间线）时退回既有的用量行。
  */
 export const WorkflowRunStatusHeader = memo(function WorkflowRunStatusHeader({

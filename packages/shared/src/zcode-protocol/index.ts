@@ -1,5 +1,9 @@
 import { requestVerificationReasons } from "../request-security-edition/verification-policy.js";
 import { MCP_SERVER_MAX_DISABLED_TOOLS } from "../mcpDisabledTools.js";
+import { zcodeProtocolTraceSchema } from "./trace.js";
+// Bot 反向回复的名字解析/待澄清结果与 App、CLI 使用同一严格 schema。
+export { channelReplyRequestSchema, channelReplyResultSchema } from "../channel-mention.js";
+export { zcodeProtocolTraceSchema, type ZCodeProtocolTrace } from "./trace.js";
 import {
   databaseMigrationFactsSchema,
   databaseStartupErrorCodeSchema,
@@ -370,7 +374,6 @@ export type ZCodeProtocolRequestId = z.infer<typeof zcodeProtocolRequestIdSchema
 // 远程历史附件仅通过现有连接的私有反向频道传输，单块保持在 RPC 帧预算内。
 export const TOPIC_RESOURCE_RELAY_CHUNK_BYTES = 384 * 1024;
 export const TOPIC_RESOURCE_RELAY_CHANNEL = "host-topic-resource";
-// 话题资源读取/取消：Host 回放历史附件给 UI 的窄端口（F8 独立话题协作的协议面）。
 export const zcodeTopicResourceRelayRequestSchema = zcodeTopicResourceReadParamsSchema
   .extend({
     workspacePath: z.string().min(1).max(4096),
@@ -404,8 +407,6 @@ export const zcodeTopicResourceRelayChunkSchema = z
     dataBase64: z.string().max((TOPIC_RESOURCE_RELAY_CHUNK_BYTES / 3) * 4),
   })
   .strict();
-
-// trace 摘要 schema 已抽到 ./trace.js（channel-mention 与采样共用）；此处只再导出。
 
 export const zcodeProtocolRequestSchema = z
   .object({
@@ -1080,6 +1081,7 @@ export const zcodeMcpUiCallToolResultSchema = z
   })
   .strict();
 export type ZCodeMcpUiCallToolResult = z.infer<typeof zcodeMcpUiCallToolResultSchema>;
+
 export const zcodeSessionImportMessageSchema = z
   .object({
     role: z.enum(["user", "assistant"]),
@@ -1924,7 +1926,7 @@ export const zcodeSessionSubagentsResultSchema = z
   })
   .strict();
 export type ZCodeSessionSubagentsResult = z.infer<typeof zcodeSessionSubagentsResultSchema>;
-// 服务端 feature key 的取值域在协议里的 zod 形态（packages/shared/src/dynamic-workflow-feature.ts）。
+/** 服务端 feature key 的取值域在协议里的 zod 形态（packages/shared/src/dynamic-workflow-feature.ts）。 */
 export const zcodeDynamicWorkflowModeSchema = z.enum(DYNAMIC_WORKFLOW_MODES);
 
 export const zcodeSessionCreateParamsSchema = z
@@ -1948,7 +1950,8 @@ export const zcodeSessionCreateParamsSchema = z
     // 动态工作流灰度：与 offPeakToolEnabled 同一
     // 模式——host 裁决后下发，缺省不下发 = 不注册工作流工具簇（fail-closed）。
     dynamicWorkflowEnabled: z.boolean().optional(),
-    // 灰度 mode 随布尔同行下发：onDemand 让 CLI 把工具推迟到会话首次 /workflow 才注册；缺席 = 按布尔行事。
+    // 灰度 mode 随布尔同行下发（launch.md「On demand: activation」）：`onDemand` 让 CLI 把十个
+    // 工具推迟到会话首次 `/workflow` 才注册；缺席 = 按布尔行事（alwaysOn），供旧 Host 配对。
     dynamicWorkflowMode: zcodeDynamicWorkflowModeSchema.optional(),
   })
   .strict();
@@ -3047,7 +3050,7 @@ export type ZCodePluginsListUiSurfacesResult = z.infer<
   typeof zcodePluginsListUiSurfacesResultSchema
 >;
 
-// ── Plugin 对话引用 catalog──
+// ── Plugin 对话引用 catalog（docs/plugin-reference-mention.md）──
 // Session-scoped 只读投影：带 sessionId → 该 Session 创建时冻结的身份 catalog；
 // 不带 → workspace 当前 catalog（新建草稿 Picker）。身份与能力字段保持
 // identifiers-only，不携带 rootPath/配置等；可选 icon/displayName(I18n)/description(I18n)
@@ -3396,10 +3399,10 @@ export type ZCodeWorkflowsMoveResult = z.infer<typeof zcodeWorkflowsMoveResultSc
 
 // ── 从一次 run 保存工作流（docs/dynamic-workflow/transcript-and-notifications.md「Saving the
 // run, and running it again」）──
-// 完成卡的「直接保存」走这条：不收脚本，只收 runId——要写的那份正文是这次 run 实际执行的
+// 完成卡的「直接保存」走这条：**不收脚本，只收 runId**——要写的那份正文是这次 run 实际执行的
 // 脚本，agent 从 journal 记录（`scriptText`）里读。脚本不经 GUI 走一圈有两个后果值得写下来：
-// 修订过的 run 存下的是结算它的那一份，而工具行入参被快照裁成预览的老对话也照样存得出
-// 同样的字节。名字合法性、覆盖、遮蔽与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
+// 修订过的 run 存下的是**结算它的**那一份，而工具行入参被快照裁成预览的老对话也照样存得出
+// 同样的字节。名字合法性、覆盖、遮��与类型检查全部复用 SaveWorkflow 的同一套实现（不变式 3）。
 /** 另一档已有同名定义（遮蔽事实）；与 contracts 的 SavedWorkflowShadowing 逐字对齐。 */
 export const zcodeSavedWorkflowShadowingSchema = z.enum(["hides_global", "hidden_by_project"]);
 export type ZCodeSavedWorkflowShadowing = z.infer<typeof zcodeSavedWorkflowShadowingSchema>;
@@ -3453,7 +3456,7 @@ export const zcodeWorkflowsSaveResultSchema = z.union([
 export type ZCodeWorkflowsSaveResult = z.infer<typeof zcodeWorkflowsSaveResultSchema>;
 
 // ── 一次 run 对应哪个已保存工作流 ──
-// 完成卡的「已保存」芯片与「再次运行」都问这一个问题，而答案推导得来、不记在卡上：重开
+// 完成卡的「已保存」芯片与「再次运行」都问这一个问题，而答案**推导得来、不记在卡上**：重开
 // 会话、换一个窗口保存、在对话里保存，都走同一条判定。判定住在 agent 一侧，因为两份事实
 // （run 的 journal 记录与磁盘上的定义）都在那里；返回解析好的 entry，用户后来删掉的那一份
 // 因此会自动不再算数。
@@ -4049,7 +4052,7 @@ export type ZCodeAutomationDeleteProtocolResult = z.infer<typeof zcodeAutomation
 // ---- Off-Peak（闲时任务）会话内创建协议----
 // 与 automation 兄弟并列（独立域，禁止互相复用标记/表）。workspace 由 host 端从
 // 当前 session 注入，不进协议参数（对称 automation/create）。permissionMode 只开放产品
-// 四档词表；缺省解析在 host 端（yolo / allowed_models 末位 / 最高推理档）。
+// 四档词表（D29-4）；缺省解析在 host 端（D49-4：yolo / allowed_models 末位 / 最高推理档）。
 export const zcodeOffPeakPermissionModeSchema = z.enum([
   "build",
   "edit",

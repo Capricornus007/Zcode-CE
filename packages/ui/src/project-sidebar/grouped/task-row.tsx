@@ -4,18 +4,13 @@ import { memo, useState } from "react";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import type { UniqueIdentifier } from "@dnd-kit/core";
-import { isCronTask, isOffPeakTask, type ZCodeTaskMeta } from "@zcode/shared";
+import { isCronTask, isOffPeakTask } from "@zcode/shared";
 import { ArrowUpToLine, Clock, Cloud, Folder, ListTree, LoaderIcon, Moon, X } from "lucide-react";
 import { cn } from "@/components/lib/utils.js";
 import { Badge } from "@/components/ui/badge.js";
 import { toast } from "@/components/ui/toast.js";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu.js";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip.js";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import {
   deriveTaskLeadingIndicator,
@@ -50,6 +45,7 @@ function GroupedTaskRowComponent({
   activeWorkspacePath,
   activeWorkspaceIdentity,
   activeTaskId,
+  mobileActiveTaskKey,
   workspaceLabel,
   onSelectTask,
   onCloseTask,
@@ -71,6 +67,7 @@ function GroupedTaskRowComponent({
   activeWorkspacePath: string;
   activeWorkspaceIdentity?: string;
   activeTaskId: string | null;
+  mobileActiveTaskKey?: string | null;
   workspaceLabel: string;
   onSelectTask: (workspacePath: string, taskId: string, workspaceIdentity?: string) => void;
   onCloseTask: (task: ZCodeTaskMeta) => void;
@@ -104,7 +101,7 @@ function GroupedTaskRowComponent({
   // 交互胶囊是当前最高优先级的右侧状态；无论来自 sessions-index 摘要还是
   // activity attention，都不应再并排显示相对时间并挤压任务标题。
   const hasPendingInteraction = Boolean(task.pendingInteraction) || taskAttention !== null;
-  // 远端 session 未就绪时打开文件树必然会被 resolver 拒绝，因此不要暴露
+  // Bugfix：远端 session 未就绪时打开文件树必然会被 resolver 拒绝，因此不要暴露
   // 无效 action；本地 task 不需要 remoteSessionId，仍保持入口可用。
   const canOpenFileTree =
     Boolean(onOpenFileTree) && (!task.workspaceIdentity?.trim() || Boolean(remoteSessionId));
@@ -135,12 +132,12 @@ function GroupedTaskRowComponent({
   const isActive =
     buildTaskWorkspaceKey(activeWorkspacePath, activeWorkspaceIdentity) === workspaceKey &&
     activeTaskId === task.taskId;
-  const isMobileActive = false;
+  const isMobileActive = mobileActiveTaskKey === `${workspaceKey}:${task.taskId}`;
   const statusDotClassName =
     leadingIndicator === "error"
       ? "bg-destructive"
       : leadingIndicator === "unread"
-        ? // grouped task 未读点需要和普通 task list 共用 sky 色，避免 brand 色在不同主题下表达漂移。
+        ? // Bugfix: grouped task 未读点需要和普通 task list 共用 sky 色，避免 brand 色在不同主题下表达漂移。
           "bg-sky-500 dark:bg-sky-400"
         : null;
   const canShowHoverActions = !dragOverlay;
@@ -181,7 +178,7 @@ function GroupedTaskRowComponent({
           className="text-foreground"
           title={dragOverlay ? undefined : taskTitle}
         >
-          {/* grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。*/}
+          {/* Bugfix: grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。 */}
           {taskTitle}
         </TaskTitleOverflowText>
         <span className="ml-auto flex shrink-0 items-center gap-1.5 text-ui-sm text-foreground-subtle">
@@ -251,9 +248,11 @@ function GroupedTaskRowComponent({
   const {
     taskSessionFile,
     taskNativeSessionLogFile,
+    providerConfigFile,
     fileManagerLabel,
     handleCopyText,
     handleOpenTaskPathInFileManager,
+    handleOpenProviderConfig,
   } = useTaskListItemContextActions({
     workspacePath: task.workspacePath,
     remoteSessionId,
@@ -262,6 +261,7 @@ function GroupedTaskRowComponent({
     provider: task.provider,
     intl,
     loadTaskPaths: contextMenuOpen,
+    loadProviderConfig: contextMenuOpen,
   });
   const handleSelect = () => {
     onSelectTask(task.workspacePath, task.taskId, task.workspaceIdentity);
@@ -291,8 +291,7 @@ function GroupedTaskRowComponent({
     onMoveTaskToTop(task);
   };
   const handleOpenTaskFeedback = async () => {
-    // 与侧边栏任务菜单保持同一行为：走「反馈与诊断」的渠道配置，
-    // 任务线索作为已脱敏的 description 进入预填正文。
+    // 反馈入口改走「反馈与诊断」的渠道配置；渠道不可用时 hook 引导到设置页而不是静默失败。
     const outcome = runFeedbackEntry({
       title: intl
         .formatMessage(
@@ -341,7 +340,7 @@ function GroupedTaskRowComponent({
     droppable.setNodeRef(element);
   };
   const groupedTaskDomKey = typeof dragId === "string" ? encodeURIComponent(dragId) : undefined;
-  // CSS hidden → flex 会让 action trigger 在 pointer 到达时才获得布局尺寸，
+  // Bug 原因：CSS hidden → flex 会让 action trigger 在 pointer 到达时才获得布局尺寸，
   // Tooltip Portal 可能先以未定位坐标绘制。改为交互状态决定 action 是否挂载，
   // 同时保留键盘、触摸设备和手机远控 active task 的入口。
   const shouldMountHoverActions =
@@ -382,7 +381,7 @@ function GroupedTaskRowComponent({
     >
       <span className={TASK_GROUP_ROW_LINE_CLASS}>
         <TaskTitleOverflowText as="span" className="text-foreground" title={taskTitle}>
-          {/* grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。*/}
+          {/* Bugfix: grouped task 标题超出时不要显示省略号，右侧渐隐能保留标题连续性，避免和右侧状态元信息挤在一起。 */}
           {taskTitle}
         </TaskTitleOverflowText>
         <span className="ml-auto flex shrink-0 items-center gap-1.5 text-ui-sm text-foreground-subtle">
@@ -470,36 +469,34 @@ function GroupedTaskRowComponent({
         // overlay 拖拽时指针下方的真实 row 仍可能被 Radix 识别为 hover，跳过 TooltipTrigger 避免底层 row 或 action 弹出悬浮提示。
         <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
       ) : (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
-            </TooltipTrigger>
-            <TooltipContent side="right" align="center" sideOffset={6}>
-              {remoteSessionId ? (
-                <Cloud aria-hidden="true" className="size-3.5 shrink-0" />
-              ) : (
-                <Folder aria-hidden="true" className="size-3.5 shrink-0" />
-              )}
-              <span className="min-w-0 max-w-48 truncate">{workspaceLabel}</span>
-              {taskChangeParts.length > 0 ? (
-                <>
-                  <span className="text-tooltip-foreground/60">·</span>
-                  <span className="inline-flex shrink-0 items-center gap-1">
-                    {taskChangeParts.map((part) => (
-                      <span
-                        key={part}
-                        className={part.startsWith("+") ? "text-diff-added" : "text-diff-removed"}
-                      >
-                        {part}
-                      </span>
-                    ))}
-                  </span>
-                </>
-              ) : null}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ContextMenuTrigger asChild>{interactiveTaskRow}</ContextMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="center" sideOffset={6}>
+            {remoteSessionId ? (
+              <Cloud aria-hidden="true" className="size-3.5 shrink-0" />
+            ) : (
+              <Folder aria-hidden="true" className="size-3.5 shrink-0" />
+            )}
+            <span className="min-w-0 max-w-48 truncate">{workspaceLabel}</span>
+            {taskChangeParts.length > 0 ? (
+              <>
+                <span className="text-tooltip-foreground/60">·</span>
+                <span className="inline-flex shrink-0 items-center gap-1">
+                  {taskChangeParts.map((part) => (
+                    <span
+                      key={part}
+                      className={part.startsWith("+") ? "text-diff-added" : "text-diff-removed"}
+                    >
+                      {part}
+                    </span>
+                  ))}
+                </span>
+              </>
+            ) : null}
+          </TooltipContent>
+        </Tooltip>
       )}
       {contextMenuOpen ? (
         // 右键菜单内容带 Radix Presence/Portal，拖拽重排时常驻挂载会触发嵌套更新循环；仅在菜单打开时挂载内容，配合路径懒加载避免拖拽过程刷 task path RPC。
@@ -511,6 +508,7 @@ function GroupedTaskRowComponent({
           fileManagerLabel={fileManagerLabel}
           taskSessionFile={taskSessionFile}
           taskNativeSessionLogFile={taskNativeSessionLogFile}
+          providerConfigFile={providerConfigFile}
           onMoveTaskToGroup={onMoveTaskToGroup}
           onMoveTaskToTop={onMoveTaskToTop}
           onStartRenameTask={onStartRenameTask}
@@ -518,6 +516,7 @@ function GroupedTaskRowComponent({
           onMarkTaskAsUnread={onMarkTaskAsUnread}
           onOpenTaskPathInFileManager={() => void handleOpenTaskPathInFileManager()}
           onCopyText={(label, text) => void handleCopyText(label, text)}
+          onOpenProviderConfig={() => void handleOpenProviderConfig()}
           onOpenTaskFeedback={() => void handleOpenTaskFeedback()}
           disabledReason={workspaceActionsDisabledReason}
         />

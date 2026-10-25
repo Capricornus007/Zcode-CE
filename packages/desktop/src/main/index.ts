@@ -1,4 +1,5 @@
 import { installRequestSecurityDiagnostics } from "./request-security-edition/index.js";
+import { createLocalTtftExporter } from "./localTtftExporter.js";
 /* eslint-disable max-lines */
 import "./desktopEarlyDataBaseDirBootstrap.js";
 import "./desktopEarlyChromiumHardwareAccelerationBootstrap.js";
@@ -265,7 +266,6 @@ import {
   setActiveEmbeddedBrowserPermissionUiBridge,
 } from "./embeddedBrowserPermissionUiBridge.js";
 import { mapZCodeEnvToArmsRumEnv } from "@zcode/shared";
-import { createEmbeddedBrowserSitePermissionStore } from "./embeddedBrowserSitePermissionStore.js";
 import {
   findWindowsProcessesReferencingResourceMarkers,
   probeWindowsPackagedResourceWritable,
@@ -326,14 +326,14 @@ const linuxDesktopIntegrationIconPath =
     : iconPath;
 let currentApplicationLocale: Locale = DEFAULT_LOCALE;
 let closeToTrayOnWindows = true;
-// 关闭驻留托盘能力 monitor(spec:docs/development/151-linux-close-to-tray.md)。
-// Linux 关窗分支是同步回调,只能读缓存;启动后首次探测完成前按「不可用」安全默认。
+// CR-01：托盘实例创建结果（模块级，关窗分支读取）。DBus 能力探测通过不等于 Electron
+// Tray 创建成功；隐藏窗口前必须确认最终用户入口真实存在，否则隐藏即失联。
+let desktopTrayReady = false;
+// 关闭驻留托盘能力 monitor（spec：docs/desktop/linux-close-to-tray.md）。
+// Linux 关窗分支是同步回调，只能读缓存；启动后首次探测完成前按"不可用"安全默认。
 const closeToTrayCapabilityMonitor = createCloseToTrayCapabilityMonitor({
   platform: process.platform,
 });
-// CR-01:托盘实例创建结果(模块级,关窗分支读取)。DBus 能力探测通过不等于 Electron
-// Tray 创建成功;隐藏窗口前必须确认最终用户入口真实存在,否则隐藏即失联。
-let desktopTrayReady = false;
 // keep-awake：全局开关 keepAwakeWhileRunning。打开后主进程持有
 // powerSaveBlocker("prevent-app-suspension")，阻止系统闲置休眠（防不了合盖/手动睡眠）。
 // 不再绑定闲时任务活跃计数——设置页「常规」与 Automations 入口镜像同一配置。
@@ -870,6 +870,14 @@ const rendererActionTraceRollout = createRendererActionTraceRollout({
   fetchConfig: electronClientConfigsFetcher,
   logger,
 });
+const localTtftExporter = createLocalTtftExporter({
+  env: { ...hostProcessLocalEnv, ...process.env },
+  version: ZCODE_VERSION || app.getVersion(),
+  logger,
+});
+ipcMain.on(PlatformChannels.ReportLocalTtftBatch, (_event, batch: unknown) =>
+  localTtftExporter.enqueue(batch),
+);
 const rendererActionTraceBroker = createRendererActionTraceBroker({
   exporter: createRendererActionTraceExporter({
     ...hostProcessLocalEnv,
@@ -1212,6 +1220,7 @@ async function prepareAppQuit(reason: string, kind: AppShutdownKind = "normal"):
     // 修复原因：Main 过去不会等待仍在发送的 /event/report，正常退出也会直接丢事件。
     // 与其它 owner 并行进入既有屏障，最多等待 2 秒，避免 telemetry 串行放大退出预算。
     appTelemetryCore.flushPendingReports({ timeoutMs: 2_000 }),
+    localTtftExporter.shutdown(),
     rendererActionTraceBroker.shutdown().catch((error) => {
       logger.warn(`[app-quit] renderer action trace shutdown failed (${reason}):`, error);
     }),
@@ -1851,9 +1860,8 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         forceQuit: forceQuitRef.current,
         explicitQuitRequested: explicitQuitRef.current,
         closeToTray: closeToTrayOnWindows,
-        // 空缓存按不可用处理:隐藏前兜底确认托盘真的可渲染,防 GNOME 静默失败失联。
-        // CR-01:DBus 探测 ∧ Tray 实例创建成功才可隐藏;任一不满足按不可用走确认退出
-        // (spec:docs/development/151-linux-close-to-tray.md)。
+        // 空缓存按不可用处理：隐藏前兜底确认托盘真的可渲染，防 GNOME 静默失败失联。
+        // CR-01：DBus 探测 ∧ Tray 实例创建成功才可隐藏；任一不满足按不可用走确认退出。
         closeToTraySupported: resolveCloseToTraySupported({
           platform: process.platform,
           desktopTrayReady,
@@ -2065,24 +2073,6 @@ app.whenReady().then(async () => {
   installBrowserRestoreBootstrapProtocol(
     session.fromPartition(EMBEDDED_BROWSER_PARTITION).protocol,
   );
-  // F5(上游 aac47556):插件 UI 沙箱——注册表 + renderer 可调 IPC;scheme 的 privileged 注册
-  // 已随 zcode-media 在 ready 前完成。aliasDir 为运行时资源目录(与 renderer 同级的 plugin-sandbox)。
-  installPluginSandboxHost({
-    preloadPath: join(import.meta.dirname, "../preload/pluginSandbox.cjs"),
-    rendererDir: join(import.meta.dirname, "../renderer"),
-    aliasDir: join(import.meta.dirname, "../plugin-sandbox"),
-    // 开发模式 out/renderer 没有 shell 产物,从 renderer dev server 代理(同 cua-permission-panel 的做法)。
-    ...(!app.isPackaged && process.env["ELECTRON_RENDERER_URL"]
-      ? { devServerUrl: process.env["ELECTRON_RENDERER_URL"] }
-      : {}),
-    logger,
-    // e2e L05(配额):只在 e2e run 里允许缩小注册表容量。
-    ...(process.env.ZCODE_E2E_RUN_ID?.trim() &&
-    Number.isInteger(Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES)) &&
-    Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) > 0
-      ? { registryMaxEntries: Number(process.env.ZCODE_E2E_PLUGIN_SANDBOX_MAX_ENTRIES) }
-      : {}),
-  });
   // Bootstrap: 从设置文件读取自定义数据目录，在所有 host 进程启动前生效
   let loadedBootstrapLocale = false;
   let bootstrapSettings: AppSettings | undefined;
@@ -2129,36 +2119,6 @@ app.whenReady().then(async () => {
     currentDesktopZoomLevel = clampDesktopZoomLevel(bootstrapSettings.desktopZoomLevel ?? 0);
     currentDesktopWindowSize = bootstrapSettings.desktopWindowSize;
     // 全局 keep-awake：启动时若设置已开，立刻持有 powerSaveBlocker，不必等设置变更事件。
-    // F10(上游 aac47556):Linux 默认值归位迁移(spec:docs/development/151-linux-close-to-tray.md)——
-    // shared 迁移无平台概念、曾把存量 Linux 用户归为 true,但 Linux 此前无设置入口,
-    // 存量 true 非用户显式选择;首次启动强制归位为默认关并落标记,之后尊重用户选择。
-    const closeToTrayBootstrap = resolveCloseToTrayBootstrapValue({
-      platform: process.platform,
-      stored: bootstrapSettings.closeToTrayOnWindows,
-      linuxMigrationInitialized: bootstrapSettings.closeToTrayLinuxMigrationInitialized,
-    });
-    // CR-02:必须 await 持久化完成再继续启动,renderer 设置页才不会读到文件旧值。
-    // 写失败时不阻断启动,但内存值回退为文件当前值(resolveCloseToTrayRuntimeValue):
-    // 持久层不可写时维持「文件是唯一可信来源」,避免 main 按 false、设置页显示 true
-    // 的双数据源;迁移在下次启动重试,失败期间保持迁移未完成的旧行为。
-    let closeToTrayMigrationPersisted = true;
-    if (closeToTrayBootstrap.needsLinuxMigration) {
-      try {
-        await mainSettingService.update({
-          closeToTrayOnWindows: false,
-          closeToTrayLinuxMigrationInitialized: true,
-        } as never);
-      } catch (error) {
-        closeToTrayMigrationPersisted = false;
-        logger.warn("[settings] failed to persist linux close-to-tray default migration", error);
-      }
-    }
-    closeToTrayOnWindows = resolveCloseToTrayRuntimeValue({
-      platform: process.platform,
-      stored: bootstrapSettings.closeToTrayOnWindows,
-      linuxMigrationInitialized: bootstrapSettings.closeToTrayLinuxMigrationInitialized,
-      migrationPersisted: closeToTrayMigrationPersisted,
-    });
     reconcileKeepAwakeBlocker();
   } catch {
     // 读取失败不影响启动，使用默认 homedir
@@ -2219,8 +2179,8 @@ app.whenReady().then(async () => {
     logger.warn("[desktop-network] Chromium network policy bootstrap failed:", error);
   }
 
-  // F9(上游 aac47556):内置浏览器 partition 的权限闸门——必须在任何 guest attach 前完成注册。
-  // 弹窗桥把策略决策点接到主窗口 UI;store 落盘「访问此网站时允许/阻止」的站点同意记录。
+  // 内置浏览器权限闸门（CNVD 未授权访问修复）：必须在任何 guest attach 前完成注册。
+  // 弹窗桥把策略决策点接到主窗口 UI；store 落盘「访问此网站时允许/阻止」的站点同意记录。
   const embeddedBrowserPermissionUiBridge = createEmbeddedBrowserPermissionUiBridge({ logger });
   embeddedBrowserPermissionUiBridge.registerResolveListener();
   setActiveEmbeddedBrowserPermissionUiBridge(embeddedBrowserPermissionUiBridge);
@@ -2277,10 +2237,6 @@ app.whenReady().then(async () => {
       ),
     () => showCurrentWindowFromDock(primaryWindowCoordinator),
   );
-  // F10(上游 aac47556):托盘平台由 createDesktopTray 内部按 platform 分发。
-  // CR-01:托盘实例创建结果(模块级 desktopTrayReady)必须成为关窗可隐藏能力的一部分——
-  // DBus watcher 只能证明桌面可能有 host,new Tray() 仍可能因图标缺失/会话未就绪抛错;
-  // 此时隐藏窗口会让用户失去唯一入口(失联)。
   const desktopTrayOptions = {
     getLocale: () => currentApplicationLocale,
     showCurrentWindow: () =>
@@ -2299,9 +2255,6 @@ app.whenReady().then(async () => {
     desktopTrayReady = createDesktopTray(desktopTrayOptions) !== null;
   }
 
-  // Linux 托盘创建跟随能力而非设置开关:无 StatusNotifierWatcher 的桌面(GNOME 默认)上
-  // new Tray() 静默失败,注册无人渲染的 DBus name 没有意义;能力探测通过后再创建。
-  // 用户装扩展后经设置页查询也会走到这里补建(spec:docs/development/151-linux-close-to-tray.md)。
   const ensureLinuxDesktopTray = async (): Promise<void> => {
     if (process.platform !== "linux" || desktopTrayReady) {
       return;
@@ -2327,21 +2280,6 @@ app.whenReady().then(async () => {
   registerPlatformIpcHandlers({
     fetchHelpConfig: readHelpConfig,
     logger,
-    // F10(aac47556):设置页置灰查询——先确保托盘实例就绪(用户装扩展后首次查询会补建),
-    // 再返回合并了 trayReady 的最终能力,避免设置页显示可开启但关窗实际走确认退出的
-    // 不一致(CR-01)。
-    getCloseToTrayCapability: async () => {
-      await ensureLinuxDesktopTray();
-      const capability = await closeToTrayCapabilityMonitor.refresh();
-      return {
-        supported: resolveCloseToTraySupported({
-          platform: process.platform,
-          desktopTrayReady,
-          capabilitySupported: capability.supported,
-        }),
-        gnomeLikeWithoutTray: capability.gnomeLikeWithoutTray,
-      };
-    },
     // CDP-on-guest pivot：renderer `<webview>` dom-ready 上报 guest webContentsId → attach。
     attachBrowserGuest: (key, webContentsId, options) => {
       const result = browserGuestManager.attachGuest(key, webContentsId, options);

@@ -1,5 +1,4 @@
 /* eslint-disable max-lines -- workspace shell 当前集中编排 sidebar、chat、terminal 和 browser pane 的布局联动，先保持单文件收口，避免为满足行数限制打散关键布局状态。*/
-// Modified by ZCode: F6 A-prime(task-22) —— 采用上游 3.15.1 版后做了代码级 reconcile(见 task-22 提交), Apache-2.0。
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type {
   CSSProperties,
@@ -48,10 +47,6 @@ import { DesktopTopOverlay } from "@/DesktopTopOverlay.js";
 import { DesktopWindowFrame } from "@/DesktopWindowFrame.js";
 import { WorkspacePluginPreview } from "@/workspace-plugin-preview/index.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
-// CE-SYNC-TODO: 引导式授權（ENH-2）的兩個 import 在機械合併裡一起弄丟了（CE main 7fc3bfe2 的 77-78 行），
-// 這裡補回讓下面的 useGuidedTerminalSend() 有宣告可用。
-import { useGuidedTerminalSend } from "@/hooks/useGuidedTerminalSend.js";
-import { GuidedTerminalSendProvider } from "@/lib/guidedTerminalSendContext.js";
 import { GitBranchSwitcher } from "@/GitBranchSwitcher.js";
 import { ScopedErrorBoundary } from "@/ErrorBoundary.js";
 
@@ -624,18 +619,6 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   const showTopOverlayNewTaskButton = !isSidebarVisible;
   const workspaceSidebarResizeLabel = intl.formatMessage({
     id: "workspaceSidebar.resizeSidebar",
-  });
-  // 引导式授权（ENH-2）：命令块 → 集成终端的投递实现。
-  // 目标固定为侧栏终端：它是唯一有稳定写入句柄的一条（sidePaneTerminalSessionRegistry），
-  // 底部终端的面板状态是组件内 useState、未暴露写入 API。这里不为了"对称"去改底部终端。
-  // CE-SYNC-TODO: 機械合併把 CE main（7fc3bfe2）1930-1990 行的
-  // `<GuidedTerminalSendProvider onSend={isOfficeMode ? null : handleSendCommandToTerminal}>`
-  // 外殼（包在 <V4WorkspaceChatArea> 外層）一起弄丟了，本檔目前只在 2646 行附近有未經包殼的
-  // V4WorkspaceChatArea——不補回「发送到终端」就會靜默失效（CodeBlock 取不到 handler）。
-  // 補回時需要把整段 JSX 縮排加一層，所以留給主代理連同 fmt:check 一起做。
-  const handleSendCommandToTerminal = useGuidedTerminalSend({
-    workspaceKey,
-    openTerminalTab: handleOpenTerminalTab,
   });
 
   useEffect(() => {

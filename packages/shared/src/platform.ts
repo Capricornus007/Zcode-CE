@@ -1,4 +1,7 @@
 /* eslint-disable max-lines -- 跨端 platform contract 集中声明 renderer 能力；OAuth 与 browser lifecycle 必须保持 desktop/web 类型合同，本 MR 不拆分平台边界。 */
+import type { BrowserViewportSize } from "./browser-use/command-metadata.js";
+import type { OAuthStateRegistration } from "./oauth.js";
+import type { RendererHeapSample } from "./validation.js";
 import type {
   DockerConnectOptions,
   RemoteTarget,

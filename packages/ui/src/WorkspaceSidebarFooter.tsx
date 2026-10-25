@@ -1,6 +1,5 @@
 import { SidebarNativeTooltip, ControlHintTooltip } from "@/ControlHintTooltip.js";
 /* oxlint-disable eslint(max-lines) -- footer 聚合账户、主题、模式和快捷键菜单。 */
-// Modified by ZCode: F11(账户菜单): 增加套餐 badge(profile-menu-plan)与复制用户 ID(copy-user-id)入口;不引入 rewards。
 import type { Locale, UserInfo } from "@zcode/shared";
 import { memo, useCallback, useEffect, useState, type ReactNode } from "react";
 import { DesktopCommandIds } from "@zcode/shared";
@@ -13,9 +12,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar.js";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
-// F11: 复制用户 ID 的结果提示(自上游 3.15.1 搬运, Apache-2.0)。
 import { toast } from "@/components/ui/toast.js";
-// 上游 3.16.2 的账户菜单在菜单头部用 Badge 显示套餐/奖励标记（见下方 rewards.menuBadge 区块）。
 import { Badge } from "@/components/ui/badge.js";
 import {
   DropdownMenu,
@@ -130,12 +127,10 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   workspacePath?: string;
   workspaceIdentity?: string;
   workspaceRemoteSessionId?: string;
-  activeTaskId?: string | null;
-  /**
-   * 远控入口（ce.3 · 切片 1）：状态与打开动作由调用方注入，footer 不自己取状态。
+  activeTaskId?: string | null /**
+   * 远控入口（ce.3 · 切片 1）：状态与打开动作**由调用方注入**，footer 不自己取状态。
    * 不传则不渲染入口（Settings 等复用 footer 的场景无需知道远控）。
-   * 切片 4 会把它接到后端的 webService:status 上，并把 onOpen 指向面板。
-   */
+   */;
   remoteControlEntry?: RemoteControlEntry;
   isDesktop?: boolean;
   banner?: ReactNode;
@@ -159,7 +154,6 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
     workspaceIdentity,
     workspacePath,
   });
-  // F11: 复制用户 ID —— 排障/报障时用户需要提供自己的身份标识。失败 toast 明示, 不静默。
   const copyUserId = async () => {
     if (!user?.id) return;
     try {
@@ -271,8 +265,6 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
           >
             {user ? (
               <>
-                {/* F11: 账户菜单头部 —— 姓名 + 套餐 badge + 用户 ID(可复制)。
-                    套餐展示从 footer 触发器移到此处, 与上游 3.15.1 口径一致(Apache-2.0)。 */}
                 <div
                   data-testid="profile-menu-header"
                   className="flex max-w-80 items-center gap-2 px-2 py-1.5"

@@ -29,16 +29,6 @@ import type {
   ZCodeMcpResourceSample,
   ZCodeToolExecResource,
   ZCodeProcessChildProcess,
-  ZCodeMcpReadResourceResult,
-  ZCodeMcpUiCallToolResult,
-  ZCodeMcpUiCancelCallResult,
-  ZCodeMcpUiReadResourceResult,
-  ZCodeMcpUiListResourcesResult,
-  ZCodeMcpUiListResourceTemplatesResult,
-  ZCodeMcpUiRegisterAppToolsResult,
-  ZCodeMcpUiUnregisterAppToolsResult,
-  ZCodeMcpUiAppToolAcceptedResult,
-  ZCodePluginsListUiSurfacesResult,
   ZCodeMcpListResult,
   ZCodePluginsListResult,
   ZCodePluginsOverviewResult,
@@ -60,8 +50,6 @@ import type {
   ZCodeWorkflowsForRunResult,
   ZCodeWorkflowsGetResult,
   ZCodeWorkflowsListResult,
-  ZCodeWorkflowsForRunResult,
-  ZCodeWorkflowsSaveResult,
   ZCodeWorkflowsMoveResult,
   ZCodeWorkflowsRunsResult,
   ZCodeWorkflowsSaveResult,
@@ -150,16 +138,6 @@ import type {
   ZCodeAgentDeleteAutomationRunParams,
   ZCodeAgentDescribePluginParams,
   ZCodeAgentInstallPluginParams,
-  ZCodeAgentReadMcpResourceParams,
-  ZCodeAgentReadMcpResourceForUiParams,
-  ZCodeAgentCallMcpToolForUiParams,
-  ZCodeAgentCancelMcpToolCallForUiParams,
-  ZCodeAgentListMcpResourcesForUiParams,
-  ZCodeAgentMcpResourceSubscriptionForUiParams,
-  ZCodeAgentRegisterAppToolsForUiParams,
-  ZCodeAgentAppToolInstanceForUiParams,
-  ZCodeAgentAppToolCallForUiParams,
-  ZCodeAgentResolveAppToolCallForUiParams,
   ZCodeAgentListMcpServerStatusesParams,
   ZCodeAgentPluginViewParams,
   ZCodeAgentPluginReferenceCatalogParams,
@@ -687,65 +665,6 @@ export interface IZCodeAgentService {
     params: ZCodeAgentGrantWorkspaceHookTrustParams,
   ): Promise<ZCodeWorkspaceHookTrustGrantResult>;
   listMcpServerStatuses(params: ZCodeAgentListMcpServerStatusesParams): Promise<ZCodeMcpListResult>;
-  // Modified by ZCode: 增量自上游 aac47556——插件 UI（plugin-ui）服务族的 agent 通道。
-  /** 插件 UI：读取插件 MCP 的 ui:// 资源；走 session 所在 workspace agent 进程。 */
-  openMcpUiInstance(
-    params: import("../plugin-ui-bridge/contract.js").PluginUiPrepareSandboxParams & {
-      accountContext?: string;
-    },
-  ): Promise<import("@zcode/shared/mcp-apps").McpAppInstance>;
-  validateMcpUiInstance(
-    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
-  ): Promise<void>;
-  recycleMcpUiInstance(
-    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
-  ): Promise<boolean>;
-  closeMcpUiInstance(
-    params: import("../plugin-ui-bridge/contract.js").PluginUiPluginScope,
-  ): Promise<void>;
-  readMcpResource(params: ZCodeAgentReadMcpResourceParams): Promise<ZCodeMcpReadResourceResult>;
-  /** 插件 UI：UI 发起的工具调用；复用既有权限审批，不产生 transcript row。 */
-  sampleMcpApp(
-    params: import("../plugin-ui-bridge/samplingContract.js").PluginUiSamplingParams,
-  ): Promise<import("@zcode/shared/mcp-apps").McpAppsSamplingResult>;
-  cancelMcpAppSampling(
-    params: import("../plugin-ui-bridge/samplingContract.js").PluginUiCancelSamplingParams,
-  ): Promise<{ cancelled: boolean }>;
-  callMcpToolForUi(params: ZCodeAgentCallMcpToolForUiParams): Promise<ZCodeMcpUiCallToolResult>;
-  /** 插件 UI 取消带 callId 的进行中 UI 工具调用；agent 侧 abort 到 MCP client。 */
-  cancelMcpToolCallForUi(
-    params: ZCodeAgentCancelMcpToolCallForUiParams,
-  ): Promise<ZCodeMcpUiCancelCallResult>;
-  /** 插件 UI 页面发起的 resources/read，agent 侧限同插件服务器、8 MiB、mimeType 白名单。 */
-  readMcpResourceForUi(
-    params: ZCodeAgentReadMcpResourceForUiParams,
-  ): Promise<ZCodeMcpUiReadResourceResult>;
-  /** 插件 UI 页面发起的 resources/list、resources/templates/list、subscribe、unsubscribe 代理。 */
-  listMcpResourcesForUi(
-    params: ZCodeAgentListMcpResourcesForUiParams,
-  ): Promise<ZCodeMcpUiListResourcesResult>;
-  listMcpResourceTemplatesForUi(
-    params: ZCodeAgentListMcpResourcesForUiParams,
-  ): Promise<ZCodeMcpUiListResourceTemplatesResult>;
-  subscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams): Promise<void>;
-  unsubscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams): Promise<void>;
-  /** App-Provided Tools：页面工具登记 / 注销与模型调用的认领 / 回传（信箱投递走 v4 live 增量）。 */
-  registerAppToolsForUi(
-    params: ZCodeAgentRegisterAppToolsForUiParams,
-  ): Promise<ZCodeMcpUiRegisterAppToolsResult>;
-  unregisterAppToolsForUi(
-    params: ZCodeAgentAppToolInstanceForUiParams,
-  ): Promise<ZCodeMcpUiUnregisterAppToolsResult>;
-  claimAppToolCallForUi(
-    params: ZCodeAgentAppToolCallForUiParams,
-  ): Promise<ZCodeMcpUiAppToolAcceptedResult>;
-  resolveAppToolCallForUi(
-    params: ZCodeAgentResolveAppToolCallForUiParams,
-  ): Promise<ZCodeMcpUiAppToolAcceptedResult>;
-  /** 插件 UI 工作区级面板入口（已启用插件清单 ui.surfaces[]）。 */
-  listPluginUiSurfaces(
-    params: ZCodeAgentWorkspaceTarget,
-  ): Promise<ZCodePluginsListUiSurfacesResult>;
   listPlugins(params: ZCodeAgentPluginViewParams): Promise<ZCodePluginsListResult>;
   /**
    * Plugin 对话引用 catalog：session-scoped 只读投影。
@@ -832,10 +751,8 @@ export interface IZCodeAgentService {
   // 在项目档 / 全局档之间移动同名文件：
   // `workspace` 是载体（移到项目传目标项目、移到全局传源项目），`to` 是落点档；不覆盖已存在的目标。
   moveSavedWorkflow(params: ZCodeAgentMoveSavedWorkflowParams): Promise<ZCodeWorkflowsMoveResult>;
-
-  // Modified by ZCode: 增量自上游 aac47556——完成卡的「直接保存」（按 runId 从 journal 取
-  // 这次 run 实际跑过的脚本落盘，不经模型回合；两者都必带 workspace，journal 在那里）。
-  // 上游规格出处：docs/dynamic-workflow/transcript-and-notifications.md。
+  // 完成卡的「直接保存」（docs/dynamic-workflow/transcript-and-notifications.md）：按 runId 从
+  // journal 取这次 run 实际跑过的脚本落盘，不经模型回合。两者都必带 workspace（journal 在那里）。
   saveSavedWorkflowFromRun(
     params: ZCodeAgentSaveSavedWorkflowFromRunParams,
   ): Promise<ZCodeWorkflowsSaveResult>;

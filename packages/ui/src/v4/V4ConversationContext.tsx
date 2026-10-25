@@ -108,7 +108,7 @@ export interface V4ConversationContextValue {
 // 装配 value 后直接 Provider 注入，不经 V4ConversationProvider 的 workspace 解析链路。
 export const V4ConversationContext = createContext<V4ConversationContextValue | null>(null);
 
-interface V4ConversationProviderProps {
+export interface V4ConversationProviderProps {
   workspacePath: string;
   workspaceIdentity?: string;
   children: ReactNode;
@@ -251,7 +251,7 @@ export function V4ConversationProvider({
       remoteSessionId={ready.remoteSessionId}
     >
       <RemoteConversationAvailability available={resolution.rpcReady} banner={disconnectedBanner}>
-      {children}
+        {children}
       </RemoteConversationAvailability>
     </ReadyV4ConversationProvider>
   );
@@ -273,8 +273,8 @@ export function useHasV4Conversation(): boolean {
   return useContext(V4ConversationContext) !== null;
 }
 
-interface V4PaneConversationProviderProps {
-  /** pane 绑定的 primary workspace（连接路由键）。 */
+export interface V4PaneConversationProviderProps {
+  /** pane 绑定的 primary workspace（连接路由键，docs/v4-split-pane-workbench.md）。 */
   scope: PaneWorkspaceScope;
   children: ReactNode;
   /** 显式传入才保留当前会话；未传的侧面板仍在断线时卸载。null 表示草稿。 */
@@ -332,7 +332,7 @@ export function V4PaneConversationProvider({
         available={targetResolution.rpcReady}
         banner={disconnectedBanner}
       >
-      {children}
+        {children}
       </RemoteConversationAvailability>
     </ReadyV4PaneConversationProvider>
   );

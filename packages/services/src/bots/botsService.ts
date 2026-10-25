@@ -1,24 +1,20 @@
-// Modified by ZCode: F8 群会话/话题准备状态机等本地增量（本地修改，合规声明）。
-// CE-SYNC: 取联集并去重——两列 bot 本地模块两侧都在，路径形式统一保留 CE 的相对路径写法；
-// 附件三道防护（attachmentPathGuard / attachmentUrlGuard / taskFailureMessage）与 botAttachmentLimits
-// 是 CE 安全加固线，必须保留（原先 P5up 侧把它们放在下方，与 CEmain 侧重复，现合并到此处一次）。
-import { resolveAllowedAttachmentLocalPath } from "./attachmentPathGuard.js";
-import { assertAllowedAttachmentUrl, fetchBotAttachmentFromUrl } from "./attachmentUrlGuard.js";
-import { formatBotTaskFailureMessage } from "./taskFailureMessage.js";
-import { replyToBotChannel } from "./channelReply.js";
+import { replyToBotChannel } from "#src/bots/channelReply.js";
 import {
   BotAdminRequiredError,
   BotReplyError,
   createGroupAdminAttention,
-} from "./groupAdminAttention.js";
-import { createTopicPreparationState } from "./topicPreparationState.js";
-import { createTopicContinuation } from "./topicContinuation.js";
-import { TopicHistoryPermissionError } from "./topicHistory.js";
-import { createTopicHistoryAttachment, botGroupCommandId } from "./topicHistoryAttachment.js";
-import { createGroupDeliveryThrottle } from "./groupDeliveryThrottle.js";
-import { createGroupResultDelivery } from "./groupResultDelivery.js";
-import { createGroupQueueCardSync } from "./groupQueueCard.js";
-import { readAuthorizedTopicResource, authorizeTopicResource } from "./topicResource.js";
+} from "#src/bots/groupAdminAttention.js";
+import { createTopicPreparationState } from "#src/bots/topicPreparationState.js";
+import { createTopicContinuation } from "#src/bots/topicContinuation.js";
+import { TopicHistoryPermissionError } from "#src/bots/topicHistory.js";
+import {
+  createTopicHistoryAttachment,
+  botGroupCommandId,
+} from "#src/bots/topicHistoryAttachment.js";
+import { createGroupDeliveryThrottle } from "#src/bots/groupDeliveryThrottle.js";
+import { createGroupResultDelivery } from "#src/bots/groupResultDelivery.js";
+import { createGroupQueueCardSync } from "#src/bots/groupQueueCard.js";
+import { readAuthorizedTopicResource, authorizeTopicResource } from "#src/bots/topicResource.js";
 import {
   getBotConversationKey,
   getBotStateKey,
@@ -27,6 +23,12 @@ import {
 } from "./groupSessions.js";
 /* eslint-disable max-lines -- Bots 服务仍复用原 RPC 文件名，先把鉴权、命令路由、ZCode Agent 桥接收口集中在同一服务内。 */
 import { Buffer } from "node:buffer";
+// ---- CE 线增量（S1+T4 安全修复回植）：附件入站面的三道防护 ----
+// 路径白名单（localPath 只放行 bot 附件缓存目录）、URL 白名单（公网 http(s)、DNS pin、不跟重定向）。
+import { resolveAllowedAttachmentLocalPath } from "./attachmentPathGuard.js";
+// CE 线增量：task_error 文案出口统一走码→文案映射（稳定码可操作提示，见 taskFailureMessage.ts）。
+import { formatBotTaskFailureMessage } from "./taskFailureMessage.js";
+import { assertAllowedAttachmentUrl, fetchBotAttachmentFromUrl } from "./attachmentUrlGuard.js";
 // 重植（3.15.1 官方整版覆盖冲掉，恢复 origin/main 接线）：附件两个上限常量统一取自
 // 无依赖叶子模块 ./botAttachmentLimits.js（task-111），不在本文件重复定义——官方版本在本文件
 // 留有本地副本，会与根入口 @zcode/services 的导出（packages/server 的 botIngress 据此推导
@@ -99,8 +101,8 @@ import {
   type SelectionPrompt,
 } from "@zcode/shared";
 import type { IZCodeTaskService } from "../session/zcodeTaskService.js";
-import { resolveProviderModeIdFromConfigOptions } from "../session/sessionModeOptions.js";
-import { deriveSessionTitle as deriveTaskTitle } from "../session/sessionTitle.js";
+import { resolveProviderModeIdFromConfigOptions } from "#src/session/sessionModeOptions.js";
+import { deriveSessionTitle as deriveTaskTitle } from "#src/session/sessionTitle.js";
 import type { IBroadcastService } from "../broadcast/broadcast.js";
 import type { ICredentialService } from "../credential/credential.js";
 import { getAppConfigDir } from "../paths.js";
@@ -110,7 +112,7 @@ import type {
   ModelSelectionView,
 } from "../model-provider/providerFacadeServices.js";
 import type { ZCodeAgentAppRuntimePreferences } from "../zcode-agent/zcodeAgent.js";
-import { createServiceLogger } from "../logger/serviceLogger.js";
+import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import type {
   BotBindCodeResult,
   BotAutomationRunWatchParams,
@@ -196,10 +198,10 @@ import {
   truncateLiveStatusProgressText,
 } from "./statusFormatting.js";
 import { createTelegramChannelRuntime } from "./telegramChannelRuntime.js";
-import { createBotTaskStreamHub } from "./taskStreamHub.js";
+import { createBotTaskStreamHub } from "#src/bots/taskStreamHub.js";
 import { createWeixinChannelRuntime } from "./weixinChannelRuntime.js";
 import { createFeishuChannelRuntime } from "./feishuChannelRuntime.js";
-import { registerMemoryDiagnosticsProvider } from "../memoryDiagnostics.js";
+import { registerMemoryDiagnosticsProvider } from "#src/memoryDiagnostics.js";
 
 const botsLogger = createServiceLogger("bots");
 
@@ -355,12 +357,6 @@ interface BotRemoteWorkspaceService
     workspacePath: string;
     workspaceIdentity: string;
   }) => Promise<{ workspacePath: string; workspaceIdentity: string } | null>;
-}
-
-interface PreparedTopicMessage {
-  generation: number;
-  message: BotInboundMessage;
-  prepared: PreparedBotMessageContent;
 }
 
 interface PreparedTopicMessage {
@@ -776,8 +772,6 @@ const BOT_FORCED_MODE = "yolo";
 const BOT_TYPING_INTERVAL_MS = 4_000;
 const BOT_TASK_META_RETRY_DELAYS_MS = [80, 160, 320] as const;
 const BOT_WORKSPACE_REFS_CACHE_TTL_MS = 5_000;
-// CE-SYNC: 取 P5up（CE-PR5 形态）——两个上限的定义在无依赖叶子模块 ./botAttachmentLimits.js（task-111），
-// CEmain 侧的本地 const 副本会与该 import 形成重复声明，且会造成两处事实源静默漂移，故删除本地副本。
 // 两个附件上限的定义在无依赖叶子模块 ./botAttachmentLimits.js（task-111）：它们要经
 // browser-safe 的根入口 @zcode/services 导出，而本模块 import 了 ./attachmentUrlGuard.js
 // → undici（Node-only），定义在本文件会让根入口闭包被拉进 undici ⇒ 浏览器产物里
@@ -793,15 +787,6 @@ const BOT_ELICITATION_CUSTOM_OPTION_ID = "__custom__";
 const BOT_ELICITATION_SUBMIT_OPTION_ID = "__submit__";
 const BOT_ELICITATION_SKIP_OPTION_ID = "__skip__";
 const BOT_ELICITATION_FORM_VALUE_PREFIX = "__form__:";
-
-function isConstantTimeEqual(actual: string | undefined, expected: string): boolean {
-  const actualBytes = Buffer.from(actual ?? "", "utf8");
-  const expectedBytes = Buffer.from(expected, "utf8");
-  if (actualBytes.length !== expectedBytes.length) {
-    return false;
-  }
-  return timingSafeEqual(actualBytes, expectedBytes);
-}
 
 export function createBotsService(
   deps: BotsServiceDeps,
@@ -9961,12 +9946,8 @@ export function createBotsService(
       inboundProcessingQueuesByContext.clear();
       // Bugfix：host 的异步资源回收会优先调用 disposeAllAndWait。保留统一 Promise，确保并发关闭
       // 只执行一次，并在返回前等三类 Provider runtime 的请求、WebSocket 和跨进程锁全部收口。
-      // 修复 ENOTEMPTY 竞态（task-23 / release 门禁）：disposeAll 是 sync 且派发 detached 的
-      // disposeAllAndWait，调用方不 await 时 readState 的惰性 v3 写入会在 teardown 后落盘。
-      // shutdownPromise 收口前必须排空串行写链（stateWriteTail），保证返回时仓库已无在途写。
       shutdownPromise = Promise.allSettled([
         cancelUploads,
-        stateWriteTail.catch(() => undefined),
         telegramRuntime.dispose(),
         weixinRuntime.dispose(),
         feishuRuntime.dispose(),

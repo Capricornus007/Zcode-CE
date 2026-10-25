@@ -163,4 +163,3 @@ armsRum.client.useReporter = (reporter) => {
 // 遥测移除（CE 政策 / P1）：ARMS RUM SDK 不再初始化——上游全部 ARMS 上报都经由本 SDK，
 // 不 init 即无上报出口；renderer 侧 preload 桥接也一并移除。
 export const armsInitPromise: Promise<void> = Promise.resolve();
-

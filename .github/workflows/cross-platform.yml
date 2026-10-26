@@ -48,8 +48,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-latest
-          - windows-latest
+        # macos / windows 已移除（2026-10-27 用戶裁定）：無對應設備，不發佈該平臺。
     steps:
       - name: Checkout
         uses: actions/checkout@v5

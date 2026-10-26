@@ -41,8 +41,7 @@ ZCode-CE 基于 [zai-org/ZCode](https://github.com/zai-org/ZCode)（Apache-2.0�
 
 - **桌面自动化（Computer Use）**：Windows 为正式支持；**Linux 为实验性**（默认关闭，需在设置中开启）。官方发行版不支持 Linux 桌面自动化，本版通过开源实现提供，但受上游验证范围限制。详见[桌面自动化文档](docs/development/computer-use.md)。
 - **桌面自动化在 Linux 上有环境限制**：已在 X11 / Sway / KDE Wayland 验证，**Wayland 下截图不可用**（元素操作不受影响），GNOME 未完整验证。
-- **Windows 构建未签名**：首次运行需在 SmartScreen 提示中选择「仍要运行」，原因与进展见下方[安装](#安装)一节。
-- **Windows / macOS 未在真机做完整功能回归**：CI 会为两个平台打包，但本项目的日常验证以 Linux 为主。
+- **Windows / macOS 安装包不再随 Release 发布**（2026-10-27 裁定：CI 只构建 Linux；作者无对应设备）。需要 Windows / macOS 版请从源码构建（见下方[安装](#安装)一节）。
 - **macOS 无自动更新、且尚无二进制安装包**：macOS 客户端不检查更新（electron-updater 在 darwin 保持关闭）。二进制包将随后续版本发布（未签名 ad-hoc 包，首次打开需允许 Gatekeeper）；当前 macOS 请从源码构建。见上方[安装](#安装)一节。
 
 - **无头/Web 面板的安全默认值**：服务默认只监听回环；**非回环监听必须带令牌**，否则拒绝启动。明文 `http` 只应出现在**可信局域网**内，公网/不可信网络请放在 TLS 终结的反向代理或隧道之后（否则令牌与流量可被窃听/替换）；令牌等价于 **agent 级访问**，拿到它就能执行工具调用。

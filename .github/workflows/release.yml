@@ -101,20 +101,8 @@ jobs:
             platform: linux
             arch: x64
             artifact: linux
-          - os: windows-latest
-            platform: win
-            arch: x64
-            artifact: windows
-          # macos-13 runner 是 Intel（x64），macos-14 起 runner 是 Apple Silicon（arm64）；
-          # 在原生架构 runner 上构建避免跨架构编译原生模块（node-pty 等）。
-          - os: macos-13
-            platform: mac
-            arch: x64
-            artifact: macos-x64
-          - os: macos-14
-            platform: mac
-            arch: arm64
-            artifact: macos-arm64
+          # windows / macos 矩陣項已移除（2026-10-27 用戶裁定）：用戶沒有對應設備、
+          # 不發佈 Apple/Windows 安裝包，每輪白燒 runner。需要時從源碼構建（見 README 安裝節）。
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -187,13 +175,10 @@ jobs:
             packages/desktop/dist/*.deb
             packages/desktop/dist/*.rpm
             packages/desktop/dist/*.pkg.tar.zst
-            packages/desktop/dist/*.exe
-            packages/desktop/dist/*.dmg
-            packages/desktop/dist/*.zip
             packages/desktop/dist/*.yml
             packages/desktop/dist/*.blockmap
 
-  # 单独一个 job 设置 Release 描述，必须在两个平台都构建完之后。
+  # 单独一个 job 设置 Release 描述，必须在构建完之后。
   #
   # 为什么需要它：electron-builder 创建 Release 时**不传 body**（electron-publish 里
   # 没有 releaseNotes 的处理），GitHub 会用 tag 的 annotation 作为兜底。而 tag

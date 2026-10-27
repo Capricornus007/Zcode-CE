@@ -46,6 +46,9 @@ export interface SourceServerProbeOptions {
 export interface SourceServerIngressInfo {
   port: number;
   ingressToken: string;
+  // 3.16.3 upstream 增量：true 表示 daemon 是从 probe 观测到的 ready 状态直接复用的
+  //（未重新 serve --daemon）；握手失败时连接端据此走「强制重启后重试」的自愈路径。
+  reusedProbeStatus?: boolean;
 }
 
 export interface ServerReleaseAsset {
@@ -378,7 +381,9 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     let status = options.observedStatus;
     const observedReady =
       status?.state === "ready" && Number.isInteger(status.port) && (status.port as number) > 0;
-    if (!observedReady) {
+    if (observedReady) {
+      context.onLog?.({ phase: "daemon", message: "Reusing running Source Server" });
+    } else {
       context.onLog?.({ phase: "daemon", message: "Starting Source Server" });
       const result = await this.exec(target, ["serve", "--daemon", "--json"], context);
       if (result.exitCode !== 0) {
@@ -414,7 +419,9 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       await backend.readFile(`${SERVER_ROOT_READ_PATH}/run/ingress-token`)
     ).trim();
     if (!ingressToken) throw new Error("Source Server ingress token is missing");
-    return { port: port as number, ingressToken };
+    return observedReady
+      ? { port: port as number, ingressToken, reusedProbeStatus: true }
+      : { port: port as number, ingressToken };
   }
 
   public async openChannel(

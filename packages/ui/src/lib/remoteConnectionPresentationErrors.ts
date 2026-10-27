@@ -33,6 +33,9 @@ export interface RemoteConnectionErrorPresentation {
 
 const messageIdByCode: Record<PublicZCodeErrorCode, string> = {
   "remote-authentication-failed": "remote.error.authentication",
+  "remote-authentication-unsupported": "remote.error.authenticationUnsupported",
+  "remote-platform-unsupported": "remote.error.platformUnsupported",
+  "remote-workspace-directory-unresponsive": "remote.error.workspaceDirectoryUnresponsive",
   "remote-host-unreachable": "remote.error.hostUnreachable",
   "remote-connection-timeout": "remote.error.connectionTimeout",
   "remote-host-not-found": "remote.error.hostNotFound",

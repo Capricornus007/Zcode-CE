@@ -72,11 +72,15 @@ export class SourceServerProbeEnvironmentError extends Error {
 // archive 内置官方 Node（SERVER_RUNTIME_NODE_VERSION）Linux 构建的动态链接下限，随 Node 大版本同步。
 const SOURCE_SERVER_MIN_GLIBC_VERSION = [2, 28] as const;
 
-function assertSupportedGlibc(platform: string, libcText: string): void {
+// 3.16.3 upstream 增量：glibc 不足由「安装前拒绝」放宽为「warn + 继续安装/连接」——
+// glibc 下限是 release 的平台事实，但旧发行版用户自行承担启动失败风险比被硬拒更有用。
+// 原 ZCT-2112008575366098944 的动机（CentOS 7 先传 87MB 再由 ld.so 报错）由这条 warn 承接。
+function warnUnsupportedGlibc(
+  platform: string,
+  libcText: string,
+  onLog: TransportContext["onLog"],
+): void {
   if (platform !== "linux") return;
-  // Bug 原因（ZCT-2112008575366098944）：probe 过去只看平台/架构，CentOS 7 等 glibc 2.17
-  // 的远端要先上传约 87MB archive，解压后执行 bin/zcode 才由 ld.so 报一串 `not found`，
-  // 并被归为安装失败。glibc 下限是 release 的平台事实，归入远端环境检查，在确认安装前拒绝。
   // 读不到版本（musl、缺 getconf、输出无法识别）时无法判定，保持原安装链，不凭猜测拒绝。
   const match = /^glibc\s+(\d+)\.(\d+)/iu.exec(libcText);
   if (!match) return;
@@ -85,10 +89,14 @@ function assertSupportedGlibc(platform: string, libcText: string): void {
   const [minMajor, minMinor] = SOURCE_SERVER_MIN_GLIBC_VERSION;
   if (major > minMajor || (major === minMajor && minor >= minMinor)) return;
   const required = SOURCE_SERVER_MIN_GLIBC_VERSION.join(".");
-  throw new SourceServerProbeEnvironmentError(
-    `Remote glibc ${major}.${minor} is older than glibc ${required} required by ZCode Source Server. ` +
-      `Use a Linux system with glibc ${required} or later, such as RHEL 8+, Ubuntu 20.04+ or Debian 10+.`,
-  );
+  onLog?.({
+    phase: "probe",
+    level: "warn",
+    message:
+      `Remote glibc ${major}.${minor} is older than glibc ${required} required by ZCode Source Server. ` +
+      `Use a Linux system with glibc ${required} or later, such as RHEL 8+, Ubuntu 20.04+ or Debian 10+. ` +
+      `ZCode Source Server may fail to start. Continuing installation or connection.`,
+  });
 }
 
 export async function probeSourceServer(
@@ -123,7 +131,7 @@ export async function probeSourceServer(
       error instanceof Error ? error.message : String(error),
     );
   }
-  assertSupportedGlibc(environment.platform, sections.get("LIBC") ?? "");
+  warnUnsupportedGlibc(environment.platform, sections.get("LIBC") ?? "", context.onLog);
   const installed = sections.get("INSTALLED") === "1";
   if (!installed) return { ...environment, installed: false };
 

@@ -1,11 +1,19 @@
 import type { IFileService } from "@zcode/services";
-import { REMOTE_WORKSPACE_DIRECTORY_UNAVAILABLE_ERROR_CODE } from "@zcode/shared";
+import {
+  REMOTE_WORKSPACE_DIRECTORY_UNAVAILABLE_ERROR_CODE,
+  REMOTE_WORKSPACE_DIRECTORY_UNRESPONSIVE_ERROR_CODE,
+} from "@zcode/shared";
+
+// 3.16.3 upstream 增量：目录探测最长等 30s，卡死（如远端假死、网络半开）时抛
+// unresponsive（可重试），而不是无限挂住 Host ready 流程。
+const DEFAULT_DIRECTORY_PROBE_TIMEOUT_MS = 30_000;
 
 interface RemoteWorkspaceIdentityInput {
   workspacePath: string;
   stableWorkspaceIdentity: string;
   legacyRouteHint?: string;
   signal?: AbortSignal;
+  timeoutMs?: number;
 }
 
 export async function prepareRemoteWorkspaceIdentity(
@@ -24,9 +32,38 @@ export async function prepareRemoteWorkspaceIdentity(
   // 叶目录收回权限后 stat 仍会成功，身份映射也保存在目录之外，不能据此放行。
   // 复用远端 readdir 验证读取权限；保留末尾 /. 让远端同时检查目标目录的遍历权限。
   // 不用 path.join 归一化掉 /.，也不使用控制端的平台路径规则或本地文件系统。
+  const probe = fileService.readdir({ path: `${input.workspacePath}/.` });
+  // 逾时后 probe 本身仍在途（CE 的 readdir 不收 signal）；挂一个吞错 handler 防
+  // unhandled rejection，让它随连接自然结束。
+  probe.catch(() => {});
   try {
-    await fileService.readdir({ path: `${input.workspacePath}/.` });
+    await Promise.race([
+      probe,
+      new Promise((_, reject) => {
+        setTimeout(
+          () =>
+            reject(
+              Object.assign(
+                new Error(
+                  `Remote workspace directory did not respond within ${input.timeoutMs ?? DEFAULT_DIRECTORY_PROBE_TIMEOUT_MS}ms: ${input.workspacePath}`,
+                ),
+                { code: REMOTE_WORKSPACE_DIRECTORY_UNRESPONSIVE_ERROR_CODE, retryable: true },
+              ),
+            ),
+          input.timeoutMs ?? DEFAULT_DIRECTORY_PROBE_TIMEOUT_MS,
+        );
+      }),
+    ]);
   } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === REMOTE_WORKSPACE_DIRECTORY_UNRESPONSIVE_ERROR_CODE
+    ) {
+      input.signal?.throwIfAborted();
+      throw error;
+    }
     input.signal?.throwIfAborted();
     // 符号链接循环也属于目录不可用；透传 ELOOP 会跳过 Renderer 的 Host ready 通知，
     // 导致同一 Source 的其他项目无法继续恢复。

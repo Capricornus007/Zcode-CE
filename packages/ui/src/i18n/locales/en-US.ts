@@ -212,6 +212,12 @@ const enUS: Record<string, string> = {
   "remote.action.retry": "Retry",
   "remote.action.none": "",
   "remote.error.authentication": "SSH authentication failed",
+  "remote.error.authenticationUnsupported":
+    "This server does not support the authentication method ZCode requires.",
+  "remote.error.platformUnsupported":
+    "Remote hosts must provide a POSIX shell environment. Windows native remotes are not supported.",
+  "remote.error.workspaceDirectoryUnresponsive":
+    "Remote workspace directory did not respond in time. Retry the connection.",
   "remote.error.details": "Details",
   "remote.error.hostUnreachable.reason":
     "Check the device address and port, and make sure it is running and reachable.",

@@ -222,6 +222,10 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     const bootstrapDirShell = `${bootstrapRootShell}/extract`;
     const remoteArchive = `~/.zcode/server/.bootstrap-${operationId}/zcode-server.tar.gz`;
     const remoteArchiveShell = `${bootstrapRootShell}/zcode-server.tar.gz`;
+    // 3.16.3 bundled release 缓存：sha256 命中的歷史 archive 直接復用，跨安裝跳過下載/上傳。
+    const releaseCacheDirShell = `${SERVER_ROOT_SHELL}/.release-cache`;
+    const releaseCacheFile = `zcode-server-${(release.sha256 || "nosha").slice(0, 12)}.tar.gz`;
+    const releaseCachePathShell = `${releaseCacheDirShell}/${releaseCacheFile}`;
     const cleanupCommand = `rm -rf ${bootstrapRootShell}`;
     const cleanupStaleBootstrapRootsCommand =
       "now_ms=$(($(date +%s) * 1000)); " +
@@ -254,7 +258,33 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       // Bug 原因：开发态 resolver 已固定本轮本地 archive；若仍按 Profile 偏好直下，
       // bootstrap 产物会被 CDN 同版本 release 替换。显式本地路径拥有更高的制品来源优先级。
       !release.localArchivePath;
-    if (remoteDownload) {
+    let cacheHit = false;
+    if (release.sha256) {
+      const cacheCheck = await collectCommand(
+        await backend.exec(
+          `mkdir -p ${releaseCacheDirShell} && test -f ${releaseCachePathShell} && sha256sum ${releaseCachePathShell} 2>/dev/null | awk '{print $1}'`,
+        ),
+      );
+      cacheHit =
+        cacheCheck.exitCode === 0 && cacheCheck.stdout.trim() === release.sha256;
+      if (cacheHit) {
+        context.onLog?.({
+          phase: "download",
+          message: "Reusing cached Source Server archive (sha256 match)",
+        });
+      }
+    }
+    if (cacheHit) {
+      await prepareBootstrapRoot();
+      const copyResult = await collectCommand(
+        await backend.exec(`cp ${releaseCachePathShell} ${remoteArchiveShell}`),
+      );
+      if (copyResult.exitCode !== 0) {
+        throw new Error(
+          copyResult.stderr.trim() || "Failed to reuse cached Source Server archive",
+        );
+      }
+    } else if (remoteDownload) {
       context.onLog?.({
         phase: "download",
         message: `Downloading Source Server ${release.version} on remote host`,
@@ -276,6 +306,12 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
           downloadResult.stderr.trim() || "Remote Source Server archive download failed",
         );
       }
+      // bundled release 缓存：下載成功即寫入跨安裝緩存（best-effort，失敗不影響安裝）。
+      await collectCommand(
+        await backend.exec(
+          `mkdir -p ${releaseCacheDirShell} && cp ${remoteArchiveShell} ${releaseCachePathShell}`,
+        ),
+      ).catch(() => undefined);
     } else {
       if (!release.localArchivePath) {
         throw new Error("Source Server local archive is unavailable for upload");
@@ -309,6 +345,12 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
         await collectCommand(await backend.exec(cleanupCommand)).catch(() => undefined);
         throw error;
       }
+      // bundled release 缓存：上傳的本地 archive 同樣寫入跨安裝緩存（best-effort）。
+      await collectCommand(
+        await backend.exec(
+          `mkdir -p ${releaseCacheDirShell} && cp ${remoteArchiveShell} ${releaseCachePathShell}`,
+        ),
+      ).catch(() => undefined);
     }
     context.onLog?.({ phase: "extract", message: INSTALL_PROGRESS_MESSAGES.extract });
     const command = [

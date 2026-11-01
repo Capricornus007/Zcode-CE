@@ -49,12 +49,39 @@ jobs:
   # 安全红线：绝不要把触发器改成 pull_request_target（它用 base 仓库上下文 + secret
   # 跑未受信任 fork 代码，是教科书级 key 泄露面）。
   # 模式与随路环境变量登记见 docs/development/137-dsh-e2e-pattern.md。
+  # 先探一次 secret 在不在，把結果發布成 job output。
+  # 為什麼不直接在 jobs.<id>.if 裡寫 secrets.*：actionlint 會擋，GitHub 也不給——
+  # job 級 if 的可用 context 只有 github / inputs / needs / vars（實測報
+  # 「context "secrets" is not allowed here」），所以必須繞這一道。
+  e2e-gate:
+    runs-on: ubuntu-latest
+    name: e2e gate
+    permissions: {}
+    outputs:
+      has-key: ${{ steps.check.outputs.has-key }}
+    steps:
+      - name: Detect ZCODE_E2E_API_KEY
+        id: check
+        env:
+          ZCODE_E2E_API_KEY: ${{ secrets.ZCODE_E2E_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ZCODE_E2E_API_KEY:-}" ]; then
+            echo "has-key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-key=false" >> "$GITHUB_OUTPUT"
+          fi
+
   e2e-real-api:
     runs-on: ubuntu-latest
     name: e2e (real API)
+    needs: e2e-gate
     if: >-
-      github.event_name != 'pull_request'
-      || !(github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == 'dependabot[bot]')
+      needs.e2e-gate.outputs.has-key == 'true'
+      && (
+        github.event_name != 'pull_request'
+        || !(github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == 'dependabot[bot]')
+      )
     # 真实回路含构建 + 模型回合；超时上限把重试风暴挡在流水线内。
     timeout-minutes: 20
     steps:
@@ -101,6 +128,33 @@ jobs:
         run: |
           cd apps/zcode-cli/packages/spreadsheets-plugin
           node --test test/officeE2eBlankRender.test.mjs
+
+  # 沒有 ZCODE_E2E_API_KEY 時，上面那條 job 整個不出現。這會帶來一個新問題：
+  # 「安全網靜默消失」正是 preflight 原本要擋的事。所以這裡補一條零成本的揭曉 job：
+  # 不 checkout、不裝依賴、不碰任何付費 API，只把「本輪真實回路 e2e 沒跑」寫成
+  # 黃色警告 + 執行摘要，讓它看得見但不紅。
+  # 為什麼不干脆留紅：DeepSeek 是按 token 計費的，每次 push 都跑真實回路＝每次都在花錢；
+  # 使用者的裁定是「不该为此花钱」。所以改成「缺鑰匙 → 明示降級」而不是「缺鑰匙 → 一直紅」。
+  e2e-coverage-note:
+    runs-on: ubuntu-latest
+    name: e2e coverage note
+    needs: e2e-gate
+    permissions: {}
+    if: needs.e2e-gate.outputs.has-key == 'false'
+    steps:
+      - name: Announce skipped real-API e2e
+        run: |
+          {
+            echo "### e2e（真實 API）本輪**未執行**"
+            echo ""
+            echo "倉庫 secret \`ZCODE_E2E_API_KEY\` 未設定，所以 \`e2e (real API)\` job 整個跳過。"
+            echo "這不是測試失敗，是覆蓋率缺口：真實模型回路的空白渲染迴歸本輪沒有被守到。"
+            echo ""
+            echo "要補上的話：在倉庫 Settings → Secrets and variables → Actions 放一把 DeepSeek"
+            echo "API key（按 token 計費），並在 \`apps/zcode-cli/packages/spreadsheets-plugin\`"
+            echo "的 e2e 那條 step 裡生效即可；不設定的話這條提示會每次出現。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::warning::ZCODE_E2E_API_KEY 未設定 → 真實回路 e2e 跳過（覆蓋率缺口，非失敗）"
 
   verify:
     runs-on: ubuntu-latest

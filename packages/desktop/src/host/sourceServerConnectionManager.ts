@@ -1002,10 +1002,10 @@ export class SourceServerConnectionManager {
       let published: { sourceServerId: string; connection: ServerRemoteConnection } | undefined;
       let closedBeforePublish: string | undefined;
       options.onDiagnosticPhase?.("protocol-handshake");
-      const connection = await this.connectServer({
-        ingressToken: ingress.ingressToken,
+      const connectWithIngress = async (activeIngress: typeof ingress) => await this.connectServer({
+        ingressToken: activeIngress.ingressToken,
         createConnection: async () =>
-          await adapter.openChannel(target, ingress, options.context ?? {}),
+          await adapter.openChannel(target, activeIngress, options.context ?? {}),
         onClose: ({ reason }) => {
           if (ignoreConnectionClose) return;
           // Bug 原因（RV-P1-1）：close 事件过去只按 sourceServerId 路由，并用在线表是否存在做守卫。
@@ -1020,6 +1020,24 @@ export class SourceServerConnectionManager {
           this.handleUnexpectedClose(published.sourceServerId, reason, published.connection);
         },
       });
+
+      let connection: ServerRemoteConnection;
+      try {
+        connection = await connectWithIngress(ingress);
+      } catch (handshakeError) {
+        if (!ingress.reusedProbeStatus) throw handshakeError;
+        // 3.16.3 自愈：复用的 daemon 握手失败 → 强制重启 daemon 后重试一次
+        options.context?.onLog?.({
+          phase: "daemon",
+          message: "Reused Source Server handshake failed; force-restarting daemon and retrying once",
+        });
+        adapter.cancel?.(target);
+        const restarted = await adapter.ensureDaemon(target, options.context ?? {}, {
+          forceRestart: true,
+        });
+        throwIfAborted();
+        connection = await connectWithIngress(restarted);
+      }
       unpublishedConnection = connection;
       throwIfAborted();
       const compatibility = connection.serverInfo.compatibility;

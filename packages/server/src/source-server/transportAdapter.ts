@@ -76,6 +76,8 @@ export interface SourceServerInstallOrUpdateOptions {
 
 export interface SourceServerEnsureDaemonOptions {
   observedStatus?: SourceServerProbeResult["daemonStatus"];
+  // 3.16.3 增量：复用 probe 观测到的 ready daemon 握手失败时，强制重新 serve 一次再连（自愈）。
+  forceRestart?: boolean;
 }
 
 export class SourceServerTransportOperationError extends Error {
@@ -380,6 +382,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     throwIfAborted(context.signal);
     let status = options.observedStatus;
     const observedReady =
+      !options.forceRestart &&
       status?.state === "ready" && Number.isInteger(status.port) && (status.port as number) > 0;
     if (observedReady) {
       context.onLog?.({ phase: "daemon", message: "Reusing running Source Server" });

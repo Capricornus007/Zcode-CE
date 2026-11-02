@@ -15,7 +15,7 @@ import type {
   SourceServerProbeOptions,
   SourceServerProbeResult,
   TransportContext,
-} from "@zcode/server/source-server/transportAdapter.js";
+} from "@zcode/server/source-server/contract.js";
 
 const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
 const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';

@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- Source Server transport 在同一适配器内汇合安装、daemon、channel 与 target 生命周期，继续拆分会割裂取消边界。 */
 import { Duplex } from "node:stream";
 import {
   isPublicZCodeErrorCode,
@@ -26,59 +25,33 @@ import {
   throwIfAborted,
   type RemoteExecResult,
 } from "@zcode/server/source-server/sourceServerTransportRuntime.js";
+import type {
+  CreateSourceServerTransportAdapterOptions,
+  ServerReleaseAsset,
+  SourceServerEnsureDaemonOptions,
+  SourceServerFileTransfer,
+  SourceServerIngressInfo,
+  SourceServerInstallOrUpdateOptions,
+  SourceServerProbeOptions,
+  SourceServerProbeResult,
+  SourceServerTransportAdapter,
+  TransportContext,
+} from "@zcode/server/source-server/contract.js";
 
 export type { RemoteExecResult } from "@zcode/server/source-server/sourceServerTransportRuntime.js";
+export type {
+  CreateSourceServerTransportAdapterOptions,
+  ServerReleaseAsset,
+  SourceServerEnsureDaemonOptions,
+  SourceServerFileTransfer,
+  SourceServerIngressInfo,
+  SourceServerInstallOrUpdateOptions,
+  SourceServerProbeOptions,
+  SourceServerProbeResult,
+  SourceServerTransportAdapter,
+  TransportContext,
+} from "@zcode/server/source-server/contract.js";
 
-export interface SourceServerProbeResult {
-  platform: string;
-  arch: string;
-  installed: boolean;
-  installPath?: string;
-  installedVersion?: string;
-  installedArchiveSha256?: string;
-  daemonStatus?: Record<string, unknown> & { state: string; port?: number };
-}
-
-export interface SourceServerProbeOptions {
-  includeReleaseIdentity?: boolean;
-}
-
-export interface SourceServerIngressInfo {
-  port: number;
-  ingressToken: string;
-  // 3.16.3 upstream 增量：true 表示 daemon 是从 probe 观测到的 ready 状态直接复用的
-  //（未重新 serve --daemon）；握手失败时连接端据此走「强制重启后重试」的自愈路径。
-  reusedProbeStatus?: boolean;
-}
-
-export interface ServerReleaseAsset {
-  localArchivePath?: string;
-  target: string;
-  version: string;
-  sha256: string;
-  sizeBytes: number;
-  urls: string[];
-}
-
-export interface TransportContext {
-  signal?: AbortSignal;
-  onLog?: (event: {
-    phase: string;
-    message: string;
-    progress?: number;
-    level?: "info" | "warn" | "error";
-  }) => void;
-}
-
-export interface SourceServerInstallOrUpdateOptions {
-  force?: boolean;
-}
-
-export interface SourceServerEnsureDaemonOptions {
-  observedStatus?: SourceServerProbeResult["daemonStatus"];
-  // 3.16.3 增量：复用 probe 观测到的 ready daemon 握手失败时，强制重新 serve 一次再连（自愈）。
-  forceRestart?: boolean;
-}
 
 export class SourceServerTransportOperationError extends Error {
   public constructor(
@@ -91,42 +64,6 @@ export class SourceServerTransportOperationError extends Error {
   }
 }
 
-export type SourceServerFileTransfer = Pick<IRemoteBackend, "exec" | "upload">;
-
-export interface SourceServerTransportAdapter {
-  readonly kind: "ssh" | "wsl" | "docker";
-  /** Host 附件暂存复用当前 target 的 transport，不创建另一条远程连接。 */
-  createFileTransfer(target: RemoteTarget): SourceServerFileTransfer;
-  /** 取消单个连接目标的底层 transport，防止超时 flight 迟到注册为在线 Source。 */
-  cancel?(target: RemoteTarget): void;
-  probe(
-    target: RemoteTarget,
-    context: TransportContext,
-    options?: SourceServerProbeOptions,
-  ): Promise<SourceServerProbeResult>;
-  installOrUpdate(
-    target: RemoteTarget,
-    release: ServerReleaseAsset,
-    context: TransportContext,
-    options?: SourceServerInstallOrUpdateOptions,
-  ): Promise<void>;
-  ensureDaemon(
-    target: RemoteTarget,
-    context: TransportContext,
-    options?: SourceServerEnsureDaemonOptions,
-  ): Promise<SourceServerIngressInfo>;
-  openChannel(
-    target: RemoteTarget,
-    ingress: SourceServerIngressInfo,
-    context: TransportContext,
-  ): Promise<Duplex>;
-  exec(target: RemoteTarget, argv: string[], context: TransportContext): Promise<RemoteExecResult>;
-  dispose?(): void;
-}
-
-export interface CreateSourceServerTransportAdapterOptions {
-  createBackend?: (target: RemoteTarget) => Promise<IRemoteBackend>;
-}
 
 const SERVER_ROOT_READ_PATH = "~/.zcode/server";
 const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';

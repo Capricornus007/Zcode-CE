@@ -753,11 +753,13 @@ modules:
     roots:
       - apps/zcode-cli/packages/contracts/src/tools/get-context-remaining.ts
       - apps/zcode-cli/packages/core/src/tool/handlers/get-context-remaining.ts
+      - apps/zcode-cli/architecture/cli-context-remaining-tool
     managed: true
     requires: [zcode-cli]
     publicEntrypoints:
       - apps/zcode-cli/packages/contracts/src/tools/get-context-remaining.ts
       - apps/zcode-cli/packages/core/src/tool/handlers/get-context-remaining.ts
+      - apps/zcode-cli/architecture/cli-context-remaining-tool/contract.ts
     layers: { app: . }
     owner: agent
 
@@ -769,6 +771,7 @@ modules:
       - apps/zcode-cli/packages/core/src/memory/recall/vector-store.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/kb-recall-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/memory-recall-reminder.ts
+      - apps/zcode-cli/architecture/cli-memory-recall
     managed: true
     requires: [zcode-cli]
     publicEntrypoints:
@@ -777,6 +780,7 @@ modules:
       - apps/zcode-cli/packages/core/src/memory/recall/vector-store.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/kb-recall-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/memory-recall-reminder.ts
+      - apps/zcode-cli/architecture/cli-memory-recall/contract.ts
     layers: { app: . }
     owner: agent
 
@@ -786,13 +790,15 @@ modules:
       - apps/zcode-cli/packages/core/src/model/adaptive-reasoning.ts
       - apps/zcode-cli/packages/core/src/model/cache-stability.ts
       - apps/zcode-cli/packages/core/src/model/sanitize-surrogates.ts
+      - apps/zcode-cli/architecture/cli-model-request-stability
     managed: true
     requires: [zcode-cli]
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/model/adaptive-reasoning.ts
       - apps/zcode-cli/packages/core/src/model/cache-stability.ts
       - apps/zcode-cli/packages/core/src/model/sanitize-surrogates.ts
-    layers: { domain: . }
+      - apps/zcode-cli/architecture/cli-model-request-stability/contract.ts
+    layers: { app: . }
     owner: agent
 
   # 3.16.3 同步：运行时提醒投影；口径提醒复用 memory-recall 的用户输入提取器。
@@ -802,6 +808,7 @@ modules:
       - apps/zcode-cli/packages/core/src/runtime/methods/followup-due-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/task-reanchor-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/user-instructions-update-reminder.ts
+      - apps/zcode-cli/architecture/cli-runtime-reminders
     managed: true
     requires: [zcode-cli, cli-memory-recall]
     publicEntrypoints:
@@ -809,14 +816,19 @@ modules:
       - apps/zcode-cli/packages/core/src/runtime/methods/followup-due-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/task-reanchor-reminder.ts
       - apps/zcode-cli/packages/core/src/runtime/methods/user-instructions-update-reminder.ts
+      - apps/zcode-cli/architecture/cli-runtime-reminders/contract.ts
     layers: { app: . }
     owner: agent
 
   - id: cli-cache-keep-alive
-    roots: [apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts]
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts
+      - apps/zcode-cli/architecture/cli-cache-keep-alive
     managed: true
     requires: [zcode-cli]
-    publicEntrypoints: [apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts]
+    publicEntrypoints:
+      - apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts
+      - apps/zcode-cli/architecture/cli-cache-keep-alive/contract.ts
     layers: { app: . }
     owner: agent
 
@@ -827,6 +839,7 @@ modules:
     requires: [server, shared]
     publicEntrypoints:
       - packages/server/src/source-server/index.ts
+      - packages/server/src/source-server/contract.ts
       - packages/server/src/source-server/transportAdapter.ts
     layers: { adapters: . }
     owner: remote
@@ -844,26 +857,38 @@ modules:
 
   # 单文件 UI 能力沿现有位置精确登记，避免机械接管整个 v4/store 目录。
   - id: stream-speed-pill
-    roots: [packages/ui/src/v4/composer/StreamSpeedPill.tsx]
+    roots:
+      - packages/ui/src/v4/composer/StreamSpeedPill.tsx
+      - packages/ui/src/stream-speed-pill
     managed: true
     requires: [shared, ui]
-    publicEntrypoints: [packages/ui/src/v4/composer/StreamSpeedPill.tsx]
+    publicEntrypoints:
+      - packages/ui/src/v4/composer/StreamSpeedPill.tsx
+      - packages/ui/src/stream-speed-pill/contract.ts
     layers: { ui: . }
     owner: conversation
   - id: dynamic-workflow-availability-store
-    roots: [packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts]
+    roots:
+      - packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
+      - packages/ui/src/dynamic-workflow-availability
     managed: true
     requires: [services, shared, ui]
-    publicEntrypoints: [packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts]
+    publicEntrypoints:
+      - packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
+      - packages/ui/src/dynamic-workflow-availability/contract.ts
     layers: { app: . }
     owner: conversation
 
   # WDIO 入口是桌面 E2E adapter 配置，不纳入生产 desktop/src 模块。
   - id: desktop-e2e-config
-    roots: [packages/desktop/wdio.conf.ts]
+    roots:
+      - packages/desktop/wdio.conf.ts
+      - packages/desktop/e2e-config-module
     managed: true
     requires: [desktop, shared]
-    publicEntrypoints: [packages/desktop/wdio.conf.ts]
+    publicEntrypoints:
+      - packages/desktop/wdio.conf.ts
+      - packages/desktop/e2e-config-module/contract.ts
     layers: { adapters: . }
     owner: desktop
 
@@ -872,10 +897,12 @@ modules:
     roots: [packages/zcode-cua]
     managed: false
   - id: zcode-cua-bench
-    roots: [packages/zcode-cua/bench/cua-bench.mjs]
+    roots: [packages/zcode-cua/bench]
     managed: true
     requires: [zcode-cua]
-    publicEntrypoints: [packages/zcode-cua/bench/cua-bench.mjs]
+    publicEntrypoints:
+      - packages/zcode-cua/bench/cua-bench.mjs
+      - packages/zcode-cua/bench/contract.ts
     layers: { adapters: . }
     owner: cua
 

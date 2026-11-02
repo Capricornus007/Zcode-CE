@@ -149,7 +149,8 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
 
   it("forwards page owner changes to the existing Window Host", () => {
     const child = new MockUtilityProcess();
-    browserWindowMock.fromId.mockReturnValueOnce({ id: 7, webContents: { id: 99 } });
+    // 两次 owner 变更属于同一存活窗口；fromId 在真实 Electron 中会稳定返回同一 WebContents。
+    browserWindowMock.fromId.mockReturnValue({ id: 7, webContents: { id: 99 } });
     const manager = createWebRemoteControlSharedHostAttachments({
       windowHostProcessMap: new Map([[99, child as never]]),
       createMessageChannel: createPortPair as never,

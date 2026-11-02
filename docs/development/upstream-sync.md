@@ -149,6 +149,12 @@ Source Server 修复保持并集。
 本轮不搬官方 3.17.1 独有的手机日志、数据同步、移动端 229 输入或其它非 3.16.3 合同；也不以
 `sharp` 的官方顶层布局覆盖 CE 既有按需暂存方案。版本号为 `3.16.3-ce.1`。
 
+架构登记按真实 owner 收口，不建立全仓例外：CLI 增量拆为 context-remaining、memory-recall、
+model-request-stability、runtime-reminders 与 cache-keep-alive 五个精确模块；Source Server 目录归
+transport adapter；Side Pane 完整视图采用其自带 contract/module；速度药丸和动态工作流快照按单一
+UI/app owner 精确登记；WDIO 与 CUA bench 分别归桌面 E2E、机器校准 adapter。未把整个
+`zcode-cli`、`ui`、`server` 或 `zcode-cua` 改成 managed，也未增加 unmanaged baseline 例外。
+
 ## CE 接线重植台账（apps/zcode-cli 九项断线，2026-10-18 处置）
 
 > 背景：3.15.1 merge 官方整版覆盖部分既有文件，把「CE 新文件在既有文件里的引用接线」冲掉

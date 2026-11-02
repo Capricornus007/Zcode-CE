@@ -748,6 +748,137 @@ modules:
       app: .
     owner: desktop
 
+  # 3.16.3 同步：精确登记上下文余量工具的 schema 与 handler，不扩大到整个 contracts/core。
+  - id: cli-context-remaining-tool
+    roots:
+      - apps/zcode-cli/packages/contracts/src/tools/get-context-remaining.ts
+      - apps/zcode-cli/packages/core/src/tool/handlers/get-context-remaining.ts
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/packages/contracts/src/tools/get-context-remaining.ts
+      - apps/zcode-cli/packages/core/src/tool/handlers/get-context-remaining.ts
+    layers: { app: . }
+    owner: agent
+
+  # 3.16.3 同步：记忆召回排序、embedding、向量存储与 turn 注入共用一个 owner。
+  - id: cli-memory-recall
+    roots:
+      - apps/zcode-cli/packages/core/src/memory/recall/embedding.ts
+      - apps/zcode-cli/packages/core/src/memory/recall/score.ts
+      - apps/zcode-cli/packages/core/src/memory/recall/vector-store.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/kb-recall-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/memory-recall-reminder.ts
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/packages/core/src/memory/recall/embedding.ts
+      - apps/zcode-cli/packages/core/src/memory/recall/score.ts
+      - apps/zcode-cli/packages/core/src/memory/recall/vector-store.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/kb-recall-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/memory-recall-reminder.ts
+    layers: { app: . }
+    owner: agent
+
+  # 3.16.3 同步：模型请求前后的纯策略与消毒函数。
+  - id: cli-model-request-stability
+    roots:
+      - apps/zcode-cli/packages/core/src/model/adaptive-reasoning.ts
+      - apps/zcode-cli/packages/core/src/model/cache-stability.ts
+      - apps/zcode-cli/packages/core/src/model/sanitize-surrogates.ts
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/packages/core/src/model/adaptive-reasoning.ts
+      - apps/zcode-cli/packages/core/src/model/cache-stability.ts
+      - apps/zcode-cli/packages/core/src/model/sanitize-surrogates.ts
+    layers: { domain: . }
+    owner: agent
+
+  # 3.16.3 同步：运行时提醒投影；口径提醒复用 memory-recall 的用户输入提取器。
+  - id: cli-runtime-reminders
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/methods/caliber-guard-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/followup-due-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/task-reanchor-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/user-instructions-update-reminder.ts
+    managed: true
+    requires: [zcode-cli, cli-memory-recall]
+    publicEntrypoints:
+      - apps/zcode-cli/packages/core/src/runtime/methods/caliber-guard-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/followup-due-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/task-reanchor-reminder.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/user-instructions-update-reminder.ts
+    layers: { app: . }
+    owner: agent
+
+  - id: cli-cache-keep-alive
+    roots: [apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts]
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints: [apps/zcode-cli/packages/core/src/runtime/methods/cache-keep-alive.ts]
+    layers: { app: . }
+    owner: agent
+
+  # Source Server bootstrap/daemon/channel transport 是 server adapter 边界。
+  - id: source-server-transport
+    roots: [packages/server/src/source-server]
+    managed: true
+    requires: [server, shared]
+    publicEntrypoints:
+      - packages/server/src/source-server/index.ts
+      - packages/server/src/source-server/transportAdapter.ts
+    layers: { adapters: . }
+    owner: remote
+
+  # Side Pane 完整视图已自带 contract/module/示例/测试，补登记现有模块声明。
+  - id: side-pane-full-view
+    roots: [packages/ui/src/side-pane-full-view]
+    managed: true
+    requires: [shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/side-pane-full-view/index.ts
+      - packages/ui/src/side-pane-full-view/contract.ts
+    layers: { ui: . }
+    owner: conversation
+
+  # 单文件 UI 能力沿现有位置精确登记，避免机械接管整个 v4/store 目录。
+  - id: stream-speed-pill
+    roots: [packages/ui/src/v4/composer/StreamSpeedPill.tsx]
+    managed: true
+    requires: [shared, ui]
+    publicEntrypoints: [packages/ui/src/v4/composer/StreamSpeedPill.tsx]
+    layers: { ui: . }
+    owner: conversation
+  - id: dynamic-workflow-availability-store
+    roots: [packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts]
+    managed: true
+    requires: [services, shared, ui]
+    publicEntrypoints: [packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts]
+    layers: { app: . }
+    owner: conversation
+
+  # WDIO 入口是桌面 E2E adapter 配置，不纳入生产 desktop/src 模块。
+  - id: desktop-e2e-config
+    roots: [packages/desktop/wdio.conf.ts]
+    managed: true
+    requires: [desktop, shared]
+    publicEntrypoints: [packages/desktop/wdio.conf.ts]
+    layers: { adapters: . }
+    owner: desktop
+
+  # zcode-cua 存量实现保持 legacy；bench 单独登记为机器级校准 adapter。
+  - id: zcode-cua
+    roots: [packages/zcode-cua]
+    managed: false
+  - id: zcode-cua-bench
+    roots: [packages/zcode-cua/bench/cua-bench.mjs]
+    managed: true
+    requires: [zcode-cua]
+    publicEntrypoints: [packages/zcode-cua/bench/cua-bench.mjs]
+    layers: { adapters: . }
+    owner: cua
+
 global:
   # 临时时间戳（2026-09-10）：unmanaged-new-file 只约束此日期之后首次入库的文件。
   # 基于领先 staging 很多的分支开工时，merge-base 之前的"新增"文件不应被追溯。

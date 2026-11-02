@@ -285,14 +285,16 @@ describe("createWebRemoteControlManager external relay", () => {
       1,
       expect.objectContaining({ terminalOwnerId: owner1 }),
     );
-    const ready = h.sentPayloads.find(
-      (payload) =>
-        payload.zcode_type === "workspace-bridge-ready" &&
-        payload.requestId === "bridge-request-1",
-    );
-    expect(ready).toMatchObject({
-      zcode_type: "workspace-bridge-ready",
-      bridge: { terminalOwnerId: owner1 },
+    await vi.waitFor(() => {
+      const ready = h.sentPayloads.find(
+        (payload) =>
+          payload.zcode_type === "workspace-bridge-ready" &&
+          payload.requestId === "bridge-request-1",
+      );
+      expect(ready).toMatchObject({
+        zcode_type: "workspace-bridge-ready",
+        bridge: { terminalOwnerId: owner1 },
+      });
     });
 
     h.deliverPayload({

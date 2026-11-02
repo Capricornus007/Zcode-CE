@@ -3,6 +3,7 @@ import { ISettingService, ITerminalService, ServiceCollection } from "@zcode/ser
 import { describe, expect, it, vi } from "vitest";
 import { ServiceChannels } from "@zcode/shared";
 import {
+  createWindowHostTerminalOwners,
   exposeWindowHostAttachmentServices,
   resolveWindowHostServiceExposurePolicy,
 } from "../src/host/windowHostAttachmentRpcPolicy.js";
@@ -13,7 +14,7 @@ describe("Window Host attachment RPC policy", () => {
 
     expect(policy?.allowedChannels.has(ServiceChannels.Setting)).toBe(true);
     expect(policy?.allowedChannels.has(ServiceChannels.ZCodeTask)).toBe(true);
-    expect(policy?.allowedChannels.has(ServiceChannels.Terminal)).toBe(false);
+    expect(policy?.allowedChannels.has(ServiceChannels.Terminal)).toBe(true);
     expect(policy?.allowedChannels.has(ServiceChannels.SourceServerManagement)).toBe(false);
     expect(policy?.allowedChannels.has(ServiceChannels.ProviderProvisioningTarget)).toBe(false);
     expect(policy?.allowedChannels.has(ServiceChannels.ProviderSettings)).toBe(true);
@@ -30,14 +31,14 @@ describe("Window Host attachment RPC policy", () => {
     expect([...policy!.allowedChannels].every((channel) => registeredChannels.has(channel))).toBe(
       true,
     );
-    expect(policy?.allowedChannels.size).toBe(46);
+    expect(policy?.allowedChannels.size).toBe(47);
   });
 
   it("keeps the complete service surface for desktop attachments", () => {
     expect(resolveWindowHostServiceExposurePolicy("desktop-continuous")).toBeUndefined();
   });
 
-  it("rejects Terminal RPC before the mobile call reaches the registered service", async () => {
+  it("allows scoped Terminal RPC for mobile attachments", async () => {
     const terminalCreate = vi.fn(async () => ({ id: "terminal-1" }));
     const services = new ServiceCollection()
       .register(ISettingService, { get: async () => ({ locale: "zh-CN" }) } as never)
@@ -62,8 +63,8 @@ describe("Window Host attachment RPC policy", () => {
         client
           .getChannel(ITerminalService.channelName)
           .call("create", [{ cols: 80, rows: 24, cwd: "/repo" }]),
-      ).rejects.toThrow("Channel name 'terminal' timed out");
-      expect(terminalCreate).not.toHaveBeenCalled();
+      ).resolves.toEqual({ id: "terminal-1" });
+      expect(terminalCreate).toHaveBeenCalledOnce();
     } finally {
       client.dispose();
       server.dispose();
@@ -96,5 +97,43 @@ describe("Window Host attachment RPC policy", () => {
       client.dispose();
       server.dispose();
     }
+  });
+
+  it("owner 换代先失效旧 scope 并回收已有和迟到 PTY", async () => {
+    const exitListeners = new Map<string, (code: number) => void>();
+    const pending = Promise.withResolvers<{ id: string }>();
+    const base = {
+      create: vi
+        .fn()
+        .mockResolvedValueOnce({ id: "terminal-1" })
+        .mockImplementationOnce(() => pending.promise),
+      write: vi.fn(async () => undefined),
+      resize: vi.fn(async () => undefined),
+      dispose: vi.fn(async () => undefined),
+      onDynamicData: vi.fn(() => () => ({ dispose: vi.fn() })),
+      onDynamicExit: vi.fn((id: string) => (listener: (code: number) => void) => {
+        exitListeners.set(id, listener);
+        return { dispose: () => exitListeners.delete(id) };
+      }),
+    } as unknown as ITerminalService;
+    const cleanupError = vi.fn();
+    const owners = createWindowHostTerminalOwners(cleanupError);
+    owners.setOwner("owner-1");
+    const first = owners.bind("owner-1", "local", base);
+    await first.create({ cols: 80, rows: 24, cwd: "/repo" });
+    const late = first.create({ cols: 80, rows: 24, cwd: "/repo" });
+
+    owners.setOwner("owner-2");
+    await expect(first.write({ id: "terminal-1", data: "late" })).rejects.toThrow(
+      "Terminal owner has ended",
+    );
+    pending.resolve({ id: "terminal-late" });
+    await expect(late).rejects.toThrow("Terminal owner has ended");
+    await vi.waitFor(() => {
+      expect(base.dispose).toHaveBeenCalledWith({ id: "terminal-1" });
+      expect(base.dispose).toHaveBeenCalledWith({ id: "terminal-late" });
+    });
+    expect(cleanupError).not.toHaveBeenCalled();
+    expect(() => owners.bind("owner-1", "local", base)).toThrow("Terminal owner has ended");
   });
 });

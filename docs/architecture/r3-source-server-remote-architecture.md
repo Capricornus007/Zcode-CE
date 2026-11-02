@@ -1098,7 +1098,7 @@ Mobile /remote   ── existing workspace attachment ──► 禁止 managemen
 
 - [连接 UX](remote-device-connection-ux-spec.md)维护统一五态、三屏向导、安装确认、设备卡、日志、只读任务清单与更新提示；不再使用旧三 tab/五步方案。
 - [项目导航](../remote/project-first-remote-navigation-spec.md)维护平铺项目、连接后选目录、原项目续接、断线和重启恢复；远程无项目聊天 UI 停用，数据保留。
-- 首次持续运行说明位于目录页，一次性、非阻断，沿用版本化 onboarding 记录；不再弹出要求确认的边界模态。
+- 首次持续运行说明复用「本地离线，任务照常运行」确认介绍页：主动连接成功或显式浏览已连接设备目录后展示，用户点击「知道了」才写 `remoteBoundaryIntroAcknowledgedVersion: 1`；后台完成等待用户显式继续，静默恢复不弹出。旧字段版本 2 不表示新版已读，存量版本 3 由 SettingService 在写锁内迁移。
 - [投影与持久化兼容](remote-domain-simplification-and-conversation-workspace-spec.md)维护 open set、显式关闭、strict schema 与 R4 剩余迁移。
 - [Renderer 重挂](../remote/desktop-remote-session-renderer-reattach.md)维护设备上线后的项目挂回；底层连接生命周期仍以 §7 为准。
 - 模型设置绑定本地（§8.2），Provider 自动下发（§8.3）；其它能力页遵循其 User/Workspace Scope。

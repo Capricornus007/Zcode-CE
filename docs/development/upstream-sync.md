@@ -131,6 +131,24 @@
 - CE 接线存活扫描通过：qimen/liuren 围栏、速度药丸、bot 附件三道防护、常时比较、
   cacheHitRatio 保活观测等关键标记均在合并树上
 
+## v3.16.3（来源：闭源发行包；后续开源源码复核）
+
+官方 3.16.3 Linux 包（buildCommitId `a82dd43e`，2026-10-23）用于行为与产物差量；官方
+3.17.1 开源同步提交 `a60ba6a7` 提供了终端 owner 的可审源码，落地时只取 3.16.3 已观察到的合同，
+不带入 3.17.1 的数据同步、手机日志、移动输入等后续能力。CE 的协议扩展、引导式终端投递和既有
+Source Server 修复保持并集。
+
+| 条目 | 依据 | 同步情况 | CE 落点 |
+| --- | --- | --- | --- |
+| 远端目录探测 30 秒 fail-closed、认证/平台错误分类、旧 glibc 警告继续 | 闭源包差量 + 既有契约测试 | 已跟进 | `7cadb3fd`；desktop/server/shared/UI 错误映射 |
+| 复用 daemon 握手失败后强制重启并重试一次 | 闭源包差量 + Source Manager/Adapter 合同 | 已跟进 | `7d8a10b2` |
+| 发行 archive 按 sha256 跨安装缓存 | 闭源包差量 + Adapter 缓存合同 | 已跟进 | `4b08571b` |
+| 手机 side-pane 终端的页面 owner、同页 bridge 重绑与 owner 结束回收 | 3.16.3 行为差量；`a60ba6a7` 源码复核 | 已跟进 | shared 严格 schema → Main owner → Window Host scope → UI registry；旧客户端按 attachment 回收 |
+| 首次持续运行介绍只在「知道了」后记已读 | 3.16.3 行为与当前 UX 契约测试 | 已跟进 | `remoteBoundaryIntroAcknowledgedVersion: 1`；版本 3 写锁迁移，旧字段 2 只保留回滚兼容 |
+
+本轮不搬官方 3.17.1 独有的手机日志、数据同步、移动端 229 输入或其它非 3.16.3 合同；也不以
+`sharp` 的官方顶层布局覆盖 CE 既有按需暂存方案。版本号为 `3.16.3-ce.1`。
+
 ## CE 接线重植台账（apps/zcode-cli 九项断线，2026-10-18 处置）
 
 > 背景：3.15.1 merge 官方整版覆盖部分既有文件，把「CE 新文件在既有文件里的引用接线」冲掉

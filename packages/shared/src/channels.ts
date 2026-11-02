@@ -620,6 +620,8 @@ export const ZCODE_RPC_HOST_CAPABILITY_HEADER = "x-zcode-rpc-host-capability";
 
 /** main → host process 的初始化消息类型 */
 export const HostMessageTypes = {
+  /** main → Host：切换手机页面终端 owner；null 立即回收旧 owner 的全部 PTY。 */
+  SetTerminalOwner: "set-terminal-owner",
   /** main → Host：准备手机项目目录，只复用已在线物理 Source。 */
   PrepareProjectWorkspace: "prepare-project-workspace",
   DatabaseStartupControl: "database-startup-control",

@@ -388,9 +388,24 @@ DOM 净化、点击拦截和受控外链打开。移除原生远控确认不改�
 renderer XSS 或上述边界被绕过，攻击代码可以再次直接调用远控启动 IPC，内部票据不会提供用户在场
 证明。安全评估不得把该票据当作 Office XSS 的补偿控制。
 
-`web-remote-replayable` 默认不应获得终端能力。若产品仍需手机终端，必须通过独立的
-workspace/session/device 绑定 capability、短 TTL、owner/lease 和断线回收来暴露，不能把通用
-`services.exposeOnChannelServer()` 视为授权。
+`web-remote-replayable` 只通过显式 allowlist 获得终端频道，并复用当前 local/remote attachment 的
+`ITerminalService`。终端不是普通 attachment 资源：Web 页面在 bootstrap 与 bridge-open 携带稳定的
+`terminalClientSessionId`，Main 分配可信 `terminalOwnerId`，Window Host 按 owner + local/remote scope
+登记其创建的 PTY。同页 bridge 换代只重绑 RPC 服务并保留 xterm、历史和 PTY；页面刷新、确认断线超过
+既有 3 秒宽限、停止远控、鉴权失败或设备切换先使旧 owner 失效，再回收全部 PTY。晚到 create 必须立即
+dispose，旧 attachment 和迟到订阅不能复活 owner。旧客户端没有页面 ID 时按 attachment 生命周期回收，
+不得留下无主 PTY；桌面 continuous 终端不进入手机 owner。
+
+```text
+页面会话 → Main owner → Window Host owner scope → Terminal service → PTY
+同页 bridge 换代 ───────────────────────→ 重绑服务，保留原 PTY
+刷新 / 确认断线 / 停止远控 → owner 失效 → 回收 PTY → 新页面创建新 owner
+```
+
+UI 常驻 side-pane registry 以 `clientNamespace + workspaceKey` 隔离复用，并记录 `terminalOwnerId`。
+新 owner 到达时只释放同客户端的旧条目；服务代理换代先撤销旧输出/退出订阅，再订阅新代理，旧事件不得
+写入当前终端。显式关闭只 dispose 当前绑定一次。手机终端不新增独立 Agent/Host/runtime，也不改变
+desktop continuous 与 mobile replayable 的任务流边界。
 
 ## Workspace Hook Trust Review
 

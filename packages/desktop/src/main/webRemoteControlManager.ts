@@ -65,6 +65,7 @@ interface WebRemoteControlHostAttachmentHandle {
 }
 
 interface WorkspaceBridgeRuntime {
+  terminalOwnerId?: string;
   bridgeSessionId: string;
   bridgeGeneration?: number;
   recoveryId?: string;
@@ -113,6 +114,7 @@ interface WindowControlLifecycle {
 }
 
 interface WindowControlRuntime {
+  terminalOwner?: { clientSessionId: string; id: string };
   windowId: number;
   workspacePath: string;
   workspaceIdentity?: string;
@@ -194,8 +196,9 @@ interface WebRemoteControlManagerDependencies {
   onStatusChanged?: (windowId: number, status: WebRemoteControlStatus) => void;
   attachWorkspaceHost: (
     windowId: number,
-    context: WebRemoteControlContext & { kind: "local" | "remote" },
+    context: WebRemoteControlContext & { kind: "local" | "remote"; terminalOwnerId?: string },
   ) => Promise<WebRemoteControlHostAttachmentHandle>;
+  setTerminalOwner: (windowId: number, ownerId: string | null) => void;
   releaseWorkspaceHostAttachment: (attachmentId: string) => void;
   disposeWorkspaceHostAttachmentsForWindow: (windowId: number, reason: string) => void;
   disposeWorkspaceHostAttachmentsForRemoteSession: (
@@ -274,6 +277,7 @@ function toExternalBridge(
   runtime: WorkspaceBridgeRuntime,
 ): WebRemoteControlExternalWorkspaceBridge {
   const base = {
+    ...(runtime.terminalOwnerId ? { terminalOwnerId: runtime.terminalOwnerId } : {}),
     bridgeSessionId: runtime.bridgeSessionId,
     ...(runtime.bridgeGeneration !== undefined
       ? { bridgeGeneration: runtime.bridgeGeneration }
@@ -440,6 +444,39 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
     runtime.currentBridge = undefined;
   }
 
+  function endTerminalOwner(runtime: WindowControlRuntime): void {
+    const hadOwner = runtime.terminalOwner !== undefined;
+    runtime.terminalOwner = undefined;
+    // 结束 owner 先撤销在途导航，迟到 attachment 只能释放，不能重新挂回已回收的 PTY。
+    cancelBridgeOpen(runtime);
+    const bridge = runtime.currentBridge;
+    if (bridge) {
+      runtime.pendingBridgeInvalidation = {
+        zcode_type: "bridge-degraded",
+        bridgeSessionId: bridge.bridgeSessionId,
+        bridgeGeneration: bridge.bridgeGeneration,
+        recoveryId: bridge.recoveryId,
+        reason: "terminal-owner-ended",
+      };
+    }
+    disposeRuntimeBridgeResources(runtime);
+    if (hadOwner) dependencies.setTerminalOwner(runtime.windowId, null);
+    sendPendingBridgeInvalidation(runtime);
+  }
+
+  function ensureTerminalOwner(runtime: WindowControlRuntime, clientSessionId?: string): void {
+    if (!clientSessionId) {
+      // 旧页面没有认领协议，不能继承新页面 owner；重复 legacy bootstrap 不销毁自身 bridge。
+      if (runtime.terminalOwner) endTerminalOwner(runtime);
+      return;
+    }
+    if (runtime.terminalOwner?.clientSessionId === clientSessionId) return;
+    endTerminalOwner(runtime);
+    const id = randomUUID();
+    runtime.terminalOwner = { clientSessionId, id };
+    dependencies.setTerminalOwner(runtime.windowId, id);
+  }
+
   function isCurrentBridgeRuntime(
     runtime: WindowControlRuntime,
     bridge: WorkspaceBridgeRuntime,
@@ -547,6 +584,7 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
       if (runtimes.get(runtime.windowId) !== runtime || runtime.status === "error") {
         return;
       }
+      endTerminalOwner(runtime);
       runtime.status = "running";
       runtime.mobileConnected = false;
       emitRuntimeStatus(runtime);
@@ -678,6 +716,7 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
       reason: failure.reason,
       error: failure.message ?? failure.reason,
     });
+    endTerminalOwner(runtime);
     cancelBridgeOpen(runtime);
     disposeRuntimeBridgeResources(runtime);
     clearPendingOutboundPayloadTimer(runtime);
@@ -710,6 +749,7 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
     });
     runtimes.delete(windowId);
     pushedWorkspaceListSignaturesByWindowId.delete(windowId);
+    endTerminalOwner(runtime);
     cancelBridgeOpen(runtime);
     disposeRuntimeBridgeResources(runtime);
     clearPendingOutboundPayloadTimer(runtime);
@@ -914,7 +954,14 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
     runtime: WindowControlRuntime,
     request: WebRemoteControlWorkspaceBridgeOpenPayload,
   ): Promise<WebRemoteControlExternalWorkspaceBridge> {
+    if (
+      request.terminalClientSessionId &&
+      runtime.terminalOwner?.clientSessionId !== request.terminalClientSessionId
+    ) {
+      return Promise.reject(new Error("Terminal page session has ended; bootstrap is required."));
+    }
     const intentKey = JSON.stringify([
+      request.terminalClientSessionId,
       request.workspaceKey,
       request.taskId ?? null,
       request.project?.projectId,
@@ -1023,6 +1070,7 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
     emitRuntimeStatus(runtime);
 
     const bridgeRuntime: WorkspaceBridgeRuntime = {
+      terminalOwnerId: request.terminalClientSessionId ? runtime.terminalOwner?.id : undefined,
       bridgeSessionId: request.bridgeSessionId,
       bridgeGeneration: request.bridgeGeneration,
       recoveryId: request.recoveryId,
@@ -1051,6 +1099,9 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
         remoteSessionId: target.remoteSessionId,
         initialTaskId: request.taskId,
         kind: target.kind,
+        ...(bridgeRuntime.terminalOwnerId
+          ? { terminalOwnerId: bridgeRuntime.terminalOwnerId }
+          : {}),
       });
       if (!isCurrentBridgeRuntime(runtime, bridgeRuntime) || runtime.bridgeOpen !== pending) {
         dependencies.releaseWorkspaceHostAttachment(acquired.attachmentId);
@@ -1305,6 +1356,7 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
   function routePayload(runtime: WindowControlRuntime, payload: WebRemoteControlAppPayload): void {
     switch (payload.zcode_type) {
       case "bootstrap-request":
+        ensureTerminalOwner(runtime, payload.terminalClientSessionId);
         sendAppPayload(runtime, {
           zcode_type: "bootstrap-response",
           requestId: payload.requestId,

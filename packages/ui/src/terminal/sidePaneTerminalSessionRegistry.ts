@@ -15,7 +15,60 @@
 
 import type { FitAddon } from "@xterm/addon-fit";
 import type { ITheme, Terminal as XTerm } from "@xterm/xterm";
+import type { IDisposable } from "@zcode/rpc";
+import type { ITerminalService } from "@zcode/services";
 import { uiMemoryDiagnosticsRegistry } from "@/lib/memoryDiagnostics.js";
+
+export interface SidePaneTerminalConnection {
+  rebind(service: ITerminalService): void;
+  write(data: string): Promise<void>;
+  dispose(): Promise<void>;
+}
+
+/** 同一 PTY 的连接绑定随保活条目常驻，bridge 换代不重新创建终端。 */
+export function createSidePaneTerminalConnection(options: {
+  id: string;
+  service: ITerminalService;
+  onData: (data: string) => void;
+  onExit: (exitCode: number) => void;
+}): SidePaneTerminalConnection {
+  let binding: { service: ITerminalService } | undefined;
+  let subscriptions: IDisposable[] = [];
+  let disposed = false;
+  const clearSubscriptions = () => {
+    for (const subscription of subscriptions.splice(0)) subscription.dispose();
+  };
+  const rebind = (service: ITerminalService) => {
+    if (disposed || binding?.service === service) return;
+    binding = undefined;
+    clearSubscriptions();
+    const current = { service };
+    binding = current;
+    subscriptions = [
+      service.onDynamicData(options.id)((data) => {
+        if (binding === current) options.onData(data);
+      }),
+      service.onDynamicExit(options.id)((exitCode) => {
+        if (binding === current) options.onExit(exitCode);
+      }),
+    ];
+  };
+  rebind(options.service);
+  return {
+    rebind,
+    write(data: string): Promise<void> {
+      return binding?.service.write({ id: options.id, data }) ?? Promise.resolve();
+    },
+    dispose(): Promise<void> {
+      if (disposed) return Promise.resolve();
+      disposed = true;
+      const current = binding;
+      binding = undefined;
+      clearSubscriptions();
+      return current?.service.dispose({ id: options.id }) ?? Promise.resolve();
+    },
+  };
+}
 
 /**
  * 一个 side pane terminal 会话的常驻资源。
@@ -32,6 +85,7 @@ export interface SidePaneTerminalSessionEntry {
   term: XTerm;
   fitAddon: FitAddon;
   terminalId: string;
+  connection?: SidePaneTerminalConnection;
   cwd: string;
   /**
    * 该 terminal 所属的 workspaceKey（= workspaceIdentity?.trim() || workspacePath）。
@@ -39,6 +93,8 @@ export interface SidePaneTerminalSessionEntry {
    * 切 workspace 不会触发回收，只有该 workspace 从 openWorkspaceKeys 移除才回收。
    */
   workspaceKey: string;
+  clientNamespace: string;
+  terminalOwnerId?: string;
   hostEl: HTMLDivElement;
   /**
    * terminalService.create() 返回的终端 profile theme（用户终端配置的颜色）。
@@ -100,8 +156,19 @@ export const sidePaneTerminalSessionRegistry = {
     return sessions.has(key);
   },
 
-  get(key: string): SidePaneTerminalSessionEntry | undefined {
-    return sessions.get(key);
+  get(
+    key: string,
+    scope?: { workspaceKey: string; clientNamespace: string },
+  ): SidePaneTerminalSessionEntry | undefined {
+    const entry = sessions.get(key);
+    if (
+      scope &&
+      (entry?.workspaceKey !== scope.workspaceKey ||
+        entry.clientNamespace !== scope.clientNamespace)
+    ) {
+      return undefined;
+    }
+    return entry;
   },
 
   /** TerminalSession persistentKey 路径首次创建资源后，把 entry 存入 registry 常驻。 */
@@ -145,6 +212,15 @@ export const sidePaneTerminalSessionRegistry = {
   releaseByPredicate(pred: (entry: SidePaneTerminalSessionEntry) => boolean): void {
     for (const [key, entry] of sessions) {
       if (pred(entry)) {
+        releaseEntry(key);
+      }
+    }
+  },
+
+  /** Host 页面 owner 已结束时清理旧 xterm/id；同页 bridge 换代的 owner 不变。 */
+  releaseStaleOwner(clientNamespace: string, terminalOwnerId: string | undefined): void {
+    for (const [key, entry] of sessions) {
+      if (entry.clientNamespace === clientNamespace && entry.terminalOwnerId !== terminalOwnerId) {
         releaseEntry(key);
       }
     }

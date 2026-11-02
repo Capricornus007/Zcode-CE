@@ -50,6 +50,7 @@ import {
   IModelSelectionService,
   ISettingService,
   ISourceServerManagementService,
+  ITerminalService,
   IWindowControllerService,
   IConversationShareService,
   IPromptAttachmentTransferService,
@@ -162,7 +163,11 @@ import {
 import { connectServerRemote, type ServerRemoteConnection } from "./serverRemoteConnection.js";
 import { bindBotGroupTaskScope } from "./botGroupTaskScope.js";
 import { createWindowHostAttachmentRegistry } from "./windowHostAttachmentRegistry.js";
-import { exposeWindowHostAttachmentServices } from "./windowHostAttachmentRpcPolicy.js";
+import {
+  createTerminalScope,
+  createWindowHostTerminalOwners,
+  exposeWindowHostAttachmentServices,
+} from "./windowHostAttachmentRpcPolicy.js";
 import { scopeConversationShareServiceForAttachment } from "./conversationShareAttachmentService.js";
 import {
   createWindowRemoteConnectionRegistry,
@@ -2565,6 +2570,10 @@ function createControllerRoutedTaskService(
   });
 }
 
+const terminalOwners = createWindowHostTerminalOwners((error) => {
+  logger.warn("failed to dispose mobile terminal owner", error);
+});
+
 function exposeServicesOnMessagePort(
   port: Electron.MessagePortMain,
   services: ServiceCollection,
@@ -2572,7 +2581,27 @@ function exposeServicesOnMessagePort(
   clientMode: ZCodeAgentV4ClientMode = "desktop-continuous",
   attachmentScope: WindowHostAttachmentScope = { kind: "local" },
   capabilities?: HostRemoteConnectionCapabilities,
+  terminalOwnerId?: string,
 ): ExposedServicePortHandle {
+  const terminal = services.getOptional(ITerminalService);
+  const legacyTerminalScope =
+    clientMode === "web-remote-replayable" && terminal && !terminalOwnerId
+      ? createTerminalScope(terminal, (error) =>
+          logger.warn("failed to dispose mobile attachment terminal", error),
+        )
+      : undefined;
+  const scopedTerminal =
+    clientMode === "web-remote-replayable" && terminal
+      ? terminalOwnerId
+        ? terminalOwners.bind(
+            terminalOwnerId,
+            attachmentScope.kind === "remote"
+              ? `remote:${attachmentScope.remoteSessionId}`
+              : "local",
+            terminal,
+          )
+        : legacyTerminalScope!.service
+      : undefined;
   const wrappedPort = wrapElectronPort(port);
   const protocol = new MessagePortProtocol(wrappedPort);
   // remote 模式延迟发送 Initialize：远程建连需要时间，如果构造时就发 Initialize，
@@ -2635,6 +2664,7 @@ function exposeServicesOnMessagePort(
   if (connectionScope) {
     overrides.set(IZCodeAgentService.channelName, connectionScope.service);
   }
+  if (scopedTerminal) overrides.set(ITerminalService.channelName, scopedTerminal);
   const conversationShareService = services.getOptional(IConversationShareService);
   if (conversationShareService) {
     // Share service 若继续持有 raw Agent，会绕过当前 MessagePort 已握手的 trusted carrier，
@@ -2683,6 +2713,7 @@ function exposeServicesOnMessagePort(
       disposed = true;
       flowStateDisposable.dispose();
       controllerAttachment.dispose();
+      legacyTerminalScope?.dispose();
       void disposePromptAttachmentTransfer?.().catch((error: unknown) => {
         logger.warn("failed to dispose remote attachment transfer", error);
       });
@@ -2740,8 +2771,16 @@ const windowHostAttachmentRegistry = createWindowHostAttachmentRegistry<
       capabilities: windowRemoteConnectionRegistry.resolveScopedCapabilities(scope),
     };
   },
-  expose: ({ port, services, clientMode, scope, capabilities }) =>
-    exposeServicesOnMessagePort(port, services, false, clientMode, scope, capabilities),
+  expose: ({ port, services, clientMode, scope, capabilities, terminalOwnerId }) =>
+    exposeServicesOnMessagePort(
+      port,
+      services,
+      false,
+      clientMode,
+      scope,
+      capabilities,
+      terminalOwnerId,
+    ),
 });
 
 function logWindowHostTopology(reason: string): void {
@@ -2752,6 +2791,7 @@ function logWindowHostTopology(reason: string): void {
 }
 
 function disposeAttachedServicePorts(): void {
+  terminalOwners.setOwner(null);
   windowHostAttachmentRegistry.dispose();
 }
 
@@ -3633,6 +3673,11 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
     return;
   }
 
+  if (msg.type === HostMessageTypes.SetTerminalOwner) {
+    terminalOwners.setOwner(msg.ownerId);
+    return;
+  }
+
   if (msg.type === HostMessageTypes.AttachServicePort) {
     if (!port) {
       logger.error("attach-service-port message missing MessagePort");
@@ -3659,6 +3704,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
         requestId: msg.requestId,
         attachmentId: msg.attachmentId,
         clientMode: msg.clientMode,
+        terminalOwnerId: msg.terminalOwnerId,
         scope: msg.scope,
         port,
       });

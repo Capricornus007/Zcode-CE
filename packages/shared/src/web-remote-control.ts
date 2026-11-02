@@ -376,6 +376,8 @@ export type WebRemoteControlPlatformResponse =
   | WebRemoteControlPlatformErrorResponse;
 
 export interface WebRemoteControlExternalLocalWorkspaceBridge {
+  /** Main 分配的可信页面终端 owner；同页 bridge 换代保持不变。 */
+  terminalOwnerId?: string;
   bridgeSessionId: string;
   bridgeGeneration?: number;
   recoveryId?: string;
@@ -386,6 +388,8 @@ export interface WebRemoteControlExternalLocalWorkspaceBridge {
 }
 
 export interface WebRemoteControlExternalRemoteWorkspaceBridge {
+  /** Main 分配的可信页面终端 owner；同页 bridge 换代保持不变。 */
+  terminalOwnerId?: string;
   bridgeSessionId: string;
   bridgeGeneration?: number;
   recoveryId?: string;
@@ -404,6 +408,8 @@ export type WebRemoteControlExternalWorkspaceBridge =
   | WebRemoteControlExternalRemoteWorkspaceBridge;
 
 export interface WebRemoteControlBootstrapRequestPayload {
+  /** Web 页面生命周期 ID；旧客户端缺省时按 attachment 回收终端。 */
+  terminalClientSessionId?: string;
   zcode_type: "bootstrap-request";
   requestId: string;
 }
@@ -433,6 +439,8 @@ export interface WebRemoteControlWorkspaceListUpdatedPayload {
 }
 
 export interface WebRemoteControlWorkspaceBridgeOpenPayload {
+  /** 必须与最近一次 bootstrap 的页面生命周期 ID 一致。 */
+  terminalClientSessionId?: string;
   zcode_type: "workspace-bridge-open";
   requestId: string;
   bridgeSessionId: string;
@@ -559,7 +567,8 @@ export interface WebRemoteControlBridgeDegradedPayload {
     | "rpc-frame-gap"
     | "buffer-overflow"
     | "buffer-timeout"
-    | "source-session-replaced";
+    | "source-session-replaced"
+    | "terminal-owner-ended";
   seq?: number;
   expectedSeq?: number;
   droppedCount?: number;

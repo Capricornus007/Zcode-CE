@@ -97,6 +97,7 @@ async function fixture(
     },
     reconnectWorkspace: async () => {},
     attachWorkspaceHost,
+    setTerminalOwner: vi.fn(),
     releaseWorkspaceHostAttachment: () => {},
     disposeWorkspaceHostAttachmentsForWindow: () => {},
     disposeWorkspaceHostAttachmentsForRemoteSession: () => {},

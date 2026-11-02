@@ -54,7 +54,7 @@ flowchart TD
 ## Implementation notes
 
 - Web／手机没有 Source 管理能力时，设备候选只投影既有 `remoteProjectService` 目录中的 Host；不能把管理能力缺席解释为没有设备，也不因此开放设备添加权限。桌面仍使用已识别 Source 全集。
-- 项目流程的远端目录页与旧连接目录页共用首次持续运行提示，显示后才写入原 `remoteBoundaryOnboardingVersion`，未显示、读取失败和迟到结果不记已读。
+- 项目流程的远端目录入口与旧连接流程共用首次持续运行介绍；只有点击「知道了」才写 `remoteBoundaryIntroAcknowledgedVersion: 1`。旧字段 `remoteBoundaryOnboardingVersion: 2` 不表示新版已读；未展示、取消、读取/保存失败和迟到结果均不记已读。
 - `ProjectEditor` 是名称、设备和目录的唯一草稿 owner；`ProjectCreation` 只持有连接交接与本机成员登记。默认设备在表单首次打开时采样，Source 快照刷新不改选中值。
 - 设备候选取已识别 Source 全集，目录读写沿用所选 Host 的项目服务。只有显式创建才为无项目成员的 Source 登记成员；已有成员复查代际。远端创建成功、入口登记失败后重试复用原项目 ID。
 - 目录结果按草稿代际校验。连接补凭据、安装和升级确认复用现有流程；临时 attachment 释放不影响已有项目共享的 attachment。

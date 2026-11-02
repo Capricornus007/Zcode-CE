@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import type { FitAddon } from "@xterm/addon-fit";
 import type { Terminal as XTerm } from "@xterm/xterm";
+import type { ITerminalService } from "@zcode/services";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  createSidePaneTerminalConnection,
   sidePaneTerminalSessionRegistry as registry,
   type SidePaneTerminalSessionEntry,
 } from "@/terminal/sidePaneTerminalSessionRegistry.js";
@@ -27,6 +29,7 @@ function createMockEntry(
     cwd,
     // workspaceKey 用于 workspace tab 关闭时按 workspace 批量回收（对称下侧 openWorkspaceKeys）。
     workspaceKey,
+    clientNamespace: "desktop",
     hostEl: document.createElement("div"),
     dispose: vi.fn(),
   };
@@ -134,5 +137,85 @@ describe("sidePaneTerminalSessionRegistry", () => {
     expect(e1.dispose).toHaveBeenCalledTimes(1);
     expect(e3.dispose).toHaveBeenCalledTimes(1);
     expect(e2.dispose).not.toHaveBeenCalled();
+  });
+
+  it("按 workspace 与客户端命名空间隔离复用", () => {
+    const entry = createMockEntry("t1", "/ws", "workspace-a");
+    registry.register("t1", entry);
+    expect(
+      registry.get("t1", { workspaceKey: "workspace-a", clientNamespace: "desktop" }),
+    ).toBe(entry);
+    expect(
+      registry.get("t1", { workspaceKey: "workspace-b", clientNamespace: "desktop" }),
+    ).toBeUndefined();
+    expect(
+      registry.get("t1", { workspaceKey: "workspace-a", clientNamespace: "mobile:other" }),
+    ).toBeUndefined();
+  });
+
+  it("页面 owner 换代只回收同客户端的旧条目", () => {
+    const stale = createMockEntry("stale");
+    stale.clientNamespace = "mobile:one";
+    stale.terminalOwnerId = "owner-old";
+    const current = createMockEntry("current");
+    current.clientNamespace = "mobile:one";
+    current.terminalOwnerId = "owner-new";
+    const other = createMockEntry("other");
+    other.clientNamespace = "mobile:two";
+    other.terminalOwnerId = "owner-old";
+    registry.register(stale.key, stale);
+    registry.register(current.key, current);
+    registry.register(other.key, other);
+
+    registry.releaseStaleOwner("mobile:one", "owner-new");
+
+    expect(stale.dispose).toHaveBeenCalledOnce();
+    expect(registry.has(stale.key)).toBe(false);
+    expect(registry.has(current.key)).toBe(true);
+    expect(registry.has(other.key)).toBe(true);
+  });
+
+  it("bridge 换代重绑当前服务并拒绝旧订阅迟到事件", async () => {
+    const makeService = () => {
+      const dataListeners = new Set<(data: string) => void>();
+      const exitListeners = new Set<(code: number) => void>();
+      const service = {
+        write: vi.fn(async () => undefined),
+        dispose: vi.fn(async () => undefined),
+        onDynamicData: () => (listener: (data: string) => void) => {
+          dataListeners.add(listener);
+          return { dispose: () => dataListeners.delete(listener) };
+        },
+        onDynamicExit: () => (listener: (code: number) => void) => {
+          exitListeners.add(listener);
+          return { dispose: () => exitListeners.delete(listener) };
+        },
+      } as unknown as ITerminalService;
+      return { service, dataListeners, exitListeners };
+    };
+    const first = makeService();
+    const second = makeService();
+    const onData = vi.fn();
+    const onExit = vi.fn();
+    const connection = createSidePaneTerminalConnection({
+      id: "pty-1",
+      service: first.service,
+      onData,
+      onExit,
+    });
+    const staleData = [...first.dataListeners][0]!;
+    connection.rebind(second.service);
+    staleData("late");
+    [...second.dataListeners][0]!("current");
+    [...second.exitListeners][0]!(0);
+    await connection.write("echo ok");
+    await connection.dispose();
+
+    expect(onData).toHaveBeenCalledExactlyOnceWith("current");
+    expect(onExit).toHaveBeenCalledExactlyOnceWith(0);
+    expect(first.dataListeners.size).toBe(0);
+    expect(first.exitListeners.size).toBe(0);
+    expect(second.service.write).toHaveBeenCalledWith({ id: "pty-1", data: "echo ok" });
+    expect(second.service.dispose).toHaveBeenCalledWith({ id: "pty-1" });
   });
 });

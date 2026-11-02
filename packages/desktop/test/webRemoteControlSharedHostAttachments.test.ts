@@ -42,6 +42,7 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
 
     const attachment = await manager.attachWorkspaceHost(7, {
       kind: "local",
+      terminalOwnerId: "owner-1",
       workspacePath: "/repo/demo",
     });
 
@@ -55,6 +56,7 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
         requestId: expect.any(String),
         attachmentId: attachment.attachmentId,
         clientMode: "web-remote-replayable",
+        terminalOwnerId: "owner-1",
         scope: { kind: "local" },
       },
       [ports.port2],
@@ -116,6 +118,7 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
 
     const attachment = await manager.attachWorkspaceHost(7, {
       kind: "remote",
+      terminalOwnerId: "owner-remote",
       workspacePath: "/workspace",
       workspaceIdentity: "remote:ssh:host:22:user:/workspace",
       remoteSessionId: "remote-session-1",
@@ -129,6 +132,7 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
       workspacePath: "/workspace",
       workspaceIdentity: "remote:ssh:host:22:user:/workspace",
       workspaceKey: "remote:ssh:host:22:user:/workspace",
+      terminalOwnerId: "owner-remote",
       clientMode: "web-remote-replayable",
     });
     expect(attachment).toMatchObject({
@@ -141,5 +145,28 @@ describe("createWebRemoteControlSharedHostAttachments", () => {
     manager.releaseAttachment(attachment.attachmentId);
     expect(ports.port1.close).toHaveBeenCalledTimes(1);
     expect(child.kill).not.toHaveBeenCalled();
+  });
+
+  it("forwards page owner changes to the existing Window Host", () => {
+    const child = new MockUtilityProcess();
+    browserWindowMock.fromId.mockReturnValueOnce({ id: 7, webContents: { id: 99 } });
+    const manager = createWebRemoteControlSharedHostAttachments({
+      windowHostProcessMap: new Map([[99, child as never]]),
+      createMessageChannel: createPortPair as never,
+      attachRemoteWorkspaceSessionHost: vi.fn(),
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    });
+
+    manager.setTerminalOwner(7, "owner-1");
+    manager.setTerminalOwner(7, null);
+
+    expect(child.postMessage).toHaveBeenNthCalledWith(1, {
+      type: HostMessageTypes.SetTerminalOwner,
+      ownerId: "owner-1",
+    });
+    expect(child.postMessage).toHaveBeenNthCalledWith(2, {
+      type: HostMessageTypes.SetTerminalOwner,
+      ownerId: null,
+    });
   });
 });

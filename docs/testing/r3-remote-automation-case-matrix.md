@@ -53,7 +53,7 @@
 | R3A-UI-01 | P1         | known/pending/offline/connecting 项目与设备          | settings/sidebar/dialog 各入口连接/停止       | 连接后明确选择或加入项目；离线图标与可访问名称一致；连接中不重复派发                              | E/URL     |
 | R3A-UI-02 | P1         | 多 Source tasks，在线/离线对照                       | pin/archive/open/resume、分组拖动和失败动作   | 写操作命中原 Source；离线 fail-closed；optimistic 失败回滚；分组持久化正确                        | E/URF     |
 | R3A-UI-03 | P2         | zh-CN/light/desktop 与 en-US/dark/mobile 等 pairwise | 遍历连接、更新、无模型、恢复、设置关键状态    | 文案/主题/布局/焦点可用，viewport无关键操作遮挡；状态与权威事实一致                               | E/UR      |
-| R3A-UI-04 | P1         | 首次持续运行说明尚未显示                             | 连接到目录页，关闭提示，再次打开              | 说明非阻断，不要求键盘确认；显示后写版本化 onboarding，不重复                                     | E/URF     |
+| R3A-UI-04 | P1         | `remoteBoundaryIntroAcknowledgedVersion` 未设置       | 主动连接成功或显式浏览已连接设备目录，取消后重试并确认 | 确认介绍不被 Escape/遮罩关闭；只有「知道了」写版本 1；后台完成等显式继续；取消/迟到/静默恢复不记已读；确认后不重复 | E/URF     |
 
 ## C. Provider Provisioning 与模型权威
 

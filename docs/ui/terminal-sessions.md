@@ -9,7 +9,7 @@
 | 变更         | 首个 terminal tab 不显示 `1`；后续 tab 从 `2` 开始；关闭或 PTY 退出时同步关闭对应 tab |
 | 用户可见位置 | 底部 Terminal 面板的 tab strip                                                        |
 | 状态 owner   | `Terminal` renderer 本地状态；PTY 生命周期由每个 `TerminalSession` 管理               |
-| 不在范围内   | 右侧 side pane Terminal tab、聊天 session/task realtime、协议与 Host/Agent runtime    |
+| 不在范围内   | 本节表格主要描述底部 Terminal 面板；右侧 side pane 的跨 workspace/mobile owner 见下节            |
 
 ## 产品行为
 
@@ -33,6 +33,14 @@
 - tab 名称在创建后保持不变。关闭其他 tab 不会触发已有 tab 重命名。
 - 新建 tab 使用当前 workspace 内最小可用正整数编号。关闭 `z-code 2` 后再次新建，名称仍为 `z-code 2`。
 - 终端输出中的 `http://` / `https://` 明文链接通过 xterm link provider 识别，hover 时显示下划线和手型，点击后复用 UI 层的 `onOpenBrowserUrl` 打开右侧浏览器；Web 端仍走现有新标签 fallback。
+
+### Side pane 终端 owner
+
+- side pane 的 xterm、scrollback 与 PTY 由模块级 registry 持有；React 卸载只 detach DOM，显式关 tab 或 workspace 真正关闭才 release。
+- 复用键除 tab id 外还校验 `clientNamespace + workspaceKey`，相同路径的另一设备或 Source 不得拿到旧 PTY id。
+- 手机 Web 的页面 owner 由 Main/Window Host 建立；同页 bridge 换代重绑当前 `ITerminalService`，不重建 PTY。页面 owner 换代时，renderer 释放同客户端旧 owner 的条目。
+- 常驻连接先撤销旧 data/exit 订阅再绑定新代理；迟到旧事件被代际比较丢弃。输入、IME fallback 与引导式命令投递继续跟随 registry 条目常驻。
+- Host owner 结束后，已有 PTY 与晚到 create 都必须回收；旧客户端缺 owner 字段时按 attachment 回收。底部 Terminal 保持组件生命周期，不加入手机 owner registry。
 
 状态与事件顺序：
 

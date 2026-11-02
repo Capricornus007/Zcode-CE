@@ -92,6 +92,7 @@ function createManagerHarness(options?: {
     options?.disposeWorkspaceHostAttachmentsForWindow ?? vi.fn();
   const disposeWorkspaceHostAttachmentsForRemoteSession =
     options?.disposeWorkspaceHostAttachmentsForRemoteSession ?? vi.fn();
+  const setTerminalOwner = vi.fn();
   const manager = createWebRemoteControlManager({
     relayWsUrl: "ws://relay.test/ws",
     mobileRemoteControlUrl: "https://zcode.z.ai/remote/v3",
@@ -144,6 +145,7 @@ function createManagerHarness(options?: {
     reportRemoteUsageEvent,
     reportRendererTelemetryEvent,
     attachWorkspaceHost: options?.attachWorkspaceHost ?? defaultAttachWorkspaceHost,
+    setTerminalOwner,
     releaseWorkspaceHostAttachment,
     disposeWorkspaceHostAttachmentsForWindow,
     disposeWorkspaceHostAttachmentsForRemoteSession,
@@ -194,6 +196,7 @@ function createManagerHarness(options?: {
     reportRemoteUsageEvent,
     reportRendererTelemetryEvent,
     sentPayloads,
+    setTerminalOwner,
     getStartupRestoreContext: () => startupRestoreContext,
     getLatestTransportOptions: () => latestTransportOptions,
     deliverPayload: (payload: WebRemoteControlAppPayload) => {
@@ -256,6 +259,48 @@ describe("createWebRemoteControlManager external relay", () => {
       }),
     );
     expect(h.defaultAttachWorkspaceHost).not.toHaveBeenCalled();
+    await h.manager.stop(1);
+  });
+
+  it("页面 owner 跨 bridge 保持并在刷新认领时回收旧 attachment", async () => {
+    const h = createManagerHarness();
+    await h.manager.start(1, { workspacePath: localWorkspace.workspacePath });
+    h.deliverPayload({
+      zcode_type: "bootstrap-request",
+      requestId: "bootstrap-1",
+      terminalClientSessionId: "page-1",
+    });
+    const owner1 = h.setTerminalOwner.mock.calls[0]?.[1] as string;
+    expect(owner1).toEqual(expect.any(String));
+
+    h.deliverPayload({
+      zcode_type: "workspace-bridge-open",
+      terminalClientSessionId: "page-1",
+      requestId: "bridge-request-1",
+      bridgeSessionId: "bridge-1",
+      workspaceKey: localWorkspace.workspacePath,
+    });
+    await vi.waitFor(() => expect(h.defaultAttachWorkspaceHost).toHaveBeenCalledOnce());
+    expect(h.defaultAttachWorkspaceHost).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ terminalOwnerId: owner1 }),
+    );
+    expect(h.sentPayloads).toContainEqual(
+      expect.objectContaining({
+        zcode_type: "workspace-bridge-ready",
+        bridge: expect.objectContaining({ terminalOwnerId: owner1 }),
+      }),
+    );
+
+    h.deliverPayload({
+      zcode_type: "bootstrap-request",
+      requestId: "bootstrap-2",
+      terminalClientSessionId: "page-2",
+    });
+    expect(h.releaseWorkspaceHostAttachment).toHaveBeenCalledWith("attachment-1");
+    expect(h.setTerminalOwner.mock.calls[1]).toEqual([1, null]);
+    expect(h.setTerminalOwner.mock.calls[2]).toEqual([1, expect.any(String)]);
+    expect(h.setTerminalOwner.mock.calls[2]?.[1]).not.toBe(owner1);
     await h.manager.stop(1);
   });
   afterEach(() => {

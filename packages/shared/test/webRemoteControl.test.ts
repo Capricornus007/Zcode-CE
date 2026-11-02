@@ -474,6 +474,13 @@ describe("parseWebRemoteControlAppPayload", () => {
         reason: "rpc-frame-gap",
       }),
     ).not.toBeNull();
+    expect(
+      parseWebRemoteControlAppPayload({
+        zcode_type: "bridge-degraded",
+        bridgeSessionId: "bridge-owner",
+        reason: "terminal-owner-ended",
+      }),
+    ).not.toBeNull();
   });
 
   it("preserves bridge metadata on workspace bridge payloads", () => {
@@ -481,6 +488,7 @@ describe("parseWebRemoteControlAppPayload", () => {
       parseWebRemoteControlAppPayload({
         zcode_type: "workspace-bridge-open",
         requestId: "bridge-open-1",
+        terminalClientSessionId: "page-1",
         bridgeSessionId: "bridge-1",
         bridgeGeneration: 2,
         recoveryId: "recovery-1",
@@ -489,6 +497,7 @@ describe("parseWebRemoteControlAppPayload", () => {
       }),
     ).toMatchObject({
       zcode_type: "workspace-bridge-open",
+      terminalClientSessionId: "page-1",
       bridgeGeneration: 2,
       recoveryId: "recovery-1",
     });
@@ -501,6 +510,7 @@ describe("parseWebRemoteControlAppPayload", () => {
         bridgeGeneration: 2,
         recoveryId: "recovery-1",
         bridge: {
+          terminalOwnerId: "owner-1",
           bridgeSessionId: "bridge-1",
           bridgeGeneration: 2,
           recoveryId: "recovery-1",
@@ -514,6 +524,7 @@ describe("parseWebRemoteControlAppPayload", () => {
       bridgeGeneration: 2,
       recoveryId: "recovery-1",
       bridge: {
+        terminalOwnerId: "owner-1",
         bridgeGeneration: 2,
         recoveryId: "recovery-1",
       },

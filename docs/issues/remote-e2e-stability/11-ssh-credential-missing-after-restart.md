@@ -7,7 +7,7 @@ Status: done
 - 业务基线 `d31e735905cf744e75a0a93548a80acabe871ae5`，test 构建；批次
   `r3-server-20261011104332183-3a0c00`，`boundary`，90.1 秒后失败。
 - 从设置页“新建连接”进入真实 SSH 向导，输入本轮容器密码，完成首装并创建项目 A/B。
-  首次持续运行说明出现、关闭后第二项目不重复，`remoteBoundaryOnboardingVersion=2`。
+  首次持续运行介绍出现，点击「知道了」后第二项目不重复，`remoteBoundaryIntroAcknowledgedVersion=1`。
 - 使用现有安全重启 helper 完整退出旧进程并复用 userData。重启后原项目可以从快照恢复，
   再从设备入口选择目录时报“没有可用的 SSH 密码或私钥凭据，请返回配置后补充”。
 - 保留 HOME 中仍有一个 Source、一个 Connection Profile，Profile 仍带 password credential 引用，

@@ -8,6 +8,7 @@ import type { ILink, ILinkHandler, ITheme, IWindowsPty } from "@xterm/xterm";
 import type { IServiceAccessor } from "@zcode/services";
 import type { IDisposable } from "@zcode/rpc";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useComposerClientNamespace, useTerminalOwnerId } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
 import {
   ContextMenu,
@@ -33,6 +34,7 @@ import { getHttpLinksForTerminalBufferLine } from "@/terminal/terminalLinks.js";
 import { mergeTerminalTheme } from "@/terminal/terminalTheme.js";
 import {
   sidePaneTerminalSessionRegistry,
+  createSidePaneTerminalConnection,
   type SidePaneTerminalSessionEntry,
 } from "@/terminal/sidePaneTerminalSessionRegistry.js";
 
@@ -123,6 +125,8 @@ export function TerminalSession({
   workspaceKey?: string;
 }) {
   const { intl } = useZCodeIntl();
+  const clientNamespace = useComposerClientNamespace();
+  const terminalOwnerId = useTerminalOwnerId();
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -336,11 +340,26 @@ export function TerminalSession({
     // 组件卸载只 detach DOM、不 dispose；重挂按 persistentKey 复用，scrollback 跨 workspace 保活。
     // 原路径（下侧 terminal，不传 persistentKey）字节级不变。
     if (persistentKey) {
+      sidePaneTerminalSessionRegistry.releaseStaleOwner(clientNamespace, terminalOwnerId);
       terminalProfileThemeRef.current = undefined;
-      const existingEntry = sidePaneTerminalSessionRegistry.get(persistentKey);
+      const existingEntry = sidePaneTerminalSessionRegistry.get(persistentKey, {
+        workspaceKey: workspaceKey ?? cwd ?? "",
+        clientNamespace,
+      });
+      // 同一路径也可能属于另一手机设备或另一 workspace；绝不把旧 PTY id 交给新 scope。
+      if (!existingEntry && sidePaneTerminalSessionRegistry.has(persistentKey)) {
+        terminalIdRef.current = undefined;
+        logger.warn("[Terminal] persistent session scope mismatch", {
+          persistentKey,
+          workspaceKey,
+          clientNamespace,
+        });
+        return;
+      }
 
       // --- 复用快路径：切回 workspace / 重挂，entry 已在 registry ---
       if (existingEntry) {
+        existingEntry.connection?.rebind(services.terminalService);
         termRef.current = existingEntry.term;
         fitAddonRef.current = existingEntry.fitAddon;
         terminalIdRef.current = existingEntry.terminalId || undefined;
@@ -520,6 +539,8 @@ export function TerminalSession({
         cwd: cwd ?? "",
         // workspaceKey 用于 workspace tab 真正关闭时按 workspace 批量回收（对称下侧 openWorkspaceKeys）。
         workspaceKey: workspaceKey ?? cwd ?? "",
+        clientNamespace,
+        terminalOwnerId,
         hostEl,
         dispose: () => {}, // 紧接着补全
       };
@@ -532,9 +553,9 @@ export function TerminalSession({
             logger.warn("[Terminal] persistent dispose disposer failed:", error);
           }
         }
-        if (entry.terminalId) {
-          void services.terminalService.dispose({ id: entry.terminalId });
-        }
+        void entry.connection?.dispose().catch((error) => {
+          logger.warn("[Terminal] persistent PTY dispose failed:", error);
+        });
         try {
           term.dispose();
         } catch (error) {
@@ -584,15 +605,14 @@ export function TerminalSession({
             requestFocus();
           }
 
-          // data 订阅 → term.write（进 registry，detached 时仍累积 scrollback）
-          registryDisposers.push(
-            services.terminalService.onDynamicData(id)((data) => {
+          // bridge 换代只更新条目的服务绑定；xterm 输入监听与 PTY 保持常驻。
+          entry.connection = createSidePaneTerminalConnection({
+            id,
+            service: services.terminalService,
+            onData: (data) => {
               term.write(normalizePowerShellReadlineRedraw(data, shell));
-            }),
-          );
-          // exit 订阅（进 registry，与原路径对称：有 onExit 则回调，否则写退出提示）
-          registryDisposers.push(
-            services.terminalService.onDynamicExit(id)((exitCode) => {
+            },
+            onExit: (exitCode) => {
               const exitHandler = exitHandlerRef.current;
               logger.info("[Terminal] persistent session exited", {
                 autoClose: Boolean(exitHandler),
@@ -604,10 +624,9 @@ export function TerminalSession({
                 exitHandler(sessionId, exitCode);
                 return;
               }
-              // side pane Terminal 不传 onExit，保留退出提示。
               term.write(`\r\n${exitedMessageRef.current}\r\n`);
-            }),
-          );
+            },
+          });
 
           // onData（进 registry，随 term 常驻）：
           // 不能放 localDisposers：cleanup(detach) 时会被取消，而复用路径不重绑，
@@ -642,7 +661,7 @@ export function TerminalSession({
                 inputFallbackKeydownCandidateRef.current = null;
               }
               markTerminalInputFallbackHandled(pendingInputFallbacksRef.current, data);
-              void services.terminalService.write({ id, data });
+              void entry.connection?.write(data);
             }),
           );
 
@@ -711,7 +730,7 @@ export function TerminalSession({
                     terminalId: id,
                     terminalTabId: sessionId,
                   });
-                  void services.terminalService.write({ id, data: insertedText });
+                  void entry.connection?.write(insertedText);
                 }
                 if (fallbackAction.shouldClearTextarea) {
                   textarea.value = "";
@@ -1102,6 +1121,8 @@ export function TerminalSession({
     };
   }, [
     clearResizeThrottleTimer,
+    clientNamespace,
+    terminalOwnerId,
     cwd,
     isWindowsDesktop,
     onShellLabelChange,
@@ -1111,6 +1132,7 @@ export function TerminalSession({
     services,
     sessionId,
     persistentKey,
+    workspaceKey,
   ]);
 
   const handleCopy = () => {

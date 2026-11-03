@@ -222,6 +222,17 @@ task-56 的旧 wave1 cherry-pick与当前完整 ToolSearch 链重复，因而不
 |  25 | 多 session 并发写不损坏数据       | 官方源码 atomic write/lock；CE 单键 patch 合并保持    |
 |  26 | 容器环境可更新官方插件缓存        | CE sha256 release cache + 官方 bundled plugin cache   |
 
+架构登记按真实 owner 收口，不建立整目录接管：3.17.1 带入的 227 个新增源码文件中，24 个目录落地时
+已自带 `module.ts` 四件套，本轮只在 `architecture-policy.yaml` 补政策侧登记，`requires` 逐条取自各自
+`module.ts`，并把 manifest 已声明的入口文件补进 `roots`；其余单文件增量按功能成组登记为 23 个模块，
+契约面重列实现文件的公开导出，避免与实现漂移。`project-sidebar` 与 `tool-result-settlement` 的两条
+manifest-policy-mismatch 按 `module.ts` 里已经存在的边界补齐 policy 侧 `requires`。没有把整个
+`zcode-cli`、`ui`、`services` 或 `web` 改成 managed（整目录会连带把既有超大文件与历史 lint 抑制纳入
+规则），也没有为新增文件开 `unmanaged-new-file` 例外。唯一进入 baseline 的是上游
+`causality-order-state.ts` 与 `causality-order-strands.ts` 的双向引用（其中一侧是 `import type`），
+拆开它属于产品改动；Source Server 管理面板按实际边界登记进 `source-server-device-settings`，只对其
+2248 行与文件顶部既有的 max-lines 抑制设存量例外。
+
 本轮版本为 `3.17.2-ce.1`。
 
 ## CE 接线重植台账（apps/zcode-cli 九项断线，2026-10-18 处置）

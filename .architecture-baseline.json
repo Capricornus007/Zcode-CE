@@ -1,4 +1,14 @@
 {
   "version": 1,
-  "violations": []
+  "violations": [
+    {
+      "rule": "cycle",
+      "file": "apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-state.ts",
+      "module": "cli-dynamic-workflow-causality",
+      "detail": "apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-state.ts -> apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-strands.ts",
+      "message": "检测到循环依赖：apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-state.ts -> apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-strands.ts -> apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-state.ts",
+      "fingerprint": "34aebdc2b1613d2b",
+      "global": true
+    }
+  ]
 }

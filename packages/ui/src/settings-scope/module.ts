@@ -11,6 +11,7 @@ export const settingsScopeModule = {
     "ui",
     "conversation-workspace-target",
     "workspace-config-catalog",
+    "source-server-device-settings",
   ],
   provides: ["settings-scope"],
   publicEntrypoints: ["index.ts", "contract.ts"],

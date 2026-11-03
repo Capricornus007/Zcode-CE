@@ -4,7 +4,7 @@
  */
 export const sessionFeaturesModule = {
   id: "session-features",
-  requires: ["zcode-cli"],
+  requires: ["zcode-cli", "cli-dynamic-workflow-activation"],
   provides: ["session-features"],
   publicEntrypoints: ["contract.ts"],
 } as const;

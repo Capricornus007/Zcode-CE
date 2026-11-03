@@ -12,6 +12,8 @@ export const projectSidebarModule = {
     "web-remote-control-ui",
     "remote-connection-flow",
     "data-sync",
+    "remote-connection-tags",
+    "source-server-device-settings",
   ],
   provides: ["project-sidebar"],
   publicEntrypoints: [

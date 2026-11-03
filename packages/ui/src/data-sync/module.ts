@@ -5,7 +5,13 @@
  */
 export const dataSyncModule = {
   id: "data-sync",
-  requires: ["services", "shared", "ui", "conversation-workspace-target"],
+  requires: [
+    "services",
+    "shared",
+    "ui",
+    "conversation-workspace-target",
+    "source-server-device-settings",
+  ],
   provides: ["data-sync"],
   publicEntrypoints: ["index.ts", "contract.ts"],
 } as const;

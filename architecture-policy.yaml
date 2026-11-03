@@ -26,6 +26,7 @@ modules:
       - packages/services/src/session/taskIndexRepo.ts
       - packages/services/src/session/automationRepo.ts
       - packages/services/src/session/offPeakTaskRepo.ts
+      - packages/services/src/session/offPeakWorkspaceIdentityMigration.ts
       - packages/services/src/session/tasksDatabase/migrations.ts
       - packages/services/src/session/tasksDatabase/prepared.ts
     owner: conversation
@@ -135,6 +136,8 @@ modules:
       - web-remote-control-ui
       - remote-connection-flow
       - data-sync
+      - remote-connection-tags
+      - source-server-device-settings
     publicEntrypoints:
       - packages/ui/src/project-sidebar/index.tsx
       - packages/ui/src/project-sidebar/contract.ts
@@ -585,7 +588,7 @@ modules:
       - apps/zcode-cli/packages/core/src/tool/handlers/fill-workflow-hole.ts
       - apps/zcode-cli/packages/core/tests/workflow-entrypoints
     managed: true
-    requires: [zcode-cli]
+    requires: [zcode-cli, cli-dynamic-workflow-activation]
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/tool/handlers/amend-workflow.ts
       - apps/zcode-cli/packages/core/src/tool/handlers/list-models.ts
@@ -999,7 +1002,7 @@ modules:
     roots:
       - apps/zcode-cli/packages/core/src/runtime/session-features
     managed: true
-    requires: [zcode-cli]
+    requires: [zcode-cli, cli-dynamic-workflow-activation]
     publicEntrypoints:
       - apps/zcode-cli/packages/core/src/runtime/session-features/contract.ts
     layers: { app: . }
@@ -1034,6 +1037,7 @@ modules:
   - id: zcode-site-panel
     roots:
       - apps/zcode-cli/packages/zcode-site-plugin/src
+      - apps/zcode-cli/packages/zcode-site-plugin/skills/site-deploy/templates
     managed: true
     requires: [shared]
     publicEntrypoints:
@@ -1109,7 +1113,7 @@ modules:
     roots:
       - packages/ui/src/data-sync
     managed: true
-    requires: [services, shared, ui, conversation-workspace-target]
+    requires: [services, shared, ui, conversation-workspace-target, source-server-device-settings]
     publicEntrypoints:
       - packages/ui/src/data-sync/index.ts
       - packages/ui/src/data-sync/contract.ts
@@ -1142,7 +1146,13 @@ modules:
     roots:
       - packages/ui/src/settings-scope
     managed: true
-    requires: [services, shared, ui, conversation-workspace-target, workspace-config-catalog]
+    requires:
+      - services
+      - shared
+      - ui
+      - conversation-workspace-target
+      - workspace-config-catalog
+      - source-server-device-settings
     publicEntrypoints:
       - packages/ui/src/settings-scope/index.ts
       - packages/ui/src/settings-scope/contract.ts
@@ -1160,6 +1170,295 @@ modules:
     layers: { adapters: . }
     owner: remote
 
+  # 3.17.2 同步收尾（二）：3.17.1 带入的单文件增量按功能成组登记；契约面重列实现导出，
+  # requires 由实际 import 反推后回填，不接管整目录（整目录会连带把既有超大文件与 lint disable 纳入规则）。
+  - id: cli-mcp-node-fallback
+    roots:
+      - apps/zcode-cli/packages/adapters/src/mcp/node-fallback.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/mcp-node-fallback.ts
+      - apps/zcode-cli/architecture/cli-mcp-node-fallback
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-mcp-node-fallback/contract.ts
+    layers: { adapters: . }
+    owner: agent
+  - id: cli-model-request-attribution
+    roots:
+      - apps/zcode-cli/packages/adapters/src/model/runner-attribution.ts
+      - apps/zcode-cli/packages/adapters/src/model/tool-search.ts
+      - apps/zcode-cli/architecture/cli-model-request-attribution
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-model-request-attribution/contract.ts
+    layers: { adapters: . }
+    owner: agent
+  - id: cli-workflow-model-failure-policy
+    roots:
+      - apps/zcode-cli/packages/adapters/src/model/workflow-model-failure-policy.ts
+      - apps/zcode-cli/architecture/cli-workflow-model-failure-policy
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-workflow-model-failure-policy/contract.ts
+    layers: { adapters: . }
+    owner: agent
+  - id: cli-dynamic-workflow-run-service
+    roots:
+      - apps/zcode-cli/packages/bootstrap/src/app/dynamic-workflow-run-submit.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/dynamic-workflow-quota-resume.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/workflow-driver-quiescence.ts
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-run-service
+    managed: true
+    requires: [shared, zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-run-service/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-input-prediction
+    roots:
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol/input-prediction-handler.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/input-prediction-sidecar.ts
+      - apps/zcode-cli/architecture/cli-input-prediction
+    managed: true
+    requires: [shared, zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-input-prediction/contract.ts
+    layers: { app: . }
+    owner: remote
+  - id: cli-fill-workflow-hole-tool
+    roots:
+      - apps/zcode-cli/packages/contracts/src/tools/fill-workflow-hole.ts
+      - apps/zcode-cli/architecture/cli-fill-workflow-hole-tool
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-fill-workflow-hole-tool/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-project-memory
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/helpers/project-memory-dream.ts
+      - apps/zcode-cli/packages/core/src/runtime/helpers/project-memory-recall.ts
+      - apps/zcode-cli/architecture/cli-project-memory
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-project-memory/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-dynamic-workflow-activation
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/methods/dynamic-workflow-activation.ts
+      - apps/zcode-cli/packages/core/src/tool/handlers/workflow-draft-read-state.ts
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-activation
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-activation/contract.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/dynamic-workflow-activation.ts
+      - apps/zcode-cli/packages/core/src/tool/handlers/workflow-draft-read-state.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-turn-interrupt-reminders
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/methods/interrupt-marker.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/runtime-reminder-persistence.ts
+      - apps/zcode-cli/packages/core/src/runtime/methods/turn-tool-visibility.ts
+      - apps/zcode-cli/architecture/cli-turn-interrupt-reminders
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-turn-interrupt-reminders/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-off-peak-turn
+    roots:
+      - apps/zcode-cli/packages/core/src/runtime/off-peak/model-binding.ts
+      - apps/zcode-cli/packages/core/src/runtime/off-peak/turn.ts
+      - apps/zcode-cli/architecture/cli-off-peak-turn
+    managed: true
+    requires: [shared, zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-off-peak-turn/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-dynamic-workflow-causality
+    roots:
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-bindings.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-calls.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-functions.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-loops.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-settle.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-state.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-strands.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/causality-order-types.ts
+      - apps/zcode-cli/packages/dynamic-workflow/src/analysis/flow-strands.ts
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-causality
+    managed: true
+    requires: [zcode-cli]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-dynamic-workflow-causality/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: cli-node-repl-host
+    roots:
+      - apps/zcode-cli/packages/node-repl-host/src/cua-bridge.ts
+      - apps/zcode-cli/packages/node-repl-host/src/cua-broker.ts
+      - apps/zcode-cli/packages/node-repl-host/src/no-progress-guard.ts
+      - apps/zcode-cli/packages/node-repl-host/src/result.ts
+      - apps/zcode-cli/packages/node-repl-host/src/tool-contract.ts
+      - apps/zcode-cli/architecture/cli-node-repl-host
+    managed: true
+    requires: [node-repl-call-ledger, zcode-cli, zcode-cua]
+    publicEntrypoints:
+      - apps/zcode-cli/architecture/cli-node-repl-host/contract.ts
+    layers: { adapters: . }
+    owner: agent
+  - id: web-remote-control-relay-protocol
+    roots:
+      - packages/client/src/webRemoteControlAcknowledgedRelayProtocol.ts
+      - packages/client/src/webRemoteControlAcknowledgedRelayProtocolTypes.ts
+      - packages/client/src/web-remote-control-relay
+    managed: true
+    requires: [client, rpc, shared]
+    publicEntrypoints:
+      - packages/client/src/web-remote-control-relay/contract.ts
+    layers: { app: . }
+    owner: remote
+  - id: remote-identity-migration
+    roots:
+      - packages/services/src/session/controllerRemoteIdentityMigration.ts
+      - packages/services/src/remote-identity-migration
+    managed: true
+    requires: [session]
+    publicEntrypoints:
+      - packages/services/src/remote-identity-migration/contract.ts
+    layers: { app: . }
+    owner: conversation
+  - id: source-server-management
+    roots:
+      - packages/services/src/source-server-management/sourceServerManagement.ts
+      - packages/services/src/source-server-management
+    managed: true
+    requires: [rpc, services, shared]
+    publicEntrypoints:
+      - packages/services/src/source-server-management/contract.ts
+    layers: { app: . }
+    owner: remote
+  - id: agent-runtime-switches
+    roots:
+      - packages/services/src/zcode-agent/independentPlanSupport.ts
+      - packages/services/src/zcode-agent/inputPredictionSwitch.ts
+      - packages/services/src/agent-runtime-switches
+    managed: true
+    requires: [services, shared]
+    publicEntrypoints:
+      - packages/services/src/agent-runtime-switches/contract.ts
+    layers: { app: . }
+    owner: agent
+  - id: source-server-device-settings
+    roots:
+      - packages/ui/src/hooks/useSourceServerStatuses.ts
+      - packages/ui/src/settings/SourceServerDeviceRow.tsx
+      - packages/ui/src/settings/SourceServerManagementPanel.tsx
+      - packages/ui/src/settings/SourceServerUpdateActivity.tsx
+      - packages/ui/src/settings/sourceServerDeviceList.ts
+      - packages/ui/src/source-server-device-settings
+    managed: true
+    requires:
+      [
+        conversation-workspace-target,
+        remote-connection-flow,
+        remote-connection-tags,
+        services,
+        shared,
+        ui,
+      ]
+    publicEntrypoints:
+      - packages/ui/src/source-server-device-settings/contract.ts
+      - packages/ui/src/hooks/useSourceServerStatuses.ts
+      - packages/ui/src/settings/SourceServerManagementPanel.tsx
+    layers: { app: . }
+    owner: desktop-settings
+  - id: personalization-settings
+    roots:
+      - packages/ui/src/settings/PersonalizationSection.tsx
+      - packages/ui/src/personalization-settings
+    managed: true
+    requires: [services, shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/personalization-settings/contract.ts
+    layers: { app: . }
+    owner: desktop-settings
+  - id: remote-connection-tags
+    roots:
+      - packages/ui/src/remote-connection/RemoteConnectionTags.tsx
+      - packages/ui/src/remote-connection-tags
+    managed: true
+    requires: [shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/remote-connection-tags/contract.ts
+      - packages/ui/src/remote-connection/RemoteConnectionTags.tsx
+    layers: { app: . }
+    owner: remote
+  - id: ui-request-security-edition
+    roots:
+      - packages/ui/src/request-security-edition/claim.ts
+      - packages/ui/src/request-security-edition/errors.ts
+      - packages/ui/src/request-security-edition/index.ts
+      - packages/ui/src/request-security-edition/messages.ts
+      - packages/ui/src/request-security-edition/parity.ts
+      - packages/ui/src/request-security-edition
+    managed: true
+    requires: [services, shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/request-security-edition/contract.ts
+    layers: { app: . }
+    owner: conversation
+  - id: conversation-turn-render-units
+    roots:
+      - packages/ui/src/v4/conversationTurnRenderUnitTypes.ts
+      - packages/ui/src/conversation-turn-render-units
+    managed: true
+    requires: [plugin-ui, shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/conversation-turn-render-units/contract.ts
+    layers: { app: . }
+    owner: conversation
+  - id: composer-submission-settlement
+    roots:
+      - packages/ui/src/v4/composer/composerSubmissionSettlement.ts
+      - packages/ui/src/composer-submission-settlement
+    managed: true
+    requires: [ui]
+    publicEntrypoints:
+      - packages/ui/src/composer-submission-settlement/contract.ts
+    layers: { app: . }
+    owner: conversation
+  - id: packaging-staging
+    roots:
+      - packages/zcode-server-cli/src/packaging/stageDependencies.ts
+      - packages/zcode-server-cli/src/packaging/stageRemoteAssetsCli.ts
+      - packages/zcode-server-cli/src/packaging-staging
+    managed: true
+    requires: [zcode-server-cli]
+    publicEntrypoints:
+      - packages/zcode-server-cli/src/packaging-staging/contract.ts
+    layers: { app: . }
+    owner: desktop
+  - id: update-handoff
+    roots:
+      - packages/zcode-server-cli/src/runtime/updateHandoff.ts
+      - packages/zcode-server-cli/src/update-handoff
+    managed: true
+    requires: [services, zcode-server-cli]
+    publicEntrypoints:
+      - packages/zcode-server-cli/src/update-handoff/contract.ts
+    layers: { app: . }
+    owner: desktop
+
 global:
   # 临时时间戳（2026-09-10）：unmanaged-new-file 只约束此日期之后首次入库的文件。
   # 基于领先 staging 很多的分支开工时，merge-base 之前的"新增"文件不应被追溯。
@@ -1174,6 +1473,16 @@ global:
   acceptedUpstreamSnapshot: scripts/architecture/upstream-snapshot.json
 
 exceptions:
+  # 3.17.2 同步收尾：Source Server 管理面板已按实际边界登记进 source-server-device-settings，
+  # 剩下两条是它作为上游整版落地文件的存量事实；拆分属于产品改动，不在元数据登记范围内。
+  - id: source-server-management-panel-size
+    rule: max-file-lines
+    paths: [packages/ui/src/settings/SourceServerManagementPanel.tsx]
+    reason: 上游 3.17.1 整版落地的设备、Profile、迁移三类管理面板共 2248 行，共享同一 Host 快照与错误状态；拆分会改动产品代码，另开工单处理，模块边界登记不受影响。
+  - id: source-server-management-panel-disable-count
+    rule: disable-count
+    paths: [packages/ui/src/settings/SourceServerManagementPanel.tsx]
+    reason: 同一文件顶部带有上游原有的 max-lines 抑制说明，除此之外无新增抑制；随面板拆分一并退出。
   - id: upstream-v3161-sync-files
     rule: unmanaged-new-file
     paths:

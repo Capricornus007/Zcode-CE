@@ -28,6 +28,8 @@ import type {
   EmbeddedBrowserSitePermissionResetRequest,
   EmbeddedBrowserSitePermissionsSnapshot,
   EditorInfo,
+  FileApplicationInfo,
+  FileApplicationTarget,
   ApplicationIconInfo,
   ApplicationIconRequest,
   Locale,
@@ -109,13 +111,17 @@ declare global {
       requestSourceSettingsAttachment?(sourceServerId: string): Promise<{ attachmentId: string }>;
       /** 取消当前窗口尚未建立完成的远程连接 */
       cancelPendingRemoteConnection?(requestId?: string): Promise<void>;
-      /** 绑定远程 logical session 的 canonical workspace context */
+      /**
+       * 绑定远程 logical session 的 canonical workspace context。
+       * 失败时不 reject，而是返回 `{ success: false, reasonCode }`：preload 抛出的 Error 跨
+       * contextBridge 会丢失 code/retryable。调用方必须用 `unwrapRemoteWorkspaceBindResult` 还原。
+       */
       bindRemoteWorkspaceSessionContext?(context: {
         remoteSessionId: string;
         workspacePath?: string;
         workspaceIdentity?: string;
         confirmSourceServerInstall?: boolean;
-      }): Promise<import("@zcode/shared").BindRemoteWorkspaceSessionContextResult>;
+      }): Promise<import("@zcode/shared").BindRemoteWorkspaceSessionContextIpcResult>;
       /** 订阅远程 workspace session 自动重连换代事件（Source 恢复预算内换新 sessionId） */
       onRemoteSessionReconnected?(
         handler: (event: import("@zcode/shared").RemoteSessionReconnectedEvent) => void,
@@ -201,6 +207,12 @@ declare global {
           request: WebRemoteControlReconnectWorkspaceRequest,
         ) => Promise<WebRemoteControlReconnectWorkspaceResult>,
       ): () => void;
+      /** 注册手机远控动作（置顶/归档/新建本地项目）的回调 */
+      onWebRemoteControlRendererAction?(
+        handler: (
+          request: import("@zcode/shared").WebRemoteControlRendererActionRequest,
+        ) => Promise<import("@zcode/shared").WebRemoteControlRendererActionResult>,
+      ): () => void;
       /** 同步当前窗口的未读 task 数到 main 进程 */
       syncWindowUnreadCount(count: number): void;
       syncActiveTaskSession(sessionId: string | null): void;
@@ -234,6 +246,10 @@ declare global {
       resetEmbeddedBrowserSitePermission?(
         request: EmbeddedBrowserSitePermissionResetRequest,
       ): Promise<EmbeddedBrowserSitePermissionsSnapshot>;
+      /** 注册 agent 首次 browser 命令建好受控 view 后触发下载的回调，返回 disposer */
+      onBrowserViewDownloadStarted?(
+        handler: (payload: { webContentsId: number; urls: string[] }) => void,
+      ): () => void;
       onBrowserViewReady?(
         handler: (payload: {
           workspaceKey: string;
@@ -415,6 +431,13 @@ declare global {
       quitAndInstallUpdate(): Promise<void>;
       /** 获取已安装的编辑器/终端列表（含图标） */
       getInstalledEditors(filePath?: string): Promise<EditorInfo[]>;
+      /** 本机文件的系统关联应用列表（「其他打开方式」）。 */
+      getFileApplications(target: FileApplicationTarget): Promise<FileApplicationInfo[]>;
+      /** 用系统关联应用重新打开本机文件。 */
+      openFileWithApplication(
+        applicationId: string,
+        target: FileApplicationTarget,
+      ): Promise<{ success: boolean; error?: string }>;
       /** 按兼容 bundle id 或结构化 locator 获取系统应用图标 */
       getApplicationIcon?(
         request: string | ApplicationIconRequest,

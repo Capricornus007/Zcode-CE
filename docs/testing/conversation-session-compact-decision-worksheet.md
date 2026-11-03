@@ -140,7 +140,7 @@ request 次序以及 goal target terminal 状态。
 | ✅ G11.4 | circuit breaker 生效（阈值后一段时间跳过）；手动 compact 成功后重置计数              |
 | ✅ G12.1 | 保留为当前轮 interrupted user message（时间线可 edit/retry），不复制回 queue、不丢弃 |
 | ✅ G12.2 | completed(interrupted)，与普通 stop 完全一致                                         |
-| ✅ G12.3 | marker 置 cancelled（v4 枚举复用，语义等同 interrupted）                           |
+| ✅ G12.3 | marker 置 cancelled（v4 枚举复用，语义等同 interrupted）                             |
 | ✅ G12.4 | 显式追加的 queue 全部保留且不自动消费（held queue，autoDrain=false）                 |
 
 ## P0 协议题索引

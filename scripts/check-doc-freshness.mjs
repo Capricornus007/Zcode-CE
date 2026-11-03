@@ -44,10 +44,10 @@ const MARKER = /订正|原表述|此前这里|此前写|原本以为|旧表述|�
  * 清理后用 `--update` 刷新；基线只降不升。
  */
 const BASELINE = {
-  "total": 4,
-  "files": {
-    "AGENTS.md": 4
-  }
+  total: 4,
+  files: {
+    "AGENTS.md": 4,
+  },
 };
 
 /** 版本快照类文件（保持快照语义，不适用 keep-latest）。按 basename 匹配。 */

@@ -142,9 +142,9 @@ describe("sidePaneTerminalSessionRegistry", () => {
   it("按 workspace 与客户端命名空间隔离复用", () => {
     const entry = createMockEntry("t1", "/ws", "workspace-a");
     registry.register("t1", entry);
-    expect(
-      registry.get("t1", { workspaceKey: "workspace-a", clientNamespace: "desktop" }),
-    ).toBe(entry);
+    expect(registry.get("t1", { workspaceKey: "workspace-a", clientNamespace: "desktop" })).toBe(
+      entry,
+    );
     expect(
       registry.get("t1", { workspaceKey: "workspace-b", clientNamespace: "desktop" }),
     ).toBeUndefined();

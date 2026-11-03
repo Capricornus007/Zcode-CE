@@ -52,7 +52,6 @@ export type {
   TransportContext,
 } from "@zcode/server/source-server/contract.js";
 
-
 export class SourceServerTransportOperationError extends Error {
   public constructor(
     message: string,
@@ -232,8 +231,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
           `mkdir -p ${releaseCacheDirShell} && test -f ${releaseCachePathShell} && sha256sum ${releaseCachePathShell} 2>/dev/null | awk '{print $1}'`,
         ),
       );
-      cacheHit =
-        cacheCheck.exitCode === 0 && cacheCheck.stdout.trim() === release.sha256;
+      cacheHit = cacheCheck.exitCode === 0 && cacheCheck.stdout.trim() === release.sha256;
       if (cacheHit) {
         context.onLog?.({
           phase: "download",
@@ -247,9 +245,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
         await backend.exec(`cp ${releaseCachePathShell} ${remoteArchiveShell}`),
       );
       if (copyResult.exitCode !== 0) {
-        throw new Error(
-          copyResult.stderr.trim() || "Failed to reuse cached Source Server archive",
-        );
+        throw new Error(copyResult.stderr.trim() || "Failed to reuse cached Source Server archive");
       }
     } else if (remoteDownload) {
       context.onLog?.({
@@ -373,7 +369,9 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
     let status = options.observedStatus;
     const observedReady =
       !options.forceRestart &&
-      status?.state === "ready" && Number.isInteger(status.port) && (status.port as number) > 0;
+      status?.state === "ready" &&
+      Number.isInteger(status.port) &&
+      (status.port as number) > 0;
     if (observedReady) {
       context.onLog?.({ phase: "daemon", message: "Reusing running Source Server" });
     } else {

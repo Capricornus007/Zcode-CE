@@ -54,7 +54,7 @@ MRO04 的手机软键盘命令也用 229 + insertLineBreak 提交，不能用普
 | 变更         | 首个 terminal tab 不显示 `1`；后续 tab 从 `2` 开始；关闭或 PTY 退出时同步关闭对应 tab |
 | 用户可见位置 | 底部 Terminal 面板的 tab strip                                                        |
 | 状态 owner   | `Terminal` renderer 本地状态；PTY 生命周期由每个 `TerminalSession` 管理               |
-| 不在范围内   | 本节表格主要描述底部 Terminal 面板；右侧 side pane 的跨 workspace/mobile owner 见下节            |
+| 不在范围内   | 本节表格主要描述底部 Terminal 面板；右侧 side pane 的跨 workspace/mobile owner 见下节 |
 
 ## 产品行为
 

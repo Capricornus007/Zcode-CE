@@ -138,13 +138,13 @@
 不带入 3.17.1 的数据同步、手机日志、移动输入等后续能力。CE 的协议扩展、引导式终端投递和既有
 Source Server 修复保持并集。
 
-| 条目 | 依据 | 同步情况 | CE 落点 |
-| --- | --- | --- | --- |
-| 远端目录探测 30 秒 fail-closed、认证/平台错误分类、旧 glibc 警告继续 | 闭源包差量 + 既有契约测试 | 已跟进 | `7cadb3fd`；desktop/server/shared/UI 错误映射 |
-| 复用 daemon 握手失败后强制重启并重试一次 | 闭源包差量 + Source Manager/Adapter 合同 | 已跟进 | `7d8a10b2` |
-| 发行 archive 按 sha256 跨安装缓存 | 闭源包差量 + Adapter 缓存合同 | 已跟进 | `4b08571b` |
-| 手机 side-pane 终端的页面 owner、同页 bridge 重绑与 owner 结束回收 | 3.16.3 行为差量；`a60ba6a7` 源码复核 | 已跟进 | shared 严格 schema → Main owner → Window Host scope → UI registry；旧客户端按 attachment 回收 |
-| 首次持续运行介绍只在「知道了」后记已读 | 3.16.3 行为与当前 UX 契约测试 | 已跟进 | `remoteBoundaryIntroAcknowledgedVersion: 1`；版本 3 写锁迁移，旧字段 2 只保留回滚兼容 |
+| 条目                                                                 | 依据                                     | 同步情况 | CE 落点                                                                                       |
+| -------------------------------------------------------------------- | ---------------------------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| 远端目录探测 30 秒 fail-closed、认证/平台错误分类、旧 glibc 警告继续 | 闭源包差量 + 既有契约测试                | 已跟进   | `7cadb3fd`；desktop/server/shared/UI 错误映射                                                 |
+| 复用 daemon 握手失败后强制重启并重试一次                             | 闭源包差量 + Source Manager/Adapter 合同 | 已跟进   | `7d8a10b2`                                                                                    |
+| 发行 archive 按 sha256 跨安装缓存                                    | 闭源包差量 + Adapter 缓存合同            | 已跟进   | `4b08571b`                                                                                    |
+| 手机 side-pane 终端的页面 owner、同页 bridge 重绑与 owner 结束回收   | 3.16.3 行为差量；`a60ba6a7` 源码复核     | 已跟进   | shared 严格 schema → Main owner → Window Host scope → UI registry；旧客户端按 attachment 回收 |
+| 首次持续运行介绍只在「知道了」后记已读                               | 3.16.3 行为与当前 UX 契约测试            | 已跟进   | `remoteBoundaryIntroAcknowledgedVersion: 1`；版本 3 写锁迁移，旧字段 2 只保留回滚兼容         |
 
 本轮不搬官方 3.17.1 独有的手机日志、数据同步、移动端 229 输入或其它非 3.16.3 合同；也不以
 `sharp` 的官方顶层布局覆盖 CE 既有按需暂存方案。版本号为 `3.16.3-ce.1`。
@@ -193,34 +193,34 @@ task-56 的旧 wave1 cherry-pick与当前完整 ToolSearch 链重复，因而不
 5 项新增与 21 项修复逐项保留；“官方源码”表示随 `a60ba6a7` 整版进入，“CE 并集”表示冲突处
 保留 CE 已有 owner / 状态机并吸收官方调用合同。
 
-| # | 3.16.3 公告合同 | 3.17.2-ce.1 落点 |
-| -: | --- | --- |
-| 1 | 帮助菜单复制设备 ID | 官方源码的桌面命令、菜单与剪贴板 Promise 链 |
-| 2 | 登录链接打不开时可复制 | 官方源码的 OAuth 等待态与复制入口 |
-| 3 | 文档查看状态按 session 隔离 | 官方源码的 preview/plugin logical scope |
-| 4 | 多文档插件共享进程 | 官方源码的 plugin sandbox host / retention owner |
-| 5 | 插件后台保留时长有上限 | 官方源码的 `pluginUiBackgroundRetention` 策略 |
-| 6 | 子代理可见当前 session 已打开文档 | 官方源码的 plugin UI session context |
-| 7 | 内置组件缺失时自动重建 | 官方源码的 bundled release / plugin cache 安装链 |
-| 8 | 关闭最后终端 tab 终止后台进程 | CE 并集：页面 owner、最后 attachment 回收与 Host 转发 |
-| 9 | 长文本/IME 输入不卡顿 | 官方源码的 composer 组合态与渲染更新链 |
-| 10 | 切 task 不丢未提交 IME 文本 | 官方源码的 draft/composition owner |
-| 11 | 不显示残留空 tool-call 卡片 | 官方源码的 conversation render-unit 过滤 |
-| 12 | 中断会话不产生未读通知 | 官方源码 unread 投影；CE 自托管通知链保留 |
-| 13 | 远端失败给出具体错误而非只有超时 | CE 错误分类 + 官方源码错误展示 |
-| 14 | 远端连接兼容性 | CE Source Server 自愈与官方 3.17.1 transport 并集 |
-| 15 | 远端 session 降低发送延迟 | 官方源码的 attachment/transport 路由 |
-| 16 | 远端目录读取失败仍保留本地项目 | 官方源码 project-first 导航与 CE fail-closed 错误面 |
-| 17 | 手机远控终端可用 | CE 页面 owner / bridge 重绑 / owner 结束回收整链 |
-| 18 | 只打开远端项目时仍可测试模型 | 官方源码 provider/model selection target |
-| 19 | 预览区左侧重新显示文件树 | 官方源码 side-pane / workspace file tree |
-| 20 | 插件列表已安装项优先 | 官方源码 plugin store order |
-| 21 | 插件市场返回等交互清晰 | 官方源码 marketplace interaction UI |
-| 22 | 更新说明气泡可悬停阅读全文 | 官方源码 `UpdateReleaseNotesTooltip` |
-| 23 | 本地文件夹打开后识别为项目 | 官方源码 workspace/project identity |
-| 24 | 重启恢复不丢子目录 | 官方源码 session restore + additional directories |
-| 25 | 多 session 并发写不损坏数据 | 官方源码 atomic write/lock；CE 单键 patch 合并保持 |
-| 26 | 容器环境可更新官方插件缓存 | CE sha256 release cache + 官方 bundled plugin cache |
+|   # | 3.16.3 公告合同                   | 3.17.2-ce.1 落点                                      |
+| --: | --------------------------------- | ----------------------------------------------------- |
+|   1 | 帮助菜单复制设备 ID               | 官方源码的桌面命令、菜单与剪贴板 Promise 链           |
+|   2 | 登录链接打不开时可复制            | 官方源码的 OAuth 等待态与复制入口                     |
+|   3 | 文档查看状态按 session 隔离       | 官方源码的 preview/plugin logical scope               |
+|   4 | 多文档插件共享进程                | 官方源码的 plugin sandbox host / retention owner      |
+|   5 | 插件后台保留时长有上限            | 官方源码的 `pluginUiBackgroundRetention` 策略         |
+|   6 | 子代理可见当前 session 已打开文档 | 官方源码的 plugin UI session context                  |
+|   7 | 内置组件缺失时自动重建            | 官方源码的 bundled release / plugin cache 安装链      |
+|   8 | 关闭最后终端 tab 终止后台进程     | CE 并集：页面 owner、最后 attachment 回收与 Host 转发 |
+|   9 | 长文本/IME 输入不卡顿             | 官方源码的 composer 组合态与渲染更新链                |
+|  10 | 切 task 不丢未提交 IME 文本       | 官方源码的 draft/composition owner                    |
+|  11 | 不显示残留空 tool-call 卡片       | 官方源码的 conversation render-unit 过滤              |
+|  12 | 中断会话不产生未读通知            | 官方源码 unread 投影；CE 自托管通知链保留             |
+|  13 | 远端失败给出具体错误而非只有超时  | CE 错误分类 + 官方源码错误展示                        |
+|  14 | 远端连接兼容性                    | CE Source Server 自愈与官方 3.17.1 transport 并集     |
+|  15 | 远端 session 降低发送延迟         | 官方源码的 attachment/transport 路由                  |
+|  16 | 远端目录读取失败仍保留本地项目    | 官方源码 project-first 导航与 CE fail-closed 错误面   |
+|  17 | 手机远控终端可用                  | CE 页面 owner / bridge 重绑 / owner 结束回收整链      |
+|  18 | 只打开远端项目时仍可测试模型      | 官方源码 provider/model selection target              |
+|  19 | 预览区左侧重新显示文件树          | 官方源码 side-pane / workspace file tree              |
+|  20 | 插件列表已安装项优先              | 官方源码 plugin store order                           |
+|  21 | 插件市场返回等交互清晰            | 官方源码 marketplace interaction UI                   |
+|  22 | 更新说明气泡可悬停阅读全文        | 官方源码 `UpdateReleaseNotesTooltip`                  |
+|  23 | 本地文件夹打开后识别为项目        | 官方源码 workspace/project identity                   |
+|  24 | 重启恢复不丢子目录                | 官方源码 session restore + additional directories     |
+|  25 | 多 session 并发写不损坏数据       | 官方源码 atomic write/lock；CE 单键 patch 合并保持    |
+|  26 | 容器环境可更新官方插件缓存        | CE sha256 release cache + 官方 bundled plugin cache   |
 
 本轮版本为 `3.17.2-ce.1`。
 

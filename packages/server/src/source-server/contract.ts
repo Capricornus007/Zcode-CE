@@ -59,10 +59,27 @@ export interface SourceServerTransportAdapter {
   readonly kind: "ssh" | "wsl" | "docker";
   createFileTransfer(target: RemoteTarget): SourceServerFileTransfer;
   cancel?(target: RemoteTarget): void;
-  probe(target: RemoteTarget, context: TransportContext, options?: SourceServerProbeOptions): Promise<SourceServerProbeResult>;
-  installOrUpdate(target: RemoteTarget, release: ServerReleaseAsset, context: TransportContext, options?: SourceServerInstallOrUpdateOptions): Promise<void>;
-  ensureDaemon(target: RemoteTarget, context: TransportContext, options?: SourceServerEnsureDaemonOptions): Promise<SourceServerIngressInfo>;
-  openChannel(target: RemoteTarget, ingress: SourceServerIngressInfo, context: TransportContext): Promise<Duplex>;
+  probe(
+    target: RemoteTarget,
+    context: TransportContext,
+    options?: SourceServerProbeOptions,
+  ): Promise<SourceServerProbeResult>;
+  installOrUpdate(
+    target: RemoteTarget,
+    release: ServerReleaseAsset,
+    context: TransportContext,
+    options?: SourceServerInstallOrUpdateOptions,
+  ): Promise<void>;
+  ensureDaemon(
+    target: RemoteTarget,
+    context: TransportContext,
+    options?: SourceServerEnsureDaemonOptions,
+  ): Promise<SourceServerIngressInfo>;
+  openChannel(
+    target: RemoteTarget,
+    ingress: SourceServerIngressInfo,
+    context: TransportContext,
+  ): Promise<Duplex>;
   exec(target: RemoteTarget, argv: string[], context: TransportContext): Promise<RemoteExecResult>;
   dispose?(): void;
 }

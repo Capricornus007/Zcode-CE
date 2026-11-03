@@ -1,12 +1,8 @@
 {
   "compilerOptions": {
     "paths": {
-      "@desktop/*": [
-        "./src/*"
-      ],
-      "@/*": [
-        "../ui/src/*"
-      ]
+      "@desktop/*": ["./src/*"],
+      "@/*": ["../ui/src/*"]
     }
   },
   "files": [],

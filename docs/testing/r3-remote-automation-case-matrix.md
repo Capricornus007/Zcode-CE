@@ -40,20 +40,20 @@
 
 ## B. Source、workspace 与 UI 隔离
 
-| ID        | 级别/档位  | Setup                                                | Action                                        | Assertions                                                                                        | 层 / 证据 |
-| --------- | ---------- | ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------- |
-| R3A-ID-01 | P0/S       | 同 Source 两个项目 A/B，各有唯一历史 marker          | A/B 首发、交替续发                            | workspace identity/session 独立；请求只含自身历史；共享物理连接与 Host，无重复部署                | E/URPNF   |
-| R3A-ID-02 | P0         | 两个 Source 使用相同绝对路径，加本地同路径哨兵       | 各自读写/发送/改 task 状态                    | 文件、任务、候选、缓存、持久化按 identity 隔离；无 local fallback                                 | E/URNF    |
-| R3A-ID-03 | P1         | 同 Source 的 symlink 与 realpath、两个 profile       | 分别打开同目录                                | canonical workspace 不重复；历史对账；同 Source 不同线路允许独立 provisioning lane                | E/URF     |
-| R3A-ID-04 | retired    | 旧远程无项目 UI 场景                                 | connect-and-chat 已停用                       | 历史编号保留；当前连接后选目录由 RPN 验收，旧结果不迁作通过                                       | 不适用    |
-| R3A-ID-05 | retired    | 旧设备 task+ / conversation UI 场景                  | 远程无项目入口已停用                          | 当前项目身份隔离沿用 R3/项目导航，不恢复旧入口                                                    | 不适用    |
-| R3A-ID-06 | P1         | 同 Source 项目 A/B 各有原 task                       | 移除本机 A 入口，B 续发，再加入原 projectId A | 只移除 membership，不关闭既有 attachment 或删除远端历史；A/B session 与 Host 保持，原 task 可续发 | E/URPF    |
-| R3A-ID-07 | historical | 两窗口同 Source conversation 的旧场景                | UI 入口已停用                                 | 底层 canonical 与每窗口 attachment 隔离约束保留；旧 UI 用例不证明当前跨窗产品覆盖                 | 原 E/URPF |
-| R3A-ID-08 | P1         | 新版活动目录 + 旧兼容投影，本地/远端项目混合         | 冷启动恢复活动目录，其他项目按需打开          | 保留 Host 项目入口；旧兼容字段不复活非活动 tab；按需打开后身份/凭据正确                           | E+I/URF   |
-| R3A-UI-01 | P1         | known/pending/offline/connecting 项目与设备          | settings/sidebar/dialog 各入口连接/停止       | 连接后明确选择或加入项目；离线图标与可访问名称一致；连接中不重复派发                              | E/URL     |
-| R3A-UI-02 | P1         | 多 Source tasks，在线/离线对照                       | pin/archive/open/resume、分组拖动和失败动作   | 写操作命中原 Source；离线 fail-closed；optimistic 失败回滚；分组持久化正确                        | E/URF     |
-| R3A-UI-03 | P2         | zh-CN/light/desktop 与 en-US/dark/mobile 等 pairwise | 遍历连接、更新、无模型、恢复、设置关键状态    | 文案/主题/布局/焦点可用，viewport无关键操作遮挡；状态与权威事实一致                               | E/UR      |
-| R3A-UI-04 | P1         | `remoteBoundaryIntroAcknowledgedVersion` 未设置       | 主动连接成功或显式浏览已连接设备目录，取消后重试并确认 | 确认介绍不被 Escape/遮罩关闭；只有「知道了」写版本 1；后台完成等显式继续；取消/迟到/静默恢复不记已读；确认后不重复 | E/URF     |
+| ID        | 级别/档位  | Setup                                                | Action                                                 | Assertions                                                                                                         | 层 / 证据 |
+| --------- | ---------- | ---------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ | --------- |
+| R3A-ID-01 | P0/S       | 同 Source 两个项目 A/B，各有唯一历史 marker          | A/B 首发、交替续发                                     | workspace identity/session 独立；请求只含自身历史；共享物理连接与 Host，无重复部署                                 | E/URPNF   |
+| R3A-ID-02 | P0         | 两个 Source 使用相同绝对路径，加本地同路径哨兵       | 各自读写/发送/改 task 状态                             | 文件、任务、候选、缓存、持久化按 identity 隔离；无 local fallback                                                  | E/URNF    |
+| R3A-ID-03 | P1         | 同 Source 的 symlink 与 realpath、两个 profile       | 分别打开同目录                                         | canonical workspace 不重复；历史对账；同 Source 不同线路允许独立 provisioning lane                                 | E/URF     |
+| R3A-ID-04 | retired    | 旧远程无项目 UI 场景                                 | connect-and-chat 已停用                                | 历史编号保留；当前连接后选目录由 RPN 验收，旧结果不迁作通过                                                        | 不适用    |
+| R3A-ID-05 | retired    | 旧设备 task+ / conversation UI 场景                  | 远程无项目入口已停用                                   | 当前项目身份隔离沿用 R3/项目导航，不恢复旧入口                                                                     | 不适用    |
+| R3A-ID-06 | P1         | 同 Source 项目 A/B 各有原 task                       | 移除本机 A 入口，B 续发，再加入原 projectId A          | 只移除 membership，不关闭既有 attachment 或删除远端历史；A/B session 与 Host 保持，原 task 可续发                  | E/URPF    |
+| R3A-ID-07 | historical | 两窗口同 Source conversation 的旧场景                | UI 入口已停用                                          | 底层 canonical 与每窗口 attachment 隔离约束保留；旧 UI 用例不证明当前跨窗产品覆盖                                  | 原 E/URPF |
+| R3A-ID-08 | P1         | 新版活动目录 + 旧兼容投影，本地/远端项目混合         | 冷启动恢复活动目录，其他项目按需打开                   | 保留 Host 项目入口；旧兼容字段不复活非活动 tab；按需打开后身份/凭据正确                                            | E+I/URF   |
+| R3A-UI-01 | P1         | known/pending/offline/connecting 项目与设备          | settings/sidebar/dialog 各入口连接/停止                | 连接后明确选择或加入项目；离线图标与可访问名称一致；连接中不重复派发                                               | E/URL     |
+| R3A-UI-02 | P1         | 多 Source tasks，在线/离线对照                       | pin/archive/open/resume、分组拖动和失败动作            | 写操作命中原 Source；离线 fail-closed；optimistic 失败回滚；分组持久化正确                                         | E/URF     |
+| R3A-UI-03 | P2         | zh-CN/light/desktop 与 en-US/dark/mobile 等 pairwise | 遍历连接、更新、无模型、恢复、设置关键状态             | 文案/主题/布局/焦点可用，viewport无关键操作遮挡；状态与权威事实一致                                                | E/UR      |
+| R3A-UI-04 | P1         | `remoteBoundaryIntroAcknowledgedVersion` 未设置      | 主动连接成功或显式浏览已连接设备目录，取消后重试并确认 | 确认介绍不被 Escape/遮罩关闭；只有「知道了」写版本 1；后台完成等显式继续；取消/迟到/静默恢复不记已读；确认后不重复 | E/URF     |
 
 ## C. Provider Provisioning 与模型权威
 

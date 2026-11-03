@@ -56,8 +56,7 @@ it("资源查询取消必须指定 requestId 且不接受附加字段", () => {
 
 it("终端 owner 消息只接受非空 owner 或显式 null", () => {
   expect(
-    hostIncomingMessageSchema.safeParse({ type: "set-terminal-owner", ownerId: "owner-1" })
-      .success,
+    hostIncomingMessageSchema.safeParse({ type: "set-terminal-owner", ownerId: "owner-1" }).success,
   ).toBe(true);
   expect(
     hostIncomingMessageSchema.safeParse({ type: "set-terminal-owner", ownerId: null }).success,

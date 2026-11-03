@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
-import { BlocksIcon, CableIcon, ChevronDown, UploadCloud, WandIcon } from "lucide-react";
+import { CableIcon, ChevronDown, UploadCloud, WandIcon } from "lucide-react";
 import type { RemoteTarget } from "@zcode/shared";
-import type {
-  IMcpSyncService,
-  IPluginSyncService,
-  ISkillSyncService,
-  IZCodeAgentService,
-} from "@zcode/services";
+import type { IMcpSyncService, ISkillSyncService } from "@zcode/services";
 import { Button } from "@/components/ui/button.js";
 import {
   DropdownMenu,
@@ -16,8 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { RemoteMcpSyncDialog } from "@/settings/RemoteMcpSyncDialog.js";
-import { RemotePluginSyncDialog } from "@/settings/RemotePluginSyncDialog.js";
 import { RemoteSkillSyncDialog } from "@/settings/RemoteSkillSyncDialog.js";
+
+// 插件同步入口已随上游 3.17.x 的「数据同步」重构移除（docs/superpowers/specs/
+// 2026-07-06-remote-plugin-sync-design.md 顶部「被取代（2026-10，票 14）」）：旧的 RemotePluginSyncDialog
+// 与 listRemoteUserPluginStatuses / exportPluginsArchive / importPluginsArchive 已被删除，插件改走
+// packages/ui/src/data-sync/（PluginsSection 的 useSettingsDataSyncEntry）。这里不再挂插件分支，
+// 避免引用上游已不存在的合同成员。
 
 export type RemoteSyncClientMode = "desktop-continuous" | "web-remote-replayable";
 export const REMOTE_SYNC_PREFLIGHT_TIMEOUT_MS = 15_000;
@@ -114,19 +114,15 @@ export async function runRemoteSyncPreflightWithTimeout<T>(
 export function RemoteSyncMenuItems({
   canSyncSkills,
   canSyncMcp,
-  canSyncPlugins = false,
   onOpenSkillSync,
   onOpenMcpSync,
-  onOpenPluginSync,
   stopMouseDownPropagation = false,
   mcpDisabled = false,
 }: {
   canSyncSkills: boolean;
   canSyncMcp: boolean;
-  canSyncPlugins?: boolean;
   onOpenSkillSync: () => void;
   onOpenMcpSync: () => void;
-  onOpenPluginSync?: () => void;
   stopMouseDownPropagation?: boolean;
   mcpDisabled?: boolean;
 }) {
@@ -155,12 +151,6 @@ export function RemoteSyncMenuItems({
           {intl.formatMessage({ id: "remote.syncMcp" })}
         </DropdownMenuItem>
       ) : null}
-      {canSyncPlugins ? (
-        <DropdownMenuItem onMouseDown={handleMouseDown} onSelect={onOpenPluginSync}>
-          <BlocksIcon className="size-3.5" />
-          {intl.formatMessage({ id: "remote.syncPlugins" })}
-        </DropdownMenuItem>
-      ) : null}
     </>
   );
 }
@@ -168,23 +158,19 @@ export function RemoteSyncMenuItems({
 export function RemoteSyncDropdownButton({
   canSyncSkills,
   canSyncMcp,
-  canSyncPlugins = false,
   mcpDisabled = false,
   onOpenSkillSync,
   onOpenMcpSync,
-  onOpenPluginSync,
 }: {
   canSyncSkills: boolean;
   canSyncMcp: boolean;
-  canSyncPlugins?: boolean;
   mcpDisabled?: boolean;
   onOpenSkillSync: () => void;
   onOpenMcpSync: () => void;
-  onOpenPluginSync?: () => void;
 }) {
   const { intl } = useZCodeIntl();
 
-  if (!canSyncSkills && !canSyncMcp && !canSyncPlugins) {
+  if (!canSyncSkills && !canSyncMcp) {
     return null;
   }
 
@@ -201,11 +187,9 @@ export function RemoteSyncDropdownButton({
         <RemoteSyncMenuItems
           canSyncSkills={canSyncSkills}
           canSyncMcp={canSyncMcp}
-          canSyncPlugins={canSyncPlugins}
           mcpDisabled={mcpDisabled}
           onOpenSkillSync={onOpenSkillSync}
           onOpenMcpSync={onOpenMcpSync}
-          onOpenPluginSync={onOpenPluginSync}
         />
       </DropdownMenuContent>
     </DropdownMenu>
@@ -215,59 +199,39 @@ export function RemoteSyncDropdownButton({
 export function RemoteSyncDialogs({
   canSyncSkills,
   canSyncMcp,
-  canSyncPlugins = false,
   skillOpen,
   mcpOpen,
-  pluginOpen = false,
   onSkillOpenChange,
   onMcpOpenChange,
-  onPluginOpenChange,
   localSkillSyncService,
   remoteSkillSyncService,
   localMcpSyncService,
   remoteMcpSyncService,
-  localPluginSyncService,
-  remotePluginSyncService,
-  localZCodeAgentService,
-  remoteZCodeAgentService,
   remoteTarget,
   skillWorkspacePath,
   mcpWorkspacePath,
-  pluginWorkspacePath,
-  pluginLocalWorkspacePath,
   mcpLocalWorkspacePath,
   workspaceIdentity,
   onSkillsSynced,
   onMcpSynced,
-  onPluginsSynced,
 }: {
   canSyncSkills: boolean;
   canSyncMcp: boolean;
-  canSyncPlugins?: boolean;
   skillOpen: boolean;
   mcpOpen: boolean;
-  pluginOpen?: boolean;
   onSkillOpenChange: (open: boolean) => void;
   onMcpOpenChange: (open: boolean) => void;
-  onPluginOpenChange?: (open: boolean) => void;
   localSkillSyncService?: ISkillSyncService | null;
   remoteSkillSyncService?: ISkillSyncService | null;
   localMcpSyncService?: IMcpSyncService | null;
   remoteMcpSyncService?: IMcpSyncService | null;
-  localPluginSyncService?: IPluginSyncService | null;
-  remotePluginSyncService?: IPluginSyncService | null;
-  localZCodeAgentService?: IZCodeAgentService | null;
-  remoteZCodeAgentService?: IZCodeAgentService | null;
   remoteTarget?: RemoteTarget | null;
   skillWorkspacePath: string;
   mcpWorkspacePath: string;
-  pluginWorkspacePath?: string;
-  pluginLocalWorkspacePath?: string;
   mcpLocalWorkspacePath?: string;
   workspaceIdentity?: string;
   onSkillsSynced: () => Promise<void> | void;
   onMcpSynced: () => Promise<void> | void;
-  onPluginsSynced?: () => Promise<void> | void;
 }) {
   const skillDialogProps =
     canSyncSkills && skillOpen && remoteTarget && localSkillSyncService && remoteSkillSyncService
@@ -282,18 +246,6 @@ export function RemoteSyncDialogs({
       ? {
           localMcpSyncService,
           remoteMcpSyncService,
-          remoteTarget,
-        }
-      : null;
-  const pluginDialogProps =
-    canSyncPlugins &&
-    pluginOpen &&
-    remoteTarget &&
-    localPluginSyncService &&
-    remotePluginSyncService
-      ? {
-          localPluginSyncService,
-          remotePluginSyncService,
           remoteTarget,
         }
       : null;
@@ -322,21 +274,6 @@ export function RemoteSyncDialogs({
           workspacePath={mcpWorkspacePath}
           localWorkspacePath={mcpLocalWorkspacePath}
           onSynced={onMcpSynced}
-        />
-      ) : null}
-      {pluginDialogProps ? (
-        <RemotePluginSyncDialog
-          open={pluginOpen}
-          onOpenChange={onPluginOpenChange ?? (() => {})}
-          localPluginSyncService={pluginDialogProps.localPluginSyncService}
-          remotePluginSyncService={pluginDialogProps.remotePluginSyncService}
-          localZCodeAgentService={localZCodeAgentService}
-          remoteZCodeAgentService={remoteZCodeAgentService}
-          remoteTarget={pluginDialogProps.remoteTarget}
-          localWorkspacePath={pluginLocalWorkspacePath}
-          workspacePath={pluginWorkspacePath ?? mcpWorkspacePath}
-          workspaceIdentity={workspaceIdentity}
-          onSynced={onPluginsSynced ?? (() => {})}
         />
       ) : null}
     </>

@@ -421,7 +421,9 @@ sequenceDiagram
 - 普通插件行点击 → 详情；UI 插件行点击 → 打开。独立详情入口保留配置和恢复继承；卸载有全局影响确认，更新可在行内或详情页完成。
 - 首次默认全局，保留具体项目切换。市场内往返保留范围；项目覆盖不修改全局默认或其他项目。
 - 顶部：启用状态筛选（全部/已启用/已禁用）、检查更新（全部）、SSH 远程同步入口
-  （现有 RemotePluginSyncDialog 收编于此）。
+  （数据同步弹窗 `packages/ui/src/data-sync/`，`PluginsSection` 的 `useSettingsDataSyncEntry`；
+  上游 3.17.x 已删除旧的 `RemotePluginSyncDialog`，见
+  `docs/superpowers/specs/2026-07-06-remote-plugin-sync-design.md` 的取代说明）。
 - 一键全部更新：「已安装」分组标题右侧动作区在存在可更新插件（同角标口径：已安装、
   非孤立、`updateStatus` 为 `update-available` / `version-changed`）时显示「全部更新（N）」。
   点击后按列表顺序串行调用单插件更新（复用 `plugins/update`，不新增协议）；单个失败不中断，

@@ -41,6 +41,8 @@ export function resolveNextHighspeedExpiryMsInPartition(
   return fromTail === undefined ? fromHistory : Math.min(fromHistory, fromTail);
 }
 
+export const resolveNextHighspeedExpiryMs = resolveNextHighspeedExpiryMsInPartition;
+
 /** 带 highspeed 元数据与 sourceCommandId 的 userInput 行；只有这类行会被统计与回退提示采用。 */
 export type HighspeedInputRow = UserInputRow & {
   sourceCommandId: string;

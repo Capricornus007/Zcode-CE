@@ -415,3 +415,14 @@ export function aggregateHighspeedCardMetrics(cardId: string): HighspeedShareMet
     highspeedTps,
   };
 }
+
+/** SessionPane scoped highspeed 依賴：同一 sessionId 下的所有 turn 與當前版本，供外層快照比較與局部訂閱用。 */
+export function getHighspeedSessionDependencies(sessionId: string): {
+  readonly records: HighspeedTurnRecord[];
+  readonly version: number;
+} {
+  return {
+    records: listHighspeedTurnsBySession(sessionId),
+    version: getHighspeedTurnVersion(),
+  };
+}

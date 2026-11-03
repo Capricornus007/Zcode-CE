@@ -14,6 +14,9 @@ export interface PluginSyncMarketplaceSourceImportResult {
 /** 数据同步：单个 inline 插件目录（不含 `data/`）的大小上限，超过时标为不能同步，不计算哈希。 */
 export const PLUGIN_DATA_SYNC_MAX_ITEM_BYTES = 50 * 1024 * 1024;
 
+/** 数据同步：单个 inline 技能目录（不含 `data/`）的大小上限，超过时标为不能同步，不计算哈希。 */
+export const SKILL_DATA_SYNC_MAX_ITEM_BYTES = 50 * 1024 * 1024;
+
 /** 数据同步：inline 插件 export 的结果，也是 import 的输入。 */
 export interface PluginDataSyncPayload {
   archive: Uint8Array;

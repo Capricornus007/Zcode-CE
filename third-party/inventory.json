@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "inputHashEncoding": "UTF-8 with CRLF normalized to LF; notice and source snapshot hashes remain byte-exact",
   "scope": "Production dependency union across current workspace projects, copied source/assets and native tools; not a per-installer SBOM or a certification of all licensing obligations.",
-  "noticesSha256": "27e48925bb6b4278db4296008069a80a12ad564d0f6f7fc1b9515b7a48bbed81",
+  "noticesSha256": "42d2a7a1d2858b31f38a1ea794081a4b7e3b13b0a3253a4fb4672b9695eb33dc",
   "inputs": {
     ".agents/skills/agent-browser/references/authentication.md": "e2c3b0f4a1dc1368dee821f03c000d818a48421d09f3872525dddffe73f2112b",
     ".agents/skills/agent-browser/references/commands.md": "17522fc56d742663f47231ff06c4811abc87e12c7f78e11f94d253ddd540a909",
@@ -424,7 +424,7 @@
     "apps/zcode-cli/tools/prompt-trajectory/package.json": "a8374fef7b1f1814d91dfe5ef5f3d369de8d12f73601dbed6e026f2b12bcca0d",
     "apps/zcode-cli/tools/provider-regression/package.json": "65065e1cba48ffbac435ae7490623b2ccb79f664e813892592de3fca4fce099c",
     "apps/zcode-cli/tools/typescript/package.json": "23d7e50d2089d205ce3022c5bafbb6b3e31d000e41ac678a5934e0b72627cf3a",
-    "package.json": "b73fffe9ff9856b2fe8d852db198107b88404c0faf852e35372b5f32ce04d069",
+    "package.json": "fd1ab7bcc7c071696936ef8fd23df62c8a1009f6257a85ee509e17285643c2df",
     "packages/client/package.json": "e76f441549130dc3e5e68072a36b6cb9044e19a6625f1e813f19a4def2b1b689",
     "packages/desktop/package.json": "672db9050f1342768f4066296eeceb52f80203e3b9ff7cab853c2f85f404bb9e",
     "packages/desktop/src/renderer/public/material-icons/3d.svg": "9527b849f0fba57ca7640e2717b3a19cb5f5e046712cbbd8b75d73af338c68fb",
@@ -2936,9 +2936,12 @@
     "packages/zcode-server-cli/package.json": "6426f5b34d1566ffe1b95b2b1f21551a66cf90906dc6699ee915627f2252d170",
     "patches/@ai-sdk__anthropic@3.0.81.patch": "d3a7c381eba7f5157f765a0528003af17cf84544911dfb7412c7800168e01c18",
     "patches/@ai-sdk__openai-compatible@2.0.60.patch": "9632fe9d821b3dc20939ae509cc35b968d90d018bbd1d812390718898182a38b",
+    "patches/@aiden0z__pptx-renderer@1.2.4.patch": "e1a90a724324c45a2cc90cf84d1ae1f35755b8fc9438a208d610960bd0d5f65a",
     "patches/@arms__rum-electron@0.0.3.patch": "36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97",
+    "patches/@extend-ai__react-xlsx@0.16.0.patch": "b2fc5fcfa1aab1271d20fd539d2a367f06aac08a191425885cf8f1125b7c6bc8",
+    "patches/@radix-ui__react-collapsible@1.1.12.patch": "4b7b3781f603e111bb33aef9c4b1694ac9bacd3dff47692606de9876d4631164",
     "patches/wdio-electron-service@9.2.1.patch": "52481dae5e76772fcb8c2a9ff42feb3d0e1478e28815a4b975c81b9287e3385f",
-    "pnpm-lock.yaml": "0c4b30ce564b991257d6296f708dd76b121f15db1abef029ff48612671431937",
+    "pnpm-lock.yaml": "448f288353cc3b136255c368f9c2a86f6133ec0028b55d091b106de9edd21cb4",
     "pnpm-workspace.yaml": "a8baaa44e161c0bfda716ff3129148f3c2ecfae48f5eb4c795b5ad0dc33dccfc",
     "scripts/license-texts/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "scripts/license-texts/MPL-2.0.txt": "5eba353fe5076ac3432177f8ab1cf75e3afcd0584251e37c3bfead5f447d040e",
@@ -3537,8 +3540,32 @@
       ]
     },
     {
+      "name": "@babel/helper-string-parser",
+      "version": "7.29.11",
+      "license": "MIT",
+      "repository": "https://github.com/babel/babel.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+        }
+      ]
+    },
+    {
       "name": "@babel/helper-validator-identifier",
       "version": "7.28.5",
+      "license": "MIT",
+      "repository": "https://github.com/babel/babel.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+        }
+      ]
+    },
+    {
+      "name": "@babel/helper-validator-identifier",
+      "version": "7.29.7",
       "license": "MIT",
       "repository": "https://github.com/babel/babel.git",
       "notices": [
@@ -3683,6 +3710,18 @@
     {
       "name": "@babel/types",
       "version": "7.29.0",
+      "license": "MIT",
+      "repository": "https://github.com/babel/babel.git",
+      "notices": [
+        {
+          "member": "LICENSE",
+          "sha256": "117da2af0d4ce0fe1c8e19b5cff9dcd806adf973d328d27b11d4448c4ff24f76"
+        }
+      ]
+    },
+    {
+      "name": "@babel/types",
+      "version": "7.29.11",
       "license": "MIT",
       "repository": "https://github.com/babel/babel.git",
       "notices": [
@@ -31415,6 +31454,21 @@
       "package": "@arms/rum-electron@0.0.3",
       "file": "patches/@arms__rum-electron@0.0.3.patch",
       "sha256": "36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97"
+    },
+    {
+      "package": "@aiden0z/pptx-renderer@1.2.4",
+      "file": "patches/@aiden0z__pptx-renderer@1.2.4.patch",
+      "sha256": "e1a90a724324c45a2cc90cf84d1ae1f35755b8fc9438a208d610960bd0d5f65a"
+    },
+    {
+      "package": "@extend-ai/react-xlsx@0.16.0",
+      "file": "patches/@extend-ai__react-xlsx@0.16.0.patch",
+      "sha256": "b2fc5fcfa1aab1271d20fd539d2a367f06aac08a191425885cf8f1125b7c6bc8"
+    },
+    {
+      "package": "@radix-ui/react-collapsible@1.1.12",
+      "file": "patches/@radix-ui__react-collapsible@1.1.12.patch",
+      "sha256": "4b7b3781f603e111bb33aef9c4b1694ac9bacd3dff47692606de9876d4631164"
     }
   ],
   "exceptions": [

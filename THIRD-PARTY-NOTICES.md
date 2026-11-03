@@ -70,7 +70,11 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - @babel/helper-string-parser@7.27.1 — MIT
 
+- @babel/helper-string-parser@7.29.11 — MIT
+
 - @babel/helper-validator-identifier@7.28.5 — MIT
+
+- @babel/helper-validator-identifier@7.29.7 — MIT
 
 - @babel/helper-validator-option@7.27.1 — MIT
 
@@ -95,6 +99,8 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 - @babel/traverse@7.29.0 — MIT
 
 - @babel/types@7.29.0 — MIT
+
+- @babel/types@7.29.11 — MIT
 
 - @borewit/text-codec@0.2.2 — MIT
 
@@ -2502,6 +2508,12 @@ Electron/Chromium target-specific notices are shipped separately under Resources
 
 - @arms/rum-electron@0.0.3: modified by ZCode; the changes are recorded in patches/@arms__rum-electron@0.0.3.patch in the source repository.
 
+- @aiden0z/pptx-renderer@1.2.4: modified by ZCode; the changes are recorded in patches/@aiden0z__pptx-renderer@1.2.4.patch in the source repository.
+
+- @extend-ai/react-xlsx@0.16.0: modified by ZCode; the changes are recorded in patches/@extend-ai__react-xlsx@0.16.0.patch in the source repository.
+
+- @radix-ui/react-collapsible@1.1.12: modified by ZCode; the changes are recorded in patches/@radix-ui__react-collapsible@1.1.12.patch in the source repository.
+
 ## License and NOTICE texts
 
 ### Notice b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529
@@ -2927,7 +2939,11 @@ SOFTWARE.
 
 - @babel/helper-string-parser@7.27.1: LICENSE
 
+- @babel/helper-string-parser@7.29.11: LICENSE
+
 - @babel/helper-validator-identifier@7.28.5: LICENSE
+
+- @babel/helper-validator-identifier@7.29.7: LICENSE
 
 - @babel/helper-validator-option@7.27.1: LICENSE
 
@@ -2948,6 +2964,8 @@ SOFTWARE.
 - @babel/traverse@7.29.0: LICENSE
 
 - @babel/types@7.29.0: LICENSE
+
+- @babel/types@7.29.11: LICENSE
 
 
 

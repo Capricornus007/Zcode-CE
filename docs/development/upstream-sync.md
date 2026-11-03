@@ -155,6 +155,75 @@ transport adapter；Side Pane 完整视图采用其自带 contract/module；速�
 UI/app owner 精确登记；WDIO 与 CUA bench 分别归桌面 E2E、机器校准 adapter。未把整个
 `zcode-cli`、`ui`、`server` 或 `zcode-cua` 改成 managed，也未增加 unmanaged baseline 例外。
 
+## v3.17.2（开源 3.17.1 基线 + 官方闭源 3.17.2 Linux 包）
+
+官方安装页在 2026-11-03 指向
+`https://cdn-zcode.z.ai/zcode/electron/releases/3.17.2/linux-x64/ZCode-3.17.2-linux-x64.AppImage`。
+实取文件长度 `258501618`，ETag `8C72BB12C94623F3D8CE8E6C0079024C-25`，SHA-256
+`4a522d45727454188c56833275ae5b4d588ac3b2b87eedee5f7d98f8553a12e1`，SHA-512
+`404e2f679d59d4f8997ba488cc9e16f0c518d6cbf9dc9fc2997bcf063d16b33649e74a4b9089b02332bcfef0f340087bf59bb78b8b09ac587c13cb20e12f86c2`。
+AppImage 的 `.sha256_sig` / `.sig_key` 区段均为空，故没有可验证的发布签名；来源真实性依赖官方文档
+链接、HTTPS 与上列双哈希，打包输入不得写成“已验签”。
+
+与基线 3.16.3 官方 AppImage（SHA-256
+`49d007647b831ee5220ee34d097e038fb89a2df2c686b97aa3b6b02e7d0a0ba2`）逐层比较：旧
+`resources/app.asar` SHA-256 为 `914dd2b8d655d07d84ae8e92b4093e1689b2d55f5515309ab7c42207bb7f9df7`，
+新 ASAR 为 `10e357d442fb27ec2c70a0dd214ecb5a31f0ec119b0eae8d352d30e26729caea`；文件数
+`27764 → 31825`（新增 7606、移除 3545）。buildCommitId / electron-builder 为
+`a82dd43e / 26.8.1 → a2d1ba73 / 26.17.0`。runtime 从 Electron `41.0.3` / Chromium
+`146.0.7680.80` 升到 Electron `44.7.0` / Chromium `152.0.7977.130`。旧包的 node-pty 与
+ssh2 addon 在新包中逐字节相同（SHA-256 分别为
+`ce00b69d65245a1d169891a006dedd1c2100a575b394c6cd2d6b65907934b909` 与
+`f85819ee2c1c9dcb6796c016de18913159b0490e3f965aa74e9190a905672eac`）；新包新增 Sharp
+`sharp-linux-x64.node`（`fdbcd90b39941fb7a4bc1b70f1c3e98d4b56b4d1150d4b4dbd0dc62945aeedd5`），
+ASAR 外因此由两颗 native addon 增为三颗。
+Electron 44 已移除的同步图片剪贴板调用改为 `ClipboardItem` + `await clipboard.write(...)`，
+文本剪贴板调用与相关夹具也等待 Promise；native staging/rebuild 输入跟随 44.7.0 锁档，不再保留
+Electron 41/42 ABI 作为发行依赖。
+
+源码以官方 `v3.17.1` / `a60ba6a7` 整版合并，冲突处保留 CE 已实现的遥测移除、自托管远控、
+Source Server 自愈、发行缓存、终端 owner 与确认后记已读合同；无冲突的 3.17.1 产品代码、测试、
+资源与 Electron 44 迁移直接采用。闭源 3.17.2 包用于核对最终版本、runtime、ASAR 与 native
+边界；不复制闭源 bundle 进源码。`3.16.3-ce.1` 的五项闭源差量合同仍由上节所列实现与测试持有，
+task-56 的旧 wave1 cherry-pick与当前完整 ToolSearch 链重复，因而不叠加旧转换器/重复参数。
+
+### 3.16.3 的 26 项逐项重放
+
+3.17.2 切换不能把上一基线的公告合同缩成上面的五个逆向差量。下表按官方 3.16.3 公告的
+5 项新增与 21 项修复逐项保留；“官方源码”表示随 `a60ba6a7` 整版进入，“CE 并集”表示冲突处
+保留 CE 已有 owner / 状态机并吸收官方调用合同。
+
+| # | 3.16.3 公告合同 | 3.17.2-ce.1 落点 |
+| -: | --- | --- |
+| 1 | 帮助菜单复制设备 ID | 官方源码的桌面命令、菜单与剪贴板 Promise 链 |
+| 2 | 登录链接打不开时可复制 | 官方源码的 OAuth 等待态与复制入口 |
+| 3 | 文档查看状态按 session 隔离 | 官方源码的 preview/plugin logical scope |
+| 4 | 多文档插件共享进程 | 官方源码的 plugin sandbox host / retention owner |
+| 5 | 插件后台保留时长有上限 | 官方源码的 `pluginUiBackgroundRetention` 策略 |
+| 6 | 子代理可见当前 session 已打开文档 | 官方源码的 plugin UI session context |
+| 7 | 内置组件缺失时自动重建 | 官方源码的 bundled release / plugin cache 安装链 |
+| 8 | 关闭最后终端 tab 终止后台进程 | CE 并集：页面 owner、最后 attachment 回收与 Host 转发 |
+| 9 | 长文本/IME 输入不卡顿 | 官方源码的 composer 组合态与渲染更新链 |
+| 10 | 切 task 不丢未提交 IME 文本 | 官方源码的 draft/composition owner |
+| 11 | 不显示残留空 tool-call 卡片 | 官方源码的 conversation render-unit 过滤 |
+| 12 | 中断会话不产生未读通知 | 官方源码 unread 投影；CE 自托管通知链保留 |
+| 13 | 远端失败给出具体错误而非只有超时 | CE 错误分类 + 官方源码错误展示 |
+| 14 | 远端连接兼容性 | CE Source Server 自愈与官方 3.17.1 transport 并集 |
+| 15 | 远端 session 降低发送延迟 | 官方源码的 attachment/transport 路由 |
+| 16 | 远端目录读取失败仍保留本地项目 | 官方源码 project-first 导航与 CE fail-closed 错误面 |
+| 17 | 手机远控终端可用 | CE 页面 owner / bridge 重绑 / owner 结束回收整链 |
+| 18 | 只打开远端项目时仍可测试模型 | 官方源码 provider/model selection target |
+| 19 | 预览区左侧重新显示文件树 | 官方源码 side-pane / workspace file tree |
+| 20 | 插件列表已安装项优先 | 官方源码 plugin store order |
+| 21 | 插件市场返回等交互清晰 | 官方源码 marketplace interaction UI |
+| 22 | 更新说明气泡可悬停阅读全文 | 官方源码 `UpdateReleaseNotesTooltip` |
+| 23 | 本地文件夹打开后识别为项目 | 官方源码 workspace/project identity |
+| 24 | 重启恢复不丢子目录 | 官方源码 session restore + additional directories |
+| 25 | 多 session 并发写不损坏数据 | 官方源码 atomic write/lock；CE 单键 patch 合并保持 |
+| 26 | 容器环境可更新官方插件缓存 | CE sha256 release cache + 官方 bundled plugin cache |
+
+本轮版本为 `3.17.2-ce.1`。
+
 ## CE 接线重植台账（apps/zcode-cli 九项断线，2026-10-18 处置）
 
 > 背景：3.15.1 merge 官方整版覆盖部分既有文件，把「CE 新文件在既有文件里的引用接线」冲掉

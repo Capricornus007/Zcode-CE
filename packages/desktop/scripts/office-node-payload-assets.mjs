@@ -131,8 +131,8 @@ const REQUIRED_BUNDLED_PACKAGES = {
 /**
  * esbuild 的 CJS 产物目标。
  *
- * 远端宿主固定跑 Node v22.16.0（prepare-prebuilds.mjs 的 nodeVersion），桌面是 Electron 41 的
- * Node 24.x，取**共同下界** node22，保证同一份产物两处都能跑。
+ * 远端宿主固定跑 Node v22.16.0（prepare-prebuilds.mjs 的 nodeVersion），桌面 Electron 44
+ * 使用 Node 24.x；取**共同下界** node22，保证同一份产物两处都能跑。
  */
 const BUNDLE_TARGET = "node22";
 

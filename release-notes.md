@@ -1,5 +1,22 @@
 # ZCode-CE
 
+## 3.17.2-ce.1
+
+- **同步官方 3.17.2 产品线**：以官方开源 `v3.17.1` 整版源码为基线，并用 3.17.2 Linux
+  闭源发行包核对最终 manifest、资源与 native 边界。站点部署插件、插件批量更新、图片标注回传、
+  未读任务筛选、项目批量管理、远端设备紧凑列表与服务停止/重启、额度恢复后工作流续跑、CUA
+  多会话光标、无 Node 环境的 MCP 启动、MCP 配置界面和文件定位等上游实现随源码进入 CE。
+- **桌面运行时升级到 Electron 44.7.0**：同步图片剪贴板迁移到异步 `ClipboardItem` API；文本
+  剪贴板调用与夹具等待 Promise；node-pty、Sharp、ssh2 native addon 按 Electron 44 / Node ABI
+  的发行输入暂存。发行依赖与许可清单不再携带 Electron 41/42。
+- **保留全部 CE 边界**：遥测移除、自托管网页远控、Source Server 握手失败强制重启、发行 archive
+  哈希缓存、手机终端页面 owner、首次持续运行介绍确认后记已读，以及既有协议扩展均在同步冲突处
+  选择 CE 语义；task-56 的旧 ToolSearch wave1 不再重复叠加到已完整接线的当前实现。
+- **官方输入可复核**：官方下载 URL、AppImage/ASAR 哈希、空签名区段、Electron/Chromium 版本和
+  三颗 native addon 清单记录在 `docs/development/upstream-sync.md` 的 v3.17.2 节。
+
+---
+
 ## 新增功能
 
 - **macOS 安装包已就绪但本版未产出**：构建矩阵与 ad-hoc 签名配置都已上线，但本版发布时 GitHub 的 macOS runner 排队超时，两个 mac 构建被取消——**本版 Release 里没有 macOS 安装包**。macOS 用户请从源码构建（`docs/development/`），或等下一个版本附上 .dmg/.zip（届时首次打开需在 Gatekeeper 提示里选「仍要打开」，或执行 `xattr -dr com.apple.quarantine <应用>`；自动更新在 macOS 上仍会保持关闭）。

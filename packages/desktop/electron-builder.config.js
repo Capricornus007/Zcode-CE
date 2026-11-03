@@ -520,10 +520,8 @@ export default {
   // 默认全量语言会产生大量 locale.pak 签名调用，显著拉长打包时长。
   // 这里仅保留当前产品必需语言，减少签名文件数并缩短 CI 总耗时。
   electronLanguages: ["en-US", "zh-CN"],
-  // pnpm workspace + semver range（如 ^41.0.3）下，electron-builder
-  // 有时无法从依赖树里稳定推导出 Electron 版本，导致 bundle 直接中断。
-  // 显式写死当前桌面端使用的 Electron 版本，避免打包阶段再做不可靠的猜测。
-  electronVersion: "41.0.3",
+  // builder 的依赖树推导不稳定；显式读取 package.json，避免开发与安装包版本分叉。
+  electronVersion: desktopElectronVersion,
   // 旧 Windows 协议注册可能在应用 JS 重写注册表前注入 --inspect-brk。
   // 在签名前关闭原生 Inspector 参数，覆盖升级后首次启动；保留 Agent 所需的 RunAsNode。
   ...(targetPlatform.os === "win32"

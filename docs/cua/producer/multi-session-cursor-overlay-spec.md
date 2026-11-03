@@ -831,7 +831,7 @@ session_id` 同为裸产品 sessionId，与 turn 事件同 key。光标 key 固�
     (a) **z 序沉底**——`RepinZOrder` 只发一次 `HWND_NOTOPMOST`，不保证带内
     位置，窗口被后续窗口压到 z 序底部完全不可见；修复无目标落位：`HWND_TOPMOST → HWND_NOTOPMOST` 瞬时双跳落到非 topmost 带最前
     （用户前台窗口仍在其上）。
-    (b) **alpha 预乘**——`BlendPixel` 此前写直通（non-premultiplied）BGRA，
+    (b) **alpha 预乘**——`BlendPixel` 的输入是直通（non-premultiplied）BGRA，
     ULW 的 `AC_SRC_ALPHA` 要求预乘；alpha<255 的像素（glow/描边/涟漪边缘）
     过曝或不可见；修复为混合在直通空间、落盘前乘 `out_a` 转预乘。另：CreateWindowExW 失败补 stderr
     日志（此前静默丢弃命令，排查代价极高）。验证：截屏 + 视觉模型确认

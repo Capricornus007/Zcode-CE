@@ -245,7 +245,7 @@ PDF 继续运行 gating，Audio 尚无内容编码入口。
 
 ### C25. Start 独立 Provider 与现行单连接语义
 
-**冲突的旧表述**：Start／Individual／Team 共用唯一 current，Start 选择随当前套餐映射。讨论中又曾提出虚拟统一入口、跨品牌映射、全量选择迁移、升级连接快照、多 Provider 全局失效通知及额外鉴权竞态校验。这些候选不能作为最终契约。
+**冲突表述（作废）**：Start／Individual／Team 共用唯一 current，Start 选择随当前套餐映射。讨论中又曾提出虚拟统一入口、跨品牌映射、全量选择迁移、升级连接快照、多 Provider 全局失效通知及额外鉴权竞态校验。这些候选不能作为最终契约。
 
 **后续用户裁决（2026-09-16）**：保留两家 Start ID、统一名称和各自品牌 logo，放现有智谱分组；详情只去掉连接／断开。保留 current，允许 Start 与当前付费连接并存；Start 严格按原身份解析，付费间保持映射；JWT 复用登录，账号竞态沿用现状。用户明确“不迁移，加一个优化”：只在用户提交／创建保存时推荐有额度且思考兼容的同模型 Start；包括 Subagent 显式模型保存，最终排除立即运行。偏好跨入口、重启及同 Host 手机生效，不做账号云同步。失效时保留额度反馈，全局连接通知只处理付费套餐。
 
@@ -257,7 +257,7 @@ PDF 继续运行 gating，Audio 尚无内容编码入口。
 
 ### C26. 审批框完全访问是否可以修改已接纳队列的权限
 
-**旧表述**：[Todo71](../steps/todo-71-persistent-composer-draft-and-submission-state.md) 和 [Todo151](../steps/todo-151-independent-plan-state-draft.md) 要求 Submission 入队后保留原配置，不因草稿或批准结果改写。
+**冲突表述（作废）**：[Todo71](../steps/todo-71-persistent-composer-draft-and-submission-state.md) 和 [Todo151](../steps/todo-151-independent-plan-state-draft.md) 要求 Submission 入队后保留原配置，不因草稿或批准结果改写。
 
 **后续裁决（2026-09-17）**：用户明确仅权限审批框新增的“完全访问”同步当前任务、Composer 和全部待执行队列消息为 `mode=yolo`；各自 `planEnabled` 及其他字段保持。普通 Composer 菜单仍只改草稿。
 
@@ -358,7 +358,7 @@ Todo 32 已在 `e01862000f` 提交，并将文件状态更新为“已完成”�
 
 新增矛盾时追加一项 `Cxx`，至少写明：
 
-1. 冲突的旧表述；
+1. 冲突表述（作废）；
 2. 后续明确裁决；
 3. 当前代码/测试事实；
 4. 最终裁定；

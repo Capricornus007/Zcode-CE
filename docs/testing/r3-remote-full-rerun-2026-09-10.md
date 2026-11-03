@@ -33,7 +33,7 @@ soak 批次结案:soak-reconnect 50 轮全绿;soak-dual 56 轮(5 分钟定案轮
 | r3-provisioning-gui | 同步途中断开未拒绝旧 RPC，Provisioning lane 阻塞重连 attachment；已修复，0911 16:15 完整复跑 PASS | 真实连接探针与 GUI 复跑，见下方修复记录 | §19/§25 |
 | r3-settings-scopes  | scope 选"用户"新建 agent,文件落到远端 home(归属歧义/错写)                                         | 保留容器实锤文件在远端                  | §42     |
 
-> 后续状态：`r3-settings-scopes` 原缺陷成立，2026-09-11 修复后 GUI 回归 PASS，详见本文末尾复核记录。上表与 49 case 汇总保留历史口径。
+> 后续状态：`r3-settings-scopes` 原缺陷成立，2026-09-11 修复后 GUI 回归 PASS，详见本文末尾复核记录。上表与 49 case 汇总是 2026-09-10 那轮的原始记录。
 
 ### 二、产品缺陷(嫌疑,立 issue 排查,维持 FAIL)
 

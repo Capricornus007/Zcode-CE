@@ -91,7 +91,7 @@ H  迁移清理、测试与文档
 
 ### M3.1：更新正式行为 Spec 与测试地图
 
-实现前先把原子 Submission 写入长期 Spec，并消除现有文档中“Queue 消费时读取最新 Session 模型”的旧表述。需要同步检查：
+实现前先把原子 Submission 写入长期 Spec，并把现有文档中“Queue 消费时读取最新 Session 模型”这类说法改成当前语义。需要同步检查：
 
 - Conversation Protocol Declaration；
 - Conversation Product State Space；

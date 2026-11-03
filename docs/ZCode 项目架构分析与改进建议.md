@@ -34,9 +34,8 @@ shared ← rpc ← services ← client ← server
 
 - **Main 进程**只做调度：窗口生命周期、native dialog、进程 fork、广播中转、web 远控 relay 管理。
 
-- **Host Process（历史口径）**：2026-06-10 的审计曾把桌面进程模型概括为“App 唯一 Host”。该判断已经
-  过时：当前是每个 BrowserWindow 一个 Local Host，同一窗口的多个本地 workspace 按 workspaceKey 共用该
-  Host；远程 workspace 另由窗口/目标作用域的 Remote Host 承载。
+- **Host Process**：每个 BrowserWindow 一个 Local Host，同一窗口的多个本地 workspace 按 workspaceKey
+  共用该 Host；远程 workspace 另由窗口/目标作用域的 Remote Host 承载。
 
 - **App ↔ Agent**：通过 `zcode app-server --stdio` 子进程，stdio NDJSON 传输 ZCode Protocol（JSON\-RPC 风格 envelope，单一版本号，无 capabilities 握手）。
 

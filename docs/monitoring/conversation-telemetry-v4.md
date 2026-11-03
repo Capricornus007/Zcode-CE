@@ -18,7 +18,7 @@
 
 - Web/手机端实际网络上报。
 - initial snapshot、cold hydration、gap recovery 或历史 transcript 的补报。
-- 修正旧版固定零值、空字符串、负值钳制和 stop-without-terminal 等历史口径。
+- 固定零值、空字符串、负值钳制和 stop-without-terminal 都不作为采集值上报。
 - 把 telemetry 状态写入 conversation rows、snapshot、relay 或 main 进程。
 
 ## 架构与状态边界

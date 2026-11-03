@@ -64,6 +64,36 @@ export class SourceServerTransportOperationError extends Error {
   }
 }
 
+function createServerCommandError(result: RemoteExecResult, fallbackMessage: string): Error {
+  try {
+    const response = readLastJsonLine(result.stdout);
+    if (isPublicZCodeErrorCode(response.code)) {
+      return new SourceServerTransportOperationError(
+        typeof response.error === "string" && response.error.trim()
+          ? response.error
+          : fallbackMessage,
+        response.code,
+        typeof response.retryable === "boolean" ? response.retryable : undefined,
+      );
+    }
+  } catch {
+    // 输出不是 JSON 时按文本诊断处理。
+  }
+  // Bug 原因：CLI 的 --json 错误写在 stdout，stderr 可能只有 SQLite warning；
+  // 安装路径与 daemon 启动复用同一错误解析，避免 warning 覆盖真正的失败原因。
+  return new Error(
+    (readStructuredCommandError(result.stdout) ?? result.stderr.trim()) || fallbackMessage,
+  );
+}
+
+/** 读取远端 Server CLI `--json` 命令的最终 JSON；非零退出按 {@link createServerCommandError} 失败。 */
+export function readServerCommandResult(
+  result: RemoteExecResult,
+  fallbackMessage: string,
+): Record<string, unknown> {
+  if (result.exitCode !== 0) throw createServerCommandError(result, fallbackMessage);
+  return readLastJsonLine(result.stdout);
+}
 
 const SERVER_ROOT_READ_PATH = "~/.zcode/server";
 const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
@@ -322,26 +352,7 @@ class BackendSourceServerTransportAdapter implements SourceServerTransportAdapte
       }
     });
     if (result.exitCode !== 0) {
-      try {
-        const response = readLastJsonLine(result.stdout);
-        if (isPublicZCodeErrorCode(response.code)) {
-          throw new SourceServerTransportOperationError(
-            typeof response.error === "string" && response.error.trim()
-              ? response.error
-              : "Source Server archive installation failed",
-            response.code,
-            typeof response.retryable === "boolean" ? response.retryable : undefined,
-          );
-        }
-      } catch (error) {
-        if (error instanceof SourceServerTransportOperationError) throw error;
-      }
-      // Bug 原因：CLI 的 --json 错误写在 stdout，stderr 可能只有 SQLite warning；
-      // 安装路径与 daemon 启动复用同一错误解析，避免 warning 覆盖真正的失败原因。
-      throw new Error(
-        (readStructuredCommandError(result.stdout) ?? result.stderr.trim()) ||
-          "Source Server archive installation failed",
-      );
+      throw createServerCommandError(result, "Source Server archive installation failed");
     }
     const response = readLastJsonLine(result.stdout);
     if (response.ok === false || response.applied !== true) {

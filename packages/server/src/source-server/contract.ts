@@ -10,6 +10,8 @@ export interface SourceServerProbeResult {
   installPath?: string;
   installedVersion?: string;
   installedArchiveSha256?: string;
+  /** 当前 release 由显式降级安装时，被替换的版本。 */
+  downgradedFrom?: string;
   daemonStatus?: Record<string, unknown> & { state: string; port?: number };
 }
 

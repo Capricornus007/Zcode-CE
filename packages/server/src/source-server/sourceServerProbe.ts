@@ -21,6 +21,7 @@ const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
 const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
 const SERVER_CURRENT_SHELL = `${SERVER_ROOT_SHELL}/current.json`;
 const SERVER_STATUS_SHELL = `${SERVER_ROOT_SHELL}/run/status.json`;
+const SERVER_DOWNGRADE_SHELL = `${SERVER_ROOT_SHELL}/downgrade.json`;
 const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__ZCODE_PROBE_";
 
 function buildSourceServerProbeCommand(includeReleaseIdentity: boolean): string {
@@ -45,6 +46,10 @@ function buildSourceServerProbeCommand(includeReleaseIdentity: boolean): string 
           `if [ -r ${SERVER_CURRENT_SHELL} ]; then cat ${SERVER_CURRENT_SHELL}; fi`,
         ]
       : []),
+    `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}RELEASEID__\\n'`,
+    `if [ -r ${SERVER_CURRENT_SHELL} ]; then sed -n 's/^[[:space:]]*"releaseId"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' ${SERVER_CURRENT_SHELL} | head -n 1; fi`,
+    `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}DOWNGRADE__\\n'`,
+    `if [ -r ${SERVER_DOWNGRADE_SHELL} ]; then tr -d '\\r\\n' < ${SERVER_DOWNGRADE_SHELL}; printf '\\n'; fi`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}VERSION__\\n'`,
     `if [ -r ${SERVER_CURRENT_SHELL} ]; then sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' ${SERVER_CURRENT_SHELL} | head -n 1; fi`,
     `printf '${SOURCE_SERVER_PROBE_MARKER_PREFIX}STATUS__\\n'`,
@@ -97,6 +102,21 @@ function warnUnsupportedGlibc(
       `Use a Linux system with glibc ${required} or later, such as RHEL 8+, Ubuntu 20.04+ or Debian 10+. ` +
       `ZCode Source Server may fail to start. Continuing installation or connection.`,
   });
+}
+
+/** 降级标记只属于写入时的 release；current 已换成其他 release 时标记作废。 */
+function readDowngradedFrom(markerText: string, currentReleaseId: string): string | undefined {
+  if (!markerText || !currentReleaseId) return undefined;
+  try {
+    const marker = JSON.parse(markerText) as { releaseId?: unknown; fromVersion?: unknown };
+    return marker.releaseId === currentReleaseId &&
+      typeof marker.fromVersion === "string" &&
+      marker.fromVersion.trim()
+      ? marker.fromVersion.trim()
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function probeSourceServer(
@@ -170,11 +190,16 @@ export async function probeSourceServer(
   } catch {
     daemonStatus = undefined;
   }
+  const downgradedFrom = readDowngradedFrom(
+    sections.get("DOWNGRADE") ?? "",
+    sections.get("RELEASEID") ?? "",
+  );
   return {
     ...environment,
     installed: true,
     ...(installedArchiveSha256 ? { installedArchiveSha256 } : {}),
     ...(installedVersion ? { installedVersion } : {}),
+    ...(downgradedFrom ? { downgradedFrom } : {}),
     ...(daemonStatus ? { daemonStatus } : {}),
   };
 }

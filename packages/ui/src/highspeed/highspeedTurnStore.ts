@@ -50,11 +50,9 @@ const healthyAttemptsByCardId = new Map<
   string,
   { expiryAttempted: boolean; completionRetryAttempted: boolean }
 >();
-let version = 0;
 const listeners = new Set<() => void>();
 
 function publishChange(): void {
-  version += 1;
   for (const listener of listeners) listener();
 }
 
@@ -341,8 +339,34 @@ export function subscribeHighspeedTurns(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-export function getHighspeedTurnVersion(): number {
-  return version;
+// 记录本身是不可变快照。消费者浅比较这些依赖，不能订阅全局版本使无关会话一起更新。
+// 卡级聚合跨会话，必须包含同卡全部记录与 TPS，而不能只截取当前会话的记录。
+function highspeedCardDependencies(
+  cardIds: ReadonlySet<string>,
+): readonly (HighspeedTurnRecord | number | undefined)[] {
+  return [
+    ...records.filter((record) => cardIds.has(record.card.cardId)),
+    ...Array.from(cardIds, getHighspeedCardTps),
+  ];
+}
+
+export function getHighspeedSessionDependencies(
+  sessionId: string | null,
+): readonly (HighspeedTurnRecord | number | undefined)[] {
+  return highspeedCardDependencies(
+    new Set(
+      records
+        .filter((record) => record.sessionId === sessionId)
+        .map((record) => record.card.cardId),
+    ),
+  );
+}
+
+export function getHighspeedTurnDependencies(
+  sourceCommandId: string | undefined,
+): readonly (HighspeedTurnRecord | number | undefined)[] {
+  const record = getHighspeedTurnByCommandId(sourceCommandId);
+  return highspeedCardDependencies(new Set(record ? [record.card.cardId] : []));
 }
 
 export function aggregateHighspeedCardMetrics(cardId: string): HighspeedShareMetrics {
@@ -413,16 +437,5 @@ export function aggregateHighspeedCardMetrics(cardId: string): HighspeedShareMet
     regularTps:
       regularDurationSeconds > 0 ? Number((outputTokens / regularDurationSeconds).toFixed(3)) : 0,
     highspeedTps,
-  };
-}
-
-/** SessionPane scoped highspeed 依賴：同一 sessionId 下的所有 turn 與當前版本，供外層快照比較與局部訂閱用。 */
-export function getHighspeedSessionDependencies(sessionId: string): {
-  readonly records: HighspeedTurnRecord[];
-  readonly version: number;
-} {
-  return {
-    records: listHighspeedTurnsBySession(sessionId),
-    version: getHighspeedTurnVersion(),
   };
 }

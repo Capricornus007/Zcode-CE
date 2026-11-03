@@ -127,7 +127,8 @@ export {
 export { generateMobileDeviceFingerprint, setStreamClientId } from "./lib/streamClientId.js";
 export { GlobalDatabaseStartupLoading } from "./root/GlobalDatabaseStartupLoading.js";
 
-// localTtftObserver 保留：P0 已把实现降级为 no-op，但 SessionPane / ConversationComposer /
-// agentConversationTransport 仍在调用其接口，删除会破坏协议契约。
-export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
+// TTFT 观测器默认 disabled（`enabled = false`），只有 renderer 显式构造并注入才会采样；
+// desktop 的 local-ttft 模块未被 renderer 入口接线（CE 遥测停用策略），协议字段 envelope.ttft
+// 仍在 shared 保留，SessionPane / ConversationComposer / agentConversationTransport 调用其接口。
+export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/local-ttft/contract.js";
 export { ensurePendingTaskDraft } from "@/v4/composer/composerDraftStore.js";

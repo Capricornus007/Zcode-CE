@@ -75,6 +75,14 @@ export function createWebPlatform(options?: {
       Promise.resolve<WebRemoteControlStatus>({
         status: "idle",
       }),
+    getWebServiceStatus: () =>
+      Promise.reject(new Error("Local Web service management requires a desktop host")),
+    startWebService: () =>
+      Promise.reject(new Error("Local Web service management requires a desktop host")),
+    stopWebService: () =>
+      Promise.reject(new Error("Local Web service management requires a desktop host")),
+    getWebServiceConnectionInfo: () => Promise.resolve(null),
+    onWebServiceChanged: () => () => undefined,
     disposeRemoteSession: () => Promise.resolve(),
     isDockerAvailable: () =>
       platformProxy

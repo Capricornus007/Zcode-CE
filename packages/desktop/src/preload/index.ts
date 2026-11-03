@@ -6,8 +6,14 @@ import {
 } from "@zcode/shared";
 /* eslint-disable max-lines -- preload bridge 集中暴露桌面平台 IPC，拆散会让 contextBridge 权限边界更难审计。 */
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
+import {
+  installArmsRumBridgeIpcForward,
+  scheduleArmsEventBridgePatch,
+} from "../shared/armsRumBridgeForward.js";
 
-// 遥测移除（P1，CE 对齐）：ARMS RUM preload 桥接不安装。
+// ARMS frame preload 闭包内的 send 不会随后序 ipcRenderer.send 补丁生效，须同步包装 Bridge.send
+installArmsRumBridgeIpcForward(ipcRenderer);
+scheduleArmsEventBridgePatch();
 
 /** 从 command-line 参数中解析 --device-id= */
 function parseDeviceIdFromArgs(): string {
@@ -81,13 +87,6 @@ import type {
   WebRemoteControlStatus,
   WebRemoteControlWorkspaceTarget,
   RemoteConnectionRuntimeLog,
-  // ---- CE 线增量：本地 Web 服务（远程控制）载荷类型 ----
-  WebServiceStatusPayload,
-  WebServiceConnectionInfoPayload,
-  RemoteControlConnectionsPayload,
-  RemoteControlRevokeRequest,
-  RemoteControlRevokeResult,
-  RemoteControlRotateTokenResult,
   WindowControlsOverlayMetrics,
   WindowControlsOverlayReadyPayload,
   CreateTempTextAttachmentRequest,
@@ -353,32 +352,6 @@ contextBridge.exposeInMainWorld("zcode", {
   /** dwf 产物「作为文件打开」：把某一版的字节落成本机副本 */
   materializeWorkflowArtifactFile: (payload: MaterializeWorkflowArtifactFileRequest) =>
     ipcRenderer.invoke(PlatformChannels.MaterializeWorkflowArtifactFile, payload),
-  // ---- CE 线增量：本地 Web 服务（远程控制）八条通道（契约 §5）：服务面五条 + 连接面三条。
-  getWebServiceStatus: (): Promise<WebServiceStatusPayload> =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceStatus),
-  startWebService: (options: { scope: "loopback" | "lan"; port?: number }) =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceStart, options),
-  stopWebService: () => ipcRenderer.invoke(PlatformChannels.WebServiceStop),
-  getWebServiceConnectionInfo: (): Promise<WebServiceConnectionInfoPayload | null> =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceConnectionInfo),
-  /** 订阅探活结论变化（入口据此回显，不轮询），返回 disposer */
-  onWebServiceChanged: (callback: (status: WebServiceStatusPayload) => void) => {
-    const handler = (_event: unknown, payload: unknown) =>
-      callback(payload as WebServiceStatusPayload);
-    ipcRenderer.on(PlatformChannels.WebServiceChanged, handler);
-    return () => ipcRenderer.removeListener(PlatformChannels.WebServiceChanged, handler);
-  },
-  /** 读已连设备清单（连接面）。null = 不知道（服务没在跑/读失败），空数组 = 确定 0 台。 */
-  getWebServiceConnections: (): Promise<RemoteControlConnectionsPayload | null> =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceConnections),
-  /** 断开连接：载荷恰好 { id } 或 { all: true } 之一（main 侧会再校验一次）。 */
-  revokeWebServiceConnection: (
-    input: RemoteControlRevokeRequest,
-  ): Promise<RemoteControlRevokeResult> =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceRevokeConnection, input),
-  /** 轮换服务端令牌（桌面专属）：轮换后所有已连设备立即失效。 */
-  rotateWebServiceToken: (): Promise<RemoteControlRotateTokenResult> =>
-    ipcRenderer.invoke(PlatformChannels.WebServiceRotateToken),
   /** 订阅当前窗口内远程连接过程日志，返回 disposer */
   onRemoteConnectionLog: (callback: (entry: RemoteConnectionRuntimeLog) => void) => {
     const handler = (_event: unknown, payload: unknown) =>
@@ -1086,7 +1059,8 @@ ipcRenderer.on(
   },
 );
 
-// 遥测移除（P1）：ARMS Bridge 补丁（scheduleArmsEventBridgePatch）不安装。
+// dom-ready autoInject 之后 Bridge 若被重置，再尝试一次包装
+scheduleArmsEventBridgePatch();
 
 // 启动控制面先于普通 RPC；reload 从 Main 的通知镜像补齐，不触发新迁移。
 ipcRenderer.on(InternalChannels.DatabaseStartupState, (_event, raw: unknown) => {

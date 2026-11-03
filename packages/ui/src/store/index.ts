@@ -37,7 +37,7 @@ import {
   persistTaskNotificationSoundEnabled,
 } from "@/lib/taskNotificationPreferences.js";
 import type { Theme } from "../useTheme.js";
-import { applyTheme, readPersistedTheme, resolveTheme, sanitizeTheme } from "../useTheme.js";
+import { applyTheme, normalizeThemePreference, resolveTheme } from "../useTheme.js";
 
 import {
   INTERFACE_MODE_STORAGE_KEY,
@@ -69,6 +69,7 @@ export interface LoginEntryAttempt {
 
 const CODE_PREVIEW_SETTINGS_KEY = "zcode-code-preview-settings";
 const PERFORMANCE_MODE_STORAGE_KEY = "zcode-performance-mode";
+const HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY = "zcode-hide-project-device-names";
 export const FILE_MANAGER_NAVIGATION_PREFERENCES_STORAGE_KEY =
   "zcode-file-manager-navigation-preferences";
 
@@ -148,6 +149,10 @@ export interface ZCodeState {
   performanceMode: boolean;
   setPerformanceMode: (enabled: boolean) => void;
 
+  /** 仅桌面项目行消费；设备身份和其他入口的显示不受影响。 */
+  hideProjectDeviceNames: boolean;
+  setHideProjectDeviceNames: (hidden: boolean) => void;
+
   /** 是否启用任务通知（桌面通知；提示音由子开关控制） */
   notificationEnabled: boolean;
   setNotificationEnabled: (enabled: boolean) => void;
@@ -226,8 +231,9 @@ export interface ZCodeState {
   /** 手动请求打开 onboarding 弹窗 */
   newUserOnboardingOpen: boolean;
   setNewUserOnboardingOpen: (open: boolean) => void;
-  onboardingDialogRequested: boolean | "migration";
-  requestOnboardingDialog: (entry?: "migration") => void;
+  /** 请求打开迁移向导；所有入口都直接进入第一步「会话」。 */
+  onboardingDialogRequested: boolean;
+  requestOnboardingDialog: () => void;
   clearOnboardingDialogRequest: () => void;
 }
 
@@ -241,6 +247,7 @@ const BROADCAST_FIELDS = new Set([
   "uiFontSizePx",
   "interfaceMode",
   "notificationEnabled",
+  "hideProjectDeviceNames",
 ]);
 
 type BroadcastField =
@@ -248,6 +255,7 @@ type BroadcastField =
   | "locale"
   | "uiFontSizePx"
   | "interfaceMode"
+  | "hideProjectDeviceNames"
   // 任务通知开关跨窗口同步：角标是应用级表面，A 窗口关通知而 B 窗口仍上报未读时，
   // 主进程 max 聚合会让任务栏/托盘继续亮，设置与提醒状态错位。
   | "notificationEnabled";
@@ -290,12 +298,10 @@ export function createZCodeStore(
       set({ interfaceMode });
     },
     // 默认主题统一收敛到 Zai dark，避免首次启动时 store 与其他主题入口表现不一致。
-    // 仍然优先尊重 localStorage 中已保存的用户选择，不覆盖已有偏好；
-    // 非法/外来条目经 readPersistedTheme 校验后回退内置 palette（issue #2）。
-    theme: readPersistedTheme(),
+    // 仍然优先尊重 localStorage 中已保存的用户选择，不覆盖已有偏好。
+    theme: normalizeThemePreference((readSafeLocalStorage("zcode-theme") as Theme) || "zai-dark"),
     setTheme: (theme: Theme) => {
-      // 广播通道可能传来任意字符串（类型断言不保证），写入与广播前先消毒。
-      const normalizedTheme = sanitizeTheme(theme);
+      const normalizedTheme = normalizeThemePreference(theme);
       writeSafeLocalStorage("zcode-theme", normalizedTheme);
       syncSystemThemeListener(normalizedTheme);
       applyTheme(normalizedTheme);
@@ -353,6 +359,12 @@ export function createZCodeStore(
     setPerformanceMode: (enabled: boolean) => {
       writeSafeLocalStorage(PERFORMANCE_MODE_STORAGE_KEY, enabled ? "true" : "false");
       set({ performanceMode: enabled });
+    },
+
+    hideProjectDeviceNames: readSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY) === "true",
+    setHideProjectDeviceNames: (hidden) => {
+      writeSafeLocalStorage(HIDE_PROJECT_DEVICE_NAMES_STORAGE_KEY, String(hidden));
+      set({ hideProjectDeviceNames: hidden });
     },
 
     notificationEnabled: isTaskNotificationEnabled(),
@@ -449,7 +461,7 @@ export function createZCodeStore(
     newUserOnboardingOpen: false,
     setNewUserOnboardingOpen: (open) => set({ newUserOnboardingOpen: open }),
     onboardingDialogRequested: false,
-    requestOnboardingDialog: (entry) => set({ onboardingDialogRequested: entry ?? true }),
+    requestOnboardingDialog: () => set({ onboardingDialogRequested: true }),
     clearOnboardingDialogRequest: () => set({ onboardingDialogRequested: false }),
   }));
 
@@ -540,6 +552,8 @@ export function createZCodeStore(
         state.setUiFontSizePx(msg.payload);
       } else if (field === "notificationEnabled" && typeof msg.payload === "boolean") {
         state.setNotificationEnabled(msg.payload);
+      } else if (field === "hideProjectDeviceNames" && typeof msg.payload === "boolean") {
+        state.setHideProjectDeviceNames(msg.payload);
       }
     } finally {
       applyingBroadcast = false;

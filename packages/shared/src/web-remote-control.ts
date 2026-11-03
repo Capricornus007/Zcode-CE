@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { MobileSessionCreateTelemetry } from "./sessionCreateTelemetry.js";
 /* eslint-disable max-lines -- Web 远程控制共享 App payload 与 workspace bridge 契约。 */
 import type { WebRemoteControlRelayV2PairStatus } from "#src/web-remote-relay/index.js";
+import type { WebRemoteControlActionPayload } from "#src/web-remote-relay/domain/webRemoteControlActions.js";
 import type {
   DockerContainerInfo,
   SSHConfigAliasOption,
@@ -632,7 +633,8 @@ export type WebRemoteControlAppPayload =
   | WebRemoteControlRpcTransportPayload
   | WebRemoteControlBridgeDegradedPayload
   | WebRemoteControlAppErrorPayload
-  | WebRemoteControlMobileDiagnosticPayload;
+  | WebRemoteControlMobileDiagnosticPayload
+  | WebRemoteControlActionPayload;
 
 export interface WebRemoteControlWorkspaceTarget {
   workspacePath: string;

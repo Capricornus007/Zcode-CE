@@ -16,6 +16,12 @@ export function readRequestVerificationConfig(
 ): RequestVerificationConfig | null {
   return null;
 }
+
+export function readValidatedRequestVerificationConfig(
+  configs: RequestVerificationClientConfig | null | undefined,
+): RequestVerificationConfig | null {
+  return readRequestVerificationConfig(configs);
+}
 export function requestVerificationClaimHeaders(
   _proof: RequestVerificationProof,
 ): Record<string, string> {
@@ -36,7 +42,10 @@ export function allowRequestVerificationHeaders(
  * 验证码挑战需要渲染层交互（host 不得短路自答），其余账号形态零交互。
  * 官方开源版为恒 false（不启用该链路）；两版测试按此判据分支。
  */
-export function requiresRequestVerification(access: { mode: string } | undefined): boolean {
+export function requiresRequestVerification(
+  access: { mode: string } | undefined,
+  _config?: RequestVerificationConfig | null,
+): boolean {
   return access?.mode === "start-plan";
 }
 export function isRequestVerificationMessage(_message: string): boolean {

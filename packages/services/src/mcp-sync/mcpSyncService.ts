@@ -20,6 +20,7 @@ import type {
 } from "@zcode/shared";
 import type { IMcpSyncService } from "./mcpSync.js";
 import { checkRemoteSyncDirectoryWriteAccess } from "../remote-sync/remoteSyncWriteAccess.js";
+import { createMcpDataSyncMethods } from "../data-sync/node.js";
 
 type McpConfigKeyName = "mcp.servers" | "mcpServers";
 
@@ -32,7 +33,7 @@ interface DirectoryMcpDescriptor {
   configKeyName: McpConfigKeyName;
 }
 
-interface UserMcpRecord {
+export interface UserMcpRecord {
   name: string;
   config: McpServerConfig;
   enabled: boolean;
@@ -70,6 +71,7 @@ const DIRECTORY_MCP_DESCRIPTORS: readonly DirectoryMcpDescriptor[] = [
 ];
 
 export interface McpSyncServiceDependencies {
+  setWorkspaceMcpTrust?: IMcpSyncService["setWorkspaceMcpTrust"];
   /**
    * MCP server 运行态状态检查的执行面。真实 connect/listTools 必须发生在
    * agent 进程（workspace 的 PATH/cwd 环境），host 侧没有可替代实现；无该依赖的
@@ -82,6 +84,7 @@ export function createMcpSyncService(
   dependencies: McpSyncServiceDependencies = {},
 ): IMcpSyncService {
   return {
+    ...createMcpDataSyncMethods(),
     async loadMcpFromUserDirectory(request) {
       return loadMcpFromUserDirectory(request);
     },
@@ -90,6 +93,10 @@ export function createMcpSyncService(
         throw new Error("MCP server status listing is unavailable in this runtime");
       }
       return dependencies.listMcpServerStatuses(params);
+    },
+    async setWorkspaceMcpTrust(params) {
+      if (!dependencies.setWorkspaceMcpTrust) throw new Error("workspace_mcp_trust_unavailable");
+      return dependencies.setWorkspaceMcpTrust(params);
     },
     async saveMcpToUserDirectory(payload) {
       await saveMcpToUserDirectory(payload);
@@ -145,7 +152,7 @@ export function createMcpSyncService(
   };
 }
 
-function resolveUserHomeDir(): string {
+export function resolveUserHomeDir(): string {
   return process.env.HOME?.trim() || process.env.USERPROFILE?.trim() || homedir();
 }
 
@@ -169,7 +176,7 @@ function buildUserConfigPath(descriptor: DirectoryMcpDescriptor): string {
   return buildDirectoryConfigPath(descriptor, "user");
 }
 
-function getUserZcodeMcpConfigPath(): string {
+export function getUserZcodeMcpConfigPath(): string {
   return buildUserConfigPath(ZCODE_MCP_DESCRIPTOR);
 }
 
@@ -197,7 +204,7 @@ function findDescriptorByLocation(location: SettingsDirectoryLocation): Director
   return descriptor;
 }
 
-async function collectEffectiveUserMcpRecords(): Promise<UserMcpRecord[]> {
+export async function collectEffectiveUserMcpRecords(): Promise<UserMcpRecord[]> {
   const zcodeRecords = await readUserMcpRecordsFromFile(ZCODE_MCP_DESCRIPTOR);
   if (zcodeRecords.length > 0) {
     return sortMcpRecords(zcodeRecords);
@@ -451,15 +458,15 @@ function createCandidateId(record: UserMcpRecord): string {
     .digest("hex");
 }
 
-function normalizeMcpNameKey(name: string): string {
+export function normalizeMcpNameKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
-function readServerEnabled(config: Record<string, unknown>): boolean {
+export function readServerEnabled(config: Record<string, unknown>): boolean {
   return config[ENABLED_KEY] !== false;
 }
 
-function setServerEnabled(config: McpServerConfig, enabled: boolean): McpServerConfig {
+export function setServerEnabled(config: McpServerConfig, enabled: boolean): McpServerConfig {
   // 启用是默认态，不落盘冗余字段；同时清掉可能残留的 legacy enable，
   // 避免再产出 enable:false + enabled:true 这类自相矛盾的配置。
   const { [LEGACY_ENABLE_KEY]: _legacyEnable, [ENABLED_KEY]: _enabled, ...rest } = config;
@@ -556,6 +563,20 @@ function writeServerMapToJson(
   };
 }
 
+export function readZcodeServerMap(
+  config: Record<string, unknown>,
+): Record<string, Record<string, unknown>> {
+  return migrateLegacyEnableFlag(readServerMapFromJson(config, ZCODE_MCP_DESCRIPTOR.configKeyName))
+    .servers;
+}
+
+export function writeZcodeServerMap(
+  config: Record<string, unknown>,
+  servers: Record<string, Record<string, unknown>>,
+): Record<string, unknown> {
+  return writeServerMapToJson(config, ZCODE_MCP_DESCRIPTOR.configKeyName, servers);
+}
+
 async function importMcpServers(params: {
   servers: McpSyncExportedServer[];
   localHomeDir: string;
@@ -628,15 +649,17 @@ async function importMcpServers(params: {
   return { results };
 }
 
-function rewriteFilesystemMcpConfig(
+export interface McpPathRewrite {
+  localHomeDir: string;
+  localWorkspacePath?: string;
+  remoteHomeDir: string;
+  remoteWorkspacePath?: string;
+}
+
+export function rewriteFilesystemMcpConfig(
   name: string,
   config: McpServerConfig,
-  paths: {
-    localHomeDir: string;
-    localWorkspacePath?: string;
-    remoteHomeDir: string;
-    remoteWorkspacePath?: string;
-  },
+  paths: McpPathRewrite,
 ): McpServerConfig {
   if (!isStdioMcpConfig(config) || !isFilesystemMcpServer(name, config)) {
     return config;
@@ -764,7 +787,7 @@ function joinRemotePath(remoteBasePath: string, relativePath: string): string {
   return posix.join(normalizedBasePath.replaceAll("\\", "/"), ...segments);
 }
 
-function cloneMcpConfig(config: McpServerConfig): McpServerConfig {
+export function cloneMcpConfig(config: McpServerConfig): McpServerConfig {
   return JSON.parse(JSON.stringify(config)) as McpServerConfig;
 }
 

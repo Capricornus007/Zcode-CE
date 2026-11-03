@@ -284,6 +284,12 @@ const enUS: Record<string, string> = {
     "View details, follow the instructions, and retry.",
   "remote.error.sourceServerRunningTasks.reason":
     "View details, follow the instructions, and retry.",
+  "remote.error.sourceServerDowngradeUnconfirmed.reason":
+    "Reconnect to read the latest version on the remote device.",
+  "remote.error.sourceServerStopFailed.reason":
+    "The remote service did not exit cleanly. Retry later; if it keeps failing, sign in to that device and check it.",
+  "remote.error.sourceServerControlUnresponsive.reason":
+    "The remote service is not answering requests. Sign in to that device, check it, then retry.",
   "remote.error.workspaceTaskIdentityConflict.reason":
     "View details, follow the instructions, and retry.",
   "remote.error.workspaceConfigConflict.reason":
@@ -2264,6 +2270,11 @@ const enUS: Record<string, string> = {
     "remote device is incompatible with this ZCode Desktop version and must be upgraded.",
   "remote.error.sourceServerRunningTasks":
     "remote device still has running tasks. Wait for them to finish or confirm a forced update.",
+  "remote.error.sourceServerDowngradeUnconfirmed":
+    "remote device already runs a newer version; this operation did not downgrade it.",
+  "remote.error.sourceServerStopFailed": "The remote service did not exit cleanly.",
+  "remote.error.sourceServerControlUnresponsive":
+    "The remote service is not answering control requests.",
   "remote.error.workspaceTaskIdentityConflict":
     "This remote directory contains task identity conflicts that cannot be merged automatically.",
   "remote.error.workspaceConfigConflict":

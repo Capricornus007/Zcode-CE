@@ -258,12 +258,17 @@ const zhCN: Record<string, string> = {
   "remote.error.sourceServerIdentityChangePending.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.sourceServerUpgradeRequired.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.sourceServerRunningTasks.reason": "请查看详细信息并按提示处理后重试。",
+  "remote.error.sourceServerDowngradeUnconfirmed.reason": "请重新连接，读取远端的最新版本。",
   "remote.error.workspaceTaskIdentityConflict.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.workspaceConfigConflict.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.bindCanceled.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.bindSessionMissing.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.workspaceDirectoryUnavailable.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.recoveryBudgetExhausted.reason": "请查看详细信息并按提示处理后重试。",
+  "remote.error.sourceServerStopFailed.reason":
+    "远端服务没有正常退出。请稍后重试；仍失败时请登录这台设备检查。",
+  "remote.error.sourceServerControlUnresponsive.reason":
+    "远端服务没有响应请求。请登录这台设备检查后重试。",
   "remote.error.workspaceMigrationPlanDiverged.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.workspaceSessionGenerationChanged.reason": "请查看详细信息并按提示处理后重试。",
   "remote.error.retryableHint.reason": "请查看详细信息并按提示处理后重试。",
@@ -2095,6 +2100,10 @@ const zhCN: Record<string, string> = {
   "remote.error.sourceServerUpgradeRequired":
     "远程设备与当前 ZCode Desktop 版本不兼容，需要先升级。",
   "remote.error.sourceServerRunningTasks": "远程设备仍有运行中的任务，请等待结束或确认强制更新。",
+  "remote.error.sourceServerDowngradeUnconfirmed":
+    "远程设备已更新到更高版本，本次操作没有降级远端。",
+  "remote.error.sourceServerStopFailed": "远端服务没有正常退出。",
+  "remote.error.sourceServerControlUnresponsive": "远端服务没有响应控制请求。",
   "remote.error.workspaceTaskIdentityConflict": "该远端目录存在无法自动合并的任务身份冲突。",
   "remote.error.workspaceConfigConflict": "该远端目录存在无法自动合并的配置文件冲突。",
   "remote.error.bindCanceled": "远端工作区附着已取消。",

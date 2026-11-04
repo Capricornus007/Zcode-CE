@@ -751,6 +751,10 @@ export default {
   mac: {
     target: ["dmg", "zip"],
     category: "public.app-category.developer-tools",
+    // macOS 的 Electron 語言包目錄名是 <name>.lproj（en、zh_CN），跟 Windows/Linux
+    // 的 locales/<name>.pak（en-US、zh-CN）不是同一套寫法；只靠頂層 electronLanguages
+    // 會讓 mac 側一個都匹配不上，把 Electron Framework 裡的 lproj 全裁掉。
+    electronLanguages: ["en", "zh_CN"],
     // 产物名中的平台 token 用 darwin（ZCode-CE-<版本>-darwin-<arch>.dmg/.zip），
     // 与 electron-updater / 更新渠道的 darwin 平台命名一致。
     artifactName: buildDesktopArtifactName("darwin"),

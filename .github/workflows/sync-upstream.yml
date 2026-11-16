@@ -1,0 +1,67 @@
+# 上游快跟：Zcode-CE/Zcode-CE → 本 fork
+#
+# CE 上游的 3.18.2 同步是「逐項移植矩陣」（見 docs/development/upstream-sync.md，
+# 明文規定不整樹 merge），由上游維護者執行；本 fork 不搶跑、不自行移植。
+# 本 workflow 只做一件事：上游一出新提交（如 3.18.2-ce.1），立即快進合併進
+# fork main —— junlin03-aur feed 的 zcode-ce-git 按排程從 fork main 構建，
+# fork 更新後下一輪 shard 構建即自動出包。
+#
+# 若自動合併出現衝突（上游改寫歷史 / fork 引入了自有提交），不冒進，報錯等人工。
+
+name: 上游快跟（sync upstream）
+
+on:
+  schedule:
+    - cron: "23 */3 * * *" # 每 3 小時檢查一次
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 快進合併上游 main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/Zcode-CE/Zcode-CE.git
+          git fetch upstream main --tags
+
+          _behind="$(git rev-list --count HEAD..upstream/main)"
+          if [ "$_behind" -eq 0 ]; then
+            echo "上游無新提交（落後 0），無事可做"
+            exit 0
+          fi
+          echo "上游領先 $_behind 提交，開始快進合併"
+          git log --oneline HEAD..upstream/main | head -20
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # fork 是上游的純鏡像（無自有提交）→ 正常情況是 fast-forward
+          if git merge --ff-only upstream/main 2>/dev/null; then
+            git push origin main
+            echo "::notice::已快進 $_behind 提交並推送，feed 下一輪構建自動跟上"
+          elif git merge --no-edit upstream/main; then
+            # fork 有自有提交（如本 workflow）時退回普通合併
+            git push origin main
+            echo "::notice::已合併 $_behind 提交（非 fast-forward）並推送"
+          else
+            echo "::error::自動合併衝突（上游 $_behind 提交）——按 docs/development/upstream-sync.md 的移植矩陣人工處理，不冒進"
+            git merge --abort
+            exit 1
+          fi

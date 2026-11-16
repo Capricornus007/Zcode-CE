@@ -1,0 +1,21 @@
+pkgname = zcode-ce
+pkgver = 3.18.2-1
+pkgdesc = ZCode 3.18.2 社区重组版（官方发行拆包 + 遥测出口收口，等价于 CE 的 ARMS/OTLP 移除）
+url = https://github.com/Capricornus007/Zcode-CE
+builddate = 1763380000
+packager = Capricornus007 <Capricornus007@users.noreply.github.com>
+size = 880000000
+arch = x86_64
+license = Apache-2.0
+depend = gtk3
+depend = nss
+depend = libxss
+depend = libxtst
+depend = libnotify
+depend = alsa-lib
+depend = mesa
+depend = xdg-utils
+depend = libsecret
+provides = zcode-ce-git=3.18.2
+conflict = zcode-ce-git
+replaces = zcode-ce-git

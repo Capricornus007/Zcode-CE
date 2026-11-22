@@ -31,8 +31,12 @@ RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.l
       curl \
       dbus \
       dbus-x11 \
-      fonts-noto-cjk \
-      fonts-noto-color-emoji \
+      # 用戶鐵律：禁 noto/dejavu；改用與本機相同字體的 Debian 對應包
+      # （本機 ttf-font=gnu-free-fonts、CJK=ttf-arphic-ukai/uming）
+      fonts-freefont-ttf \
+      fonts-arphic-ukai \
+      fonts-arphic-uming \
+      fonts-symbola \
       g++ \
       git \
       libasound2 \

@@ -8,6 +8,7 @@ import {
   ZCODE_PROTOCOL_VERSION,
   zcodeSessionStateSnapshotSchema,
   type ZCodeSessionStateSnapshot,
+  type ZCodeTaskMeta,
 } from "@zcode/shared";
 import { getLegacyTaskSessionSnapshotPath, setDataBaseDir } from "../src/paths.js";
 import { parseLegacyTaskSessionFile } from "../src/session/legacyTaskSessionFile.js";
@@ -47,7 +48,9 @@ for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as cons
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, content);
     const taskIndexRepo = new TaskIndexRepo(join(dir, "tasks.sqlite"));
-    await taskIndexRepo.syncTaskMeta({ meta });
+    // 3.17.2 起 TaskIndexRepo 的行写入统一收敛到 CLI 事实通道（syncTaskMeta 已删，
+    // applyCliFacts 是「把一份 meta 落进 index」的现行入口，同时负责预留行的首次落库）。
+    await taskIndexRepo.applyCliFacts({ meta });
     type Options = Parameters<typeof createZCodeTaskServiceAdapter>[0];
     type CreateInput = Parameters<Options["zcodeAgentService"]["createSession"]>[0];
     const created: CreateInput[] = [];
@@ -105,6 +108,26 @@ for (const clientMode of ["desktop-continuous", "web-remote-replayable"] as cons
       taskIndexSyncer: {
         onSessionTerminalEvent: disposable,
         onSessionReadyEvent: disposable,
+        // 3.17.2 起恢复链的索引写入改走 syncSnapshotAndBroadcast（真实实现落
+        // updateTaskPresentation 并广播；行不存在时返回本次合成的展示值）。
+        // 与真实实现同款：行已由 applyCliFacts 预留，这里把 presentation 合入并回读。
+        async syncSnapshotAndBroadcast(snapshot: ZCodeSessionStateSnapshot) {
+          const persisted = await taskIndexRepo.updateTaskPresentation({
+            workspacePath: snapshot.session.workspace.workspacePath,
+            workspaceIdentity: snapshot.session.workspace.workspaceIdentity,
+            taskId: snapshot.session.sessionId,
+            presentation: {},
+          });
+          if (persisted) return persisted;
+          return {
+            ...snapshot.session.workspace,
+            taskId: snapshot.session.sessionId,
+            traceId: snapshot.session.traceId,
+            title: snapshot.session.title,
+            createdAt: snapshot.session.createdAt,
+            updatedAt: snapshot.session.updatedAt,
+          } as ZCodeTaskMeta;
+        },
         disposeAll() {},
       } as unknown as Options["taskIndexSyncer"],
     });

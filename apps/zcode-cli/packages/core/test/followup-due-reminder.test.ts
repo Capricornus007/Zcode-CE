@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -13,6 +14,12 @@ import type { FileSystemPort } from "@zcode/contracts";
  *
  * 运行：cd apps/zcode-cli/packages/core && node --import tsx --test test/followup-due-reminder.test.ts
  */
+
+// mock 键必须与被测模块同构地拼路径：源码用 node:path 的 join（分隔符随平台），
+// 这里若硬编码 Windows 反斜杠键，在 Linux 上 join 产出的是 `/`，查找必 ENOENT。
+// 键统一由 join(wd, ".zcode", "followups.json") 生成，断言本身与平台无关。
+const WD = "W:\\proj";
+const FOLLOWUPS_KEY = join(WD, ".zcode", "followups.json");
 
 function fsWith(files: Record<string, string>): FileSystemPort {
   return {
@@ -32,9 +39,9 @@ test("到期过滤：已过期与 7 天内到期入选，远期不入选，按�
   const body = await buildFollowupDueReminderBody({
     runtime: {},
     fileSystem: fsWith({
-      "W:\\proj\\.zcode\\followups.json": `[${ENTRY({ id: "far", dueDate: "2099-01-01" })},${ENTRY({ id: "soon", dueDate: "2026-10-08" })},${ENTRY({ id: "expired", dueDate: "2026-09-01" })}]`,
+      [FOLLOWUPS_KEY]: `[${ENTRY({ id: "far", dueDate: "2099-01-01" })},${ENTRY({ id: "soon", dueDate: "2026-10-08" })},${ENTRY({ id: "expired", dueDate: "2026-09-01" })}]`,
     }),
-    workingDirectory: "W:\\proj",
+    workingDirectory: WD,
   });
   assert.ok(body?.includes("expired"), "过期项应入选");
   assert.ok(body?.includes("soon"), "临期项应入选");
@@ -48,35 +55,35 @@ test("坏条目：缺必需字段的跳过并计数提示；整个文件非法 J
   const body = await buildFollowupDueReminderBody({
     runtime: {},
     fileSystem: fsWith({
-      "W:\\proj\\.zcode\\followups.json": `[${ENTRY({ id: "ok" })},{"prediction":"缺id和日期"},null]`,
+      [FOLLOWUPS_KEY]: `[${ENTRY({ id: "ok" })},{"prediction":"缺id和日期"},null]`,
     }),
-    workingDirectory: "W:\\proj",
+    workingDirectory: WD,
   });
   assert.ok(body?.includes("2 条登记格式无效"), `应计数 2 条坏条目，实际: ${body}`);
 
   resetFollowupAttemptedForTesting();
   const broken = await buildFollowupDueReminderBody({
     runtime: {},
-    fileSystem: fsWith({ "W:\\proj\\.zcode\\followups.json": "{not json" }),
-    workingDirectory: "W:\\proj",
+    fileSystem: fsWith({ [FOLLOWUPS_KEY]: "{not json" }),
+    workingDirectory: WD,
   });
   assert.ok(broken?.includes("不是合法的登记数组"), "非法 JSON 应提示修复而非静默");
 });
 
 test("一次性：同 runtime 第二次调用返回 null；未登记静默返回 null", async () => {
   resetFollowupAttemptedForTesting();
-  const files = { "W:\\proj\\.zcode\\followups.json": `[${ENTRY({})}]` };
+  const files = { [FOLLOWUPS_KEY]: `[${ENTRY({})}]` };
   const runtime = {};
-  const first = await buildFollowupDueReminderBody({ runtime, fileSystem: fsWith(files), workingDirectory: "W:\\proj" });
+  const first = await buildFollowupDueReminderBody({ runtime, fileSystem: fsWith(files), workingDirectory: WD });
   assert.ok(first !== null);
-  const second = await buildFollowupDueReminderBody({ runtime, fileSystem: fsWith(files), workingDirectory: "W:\\proj" });
+  const second = await buildFollowupDueReminderBody({ runtime, fileSystem: fsWith(files), workingDirectory: WD });
   assert.equal(second, null, "同 runtime 只注入一次");
 
   resetFollowupAttemptedForTesting();
   const none = await buildFollowupDueReminderBody({
     runtime: {},
     fileSystem: fsWith({}),
-    workingDirectory: "W:\\proj",
+    workingDirectory: WD,
   });
   assert.equal(none, null, "未登记是常态，静默");
 });

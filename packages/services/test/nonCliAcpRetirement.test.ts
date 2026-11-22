@@ -69,7 +69,9 @@ test("opening the task index leaves retired ACP IDs and user rows untouched", as
   const path = join(dir, "tasks.sqlite");
   const repo = new TaskIndexRepo(path);
   try {
-    await repo.syncTaskMeta({ meta });
+    // 3.17.2 起 TaskIndexRepo 的行写入统一收敛到 CLI 事实通道（syncTaskMeta 已删，
+    // applyCliFacts 是「把一份 meta 落进 index」的现行入口）。
+    await repo.applyCliFacts({ meta });
     repo.close();
     const database = new DatabaseSync(path);
     try {
@@ -192,10 +194,6 @@ test("current session recovery preserves Desktop and replayable projections", as
       async getTaskMeta() {
         return meta;
       },
-      async syncTaskMeta(params: { meta: typeof meta }) {
-        indexed.push(params.meta);
-        return params.meta;
-      },
       close() {},
     } as unknown as TaskIndexRepo,
     taskIndexSyncer: {
@@ -205,6 +203,12 @@ test("current session recovery preserves Desktop and replayable projections", as
         return { fire() {} };
       },
       ensureSessionSubscription() {},
+      // 3.17.2 起快照→index 的写入统一经 syncSnapshotAndBroadcast（getTaskSnapshot 与
+      // resumeTask 的 syncTaskIndexSnapshot 都走它）；桩实现照实记一次索引写并回传 meta。
+      async syncSnapshotAndBroadcast(snapshot: ZCodeSessionStateSnapshot) {
+        indexed.push(snapshot.session.sessionId);
+        return meta;
+      },
       disposeAll() {},
     } as unknown as Options["taskIndexSyncer"],
   });

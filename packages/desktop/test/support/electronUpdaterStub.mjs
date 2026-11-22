@@ -33,6 +33,9 @@ export class AppImageUpdater {}
 export class DebUpdater {}
 export class RpmUpdater {}
 export class PacmanUpdater {}
+// 3.17.x 起真实 autoUpdater.ts 用 `instanceof pkg.NsisUpdater` 决定是否挂 Windows 签名校验；
+// instanceof 右侧缺类会直接 TypeError（Right-hand side of 'instanceof' is not an object）。
+export class NsisUpdater {}
 
 class StubAutoUpdater extends EventEmitter {
   constructor() {
@@ -70,6 +73,7 @@ const electronUpdater = {
   DebUpdater,
   RpmUpdater,
   PacmanUpdater,
+  NsisUpdater,
 };
 
 export default electronUpdater;

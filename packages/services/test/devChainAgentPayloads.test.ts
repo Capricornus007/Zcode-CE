@@ -29,6 +29,28 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", ".
 const DEV_AGENT_ENTRY_RELATIVE = "apps/zcode-cli/packages/cli/dist/zcode.cjs";
 
 /**
+ * 官方插件的当前版本，从各插件 package.json 现读。
+ *
+ * 为什么不写死：3.17.2 合并把 documents/pdf/presentations/spreadsheets 升到 0.2.x、
+ * node-repl-host 升到 0.7.0，写死版本（0.1.8 / 0.6.1）的断言在版本号演进时必然失效。
+ * cache 键是 `<name>@<version>`，version 的唯一权威来源就是插件自己的 package.json。
+ */
+const PLUGIN_VERSIONS = Object.fromEntries(
+  ["documents-plugin", "pdf-plugin", "presentations-plugin", "spreadsheets-plugin"].map((name) => [
+    name.replace("-plugin", ""),
+    JSON.parse(
+      readFileSync(
+        resolve(repoRoot, "apps/zcode-cli/packages", name, "package.json"),
+        "utf8",
+      ),
+    ).version,
+  ]),
+);
+const NODE_REPL_HOST_VERSION = JSON.parse(
+  readFileSync(resolve(repoRoot, "apps/zcode-cli/packages/node-repl-host/package.json"), "utf8"),
+).version;
+
+/**
  * 把 `@zcode/*` 解析到**源码**的模块解析钩子，供下面的 seed 子进程 `--import` 装载。
  *
  * 为什么必须有它（CI run 35797390059 的根因）：CI 的 Test 步骤之前只有
@@ -165,30 +187,48 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
     );
 
     // ── ② 最终消费点：seed 之后还在不在
+    //
+    // **前置**：0.2.0 起官方插件定义把查看面板运行时（dist/server.mjs、dist/ui/assets.json、
+    // dist/ui/panel.html，见 OFFICIAL_OFFICE_VIEWER_RUNTIME_PATHS）列为 requiredSeedPaths，
+    // 缺了它们 seed 会（正确地）拒绝生成该插件的 cache（ZCODE_PLUGIN_SEED_INCOMPLETE 降级）。
+    // dist/ 是 office-runtime 的构建产物（`node ../office-runtime/scripts/build.mjs`），
+    // CI 的 Test 步骤不构建它 —— 与下方 node-repl-host bundle 同款处理：显式跳过并说明，
+    // 而不是把一个**构建前提**伪装成产品断言。
+    const officeViewerRuntimeStaged = existsSync(
+      join(assetRoot, "packages", "documents-plugin", "dist", "server.mjs"),
+    );
+
     const cache = seedFromAssetRoot({ assetRoot, storageRoot, workspace });
 
-    for (const [plugin, file] of [
-      ["documents", "docx.cjs"],
-      ["presentations", "pptxgenjs.cjs"],
-      ["spreadsheets", "exceljs.cjs"],
-    ]) {
-      const entry = cache[`${plugin}@0.1.8`];
-      assert.ok(entry, `seed 后 cache 缺少 ${plugin}@0.1.8`);
-      assert.ok(
-        entry.officeNodeFiles.includes(file),
-        `seed 后 cache 缺少 ${plugin}/scripts/office-node/${file}（stage 出文件 ≠ 运行时还在）`,
+    if (!officeViewerRuntimeStaged) {
+      t.diagnostic(
+        "office 插件查看面板 dist 未构建（requiredSeedPaths 里的 dist/server.mjs 等由 " +
+          "office-runtime 构建产出，CI 不构建），跳过 seed 后的 office 缓存断言",
       );
-    }
+    } else {
+      for (const [plugin, file] of [
+        ["documents", "docx.cjs"],
+        ["presentations", "pptxgenjs.cjs"],
+        ["spreadsheets", "exceljs.cjs"],
+      ]) {
+        const entry = cache[`${plugin}@${PLUGIN_VERSIONS[plugin]}`];
+        assert.ok(entry, `seed 后 cache 缺少 ${plugin}@${PLUGIN_VERSIONS[plugin]}`);
+        assert.ok(
+          entry.officeNodeFiles.includes(file),
+          `seed 后 cache 缺少 ${plugin}/scripts/office-node/${file}（stage 出文件 ≠ 运行时还在）`,
+        );
+      }
 
-    // pdf 载荷同理：pdfkit/fontkit 的 esbuild bundle 必须活到 seed 之后（缺了它，插件会以
-    // "已启用但第一次调用就 MODULE_NOT_FOUND" 的形式暴露 —— task-6 实测过这个形态）。
-    for (const file of ["pdfkit.cjs", "fontkit.cjs"]) {
-      const entry = cache["pdf@0.1.8"];
-      assert.ok(entry, "seed 后 cache 缺少 pdf@0.1.8");
-      assert.ok(
-        entry.pdfNodeFiles.includes(file),
-        `seed 后 cache 缺少 pdf/scripts/pdf-node/${file}`,
-      );
+      // pdf 载荷同理：pdfkit/fontkit 的 esbuild bundle 必须活到 seed 之后（缺了它，插件会以
+      // "已启用但第一次调用就 MODULE_NOT_FOUND" 的形式暴露 —— task-6 实测过这个形态）。
+      for (const file of ["pdfkit.cjs", "fontkit.cjs"]) {
+        const entry = cache[`pdf@${PLUGIN_VERSIONS.pdf}`];
+        assert.ok(entry, `seed 后 cache 缺少 pdf@${PLUGIN_VERSIONS.pdf}`);
+        assert.ok(
+          entry.pdfNodeFiles.includes(file),
+          `seed 后 cache 缺少 pdf/scripts/pdf-node/${file}`,
+        );
+      }
     }
 
     // ── ③ 源树 devDeps 不得被 stage 进载荷树
@@ -227,8 +267,8 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
       return;
     }
 
-    const host = cache["node-repl-host@0.6.1"];
-    assert.ok(host, "seed 后 cache 缺少 node-repl-host@0.6.1");
+    const host = cache[`node-repl-host@${NODE_REPL_HOST_VERSION}`];
+    assert.ok(host, `seed 后 cache 缺少 node-repl-host@${NODE_REPL_HOST_VERSION}`);
     // ③ 的主判据在 staged 树；cache 侧再核一次，防「staging 干净但 seed 又把源树 devDeps 拖进来」。
     assert.deepEqual(
       host.nodeModulesEntries.filter((name) => devDependencyNames.includes(name)),
@@ -243,7 +283,7 @@ test("dev-staged payloads survive the real seed and reach the runtime cache", as
       "cache",
       "zcode-plugins-official",
       "node-repl-host",
-      "0.6.1",
+      NODE_REPL_HOST_VERSION,
       "dist",
       "mcp",
       "server.js",

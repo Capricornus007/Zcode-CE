@@ -155,16 +155,21 @@ test("win/linux 正式包：init 照常发起启动检查并注册 IPC（既有�
   }
 });
 
-test("豁免：darwin 正式包配了自建 feed ⇒ 跳过判定不生效，照常走 manifest provider 检查", async () => {
+test("豁免：darwin 开发态配了更新源覆盖 ⇒ 跳过判定不生效，照常走 manifest provider 检查", async () => {
   resetStubState();
-  stubApp.isPackaged = true;
+  stubApp.isPackaged = false;
+  // 3.17.x 上游规范：打包态更新源固定为发布 feed，忽略一切覆盖（env / 启动参数 /
+  // 内部传入的 manifest URL，见 docs/desktop/auto-update-service-manifest.md）。
+  // 因此「更新源覆盖豁免」在正式包上不再可达（跳过判定照常命中）；豁免语义
+  // 保留在唯一可达的形态——开发态（未打包）显式传入 updateFeedSource。
+  process.env.ZCODE_AUTO_UPDATE_DEV = "1";
   await withPlatform("darwin", async () => {
     await initAutoUpdater({ updateFeedSource: { url: "https://updates.example/feed" } });
     await tick();
     assert.equal(
       stubAutoUpdater.checkForUpdatesCalls,
       1,
-      "自建 feed 路径保持原行为：照常发起更新检查",
+      "开发态更新源覆盖路径保持原行为：照常发起更新检查",
     );
     assert.equal(stubAutoUpdater.feedConfigs.length, 1);
     const feedConfig = stubAutoUpdater.feedConfigs[0] as { manifestUrl?: string };
@@ -173,8 +178,9 @@ test("豁免：darwin 正式包配了自建 feed ⇒ 跳过判定不生效，照
     const { window } = createFakeWindow();
     checkForUpdateMenuClick(window);
     await tick();
-    assert.equal(stubAutoUpdater.checkForUpdatesCalls, 2, "自建 feed 下手动检查也走正常链路");
+    assert.equal(stubAutoUpdater.checkForUpdatesCalls, 2, "开发态更新源覆盖下手动检查也走正常链路");
   });
+  delete process.env.ZCODE_AUTO_UPDATE_DEV;
 });
 
 test("豁免：darwin 未打包 + ZCODE_AUTO_UPDATE_DEV ⇒ 本地验证链路保持可用", async () => {

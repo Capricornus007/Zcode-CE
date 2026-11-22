@@ -140,7 +140,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       "../../visualize-plugin",
       "../../../visualize-plugin",
     ],
-    version: "0.1.0",
+    version: "0.1.1",
   },
   {
     // 无 listing：宿主不进市场、不对用户露出。它必须始终可用，因为 node_repl 的注册门禁
@@ -163,7 +163,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     // dev 链首次 CUA 调用即报 Cannot find package（devChainAgentPayloads 钉住）。
     // dev/desktop 的 staging 只落最小闭包（无 devDeps），不会把源树开发依赖拖进用户 cache。
     runtimeTopLevelPaths: ["node_modules"],
-    version: "0.6.1",
+    version: "0.7.0",
   },
   {
     listing: {
@@ -214,11 +214,13 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
   },
   ...(
     [
-      // 版本按插件各自升：pdf 0.2.1 起面板带中日韩字体回退，换新缓存目录，不复用 0.2.0 的旧缓存。
-      ["documents", "docx", "Documents", "Word文档", "0.2.0"],
-      ["pdf", "pdf", "PDF", "PDF", "0.2.1"],
-      ["presentations", "pptx", "Presentations", "演示文档", "0.2.0"],
-      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格", "0.2.0"],
+      // 版本按插件各自升：与各插件 package.json/.zcode-plugin/plugin.json 三处对齐
+      // （bootstrap tests/plugins.test.ts「keeps every bundled plugin package, manifest,
+      // and seed version aligned」钉住该不变量）。
+      ["documents", "docx", "Documents", "Word文档", "0.2.1"],
+      ["pdf", "pdf", "PDF", "PDF", "0.2.2"],
+      ["presentations", "pptx", "Presentations", "演示文档", "0.2.1"],
+      ["spreadsheets", "xlsx", "Spreadsheets", "电子表格", "0.2.1"],
     ] as const
   ).map(
     ([name, skill, displayName, chineseName, version]): OfficialPluginDefinition => ({

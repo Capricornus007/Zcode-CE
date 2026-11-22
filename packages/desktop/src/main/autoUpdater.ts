@@ -23,6 +23,19 @@ import {
 import { logger } from "./logger.js";
 import { verifyWindowsAuthenticodeSignature } from "../../scripts/powershell-command.mjs";
 import { ManifestUpdateProvider, getElectronReleasePlatform } from "./manifestUpdateProvider.js";
+// CE 线增量（spec 136）：darwin 未签名发行线的确定性跳过（init 级策略在 index.ts 调用点
+// 以 enabled:false 表达；本模块只保留手动检查 / 强更入口的回传分支）。
+import { shouldSkipAutoUpdateCheckOnDarwinRelease } from "./autoUpdateAvailability.js";
+
+// darwin 跳过判据的 feed URL（init 入参记录 + env/命令行兜底，与 applyManifestUpdateProvider 同源）。
+let lastUpdateFeedUrl: string | undefined;
+function darwinReleaseSkipActive(): boolean {
+  return shouldSkipAutoUpdateCheckOnDarwinRelease({
+    platform: process.platform,
+    isPackaged: app.isPackaged,
+    updateFeedUrl: lastUpdateFeedUrl ?? resolveUpdateFeedSourceFromStartupConfig()?.url,
+  });
+}
 
 export const CHECK_FOR_UPDATE_MENU_ID = "check-for-update";
 const AUTO_UPDATE_POLL_INTERVAL_MS = 15 * 60 * 1000;
@@ -837,6 +850,10 @@ async function syncAutoUpdateCheckChannelFromSettings(
 function applyManifestUpdateProvider(options: InitAutoUpdaterOptions): void {
   // 在更新器装配边界再次约束，避免内部调用绕过启动配置解析。
   const manifestUrl = app.isPackaged ? undefined : options.updateFeedSource?.url.trim();
+  // spec 136：记录本次 init 生效的更新源覆盖，供 darwin 跳过判定（手动检查 / 强更入口）读取。
+  // 打包态上游规范忽略一切覆盖（见 auto-update-service-manifest），此时为 undefined，
+  // darwin 正式包判定恒命中跳过——正是发行线无 macOS 自动更新链路的确定性事实。
+  lastUpdateFeedUrl = manifestUrl || undefined;
   autoUpdater.setFeedURL({
     provider: "custom",
     updateProvider: ManifestUpdateProvider,
@@ -2012,6 +2029,18 @@ export function requestForceAutoUpdate(
     return dispose;
   }
 
+  // CE 线增量（spec 136）：darwin 正式包不能走 checkForUpdates（对 github provider 必 404），
+  // 复用 dev-skipped 通道把原因带给强更弹窗（弹窗手动升级 / 退出按钮仍可用）。
+  if (darwinReleaseSkipActive() && !hasVisibleUpdateTarget(menuState)) {
+    const message =
+      menuLocale === "zh-CN"
+        ? "macOS 正式包暂不支持自动更新，请使用手动升级"
+        : "Auto update is not available in macOS release builds; use manual update instead";
+    logger.info(`[force-update] 自动升级跳过：${message}`);
+    onStateChange({ kind: "dev-skipped", message });
+    return dispose;
+  }
+
   if (menuState.kind === "update-downloaded") {
     onStateChange({ kind: "installing" });
     void quitAndInstallUpdate();
@@ -2133,9 +2162,32 @@ export function checkForUpdateMenuClick(originWindow?: BrowserWindow | null) {
 
   if (autoUpdaterDisabledForProductFlavor) {
     // 入口本应已按产品身份隐藏；这里是最后一道闸，不让未初始化的 updater 实例向占位 feed 发请求。
-    logger.info("[auto-update] skip manual check: updater disabled for this product flavor");
+    // darwin 正式包（未签名、无 feed 覆盖）走 unsupported-platform：那是确定性事实，
+    // 与「检查失败」严格区分，renderer 依此映射双语手动下载提示（spec 136）；
+    // 其余禁用形态（Preview 等）保持 dev-skipped。
+    const darwinRelease = darwinReleaseSkipActive();
+    logger.info(
+      darwinRelease
+        ? "[auto-update] skip manual check: darwin release build does not support auto-update"
+        : "[auto-update] skip manual check: updater disabled for this product flavor",
+    );
+    targetWindow.webContents.send(
+      PlatformChannels.UpdateCheckResult,
+      (darwinRelease
+        ? { kind: "unsupported-platform" }
+        : { kind: "dev-skipped" }) satisfies UpdateCheckResultPayload,
+    );
+    return;
+  }
+
+  // CE 线增量（spec 136）：darwin 正式包（未签名、无 feed 覆盖）不支持自动更新是确定性
+  // 事实——与「检查失败」严格区分，不引导重试；renderer 按 kind 映射双语 toast 引导手动下载。
+  if (darwinReleaseSkipActive() && menuState.kind === "idle") {
+    logger.info(
+      "[auto-update] skip manual check: darwin release build does not support auto-update",
+    );
     targetWindow.webContents.send(PlatformChannels.UpdateCheckResult, {
-      kind: "dev-skipped",
+      kind: "unsupported-platform",
     } satisfies UpdateCheckResultPayload);
     return;
   }

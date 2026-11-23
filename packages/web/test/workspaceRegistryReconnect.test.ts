@@ -17,6 +17,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { inspectWebE2eLoginState } from "./webE2eLoginState.js";
 
 /**
  * M1 验收判据 3 / 4 的真浏览器证据（task-30）。
@@ -34,6 +35,13 @@ import { fileURLToPath } from "node:url";
  * 结束时整目录删除）：`credentials.json` / `provider_config.json` / `config.json` /
  * `model-providers.json` / `agents-state.json` / `onboarding-record.json` / `setting.json` /
  * `tasks-index.sqlite`（含 -wal/-shm）。拷贝的凭据只存在于 0700 临时目录内，不打印内容。
+ *
+ * ## 挂载前提（task-11）
+ * 两条用例都要求本机登录过 ZCode：没登录过时 Root 的 provider 可用性登录入口守卫会打开登录页
+ * （`packages/ui/src/root/useProviderAvailabilityLoginEntryGuard.ts`），侧栏永远没有工作区行；
+ * 而本文件第二处（反向验证）还会无条件读隔离目录里的 `setting.json` ⇒ 缺文件直接 ENOENT。
+ * 这两种形态都不是产品缺陷，只会把「本机没备好数据」伪装成红灯，所以缺前提时显式 skip
+ * （判据见 `test/webE2eLoginState.ts`），并在 skip 文案里写清缺什么、怎么补 —— 跳过不等于通过。
  *
  * ## 为什么这里的过期产物检查与 webLoadConsoleErrors 不同
  * 那条测试断言的是「某个修复在产物里生效」，产物早于源码就必须 skip。
@@ -322,9 +330,9 @@ async function readSidebarSnapshot(page: import("playwright-core").Page): Promis
 /**
  * 比较「集合与事实」，不比较显示顺序（顺序由客户端显示偏好决定，不属于判据 4 的集合口径）。
  *
- * **严格比较，没有「过渡态豁免」**（task-38 修根因）：旧版对 `starting` 做了一次性豁免，于是
+ * 严格比较，没有「过渡态豁免」（task-38 修根因）：旧版对 `starting` 做了一次性豁免，于是
  * 「重连瞬间的快照」可能以豁免口径判为一致、却以严格口径判为不一致 —— 这既是假红的来源，
- * 也让断言看起来比实际强。现在的做法是：**先把状态等到静止**（见 waitForSettledSnapshot），
+ * 也让断言看起来比实际强。现在的做法是：先把状态等到静止（见 waitForSettledSnapshot），
  * 再对静止后的快照做严格比较；过渡态由「等待」处理，不由「放宽断言」处理。
  */
 function collectVisibleSetMismatches(left: SidebarSnapshot, right: SidebarSnapshot): string[] {
@@ -373,9 +381,9 @@ function snapshotIsNonTrivial(snapshot: SidebarSnapshot): boolean {
 }
 
 /**
- * 等到侧栏状态**静止**再取终态（task-38 的根因修复）。
+ * 等到侧栏状态静止再取终态（task-38 的根因修复）。
  *
- * 判据：连续 `SAMPLES` 次采样（间隔 `INTERVAL_MS`）**逐条完全相同**，且（若给了 target）与目标
+ * 判据：连续 `SAMPLES` 次采样（间隔 `INTERVAL_MS`）逐条完全相同，且（若给了 target）与目标
  * 严格一致。阈值依据：
  * - `INTERVAL_MS = 400`：大于 `useTabPersistence` 的 300ms 持久化 debounce（展开/偏好写入会落在
  *   采样间隔内落地），也远大于一次本地 RPC 往返（毫秒级）；
@@ -440,6 +448,12 @@ function assertSameVisibleSet(left: SidebarSnapshot, right: SidebarSnapshot, lab
 }
 
 test("M1 判据 3/4：断线重连后列表仍在 + 两个独立客户端可见集合一致", async (t) => {
+  // 先判最难补的前提（本机登录态），再判构建产物与注册表数据：三者都缺时，先要解决的是登录。
+  const loginState = inspectWebE2eLoginState();
+  if (loginState.skipReason) {
+    t.skip(loginState.skipReason);
+    return;
+  }
   if (!existsSync(join(webDist, "index.html")) || !existsSync(serverEntry)) {
     t.skip("缺少 packages/web/dist 或 packages/server/dist，跳过（先构建 web 与 server）");
     return;
@@ -548,7 +562,7 @@ test("M1 判据 3/4：断线重连后列表仍在 + 两个独立客户端可见�
       60_000,
     );
     // 恢复需要收敛时间：重连后活跃 workspace 的 sessions-index 订阅重建、会话列表重查，
-    // 期间会话列表与会话数都会动。**等状态静止**再取终态（task-38 的根因修复），
+    // 期间会话列表与会话数都会动。等状态静止再取终态（task-38 的根因修复），
     // 而不是对过渡态放行 —— 放行会让「以豁免口径判一致、以严格口径判不一致」两者打架。
     const settledAfter = await waitForSettledSnapshot(pageA, {
       label: "判据 3 恢复后",
@@ -589,7 +603,7 @@ test("M1 判据 3/4：断线重连后列表仍在 + 两个独立客户端可见�
         ),
     );
 
-    // ── 判据 4a：两个**独立**上下文（各自 cookie/storage） ──
+    // ── 判据 4a：两个独立上下文（各自 cookie/storage） ──
     const contextB = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const pageB = await contextB.newPage();
     await pageB.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
@@ -653,6 +667,12 @@ test("M1 判据 3/4：断线重连后列表仍在 + 两个独立客户端可见�
 });
 
 test("反向验证：注册表内容不同 ⇒ 集合比较必须报出差异（证明断言有牙齿）", async (t) => {
+  // 同主用例：没有本机登录态就无法挂载界面，缺前提时显式 skip 而不是等超时。
+  const loginState = inspectWebE2eLoginState();
+  if (loginState.skipReason) {
+    t.skip(loginState.skipReason);
+    return;
+  }
   if (!existsSync(join(webDist, "index.html")) || !existsSync(serverEntry)) {
     t.skip("缺少构建产物，跳过");
     return;
@@ -671,10 +691,10 @@ test("反向验证：注册表内容不同 ⇒ 集合比较必须报出差异（
   const { DatabaseSync } = await import("node:sqlite");
 
   // 剪掉三个 workspace 的任务行 —— 注册表随之变小，两个客户端的可见集合必然不同。
-  // 只动**副本**，不碰用户真实库。
+  // 只动副本，不碰用户真实库。
   const fullDir = prepareIsolatedDataDir();
   const trimmedDir = prepareIsolatedDataDir();
-  // 两个副本都把客户端显式列表清空，隔离变量：这样可见集合**只**由服务端注册表决定，
+  // 两个副本都把客户端显式列表清空，隔离变量：这样可见集合只由服务端注册表决定，
   // 剪掉注册表里的条目就一定会在界面上少行（否则 tab 行会继续撑住集合，反向验证会变成空转）。
   for (const dir of [fullDir, trimmedDir]) {
     const settingPath = join(dir, ".zcode", "v2", "setting.json");

@@ -52,13 +52,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # fork 是上游的純鏡像（無自有提交）→ 正常情況是 fast-forward
+          # checkout 設了 persist-credentials: false，origin 無憑據 → push 須顯式帶 token
           if git merge --ff-only upstream/main 2>/dev/null; then
-            git push origin main
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
             echo "::notice::已快進 $_behind 提交並推送，feed 下一輪構建自動跟上"
           elif git merge --no-edit upstream/main; then
             # fork 有自有提交（如本 workflow）時退回普通合併
-            git push origin main
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
             echo "::notice::已合併 $_behind 提交（非 fast-forward）並推送"
           else
             echo "::error::自動合併衝突（上游 $_behind 提交）——按 docs/development/upstream-sync.md 的移植矩陣人工處理，不冒進"

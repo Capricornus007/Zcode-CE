@@ -61,8 +61,13 @@ function resolveElectronBuilderWindowsTarget({
 import {
   findDesktopNativePackageViolations,
   createDesktopNativePackagePrunePatterns,
+  isRuntimeModuleOutsideTargetPlatform,
   parseAsarListWithPackState,
 } from "./scripts/desktop-native-package-policy.mjs";
+import {
+  keyringPlatformPackageName,
+  verifyStagedKeyring,
+} from "./scripts/keyring-package-assets.mjs";
 import { replaceAppAsarFromStaging } from "./scripts/app-asar-repack.mjs";
 import {
   patchNsisInstallSectionFile,
@@ -120,6 +125,10 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 这与 yauzl 漏 pend 是同一类隐患——校验要求的模块必须有人负责补齐。node-forge 无子依赖，
   // 已在产物里时 afterPack 扫描会跳过它，不改变现有打包结果。
   "node-forge",
+  // Main 静态依赖 PKIjs（自签 CA 完整建链校验，见 src/main/desktopNetworkPolicy.ts）；
+  // 以它为闭包根收集 asn1js/pvtsutils/pvutils/bytestreamjs/tslib 并校验产物，
+  // 避免 pnpm 去重后 app.asar 里只剩 pkijs 而没有它的运行时依赖，主进程加载即失败。
+  "pkijs",
   // 2.7.0 起 services 新增反馈日志压缩链路并引入 yazl；2.6.0 没有这条启动期依赖，
   // pnpm hoisted 布局下 yazl 可能进了 app.asar，但子依赖 buffer-crc32 没有稳定随包进入产物；
   // 这里显式以 yazl 作为闭包根注入，让递归依赖收集把 ZIP 打包链路所需依赖一起补齐。
@@ -147,6 +156,12 @@ const REQUIRED_ASAR_RUNTIME_MODULES = [
   // 飞书渠道时才会在 host 里抛 ERR_MODULE_NOT_FOUND。与上游 v3.14.3 的
   // desktop/electron-builder.config.js:143 同一处置。
   "@larksuiteoapi/node-sdk",
+  // 凭据 v2 的系统凭据库后端：packages/shared/src/credential-security/nativeKeyring.ts 以
+  // 变量说明符惰性 import 它（打包器不静态解析）。它是原生模块，因此不能靠 tsup 内联，
+  // app.asar 里必须有主包 + 目标平台变体；缺失的表现是静默回退到私有文件而不是崩溃。
+  // 以它为闭包根注入时，非目标平台变体由 isRuntimeModuleOutsideTargetPlatform 过滤
+  // （闭包会收集到全部已安装变体，装进产物会立刻被 native 资源策略判死）。
+  "@napi-rs/keyring",
 ];
 // pacman 依赖必须使用 Arch 官方仓库中的包名。electron-builder 的历史默认集合包含
 // 已移除的 libappindicator-gtk3/http-parser，且缺少 Electron 实际需要的运行库；显式
@@ -303,37 +318,43 @@ function resolveMissingRuntimeModules(appAsarPath) {
     .filter(Boolean);
   const asarEntrySet = new Set(asarEntries);
 
+  const isPresentInAsar = (moduleName) => {
+    const moduleRoot = `/node_modules/${moduleName}`;
+    return (
+      asarEntrySet.has(moduleRoot) ||
+      asarEntries.some((entry) => entry.startsWith(`${moduleRoot}/`))
+    );
+  };
+
   const runtimeModules = collectRuntimeModuleClosureEntries(
     REQUIRED_ASAR_RUNTIME_MODULES,
     runtimeModuleLookupRoots,
-  );
-  const resolvableRuntimeModules = runtimeModules.filter((entry) => {
+    // 原生模块的平台变体只允许目标平台那一个进产物：闭包展开会带上全部已安装变体，
+    // 不先过滤的话注入阶段会把越界变体写回 app.asar，再被 native 资源策略判死。
+  ).filter((entry) => !isRuntimeModuleOutsideTargetPlatform(entry.moduleName, targetPlatform.key));
+  const unresolvableRuntimeModules = [];
+  const missingRuntimeModules = [];
+  for (const entry of runtimeModules) {
+    if (isPresentInAsar(entry.moduleName)) {
+      continue;
+    }
     if (!entry.sourceModulePath) {
-      // 不同平台/安装布局下，部分运行时依赖可能被裁剪或未落到本次打包工作区。
-      // 之前这里直接在 copy 阶段抛错会中断整个平台出包；改为记录告警并跳过该模块，
-      // 让 afterPack 只处理当前环境确实可解析的依赖，避免 CI 因单个可选依赖缺失全量失败。
-      console.warn(
-        `[afterPack] runtime module not found, skip injection: ${entry.moduleName}; searched=${runtimeModuleLookupRoots
-          .map((lookupRoot) => resolve(lookupRoot, "node_modules", entry.moduleName))
-          .join(", ")}`,
-      );
-      return false;
+      // 必修运行时依赖既不在产物里、也无法从工作区补齐时，安装包启动即 Cannot find module。
+      // 这类缺依赖过去只打告警并跳过，等于把问题留到用户机器上才暴露；打包是唯一能拦它的阶段，
+      // 因此这里显式失败。平台差异由 files 规则裁剪的是可选载荷，不在必修清单里。
+      unresolvableRuntimeModules.push(entry.moduleName);
+      continue;
     }
-    return true;
-  });
-  return resolvableRuntimeModules.filter((entry) => {
-    const { moduleName } = entry;
-    const moduleRoot = `/node_modules/${moduleName}`;
-    if (asarEntrySet.has(moduleRoot)) {
-      return false;
-    }
-    for (const entry of asarEntrySet) {
-      if (entry.startsWith(`${moduleRoot}/`)) {
-        return false;
-      }
-    }
-    return true;
-  });
+    missingRuntimeModules.push(entry);
+  }
+  if (unresolvableRuntimeModules.length > 0) {
+    throw new Error(
+      `打包产物缺少必修运行时依赖：${unresolvableRuntimeModules.join(", ")}；已搜索: ${runtimeModuleLookupRoots
+        .map((lookupRoot) => resolve(lookupRoot, "node_modules"))
+        .join(", ")}`,
+    );
+  }
+  return missingRuntimeModules;
 }
 
 async function injectHoistedRuntimeModulesIntoAsar(context) {
@@ -470,6 +491,25 @@ function assertPackagedCuaDriver(context) {
 }
 
 /**
+ * agent 树里的系统凭据库原生模块必须随包。
+ *
+ * 为什么要在出包阶段单独校验：agent 树的原生模块由 extraResources 单独拷进
+ * resources/glm/node_modules。electron-builder 会硬编码丢掉 extraResources 源根直属的
+ * node_modules（见 glm 条目的说明），所以这条拷贝与 glob 都可能静默落空。缺了它 agent 仍
+ * 能启动、只是凭据密钥退回私有文件 —— 构建全程绿灯，用户侧却在 Host 已绑定系统凭据库时
+ * 拿不到同一把密钥，只能报 CREDENTIAL_SECURE_STORAGE_UNAVAILABLE。
+ */
+function assertPackagedKeyring(context) {
+  const issues = verifyStagedKeyring({
+    resourcesDir: resolvePackagedResourcesDir(context),
+    targetPlatformKey: targetPlatform.key,
+  });
+  if (issues.length > 0) {
+    throw new Error(`keyring 原生运行时校验失败:\n- ${issues.join("\n- ")}`);
+  }
+}
+
+/**
  * koffi 原生 addon 必须随包。
  *
  * 为什么要有这条校验（**此前是「有定义没调用」**）：`stageKoffiIntoBundledAgents` 已在
@@ -543,6 +583,10 @@ export default {
     // node-pty 的 target prebuild 还包含 spawn-helper / winpty-agent.exe 等辅助可执行文件，
     // 整个目标目录必须 unpack；其他平台目录已由 files 规则裁剪。
     `node_modules/node-pty/prebuilds/${targetPlatform.key}/**`,
+    // 系统凭据库原生模块只 unpack 目标变体里的 .node：主包的 JS 留在 app.asar 内，
+    // 与官方 4.0.0 产物同构（那里 app.asar.unpacked 下只有这一份 .node）。
+    // 整个包 unpack 会把包元数据与许可正文一起摊到 unpacked，而 Node 只需要 .node 是真实文件。
+    `node_modules/${keyringPlatformPackageName(targetPlatform.key)}/*.node`,
   ],
   beforePack: async (context) => {
     runTimedSync("beforePack:restoreTargetNodePtyPrebuild", () =>
@@ -606,6 +650,7 @@ export default {
     );
     runTimedSync("afterPack:assertPackagedCuaDriver", () => assertPackagedCuaDriver(context));
     runTimedSync("afterPack:assertPackagedKoffi", () => assertPackagedKoffi(context));
+    runTimedSync("afterPack:assertPackagedKeyring", () => assertPackagedKeyring(context));
     if (actualWindowsTarget) {
       await runTimedAsync("afterPack:writeWindowsInstallManifest", () =>
         writeWindowsInstallManifest(context),
@@ -708,6 +753,16 @@ export default {
       // `packages/node-repl-host/node_modules`（见 cua-driver-package-assets.mjs）：
       // 那个路径不是源根直属的 node_modules，能正常打包，而且正好在 node-repl-host
       // bundle 的祖先目录里，是 Node 解析原生依赖时的一站。
+      filter: ["**/*", "!**/*.map"],
+    },
+    {
+      // agent 树里的原生模块目录（@napi-rs/keyring）：上面的 glm 条目会丢掉源根直属的
+      // node_modules（util/filter.js 对 relative === "node_modules" 硬编码丢弃），所以单独以
+      // glm/node_modules/@napi-rs 为源根拷一次。落点必须在 glm/ 下 —— Node 从
+      // glm/zcode.cjs 出发向上找 node_modules，这一站正好命中；换到别处（例如 resources）
+      // agent 就解析不到，只能静默回退到文件兜底。
+      from: `bundled-agents/${targetPlatform.key}/glm/node_modules/@napi-rs`,
+      to: "glm/node_modules/@napi-rs",
       filter: ["**/*", "!**/*.map"],
     },
     {

@@ -95,6 +95,8 @@ const zhCN: Record<string, string> = {
     "数据库无法通过完整性检查。请保留数据和诊断信息，联系支持人员处理；不要删除数据库。",
   "startup.global.error.checksum_mismatch":
     "数据库迁移记录与当前程序不匹配。请保留数据和诊断信息，联系支持人员处理。",
+  "startup.global.error.schema_too_new":
+    "本地数据已由更新版本的 ZCode 写过，本版不会写入它。请用更新版本打开；或先备份数据目录，再按文档恢复旧数据。不要删除数据库文件。",
   "startup.global.error.open_failed":
     "无法打开数据库。请检查数据目录是否存在且可访问，处理后点击重试。",
   "startup.global.error.lock_timeout":
@@ -178,6 +180,14 @@ const zhCN: Record<string, string> = {
   "common.save": "保存",
   "common.saving": "保存中...",
   "common.delete": "删除",
+  // 会话行逐行降级（shared 的 UnreadableConversationRow）：读不懂的一行必须显形，不得静默跳过。
+  // 基础文案沿用上游「需要更新 ZCode 查看」的软提示语义，并补上「也可能已损坏」；提示按 reason
+  // 分支给下一步动作，正文不出现 unknownKind / invalidRow 这类内部标识。
+  "conversation.row.unreadable": "这条内容无法读取（可能来自更新版本，也可能是数据已损坏）",
+  "conversation.row.unreadable.unknownKind":
+    "当前版本不认识这条内容的类型。更新 ZCode 到最新版本后可能恢复显示。",
+  "conversation.row.unreadable.invalidRow":
+    "这条内容的字段与当前版本不一致。更新 ZCode 到最新版本后可能恢复显示；若更新后仍读不出来，说明该条数据已损坏。",
   "conversationShare.trigger": "分享",
   "conversationShare.shareTitle": "分享标题",
   "conversationShare.permissionLabel": "访问权限",
@@ -4025,6 +4035,8 @@ const zhCN: Record<string, string> = {
   "settings.hooks.review.reason.policy_requires_pretrust": "策略要求预先信任此 Hook",
   "settings.hooks.review.reason.interaction_timeout": "审核已超时",
   "settings.hooks.review.reason.host_unavailable": "当前连接不支持审核此 Hook",
+  "settings.hooks.review.reason.script_unavailable":
+    "钩子入口脚本不存在或无法读取，请修复后重新审核",
   "settings.hooks.review.reason.rejected": "操作被拒绝",
   "settings.hooks.title": "钩子",
   "settings.workspaceFileSearch.title": "项目搜索范围",
@@ -5823,6 +5835,8 @@ const zhCN: Record<string, string> = {
   // ZCode Agent
   "zcode.unavailable": "AI 代理不可用",
   "zcode.initFailed": "启动 AI 代理失败",
+  "zcode.error.SESSION_DELETING":
+    "该会话正在删除中（由更新版本的 ZCode 发起），本版不会写入它。请用更新版本打开，或等删除完成后再试。",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "该任务正在另一个已连接视图中运行。",
   "zcode.error.STALE_TASK_OWNER_COMMAND": "该操作属于旧的运行轮次，已忽略。",
   "zcode.error.NO_ACTIVE_TASK_OWNER": "当前没有可处理该操作的任务所有者。",

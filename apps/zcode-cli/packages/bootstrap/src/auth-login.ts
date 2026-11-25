@@ -4,7 +4,6 @@ import {
   createCliOAuthClient,
   createCliOAuthPollToken,
   openUrlInBrowser,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
   type BrowserOpenResult,
   type SharedZCodeCredentialStore,
   type CliOAuthClient,
@@ -27,18 +26,33 @@ import { dirname, join } from "node:path";
 import {
   createStandaloneAccountIdentityFromSecret,
   hasStandaloneCodingPlanAccess,
-  readStandaloneCodingPlanProviders,
   resolveStandaloneCodingPlanProvider,
   standaloneAccountIdentityCredentialKey,
   standaloneAccountProviderCredentialKey,
 } from "./app/standalone-account-provider-runtime.js";
+import {
+  captureLoginSessionSnapshot,
+  captureStandaloneAccountSnapshot,
+  commitLoginSessionChange,
+  commitStandaloneAccountCredentials,
+  type LoginProviderId,
+} from "./auth-login-credentials.js";
 import { throwIfAborted, waitWithAbort } from "./auth-login-abort.js";
+import { ZCodeCliLoginError } from "./auth-login-error.js";
 import { setTimeout as delay } from "node:timers/promises";
 import { pollUntilReady } from "./auth-login-polling.js";
 
+// 错误类型单独成模块（账号组自愈也要构造它），对外仍从本入口导出。
+export { ZCodeCliLoginError };
+
+// 登出与登录的键集合同源、语义相反（登出不比较期望值），拆到单独模块后仍从本入口导出，
+// 调用方（CLI / TUI）不感知文件拆分。
+export { logoutZCodeCli } from "./auth-logout.js";
+export type { LogoutZCodeCliOptions, LogoutZCodeCliResult } from "./auth-logout.js";
+
 const DEFAULT_LOGIN_TIMEOUT_MS = 5 * 60 * 1_000;
 
-export type CodingPlanProviderId = "bigmodel" | "zai";
+export type CodingPlanProviderId = LoginProviderId;
 
 export interface LoginZCodeCliOptions {
   providerId?: CodingPlanProviderId;
@@ -86,15 +100,6 @@ export interface ConfigureCodingPlanApiKeyResult {
   providerId: CodingPlanProviderId;
 }
 
-export interface LogoutZCodeCliOptions {
-  credentialStore?: SharedZCodeCredentialStore;
-  env?: EnvRecord;
-}
-
-export interface LogoutZCodeCliResult {
-  credentialsPath: string;
-}
-
 export async function hasConfiguredStandaloneCodingPlan(
   options: {
     credentialStore?: SharedZCodeCredentialStore;
@@ -104,24 +109,6 @@ export async function hasConfiguredStandaloneCodingPlan(
   const credentialStore =
     options.credentialStore ?? createSharedZCodeCredentialStore({ env: options.env });
   return hasStandaloneCodingPlanAccess(credentialStore, options.env ?? process.env);
-}
-
-export class ZCodeCliLoginError extends Error {
-  readonly code:
-    | "auth_failed"
-    | "auth_timeout"
-    | "config_update_failed"
-    | "credential_write_failed";
-
-  constructor(
-    code: ZCodeCliLoginError["code"],
-    message: string,
-    options: { cause?: unknown } = {},
-  ) {
-    super(message, options);
-    this.name = "ZCodeCliLoginError";
-    this.code = code;
-  }
 }
 
 export async function loginZCodeCli(
@@ -143,6 +130,9 @@ export async function loginZCodeCli(
     throwIfAborted(signal);
     const pollToken = options.pollToken ?? createCliOAuthPollToken();
     const credentialStore = options.credentialStore ?? createSharedZCodeCredentialStore({ env });
+    // 快照必须在发起登录时读：待授权期间另一进程可能已经完成登录，只有这份快照能让提交
+    // 识别出「本轮结果已陈旧」并整组丢弃，而不是用旧响应覆盖新会话。
+    const loginSnapshot = await captureLoginSessionSnapshot(credentialStore);
     const oauthClient = createOAuthClient(options, env);
     const initData = await waitWithAbort(oauthClient.init({ pollToken }, { signal }), signal);
     const remainingMs = Math.min(deadlineMs, initData.expires_at * 1_000) - now();
@@ -186,29 +176,21 @@ export async function loginZCodeCli(
     // A cancelled/expired attempt must not persist a late ready response or API key.
     throwIfAborted(signal);
     try {
-      if (providerId === "zai") {
-        await credentialStore.saveZaiLoginCredentials({
-          accessToken: readyData.accessToken,
-          jwtToken: readyData.token,
-          user: readyData.user,
-        });
-      } else {
-        await credentialStore.saveMany({
-          [SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider]: providerId,
-          [SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken]: readyData.token,
-          [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelAccessToken]: readyData.accessToken,
-          ...(readyData.refreshToken
-            ? { [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelRefreshToken]: readyData.refreshToken }
-            : {}),
-          [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelUserInfo]: JSON.stringify({
-            id: readyData.user.user_id,
-            username: readyData.user.name || readyData.user.email || readyData.user.user_id,
-            displayName: readyData.user.name || readyData.user.email || readyData.user.user_id,
-            rawProfile: readyData.user,
-          }),
-        });
-      }
+      const committed = await commitLoginSessionChange(credentialStore, loginSnapshot, {
+        providerId,
+        accessToken: readyData.accessToken,
+        zcodeJwtToken: readyData.token,
+        userInfoRaw: serializeLoginUserInfo(providerId, readyData.user),
+        // zai 的授权响应不带 refresh token（Host 也只取 bigmodel 下发的那一枚），
+        // 因此 zai 登录不写这个键：落盘字段集合与 Host 侧保持一致。
+        ...(providerId === "bigmodel" && readyData.refreshToken
+          ? { refreshToken: readyData.refreshToken }
+          : {}),
+      });
+      if (!committed) throw supersededLoginError();
     } catch (error) {
+      // CAS 失败不是写盘故障，已带「重新登录」的可操作提示，不能被包装成 credential_write_failed。
+      if (error instanceof ZCodeCliLoginError) throw error;
       throw new ZCodeCliLoginError(
         "credential_write_failed",
         "Login succeeded but writing credentials failed.",
@@ -227,6 +209,8 @@ export async function loginZCodeCli(
         providerId,
       });
     } catch (error) {
+      // 凭据冲突发生在配置写入之前，已带可操作提示，不能被归因成 config_update_failed。
+      if (error instanceof ZCodeCliLoginError) throw error;
       throw new ZCodeCliLoginError(
         "config_update_failed",
         "Login succeeded but updating ZCode config failed.",
@@ -279,43 +263,6 @@ export async function configureCodingPlanApiKey(
   };
 }
 
-export async function logoutZCodeCli(
-  options: LogoutZCodeCliOptions = {},
-): Promise<LogoutZCodeCliResult> {
-  const credentialStore =
-    options.credentialStore ?? createSharedZCodeCredentialStore({ env: options.env });
-  const providerIds = (await readStandaloneCodingPlanProviders(options.env ?? process.env)).map(
-    ({ providerId }) => providerId,
-  );
-  const identityKeys = providerIds.map(standaloneAccountIdentityCredentialKey);
-  const identities = await credentialStore.loadMany(identityKeys);
-  const dynamicApiKeyKeys = providerIds.flatMap((providerId) => {
-    const identity = identities[standaloneAccountIdentityCredentialKey(providerId)]?.trim();
-    return identity
-      ? [
-          standaloneAccountProviderCredentialKey({
-            providerId,
-            accountIdentity: identity,
-          }),
-        ]
-      : [];
-  });
-  const keys = [
-    ...Object.values(SHARED_ZCODE_CREDENTIAL_KEYS),
-    ...identityKeys,
-    ...dynamicApiKeyKeys,
-  ];
-  const current = await credentialStore.loadMany(keys);
-  await credentialStore.deleteIfValues(
-    Object.fromEntries(
-      Object.entries(current).flatMap(([key, value]) => (value === null ? [] : [[key, value]])),
-    ),
-  );
-  return {
-    credentialsPath: credentialStore.filePath,
-  };
-}
-
 interface StandaloneCodingPlanPersistenceResult {
   readonly mainModel: string;
   readonly path: string;
@@ -332,14 +279,25 @@ async function persistStandaloneCodingPlanConnection(input: {
   const configuredProvider = await resolveStandaloneCodingPlanProvider(input.providerId, input.env);
   const providerId = configuredProvider.providerId;
   const modelId = configuredProvider.modelId;
-  const credentialKey = standaloneAccountProviderCredentialKey({
-    providerId,
-    accountIdentity: input.accountIdentity,
-  });
-  await input.credentialStore.saveMany({
-    [standaloneAccountIdentityCredentialKey(providerId)]: input.accountIdentity,
-    [credentialKey]: input.apiKey,
-  });
+  const credentialKeys = {
+    identityCredentialKey: standaloneAccountIdentityCredentialKey(providerId),
+    apiKeyCredentialKey: standaloneAccountProviderCredentialKey({
+      providerId,
+      accountIdentity: input.accountIdentity,
+    }),
+  };
+  // 账号身份的整组提交：identity 决定运行时用哪个账号的 Key，与 OAuth 会话版本一起比较，
+  // 才能挡住「Host 刚登录了新账号、CLI 的旧响应又把 identity 改回上一个账号」。
+  const credentialSnapshot = await captureStandaloneAccountSnapshot(
+    input.credentialStore,
+    credentialKeys,
+  );
+  const credentialsCommitted = await commitStandaloneAccountCredentials(
+    input.credentialStore,
+    credentialSnapshot,
+    { ...credentialKeys, accountIdentity: input.accountIdentity, apiKey: input.apiKey },
+  );
+  if (!credentialsCommitted) throw supersededLoginError();
   const path =
     input.personalProviderConfigPath ??
     input.env[ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]?.trim() ??
@@ -361,6 +319,36 @@ async function persistStandaloneCodingPlanConnection(input: {
     mainModel: `${providerId}/${modelId}`,
     path,
   };
+}
+
+/**
+ * user_info 的落盘形态按 provider 分开：Host 读 zai 时按后端 data.user 原样解析，
+ * 读 bigmodel 时要求归一化的 id/username/displayName。写错一侧不会报错，只会让会话恢复
+ * 时「登录过却读不到 profile」，所以两种形态在这里各固定一次。
+ */
+function serializeLoginUserInfo(providerId: CodingPlanProviderId, user: CliOAuthUser): string {
+  if (providerId === "zai") {
+    return JSON.stringify(user);
+  }
+  const username = user.name || user.email || user.user_id;
+  return JSON.stringify({
+    id: user.user_id,
+    username,
+    displayName: username,
+    rawProfile: user,
+  });
+}
+
+/**
+ * 快照过期 = 期间另一处登录已经提交（常见于 Desktop Host 与 CLI 同时登录）。
+ * 结果整组丢弃，绝不用旧响应覆盖新会话；提示必须指向「重新登录」这个可操作动作。
+ */
+function supersededLoginError(): ZCodeCliLoginError {
+  return new ZCodeCliLoginError(
+    "credential_conflict",
+    "Another sign-in updated the stored credentials during this login, so this result was discarded. " +
+      "Please retry login.",
+  );
 }
 
 function createOAuthClient(options: LoginZCodeCliOptions, env: EnvRecord): CliOAuthClient {

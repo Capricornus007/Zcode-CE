@@ -100,6 +100,8 @@ const enUS: Record<string, string> = {
     "The database appears damaged. Preserve your data and diagnostics and contact support. Do not delete the database.",
   "startup.global.error.checksum_mismatch":
     "The migration records do not match this app version. Preserve your data and diagnostics and contact support.",
+  "startup.global.error.schema_too_new":
+    "A newer version of ZCode has written to this data, so this version will not write to it. Open it with the newer version, or back up the data directory first and then restore the older data as documented. Do not delete the database file.",
   "startup.global.error.open_failed":
     "The database could not be opened. Check that the data directory exists and is accessible, then retry.",
   "startup.global.error.lock_timeout":
@@ -188,6 +190,15 @@ const enUS: Record<string, string> = {
   "common.save": "Save",
   "common.saving": "Saving...",
   "common.delete": "Delete",
+  // Per-row degradation (shared UnreadableConversationRow): a row this build cannot read stays visible.
+  // Base copy follows upstream's soft "requires a newer version" hint and adds the corrupted case;
+  // the hint branches on reason and never renders internal identifiers (unknownKind / invalidRow).
+  "conversation.row.unreadable":
+    "This message can’t be read (it may come from a newer version or be corrupted)",
+  "conversation.row.unreadable.unknownKind":
+    "This version doesn’t recognize the content type. Updating ZCode may restore it.",
+  "conversation.row.unreadable.invalidRow":
+    "This message’s fields don’t match this version. Updating ZCode may restore it; if it still can’t be read, the data is corrupted.",
   "conversationShare.trigger": "Share",
   "conversationShare.shareTitle": "Share title",
   "conversationShare.permissionLabel": "Access",
@@ -4319,6 +4330,8 @@ const enUS: Record<string, string> = {
   "settings.hooks.review.reason.blocked_by_policy": "Blocked by policy",
   "settings.hooks.review.reason.policy_requires_pretrust": "Policy requires pre-established trust",
   "settings.hooks.review.reason.interaction_timeout": "Review timed out",
+  "settings.hooks.review.reason.script_unavailable":
+    "The hook script is missing or unreadable — fix it, then review again",
   "settings.hooks.review.reason.host_unavailable": "This connection cannot review this Hook",
   "settings.hooks.review.reason.rejected": "Request rejected",
   "settings.hooks.title": "Hooks",
@@ -6113,6 +6126,8 @@ const enUS: Record<string, string> = {
   // ZCode Agent
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
+  "zcode.error.SESSION_DELETING":
+    "This session is being deleted by a newer version of ZCode, so this version will not write to it. Open it with the newer version, or wait for the deletion to finish and retry.",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
   "zcode.error.STALE_TASK_OWNER_COMMAND": "This action belongs to an older run and was ignored.",
   "zcode.error.NO_ACTIVE_TASK_OWNER": "No active task owner is available for this action.",

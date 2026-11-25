@@ -469,6 +469,7 @@ export {
   updatePluginEnabledInFileConfig,
   enablePluginsByDefaultInFileConfig,
   removePluginEnabledFromFileConfig,
+  readPluginOptionsFromFileConfig,
   updatePluginOptionsInFileConfig,
   removePluginFromFileConfig,
   addSuppressedBuiltinInFileConfig,
@@ -485,7 +486,28 @@ export { ZCodeConfigFileSchema, type ZCodeConfigFile } from "./schema.js";
 export { mergeConfigs, createPrioritizedConfig, getScopePriority } from "./config-merger.js";
 export {
   createConfig,
+  createConfigAsync,
   resolveWorkspaceStorageDir,
   type ConfigFactoryOptions,
   type ConfigResult,
+  type PluginConfigScope,
+  type PluginOptionLayer,
 } from "./config-factory.js";
+export {
+  PLUGIN_SECRETS_FILE_NAME,
+  createEmptyPluginSecretsFile,
+  getPluginSecretsForScope,
+  normalizePluginConfigPathForComparison,
+  readPluginSecretsFileSync,
+  removePluginSecrets,
+  resolvePluginSecretOverrides,
+  resolvePluginSecretsPath,
+  setPluginSecrets,
+  updatePluginSecretsFile,
+  type PluginSecretOverride,
+  type PluginSecretValue,
+  type PluginSecretValues,
+  type PluginSecretsFile,
+  type PluginSecretsReadResult,
+  type PluginSecretsScope,
+} from "./plugin-secrets.adapter.js";

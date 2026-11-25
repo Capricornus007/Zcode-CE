@@ -352,6 +352,8 @@ import { createOnboardingRecordService } from "./onboarding/onboardingRecordServ
 import { createLegacyTeamOrganizationResolver } from "./model-provider/legacyTeamOrganizationResolver.js";
 import { createObservableSettingService } from "./setting/observableSettingService.js";
 import { createCredentialService } from "./credential/credentialService.js";
+import { credentialMutationTouchesAccountSurface } from "./credential/credentialMutation.js";
+import type { CredentialCipher } from "@zcode/shared/credential-security";
 import { createBroadcastService } from "./broadcast/broadcastService.js";
 import { createZCodeAgentService } from "./zcode-agent/zcodeAgentService.js";
 import type { ZCodeAgentCommandResolver } from "./zcode-agent/zcodeAgentProcessManager.js";
@@ -1358,6 +1360,11 @@ export function createLocalServices(options: {
   // Modified by ZCode: 增量自上游 aac47556——Desktop Host 请求 Main 登记已校验的插件
   // UI HTML，换取沙箱句柄；gen-ui 服务的 prepareSandbox 经此注入。
   registerPluginSandbox?: (input: PluginSandboxRegisterInput) => Promise<PluginSandboxHandle>;
+  /**
+   * 凭据加密后端。默认是本机系统凭据库（keyring 优先、同目录 0600 私有文件兜底），
+   * 按凭据文件路径取，可承受数据根切换；只有需要外部密钥源（如经 Main 的私有桥）时才注入。
+   */
+  credentialCipher?: CredentialCipher;
   feedback?: Partial<
     Omit<CreateFeedbackServiceOptions, "apiClient" | "credentialService" | "oauthService">
   >;
@@ -1469,13 +1476,20 @@ export function createLocalServices(options: {
   let invalidatePluginUiAccounts: (() => void) | undefined;
   const provisioningOAuthKeys = new Set<string>(PROVIDER_PROVISIONING_OAUTH_CREDENTIAL_KEYS);
   const credentialService = createCredentialService({
-    onDidMutate: ({ key }) => {
+    cipher: options?.credentialCipher,
+    onDidMutate: (event) => {
       // Modified by ZCode: 增量自上游 aac47556——账号切换时让 plugin-ui 实例绑定失效，
-      // 防止旧 OAuth 凭据的实例句柄存活到新账号会话。
-      if (key === "oauth:active_provider" || /^oauth:[^:]+:user_info$/.test(key)) {
+      // 防止旧 OAuth 凭据的实例句柄存活到新账号会话。批量提交按 keys 逐键判定，
+      // 只要集合里有一个账号面键就失效，不能因为集合化而漏判。
+      if (credentialMutationTouchesAccountSurface(event)) {
         invalidatePluginUiAccounts?.();
       }
-      if (provisioningOAuthKeys.has(key) || isProviderProvisioningAccountCredentialKey(key)) {
+      if (
+        event.keys.some(
+          (key) =>
+            provisioningOAuthKeys.has(key) || isProviderProvisioningAccountCredentialKey(key),
+        )
+      ) {
         options.onProviderProvisioningSourceChanged?.("credential");
       }
     },
